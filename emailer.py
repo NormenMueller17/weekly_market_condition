@@ -2,7 +2,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.utils import formatdate
 
-from .config import SETTINGS
+from config import SETTINGS
 
 
 def send_email(html_body: str, subject_suffix: str = ""):
