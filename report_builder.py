@@ -3,7 +3,7 @@ from typing import Dict
 import pandas as pd
 from jinja2 import Template
 
-from .indicators import rsi, macd, pct_above_ma
+from indicators import rsi, macd, pct_above_ma
 
 HTML_TMPL = Template(
 """
