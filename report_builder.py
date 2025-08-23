@@ -33,17 +33,20 @@ HTML_TMPL = Template(
   <h2>1) Marktbreite</h2>
   <table>
     <tr>
-      {% for col in breadth.columns %}<th class="left">{{ col }}</th>{% endfor %}
+      <th class="left">% über 50-Wochen-MA</th>
+      <th class="left">% über 200-Wochen-MA</th>
+      <th class="left">% Gewinner (WoW)</th>
+      <th class="left">Neue 52W-Hochs (Anzahl)</th>
+      <th class="left">Neue 52W-Tiefs (Anzahl)</th>
+      <th class="left">Universum (Anzahl)</th>
     </tr>
     <tr>
-      {% for col in breadth.columns %}
-        {% set val = breadth.iloc[0][col] %}
-        {% if col in ['new_highs_52w','new_lows_52w','universe_size'] %}
-          <td>{{ val|int }}</td>
-        {% else %}
-          <td>{{ '%.2f' % val if val is not none else '' }}</td>
-        {% endif %}
-      {% endfor %}
+      <td>{{ '%.2f' % breadth.iloc[0]['%>50w'] if breadth.iloc[0]['%>50w'] is not none else '' }}</td>
+      <td>{{ '%.2f' % breadth.iloc[0]['%>200w'] if breadth.iloc[0]['%>200w'] is not none else '' }}</td>
+      <td>{{ '%.2f' % breadth.iloc[0]['advancers_wow_%'] if breadth.iloc[0]['advancers_wow_%'] is not none else '' }}</td>
+      <td>{{ breadth.iloc[0]['new_highs_52w']|int }}</td>
+      <td>{{ breadth.iloc[0]['new_lows_52w']|int }}</td>
+      <td>{{ breadth.iloc[0]['universe_size']|int }}</td>
     </tr>
   </table>
 
