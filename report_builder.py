@@ -82,27 +82,22 @@ HTML_TMPL = Template(
 )
 
 
-def build_index_rows(idx_data: Dict[str, pd.DataFrame]):
-    rows = []
-    mapping = {"SPY": "S&P 500 (SPY)", "QQQ": "Nasdaq 100 (QQQ)", "IWM": "Russell 2000 (IWM)"}
-    for sym, label in mapping.items():
-        df = idx_data[sym].copy().dropna()
-        close = df['Close']
-        rsi_now = rsi(close).iloc[-1]
-        rsi_prev = rsi(close).iloc[-2]
-        m, s, h = macd(close)
-        row = {
-            'close': float(close.iloc[-1]),
-            'ret_wow': float(close.pct_change().iloc[-1]),
-            'rsi': float(rsi_now),
-            'delta_rsi': float(rsi_now - rsi_prev),
-            'macd': float(m.iloc[-1]),
-            'signal': float(s.iloc[-1]),
-            'delta_macd': float((m - s).diff().iloc[-1]),
-            'above_10w': float((close.iloc[-1] - close.rolling(10).mean().iloc[-1]) / close.rolling(10).mean().iloc[-1]),
-        }
-        rows.append((label, row))
-    return rows
+def build_risk_rows(idx_data: Dict[str, pd.DataFrame]):
+    risk_keys = ["VIX", "CPC", "TNX", "UUP"]
+    out = []
+    for key in risk_keys:
+        df = idx_data.get(key, pd.DataFrame())
+        if df is None or df.empty or "Close" not in df:
+            out.append((key, None, None))
+            continue
+        close = df["Close"].dropna()
+        if len(close) == 0:
+            out.append((key, None, None))
+            continue
+        now = float(close.iloc[-1]) if len(close) >= 1 else None
+        prev = float(close.iloc[-2]) if len(close) >= 2 else None
+        out.append((key, now, prev))
+    return out
   
 
 def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]]:
