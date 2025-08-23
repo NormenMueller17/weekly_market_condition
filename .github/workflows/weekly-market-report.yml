@@ -3,7 +3,8 @@ name: Weekly US Market Report
 on:
   schedule:
     # Jeden Montag 08:30 UTC (~10:30/09:30 Europe/Berlin je nach DST)
-    - cron: "30 8 * * MON"
+    #- cron: "30 8 * * MON"
+    - cron: '0 8 * * 6'
   workflow_dispatch: {}
 
 jobs:
