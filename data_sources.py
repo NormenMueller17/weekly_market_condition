@@ -79,25 +79,37 @@ def load_weekly_history(tickers: List[str], weeks: int = 60) -> Dict[str, pd.Dat
     return data
 
 def load_index_series():
-    """Wichtige Indizes/Proxies mit Wochenintervall und start=..."""
+    """
+    Lädt Indizes/Proxys als Tagesdaten und resampelt auf Wochen.
+    So vermeiden wir period='…w' Fehler und inkonsistente Weekly-APIs.
+    """
     symbols = {
-        "SPY": "SPY",
-        "QQQ": "QQQ",
-        "IWM": "IWM",
-        "VIX": "^VIX",
-        "TNX": "^TNX",
-        "UUP": "UUP",
-        "CPC": "^CPC",
+        "SPY": "SPY",    # S&P 500 ETF
+        "QQQ": "QQQ",    # Nasdaq 100 ETF
+        "IWM": "IWM",    # Russell 2000 ETF
+        "VIX": "^VIX",   # Volatilität
+        "TNX": "^TNX",   # 10y Yield * 10
+        "UUP": "UUP",    # USD-Proxy ETF
+        "CPC": "^CPC",   # Put/Call Ratio (oft nur daily verfügbar)
     }
     out = {}
-    start = _start_date_for_weeks(max(SETTINGS.lookback_weeks, 260))  # ~5 Jahre
+    start = _start_date_for_weeks(max(SETTINGS.lookback_weeks, 260))
     for name, sym in symbols.items():
-        out[name] = yf.download(
-            sym,
-            start=start.strftime("%Y-%m-%d"),
-            interval="1wk",
-            auto_adjust=False,
-            progress=False,
-        )
+        try:
+            df = yf.download(
+                sym,
+                start=start.strftime("%Y-%m-%d"),
+                interval="1d",         # daily laden
+                auto_adjust=False,
+                progress=False,
+            )
+            # Auf Wochen resamplen: Schlusskurs der Woche
+            if not df.empty:
+                weekly = df.resample("W-FRI").last()  # Wochenende i.d.R. Freitag
+                out[name] = weekly.dropna(how="all")
+            else:
+                out[name] = pd.DataFrame()
+        except Exception:
+            out[name] = pd.DataFrame()
         time.sleep(0.2)
     return out
