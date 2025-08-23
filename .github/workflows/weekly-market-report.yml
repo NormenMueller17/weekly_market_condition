@@ -38,4 +38,4 @@ jobs:
 
       - name: Run report
         run: |
-          python -m src.main
+          python main.py
