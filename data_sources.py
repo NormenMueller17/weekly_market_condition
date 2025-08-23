@@ -6,7 +6,7 @@ import yfinance as yf
 from pathlib import Path
 from typing import List
 
-from .config import SETTINGS
+from config import SETTINGS
 
 _SP500_WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 
