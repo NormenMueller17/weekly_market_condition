@@ -29,14 +29,21 @@ HTML_TMPL = Template(
 <body>
   <h1>{{ title }}</h1>
   <p><small>Report-Woche: {{ week_ending }}</small></p>
-
+  
   <h2>1) Marktbreite</h2>
   <table>
     <tr>
       {% for col in breadth.columns %}<th class="left">{{ col }}</th>{% endfor %}
     </tr>
     <tr>
-      {% for col in breadth.columns %}<td>{{ '%.2f' % breadth.iloc[0][col] if breadth.iloc[0][col] is not none else '' }}</td>{% endfor %}
+      {% for col in breadth.columns %}
+        {% set val = breadth.iloc[0][col] %}
+        {% if col in ['new_highs_52w','new_lows_52w','universe_size'] %}
+          <td>{{ val|int }}</td>
+        {% else %}
+          <td>{{ '%.2f' % val if val is not none else '' }}</td>
+        {% endif %}
+      {% endfor %}
     </tr>
   </table>
 
