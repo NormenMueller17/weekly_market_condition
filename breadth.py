@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Dict
 
-from .indicators import rsi, macd
+from indicators import rsi, macd
 
 # Breadth metrics on a per-universe weekly dict[ticker]->DF with Close, High, Low, Volume
 
