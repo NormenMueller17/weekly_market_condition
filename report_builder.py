@@ -4,6 +4,7 @@ import pandas as pd
 from jinja2 import Template
 
 from indicators import rsi, macd, pct_above_ma
+from typing import Dict, List, Tuple
 
 HTML_TMPL = Template(
 """
@@ -102,18 +103,43 @@ def build_index_rows(idx_data: Dict[str, pd.DataFrame]):
         }
         rows.append((label, row))
     return rows
+  
 
+def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]]:
+    rows = []
+    mapping = {"SPY": "S&P 500 (SPY)", "QQQ": "Nasdaq 100 (QQQ)", "IWM": "Russell 2000 (IWM)"}
+    for sym, label in mapping.items():
+        df = idx_data.get(sym, pd.DataFrame())
+        if df is None or df.empty or "Close" not in df:
+            continue
+        close = df["Close"]
+        close = close.squeeze().dropna()   # 1D erzwingen, NaN raus
+        if len(close) < 30:                # zu wenig Historie → überspringen
+            continue
 
-def build_risk_rows(idx_data: Dict[str, pd.DataFrame]):
-    risk_keys = ["VIX", "CPC", "TNX", "UUP"]
-    out = []
-    for key in risk_keys:
-        df = idx_data[key].dropna()
-        close = df['Close']
-        now = float(close.iloc[-1]) if len(close) else None
-        prev = float(close.iloc[-2]) if len(close) > 1 else None
-        out.append((key, now, prev))
-    return out
+        rsi_now = rsi(close).iloc[-1]
+        rsi_prev = rsi(close).iloc[-2] if len(close) >= 16 else rsi_now
+
+        m, s, h = macd(close)
+        macd_line = m.iloc[-1]
+        signal_line = s.iloc[-1]
+        delta_macd = (m - s).diff().iloc[-1]
+
+        ma10 = close.rolling(10).mean().iloc[-1]
+        above_10w = (close.iloc[-1] - ma10) / ma10 if pd.notna(ma10) and ma10 != 0 else 0.0
+
+        row = {
+            "close": float(close.iloc[-1]),
+            "ret_wow": float(close.pct_change().iloc[-1]),
+            "rsi": float(rsi_now) if pd.notna(rsi_now) else float("nan"),
+            "delta_rsi": float(rsi_now - rsi_prev) if pd.notna(rsi_now) and pd.notna(rsi_prev) else float("nan"),
+            "macd": float(macd_line),
+            "signal": float(signal_line),
+            "delta_macd": float(delta_macd),
+            "above_10w": float(above_10w),
+        }
+        rows.append((label, row))
+    return rows
 
 
 def heuristic_verdict(breadth: pd.DataFrame, idx_rows) -> str:
