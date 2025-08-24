@@ -219,3 +219,27 @@ def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, Dict[s
         }))
 
     return rows
+
+def heuristic_verdict(breadth: pd.DataFrame, idx_rows: List[Tuple[str, dict]]) -> str:
+    """
+    Einfache Heuristik zur Einschätzung der Marktlage auf Basis von Breadth und Momentum.
+    """
+    if breadth.empty:
+        return "Keine ausreichenden Daten verfügbar."
+
+    b = breadth.iloc[0]
+    strong_breadth = (b['%>50w'] > 55) and (b['advancers_wow_%'] > 55)
+    weak_breadth = (b['%>50w'] < 45) or (b['advancers_wow_%'] < 45)
+
+    # RSI als Momentum-Indikator für SPY & QQQ
+    try:
+        spy_rsi = [r for n, r in idx_rows if n.startswith("S&P")][0]["rsi"]
+        qqq_rsi = [r for n, r in idx_rows if n.startswith("Nasdaq")][0]["rsi"]
+    except Exception:
+        return "Keine verlässliche RSI-Datenlage vorhanden."
+
+    if strong_breadth and spy_rsi > 50 and qqq_rsi > 50:
+        return "Akkumulationsmodus: Übergewichtung zulässig, selektiv zukaufen."
+    if weak_breadth and (spy_rsi < 50 or qqq_rsi < 50):
+        return "Distribution/Schutzmodus: Risiko reduzieren, Stops nachziehen, Neuzukäufe selektiv."
+    return "Neutral: Selektiv vorgehen, auf Bestätigungen warten."
