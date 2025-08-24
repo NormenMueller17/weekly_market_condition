@@ -121,7 +121,7 @@ HTML_TMPL = """
 </html>
 """
 
-def build_risk_rows(idx_data: Dict[str, pd.DataFrame]):
+def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float, float, float]]:
     risk_keys = ["VIX", "CPC", "TNX", "UUP"]
     out = []
     for key in risk_keys:
@@ -133,10 +133,10 @@ def build_risk_rows(idx_data: Dict[str, pd.DataFrame]):
         if len(close) < 2:
             out.append((key, 0.0, 0.0, 0.0))
             continue
-        now = float(close.iloc[-1])
-        prev = float(close.iloc[-2])
+        now = close.iloc[-1]
+        prev = close.iloc[-2]
         delta = now - prev
-        out.append((key, now, prev, delta))
+        out.append((key, float(now), float(prev), float(delta)))
     return out
 
 def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]]:
