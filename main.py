@@ -18,30 +18,26 @@ from report_builder import (
 )
 
 def run():
+    # 1) Daten laden
     universe = get_universe()
     weekly = load_weekly_history(universe, weeks=SETTINGS.lookback_weeks)
     idx_data = load_index_series()
 
+    # 2) Kennzahlen berechnen
     breadth_df = compute_breadth(weekly)
-    breadth_snap = compute_breadth_snapshots(weekly, offsets=[0, 1, 4])
     idx_rows = build_index_rows(idx_data)
-    idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
     risk_rows = build_risk_rows(idx_data)
-    risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche", "Δ"]).set_index("Metrik")
-    risk_df["Δ"] = risk_df["Aktuell"] - risk_df["Vorwoche"]
 
+    # 3) Report erzeugen
     summary = heuristic_verdict(breadth_df, idx_rows)
-    report_date = datetime.today().strftime("%Y-%m-%d")
+    report_date = pd.Timestamp.now().strftime("%Y-%m-%d")
 
-    html = build_html_report(
-        breadth=breadth_df,
-        breadth_snap=breadth_snap,
-        idx=idx_df,
-        risk=risk_df,
-        summary=summary,
-        report_date=report_date
-    )
+    idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
+    risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche", "Δ"]).set_index("Metrik")
 
+    html = build_html_report(breadth_df.iloc[0], idx_df, risk_rows, summary, report_date, weekly)
+
+    # 4) Report senden
     send_email(html)
 
 if __name__ == "__main__":
