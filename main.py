@@ -25,6 +25,7 @@ def run():
 
     # 2) Kennzahlen berechnen
     breadth_df = compute_breadth(weekly)
+    print("Breadth DataFrame:", breadth_df)
     idx_rows = build_index_rows(idx_data)
     risk_rows = build_risk_rows(idx_data)
 
