@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 from datetime import datetime
 from config import SETTINGS
 from data_sources import get_universe, load_weekly_history, load_index_series
