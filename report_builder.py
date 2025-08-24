@@ -149,3 +149,44 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
         NEG_BG=NEG_BG
     )
     return html
+
+def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]]:
+    rows = []
+    mapping = {
+        "SPY": "S&P 500 (SPY)",
+        "QQQ": "Nasdaq 100 (QQQ)",
+        "IWM": "Russell 2000 (IWM)"
+    }
+
+    for sym, label in mapping.items():
+        df = idx_data.get(sym, pd.DataFrame())
+        if df is None or df.empty or "Close" not in df:
+            continue
+
+        close = df["Close"].dropna()
+        if len(close) < 30:
+            continue
+
+        rsi_now = rsi(close).iloc[-1]
+        rsi_prev = rsi(close).iloc[-2] if len(close) >= 16 else rsi_now
+
+        m, s, h = macd(close)
+        macd_line = m.iloc[-1]
+        signal_line = s.iloc[-1]
+        delta_macd = (m - s).diff().iloc[-1]
+
+        ma10 = close.rolling(10).mean().iloc[-1]
+        above_10w = (close.iloc[-1] - ma10) / ma10 if pd.notna(ma10) and ma10 != 0 else 0.0
+
+        row = {
+            "Close": float(close.iloc[-1]),
+            "Δ WoW": float(close.pct_change().iloc[-1]),
+            "RSI(14)": float(rsi_now) if pd.notna(rsi_now) else float("nan"),
+            "Δ RSI": float(rsi_now - rsi_prev) if pd.notna(rsi_now) and pd.notna(rsi_prev) else float("nan"),
+            "MACD": float(macd_line),
+            "Signal": float(signal_line),
+            "Δ MACD": float(delta_macd),
+            "vs 10W MA": float(above_10w),
+        }
+        rows.append((label, row))
+    return rows
