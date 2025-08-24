@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Dict
+from typing import Dict, List
 
 from indicators import rsi, macd, ema
 
