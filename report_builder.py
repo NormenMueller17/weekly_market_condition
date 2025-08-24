@@ -163,7 +163,8 @@ def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]
         if df is None or df.empty or "Close" not in df:
             continue
 
-        close = df["Close"].dropna()
+        #close = df["Close"].dropna()
+        close = pd.Series(df["Close"]).dropna()
         if len(close) < 30:
             continue
 
