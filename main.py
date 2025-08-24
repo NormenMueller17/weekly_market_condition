@@ -25,7 +25,7 @@ def run():
 
     # 2) Kennzahlen berechnen
     breadth_df = compute_breadth(weekly)
-    print("Breadth DataFrame:", breadth_df)
+    #print("Breadth DataFrame:", breadth_df)
     idx_rows = build_index_rows(idx_data)
     risk_rows = build_risk_rows(idx_data)
 
@@ -36,7 +36,8 @@ def run():
     idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
     risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche", "Δ"]).set_index("Metrik")
 
-    html = build_html_report(breadth_df.iloc[0], idx_df, risk_rows, summary, report_date, weekly)
+    #html = build_html_report(breadth_df.iloc[0], idx_df, risk_rows, summary, report_date, weekly)
+    html = build_html_report(breadth_df, idx_df, risk_rows, summary, report_date, weekly)
 
     # 4) Report senden
     send_email(html)
