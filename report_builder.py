@@ -159,37 +159,45 @@ def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]
     }
 
     for sym, label in mapping.items():
-        df = idx_data.get(sym, pd.DataFrame())
+        df = idx_data.get(sym)
         if df is None or df.empty or "Close" not in df:
             continue
 
-        #close = df["Close"].dropna()
-        close = pd.Series(df["Close"]).dropna()
+        # Robust extrahieren: egal ob Series oder DataFrame-Spalte
+        close = df["Close"]
+        if isinstance(close, pd.DataFrame):
+            close = close.iloc[:, 0]
+        close = close.squeeze().dropna()
+
         if len(close) < 30:
             continue
 
+        # RSI
         rsi_now = rsi(close).iloc[-1]
         rsi_prev = rsi(close).iloc[-2] if len(close) >= 16 else rsi_now
 
+        # MACD
         m, s, h = macd(close)
         macd_line = m.iloc[-1]
         signal_line = s.iloc[-1]
         delta_macd = (m - s).diff().iloc[-1]
 
+        # % über 10W-MA
         ma10 = close.rolling(10).mean().iloc[-1]
         above_10w = (close.iloc[-1] - ma10) / ma10 if pd.notna(ma10) and ma10 != 0 else 0.0
 
         row = {
-            "Close": float(close.iloc[-1]),
-            "Δ WoW": float(close.pct_change().iloc[-1]),
-            "RSI(14)": float(rsi_now) if pd.notna(rsi_now) else float("nan"),
-            "Δ RSI": float(rsi_now - rsi_prev) if pd.notna(rsi_now) and pd.notna(rsi_prev) else float("nan"),
-            "MACD": float(macd_line),
-            "Signal": float(signal_line),
-            "Δ MACD": float(delta_macd),
-            "vs 10W MA": float(above_10w),
+            "close": float(close.iloc[-1]),
+            "ret_wow": float(close.pct_change().iloc[-1]),
+            "rsi": float(rsi_now) if pd.notna(rsi_now) else float("nan"),
+            "delta_rsi": float(rsi_now - rsi_prev) if pd.notna(rsi_now) and pd.notna(rsi_prev) else float("nan"),
+            "macd": float(macd_line),
+            "signal": float(signal_line),
+            "delta_macd": float(delta_macd),
+            "above_10w": float(above_10w),
         }
         rows.append((label, row))
+
     return rows
 
 def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, Dict[str, float]]]:
