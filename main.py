@@ -18,7 +18,7 @@ def run():
     breadth_df = compute_breadth(weekly)
 
     # 3) Risiko/Sentiment berechnen
-    risk = compute_risk_metrics()  # z. B. { "VIX": ..., "CPC": ..., ... }
+    risk_df = compute_risk_metrics()  # z. B. { "VIX": ..., "CPC": ..., ... }
 
     # 4) Index-Indikatoren berechnen
     weekly_data = compute_index_indicators(idx)
@@ -33,7 +33,7 @@ def run():
     html = build_html_report(
         breadth_df,
         idx,
-        risk,
+        risk_df,
         summary,
         report_date,
         weekly_data
