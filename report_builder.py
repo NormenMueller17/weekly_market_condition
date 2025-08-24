@@ -5,91 +5,113 @@ from jinja2 import Template
 
 from indicators import rsi, macd, pct_above_ma
 from typing import Dict, List, Tuple
+from breadth import compute_breadth, compute_breadth_snapshots
 
-HTML_TMPL = Template(
-"""
-<!doctype html>
+HTML_TMPL = """
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>{{ title }}</title>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    h1, h2 { margin-bottom: 0.2rem; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
-    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: right; }
-    th { background: #f2f2f2; }
-    .left { text-align: left; }
-    .green { color: #0a7b2d; }
-    .red { color: #b00020; }
-    .yellow { color: #b38f00; }
-    .badge { padding: 2px 6px; border-radius: 6px; background: #eee; }
-  </style>
+    <meta charset="UTF-8">
+    <style>
+        body    { font-family: Arial, sans-serif; margin: 2em; }
+        table   { border-collapse: collapse; margin-bottom: 2em; }
+        th, td  { border: 1px solid #ccc; padding: 0.4em 0.8em; text-align: right; }
+        th.left, td.left { text-align: left; }
+        .pos    { color: green; }
+        .neg    { color: red; }
+    </style>
 </head>
 <body>
-  <h1>{{ title }}</h1>
-  <p><small>Report-Woche: {{ week_ending }}</small></p>
-  
-  <h2>1) Marktbreite</h2>
-  <table>
-    <tr>
-      <th class="left">% über 50-Wochen-MA</th>
-      <th class="left">% über 200-Wochen-MA</th>
-      <th class="left">% Gewinner (WoW)</th>
-      <th class="left">Neue 52W-Hochs (Anzahl)</th>
-      <th class="left">Neue 52W-Tiefs (Anzahl)</th>
-      <th class="left">Universum (Anzahl)</th>
-    </tr>
-    <tr>
-      <td>{{ '%.2f' % breadth.iloc[0]['%>50w'] if breadth.iloc[0]['%>50w'] is not none else '' }}</td>
-      <td>{{ '%.2f' % breadth.iloc[0]['%>200w'] if breadth.iloc[0]['%>200w'] is not none else '' }}</td>
-      <td>{{ '%.2f' % breadth.iloc[0]['advancers_wow_%'] if breadth.iloc[0]['advancers_wow_%'] is not none else '' }}</td>
-      <td>{{ breadth.iloc[0]['new_highs_52w']|int }}</td>
-      <td>{{ breadth.iloc[0]['new_lows_52w']|int }}</td>
-      <td>{{ breadth.iloc[0]['universe_size']|int }}</td>
-    </tr>
-  </table>
+    <h1>Weekly US Market Report</h1>
+    <p><strong>Report-Woche:</strong> {{ report_date }}</p>
 
-  <h2>2) Trend & Momentum (Weekly)</h2>
-  <table>
-    <tr>
-      <th class="left">Index</th><th>Close</th><th>Δ WoW</th><th>RSI(14)</th><th>Δ RSI</th><th>MACD</th><th>Signal</th><th>Δ MACD</th><th>vs 10W MA</th>
-    </tr>
-    {% for name, row in idx_rows %}
-    <tr>
-      <td class="left">{{ name }}</td>
-      <td>{{ '%.2f' % row['close'] }}</td>
-      <td class="{{ 'green' if row['ret_wow']>0 else 'red' if row['ret_wow']<0 else '' }}">{{ '%.2f%%' % (row['ret_wow']*100) }}</td>
-      <td>{{ '%.1f' % row['rsi'] }}</td>
-      <td class="{{ 'green' if row['delta_rsi']>0 else 'red' if row['delta_rsi']<0 else '' }}">{{ '%.1f' % row['delta_rsi'] }}</td>
-      <td>{{ '%.2f' % row['macd'] }}</td>
-      <td>{{ '%.2f' % row['signal'] }}</td>
-      <td class="{{ 'green' if row['delta_macd']>0 else 'red' if row['delta_macd']<0 else '' }}">{{ '%.2f' % row['delta_macd'] }}</td>
-      <td class="{{ 'green' if row['above_10w']>0 else 'red' }}">{{ '%.2f%%' % (row['above_10w']*100) }}</td>
-    </tr>
-    {% endfor %}
-  </table>
+    <h2>1) Marktbreite</h2>
+    <table>
+        <tr>
+            {% for col in breadth.columns %}
+            <th>{{ col }}</th>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for col in breadth.columns %}
+            <td>{{ '%.2f' % breadth[col] if col != 'universe_size' else '%d' % breadth[col] }}</td>
+            {% endfor %}
+        </tr>
+    </table>
 
-  <h2>3) Risiko & Sentiment</h2>
-  <table>
-    <tr><th class="left">Metrik</th><th>Aktuell</th><th>Vorwoche</th><th>Δ</th></tr>
-    {% for name, now, prev in risk_rows %}
-      {% set delta = (now - prev) if (now is not none and prev is not none) else none %}
-      <tr>
-        <td class="left">{{ name }}</td>
-        <td>{{ '%.2f' % now if now is not none else '' }}</td>
-        <td>{{ '%.2f' % prev if prev is not none else '' }}</td>
-        <td class="{{ 'red' if name in ['VIX','CPC','UUP'] and delta and delta>0 else 'green' if name in ['TNX'] and delta and delta<0 else 'green' if delta and delta<0 else 'red' if delta and delta>0 else '' }}">{{ '%.2f' % delta if delta is not none else '' }}</td>
-      </tr>
-    {% endfor %}
-  </table>
+    <h2>1b) Marktbreite – Vergleich</h2>
+    <table>
+        <tr>
+            <th class="left"></th>
+            {% for col in breadth_snap.columns %}
+              <th class="left">{{ col }}</th>
+            {% endfor %}
+        </tr>
+        {% for row in breadth_snap.index %}
+        <tr>
+            <td class="left">{{ row }}</td>
+            {% for col in breadth_snap.columns %}
+              {% set val = breadth_snap.loc[row, col] %}
+              {% if 'Anzahl' in row %}
+                <td>{{ val|int }}</td>
+              {% else %}
+                <td>{{ '%.2f%%' % val }}</td>
+              {% endif %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
 
-  <h2>4) Fazit</h2>
-  <p>{{ verdict_text }}</p>
+    <h2>2) Trend & Momentum (Weekly)</h2>
+    <table>
+        <tr>
+            <th class="left">Index</th>
+            {% for col in idx.columns %}
+            <th>{{ col }}</th>
+            {% endfor %}
+        </tr>
+        {% for idx_name, row in idx.iterrows() %}
+        <tr>
+            <td class="left">{{ idx_name }}</td>
+            {% for col in idx.columns %}
+                {% set val = row[col] %}
+                {% if col.startswith("Δ") or col.startswith("vs") %}
+                    <td class="{{ 'pos' if val > 0 else 'neg' if val < 0 else '' }}">{{ '%.2f' % val }}%</td>
+                {% elif col == 'RSI(14)' %}
+                    <td>{{ '%.1f' % val }}</td>
+                {% else %}
+                    <td>{{ '%.2f' % val }}</td>
+                {% endif %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>3) Risiko & Sentiment</h2>
+    <table>
+        <tr>
+            <th class="left">Metrik</th>
+            <th>Aktuell</th>
+            <th>Vorwoche</th>
+            <th>Δ</th>
+        </tr>
+        {% for row in risk.iterrows() %}
+        {% set name = row[0] %}
+        {% set vals = row[1] %}
+        <tr>
+            <td class="left">{{ name }}</td>
+            <td>{{ '%.2f' % vals['Aktuell'] }}</td>
+            <td>{{ '%.2f' % vals['Vorwoche'] }}</td>
+            <td class="{{ 'pos' if vals['Δ'] > 0 else 'neg' if vals['Δ'] < 0 else '' }}">{{ '%.2f' % vals['Δ'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>4) Fazit</h2>
+    <p>{{ summary }}</p>
 </body>
 </html>
 """
-)
 
 
 def build_risk_rows(idx_data: Dict[str, pd.DataFrame]):
@@ -166,16 +188,17 @@ def heuristic_verdict(breadth: pd.DataFrame, idx_rows) -> str:
     return "Neutral: Selektiv vorgehen, auf Bestätigungen warten."
 
 
-def build_html_report(breadth: pd.DataFrame, idx_data: Dict[str, pd.DataFrame]) -> str:
-    idx_rows = build_index_rows(idx_data)
-    risk_rows = build_risk_rows(idx_data)
-    verdict_text = heuristic_verdict(breadth, idx_rows)
-    html = HTML_TMPL.render(
-        title="Weekly US Market Report",
-        week_ending=dt.date.today().isoformat(),
+def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
+
+    breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
+
+    tmpl = Template(HTML_TMPL)
+    html = tmpl.render(
         breadth=breadth,
-        idx_rows=idx_rows,
-        risk_rows=risk_rows,
-        verdict_text=verdict_text,
+        breadth_snap=breadth_snap,
+        idx=idx,
+        risk=risk,
+        summary=summary,
+        report_date=report_date
     )
     return html
