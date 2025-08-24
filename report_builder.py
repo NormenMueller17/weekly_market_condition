@@ -56,7 +56,7 @@ HTML_TMPL = """
               {% set val = breadth_snap.loc[row, col] %}
               {% set ref = breadth_snap.loc[row, "Woche −1"] %}
               {% set is_high_good = "Tiefs" in row %}
-              {% if col == "Aktuelle Woche" and col in breadth_snap.columns and ref is not none and val is not none %}
+              {% if col == "Aktuelle Woche" and ref is not none and val is not none %}
                 {% if (val > ref and not is_high_good) or (val < ref and is_high_good) %}
                   <td style="background-color: {{ COLOR_POSITIVE }}">{{ '%.2f%%' % val if '%' in row else val|int }}</td>
                 {% elif (val < ref and not is_high_good) or (val > ref and is_high_good) %}
@@ -105,14 +105,12 @@ HTML_TMPL = """
             <th>Vorwoche</th>
             <th>Δ</th>
         </tr>
-        {% for row in risk.iterrows() %}
-        {% set name = row[0] %}
-        {% set vals = row[1] %}
+        {% for name, aktuell, vorwoche, delta in risk %}
         <tr>
             <td class="left">{{ name }}</td>
-            <td>{{ '%.2f' % vals['Aktuell'] }}</td>
-            <td>{{ '%.2f' % vals['Vorwoche'] }}</td>
-            <td class="{{ 'pos' if vals['Δ'] > 0 else 'neg' if vals['Δ'] < 0 else '' }}">{{ '%.2f' % vals['Δ'] }}</td>
+            <td>{{ '%.2f' % aktuell }}</td>
+            <td>{{ '%.2f' % vorwoche }}</td>
+            <td class="{{ 'pos' if delta > 0 else 'neg' if delta < 0 else '' }}">{{ '%.2f' % delta }}</td>
         </tr>
         {% endfor %}
     </table>
