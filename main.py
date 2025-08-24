@@ -40,5 +40,6 @@ def run():
     # 4) Report senden
     send_email(html)
 
+
 if __name__ == "__main__":
     run()
