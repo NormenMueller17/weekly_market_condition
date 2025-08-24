@@ -190,3 +190,32 @@ def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]
         }
         rows.append((label, row))
     return rows
+
+def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, Dict[str, float]]]:
+    """
+    Erzeugt Risiko-Metriken (z. B. VIX, CPC) aus Indexdaten.
+    Gibt eine Liste von Tupeln mit Metriknamen und dict mit 'Aktuell', 'Vorwoche', 'Δ' zurück.
+    """
+    RISK_KEYS = ["VIX", "CPC", "TNX", "UUP"]
+    rows = []
+
+    for key in RISK_KEYS:
+        df = idx_data.get(key, pd.DataFrame())
+        if df is None or df.empty or "Close" not in df:
+            continue
+
+        s = df["Close"].dropna()
+        if len(s) < 2:
+            continue
+
+        now = s.iloc[-1]
+        prev = s.iloc[-2]
+        delta = now - prev
+
+        rows.append((key, {
+            "Aktuell": float(now),
+            "Vorwoche": float(prev),
+            "Δ": float(delta)
+        }))
+
+    return rows
