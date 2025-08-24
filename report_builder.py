@@ -87,7 +87,7 @@ HTML_TMPL = """
         {% endfor %}
     </table>
 
-    <h2>3) Risiko & Sentiment</h2>
+    <h2>3) Risiko &amp; Sentiment</h2>
     <table>
         <tr>
             <th class="left">Metrik</th>
@@ -95,14 +95,14 @@ HTML_TMPL = """
             <th>Vorwoche</th>
             <th>Δ</th>
         </tr>
-        {% for row in risk.iterrows() %}
-        {% set name = row[0] %}
-        {% set vals = row[1] %}
+        {% for metric, row in risk.iterrows() %}
         <tr>
-            <td class="left">{{ name }}</td>
-            <td>{{ '%.2f' % vals['Aktuell'] }}</td>
-            <td>{{ '%.2f' % vals['Vorwoche'] }}</td>
-            <td class="{{ 'pos' if vals['Δ'] > 0 else 'neg' if vals['Δ'] < 0 else '' }}">{{ '%.2f' % vals['Δ'] }}</td>
+            <td class="left">{{ metric }}</td>
+            <td>{{ '%.2f' % row['Aktuell'] if row['Aktuell'] is not none else '-' }}</td>
+            <td>{{ '%.2f' % row['Vorwoche'] if row['Vorwoche'] is not none else '-' }}</td>
+            <td class="{% if row['Δ'] > 0 %}pos{% elif row['Δ'] < 0 %}neg{% endif %}">
+                {{ '%.2f' % row['Δ'] if row['Δ'] is not none else '-' }}
+            </td>
         </tr>
         {% endfor %}
     </table>
@@ -187,10 +187,18 @@ def heuristic_verdict(breadth: pd.DataFrame, idx_rows) -> str:
         return "Distribution/Schutzmodus: Risiko reduzieren, Stops nachziehen, Neuzukäufe selektiv."
     return "Neutral: Selektiv vorgehen, auf Bestätigungen warten."
 
+def build_html_report(
+    breadth: pd.DataFrame,
+    breadth_snap: pd.DataFrame,
+    idx: pd.DataFrame,
+    risk: pd.DataFrame,
+    summary: str,
+    report_date: str
+) -> str:
+    """Erzeugt HTML-Report als String auf Basis vorbereiteter DataFrames."""
 
-def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
-
-    breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
+    if breadth.empty or idx.empty or risk.empty:
+        raise ValueError("Eingabedaten für Report sind unvollständig oder leer.")
 
     tmpl = Template(HTML_TMPL)
     html = tmpl.render(
