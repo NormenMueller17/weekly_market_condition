@@ -139,6 +139,22 @@ def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float,
         out.append((key, float(now), float(prev), float(delta)))
     return out
 
+
+def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
+    breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
+    tmpl = Template(HTML_TMPL)
+    html = tmpl.render(
+        breadth=breadth,
+        breadth_snap=breadth_snap,
+        idx=idx,
+        risk=risk,
+        summary=summary,
+        report_date=report_date,
+        COLOR_POSITIVE=COLOR_POSITIVE,
+        COLOR_NEGATIVE=COLOR_NEGATIVE,
+    )
+    return html
+
 def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]]:
     rows = []
     mapping = {"SPY": "S&P 500 (SPY)", "QQQ": "Nasdaq 100 (QQQ)", "IWM": "Russell 2000 (IWM)"}
@@ -184,18 +200,3 @@ def heuristic_verdict(breadth: pd.DataFrame, idx_rows: List[Tuple[str, dict]]) -
     if weak_breadth and (spy_rsi < 50 or qqq_rsi < 50):
         return "Distribution/Schutzmodus: Risiko reduzieren, Stops nachziehen, Neuzukäufe selektiv."
     return "Neutral: Selektiv vorgehen, auf Bestätigungen warten."
-
-def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
-    breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
-    tmpl = Template(HTML_TMPL)
-    html = tmpl.render(
-        breadth=breadth,
-        breadth_snap=breadth_snap,
-        idx=idx,
-        risk=risk,
-        summary=summary,
-        report_date=report_date,
-        COLOR_POSITIVE=COLOR_POSITIVE,
-        COLOR_NEGATIVE=COLOR_NEGATIVE
-    )
-    return html
