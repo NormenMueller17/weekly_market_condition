@@ -27,7 +27,7 @@ def run():
     idx_rows = build_index_rows(idx_data)
     idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
     risk_rows = build_risk_rows(idx_data)
-    risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche"]).set_index("Metrik")
+    risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche", "Δ"]).set_index("Metrik")
     risk_df["Δ"] = risk_df["Aktuell"] - risk_df["Vorwoche"]
 
     summary = heuristic_verdict(breadth_df, idx_rows)
