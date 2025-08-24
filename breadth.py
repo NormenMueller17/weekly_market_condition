@@ -95,7 +95,6 @@ def compute_breadth_snapshots(weekly_data: Dict[str, pd.DataFrame],
         rows.append(frame)
 
     if not rows:
-        # Leere, aber gültige Tabelle
         cols = ["Aktuelle Woche", "Woche −1", "Woche −4"]
         idx  = ["% über 10‑Wochen‑EMA","% über 21‑Wochen‑EMA","% über 50‑Wochen‑MA","Neue 52W‑Hochs (Anzahl)","Neue 52W‑Tiefs (Anzahl)"]
         return pd.DataFrame(0, index=idx, columns=cols, dtype=float)
@@ -104,15 +103,14 @@ def compute_breadth_snapshots(weekly_data: Dict[str, pd.DataFrame],
     panel.index.name = "date"
     panel = panel.reset_index().sort_values(["ticker", "date"])
 
-    # Helper: für jeden Ticker die n-te letzte Zeile (n=offset) robust holen
     def take_nth(group: pd.DataFrame, n: int) -> pd.DataFrame:
         if len(group) <= n:
-            return pd.DataFrame(columns=group.columns)  # leer -> wird später ignoriert
+            return pd.DataFrame(columns=group.columns)
         return group.iloc[[-(n+1)]]
 
-    snapshots = {}  # offset -> dataframe der „Stichtags“-Zeilen über alle Ticker
+    snapshots = {}
     for off in offsets:
-        snaps = (panel.groupby("ticker", as_index=False, group_keys=False)
+        snaps = (panel.groupby("ticker", group_keys=False)
                       .apply(lambda g: take_nth(g, off)))
         snapshots[off] = snaps
 
@@ -120,7 +118,6 @@ def compute_breadth_snapshots(weekly_data: Dict[str, pd.DataFrame],
         s = series.dropna()
         return float((s.astype(bool)).mean() * 100) if len(s) else 0.0
 
-    # Aggregation je Snapshot
     result = {}
     col_names = {0: "Aktuelle Woche", 1: "Woche −1", 4: "Woche −4"}
     for off, snap in snapshots.items():
@@ -144,7 +141,6 @@ def compute_breadth_snapshots(weekly_data: Dict[str, pd.DataFrame],
         }
         result[col_names.get(off, f"−{off}") ] = m
 
-    # Als DataFrame mit gewünschter Zeilenreihenfolge zurückgeben
     order_rows = ["% über 10‑Wochen‑EMA","% über 21‑Wochen‑EMA","% über 50‑Wochen‑MA","Neue 52W‑Hochs (Anzahl)","Neue 52W‑Tiefs (Anzahl)"]
     out = pd.DataFrame(result).reindex(order_rows)
     return out
