@@ -8,38 +8,39 @@ from emailer import send_email
 from indicators import compute_index_indicators  # falls du es nutzt
 from risk import compute_risk_metrics  # falls ausgelagert
 
+from report_builder import (
+    build_html_report,
+    build_index_rows,
+    build_risk_rows,
+    heuristic_verdict,
+    compute_breadth_snapshots
+)
+
 def run():
-    # 1) Daten laden
     universe = get_universe()
     weekly = load_weekly_history(universe, weeks=SETTINGS.lookback_weeks)
-    idx = load_index_series()
+    idx_data = load_index_series()
 
-    # 2) Breadth berechnen
     breadth_df = compute_breadth(weekly)
+    breadth_snap = compute_breadth_snapshots(weekly, offsets=[0, 1, 4])
+    idx_rows = build_index_rows(idx_data)
+    idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
+    risk_rows = build_risk_rows(idx_data)
+    risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche"]).set_index("Metrik")
+    risk_df["Δ"] = risk_df["Aktuell"] - risk_df["Vorwoche"]
 
-    # 3) Risiko/Sentiment berechnen
-    risk_df = compute_risk_metrics()  # z. B. { "VIX": ..., "CPC": ..., ... }
-
-    # 4) Index-Indikatoren berechnen
-    weekly_data = compute_index_indicators(idx)
-
-    # 5) Fazit / Zusammenfassung erzeugen
-    summary = "Akkumulationsmodus: Übergewichtung zulässig, selektiv zukaufen."
-
-    # 6) Aktuelles Datum für Report
+    summary = heuristic_verdict(breadth_df, idx_rows)
     report_date = datetime.today().strftime("%Y-%m-%d")
 
-    # 7) HTML-Report erzeugen
     html = build_html_report(
-        breadth_df,
-        idx,
-        risk_df,
-        summary,
-        report_date,
-        weekly_data
+        breadth=breadth_df,
+        breadth_snap=breadth_snap,
+        idx=idx_df,
+        risk=risk_df,
+        summary=summary,
+        report_date=report_date
     )
 
-    # 8) Mail senden
     send_email(html)
 
 if __name__ == "__main__":
