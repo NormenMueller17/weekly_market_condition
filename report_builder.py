@@ -4,7 +4,9 @@ import pandas as pd
 from jinja2 import Template
 
 from indicators import rsi, macd, pct_above_ma
-from breadth import compute_breadth_snapshots
+#from breadth import compute_breadth_snapshots
+from breadth import compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
+
 
 COLOR_POSITIVE = "#99ff33"  # RGB (153,255,51)
 COLOR_NEGATIVE = "#ff7c80"  # RGB (255,124,128)
