@@ -3,7 +3,8 @@ import pandas as pd
 from datetime import datetime
 from config import SETTINGS
 from data_sources import get_universe, load_weekly_history, load_index_series
-from breadth import compute_breadth
+#from breadth import compute_breadth
+from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
 from report_builder import build_html_report
 from emailer import send_email
 from indicators import compute_index_indicators  # falls du es nutzt
@@ -35,6 +36,9 @@ def run():
 
     idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
     risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche", "Δ"]).set_index("Metrik")
+
+    # Snapshots inkl. Advancers
+    breadth_snap = compute_breadth_snapshots(weekly)
 
     #html = build_html_report(breadth_df.iloc[0], idx_df, risk_rows, summary, report_date, weekly)
     html = build_html_report(breadth_df, idx_df, risk_rows, summary, report_date, weekly)
