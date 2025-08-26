@@ -15,15 +15,46 @@ _SP500_WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
 
-def get_sp500_tickers() -> List[str]:
-    _ensure_cache_dir()
-    cache_file = Path(SETTINGS.cache_dir) / "sp500_tickers.json"
-    if cache_file.exists() and (time.time() - cache_file.stat().st_mtime) < 60*60*24*14:
-        return json.loads(cache_file.read_text())
-    tables = pd.read_html(_SP500_WIKI_URL)  # lxml/html5lib nötig
-    tickers = tables[0]["Symbol"].tolist()
-    tickers = [t.replace(".", "-") for t in tickers]
-    cache_file.write_text(json.dumps(tickers))
+def get_sp500_tickers() -> list[str]:
+    """
+    Holt die S&P 500 Ticker von Wikipedia, setzt einen Browser-User-Agent
+    (wichtig für GitHub Actions) und gibt Yahoo-kompatible Symbole zurück
+    (z.B. 'BRK.B' -> 'BRK-B').
+    """
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    headers = {
+        # einfacher, unauffälliger UA – verhindert 403 auf dem Runner
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/123.0 Safari/537.36"
+    }
+
+    resp = requests.get(url, headers=headers, timeout=20)
+    resp.raise_for_status()  # wirft bei 4xx/5xx eine Exception
+
+    # HTML lokalen Parsern übergeben (nicht mehr direkt mit read_html(url) -> 403)
+    tables = pd.read_html(resp.text)
+    if not tables:
+        raise RuntimeError("Keine Tabellen auf der S&P500-Wikipedia-Seite gefunden.")
+
+    df = tables[0]  # die erste Tabelle enthält die Konstituenten
+    if "Symbol" not in df.columns:
+        # gelegentlich ändert Wikipedia Spaltennamen geringfügig
+        # Fallback: erste Spalte annehmen
+        symbol_col = df.columns[0]
+    else:
+        symbol_col = "Symbol"
+
+    # Symbole bereinigen und Yahoo-kompatibel machen
+    tickers = (
+        df[symbol_col]
+        .astype(str)
+        .str.strip()
+        .str.replace(r"\.", "-", regex=True)  # BRK.B -> BRK-B
+        .tolist()
+    )
+
+    # optional: Dubletten und leere Werte raus
+    tickers = [t for t in dict.fromkeys(tickers) if t]
     return tickers
 
 def get_universe() -> List[str]:
