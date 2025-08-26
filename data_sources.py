@@ -2,6 +2,7 @@
 import os
 import time
 import json
+import requests
 import pandas as pd
 import yfinance as yf
 from pathlib import Path
