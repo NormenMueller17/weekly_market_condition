@@ -29,21 +29,7 @@ HTML_TMPL = """
     <h1>Weekly US Market Report</h1>
     <p><strong>Report-Woche:</strong> {{ report_date }}</p>
 
-    <h2>1) Marktbreite</h2>
-    <table>
-        <tr>
-            {% for col in breadth.columns %}
-            <th>{{ col }}</th>
-            {% endfor %}
-        </tr>
-        <tr>
-            {% for col in breadth.columns %}
-            <td>{{ '%.2f' % breadth[col] if col != 'universe_size' else '%d' % breadth[col] }}</td>
-            {% endfor %}
-        </tr>
-    </table>
-
-    <h2>1b) Marktbreite – Vergleich</h2>
+    <h2>1) Marktbreite – Vergleich</h2>
     <table>
         <tr>
             <th class="left"></th>
