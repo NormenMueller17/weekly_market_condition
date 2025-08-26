@@ -8,3 +8,4 @@ pandas-ta
 requests
 beautifulsoup4
 lxml
+requests>=2.31.0
