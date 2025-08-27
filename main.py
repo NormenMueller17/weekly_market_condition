@@ -34,7 +34,8 @@ def run():
     summary = heuristic_verdict(breadth_df, idx_rows)
     report_date = pd.Timestamp.now().strftime("%Y-%m-%d")
 
-    idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
+    #idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
+    idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index").T
     risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche", "Δ"]).set_index("Metrik")
 
     # Snapshots inkl. Advancers
