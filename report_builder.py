@@ -59,23 +59,23 @@ HTML_TMPL = """
         </tr>
         {% endfor %}
     </table>
-
+    
     <h2>2) Trend & Momentum (Weekly)</h2>
     <table>
         <tr>
-            <th class="left">Index</th>
+            <th class="left">Metrik</th>
             {% for col in idx.columns %}
             <th>{{ col }}</th>
             {% endfor %}
         </tr>
-        {% for idx_name, row in idx.iterrows() %}
+        {% for row in idx.index %}
         <tr>
-            <td class="left">{{ idx_name }}</td>
+            <td class="left">{{ row }}</td>
             {% for col in idx.columns %}
-                {% set val = row[col] %}
-                {% if col.startswith("Δ") or col.startswith("vs") %}
-                    <td class="{{ 'pos' if val > 0 else 'neg' if val < 0 else '' }}">{{ '%.2f' % val }}%</td>
-                {% elif col == 'RSI(14)' %}
+                {% set val = idx.loc[row, col] %}
+                {% if row.startswith(\"Δ\") or row.startswith(\"vs\") or row.endswith(\"%\"): %}
+                    <td class=\"{{ 'pos' if val > 0 else 'neg' if val < 0 else '' }}\">{{ '%.2f' % val }}%</td>
+                {% elif row == 'RSI(14)' %}
                     <td>{{ '%.1f' % val }}</td>
                 {% else %}
                     <td>{{ '%.2f' % val }}</td>
