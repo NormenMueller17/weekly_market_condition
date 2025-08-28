@@ -188,3 +188,33 @@ def heuristic_verdict(breadth: pd.DataFrame, idx_rows: List[Tuple[str, dict]]) -
     if weak_breadth and (spy_rsi < 50 or qqq_rsi < 50):
         return "Distribution/Schutzmodus: Risiko reduzieren, Stops nachziehen, Neuzukäufe selektiv."
     return "Neutral: Selektiv vorgehen, auf Bestätigungen warten."
+
+def build_divergence_text(idx: pd.DataFrame) -> str:
+    messages = []
+    for symbol in idx.columns:
+        try:
+            rsi = idx.loc["RSI(14)", symbol]
+            delta_rsi = idx.loc["Δ RSI", symbol]
+            delta_macd = idx.loc["Δ MACD", symbol]
+            ret = idx.loc["Δ WoW", symbol]
+
+            parts = []
+
+            # Preis/RSI Divergenz
+            if ret > 0 and delta_rsi < 0:
+                parts.append("Kursanstieg bei fallendem RSI → möglicher Momentumverlust")
+            elif ret < 0 and delta_rsi > 0:
+                parts.append("Kursrückgang bei steigendem RSI → Druck lässt nach")
+
+            # RSI vs MACD Divergenz
+            if delta_rsi > 0 and delta_macd < 0:
+                parts.append("RSI steigt, aber MACD fällt → kurzfristige Stärke, mittelfristig schwach")
+            elif delta_rsi < 0 and delta_macd > 0:
+                parts.append("RSI fällt, aber MACD steigt → mögliches Rebound-Signal")
+
+            if parts:
+                messages.append(f"<b>{symbol}</b>: " + " / ".join(parts))
+        except Exception:
+            continue
+
+    return "<br>".join(messages) if messages else "Keine auffälligen Divergenzen erkannt."
