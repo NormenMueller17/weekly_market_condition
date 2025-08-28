@@ -129,8 +129,9 @@ def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float,
         out.append((key, float(now), float(prev), float(delta)))
     return out
 
-divergences = build_divergence_text(idx)
+
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
+    divergences = build_divergence_text(idx)    
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
     tmpl = Template(HTML_TMPL)
     html = tmpl.render(
