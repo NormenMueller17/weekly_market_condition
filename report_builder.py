@@ -84,6 +84,8 @@ HTML_TMPL = """
         </tr>
         {% endfor %}
     </table>
+    <h3>Divergenzanalyse</h3>
+    <p>{{ divergences | safe }}</p>
 
     <h2>3) Risiko & Sentiment</h2>
     <table>
@@ -127,7 +129,7 @@ def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float,
         out.append((key, float(now), float(prev), float(delta)))
     return out
 
-
+divergences = build_divergence_text(idx)
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
     tmpl = Template(HTML_TMPL)
@@ -140,6 +142,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
         report_date=report_date,
         COLOR_POSITIVE=COLOR_POSITIVE,
         COLOR_NEGATIVE=COLOR_NEGATIVE,
+        divergences=divergences,
     )
     return html
 
