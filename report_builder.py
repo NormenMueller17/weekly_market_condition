@@ -86,7 +86,7 @@ HTML_TMPL = """
     </table>
     <h3>Divergenzanalyse</h3>
     <p>{{ divergences | safe }}</p>
-
+    
     <h2>3) Risiko & Sentiment</h2>
     <table>
         <tr>
@@ -95,12 +95,16 @@ HTML_TMPL = """
             <th>Vorwoche</th>
             <th>Δ</th>
         </tr>
-        {% for name, aktuell, vorwoche, delta in risk %}
+        {% for row in risk.iterrows() %}
+        {% set name = row[0] %}
+        {% set vals = row[1] %}
         <tr>
             <td class="left">{{ name }}</td>
-            <td>{{ '%.2f' % aktuell }}</td>
-            <td>{{ '%.2f' % vorwoche }}</td>
-            <td class="{{ 'pos' if delta > 0 else 'neg' if delta < 0 else '' }}">{{ '%.2f' % delta }}</td>
+            <td>{{ '%.2f' % vals['Aktuell'] }}</td>
+            <td>{{ '%.2f' % vals['Vorwoche'] }}</td>
+            <td style="background-color: {{ COLOR_POSITIVE if vals['Δ'] > 0 else COLOR_NEGATIVE if vals['Δ'] < 0 else 'transparent' }}">
+                {{ '%.2f' % vals['Δ'] }}
+            </td>
         </tr>
         {% endfor %}
     </table>
