@@ -65,7 +65,7 @@ HTML_TMPL = """
         <tr>
             <th class="left">Metrik</th>
             {% for col in idx.columns %}
-            <th>{{ col }}</th>
+                <th class="left">{{ col }}</th>
             {% endfor %}
         </tr>
         {% for row in idx.index %}
@@ -73,8 +73,8 @@ HTML_TMPL = """
             <td class="left">{{ row }}</td>
             {% for col in idx.columns %}
                 {% set val = idx.loc[row, col] %}
-                {% if row.startswith(\"Δ\") or row.startswith(\"vs\") or row.endswith(\"%\"): %}
-                    <td class=\"{{ 'pos' if val > 0 else 'neg' if val < 0 else '' }}\">{{ '%.2f' % val }}%</td>
+                {% if row in ["Δ WoW", "Δ RSI", "Δ MACD", "vs 10W MA"] %}
+                    <td style="background-color: {{ COLOR_POSITIVE if val > 0 else COLOR_NEGATIVE if val < 0 else 'transparent' }}">{{ '%.2f%%' % val }}</td>
                 {% elif row == 'RSI(14)' %}
                     <td>{{ '%.1f' % val }}</td>
                 {% else %}
