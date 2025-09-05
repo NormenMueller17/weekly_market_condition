@@ -49,7 +49,7 @@ def run():
             return "neg" if invert else "pos"
         if value < 0:
             return "pos" if invert else "neg"
-    return "neutral"
+        return "neutral"
     
     
     risk_df["Δ_farbe"] = [
