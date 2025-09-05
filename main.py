@@ -37,6 +37,9 @@ def run():
     #idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
     idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index").T
     risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche", "Δ"]).set_index("Metrik")
+    risk_df.rename(index={"TNX": "10Y Interest Rate (TNX)"}, inplace=True)
+    risk_df.rename(index={"VIX": "Volatility Index (VIX)"}, inplace=True)
+    risk_df.rename(index={"UUP": "US Dollar Index (UUP)"}, inplace=True)
     
     # Snapshots inkl. Advancers
     breadth_snap = compute_breadth_snapshots(weekly)
