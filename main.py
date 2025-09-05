@@ -43,7 +43,8 @@ def run():
 
     #html = build_html_report(breadth_df.iloc[0], idx_df, risk_rows, summary, report_date, weekly)
     #html = build_html_report(breadth_df, idx_df, risk_rows, summary, report_date, weekly)
-    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, breadth_snap)
+    #html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, breadth_snap)
+    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly)
 
     # 4) Report senden
     send_email(html)
