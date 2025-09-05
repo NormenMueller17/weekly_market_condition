@@ -37,9 +37,16 @@ def run():
     #idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index")
     idx_df = pd.DataFrame.from_dict(dict(idx_rows), orient="index").T
     risk_df = pd.DataFrame(risk_rows, columns=["Metrik", "Aktuell", "Vorwoche", "Δ"]).set_index("Metrik")
-
+    
     # Snapshots inkl. Advancers
     breadth_snap = compute_breadth_snapshots(weekly)
+
+    # VIX Sonderbehandlung für Farbgebung im Report: sinkender VIX = positiv
+    if "VIX" in risk_df.index:
+        delta = risk_df.loc["VIX", "Δ"]
+    if pd.notna(delta):
+        risk_df.loc["VIX", "Δ_farbe"] = "pos" if delta < 0 else "neg" if delta > 0 else
+    
 
     #html = build_html_report(breadth_df.iloc[0], idx_df, risk_rows, summary, report_date, weekly)
     #html = build_html_report(breadth_df, idx_df, risk_rows, summary, report_date, weekly)
