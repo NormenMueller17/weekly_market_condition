@@ -41,11 +41,21 @@ def run():
     # Snapshots inkl. Advancers
     breadth_snap = compute_breadth_snapshots(weekly)
 
-    # VIX Sonderbehandlung für Farbgebung im Report: sinkender VIX = positiv
-    if "VIX" in risk_df.index:
-        delta = risk_df.loc["VIX", "Δ"]
-    if pd.notna(delta):
-        risk_df.loc["VIX", "Δ_farbe"] = "pos" if delta < 0 else "neg" if delta > 0 else "neutral"
+    # Hintergrundfarben für alle Δ-Werte in risk_df
+    def classify_delta(value: float, invert: bool = False) -> str:
+        if pd.isna(value):
+            return "neutral"
+        if value > 0:
+            return "neg" if invert else "pos"
+        if value < 0:
+            return "pos" if invert else "neg"
+    return "neutral"
+    
+    
+    risk_df["Δ_farbe"] = [
+        classify_delta(delta, invert=(metrik == "VIX"))
+        for metrik, delta in zip(risk_df.index, risk_df["Δ"])
+                        ]
     
 
     #html = build_html_report(breadth_df.iloc[0], idx_df, risk_rows, summary, report_date, weekly)
