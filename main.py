@@ -45,7 +45,7 @@ def run():
     if "VIX" in risk_df.index:
         delta = risk_df.loc["VIX", "Δ"]
     if pd.notna(delta):
-        risk_df.loc["VIX", "Δ_farbe"] = "pos" if delta < 0 else "neg" if delta > 0 else
+        risk_df.loc["VIX", "Δ_farbe"] = "pos" if delta < 0 else "neg" if delta > 0 else "neutral"
     
 
     #html = build_html_report(breadth_df.iloc[0], idx_df, risk_rows, summary, report_date, weekly)
