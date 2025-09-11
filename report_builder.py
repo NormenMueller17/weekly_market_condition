@@ -170,6 +170,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         risk=risk,
         summary=summary,
         report_date=report_date,
+        leaders=leaders,
         COLOR_POSITIVE=COLOR_POSITIVE,
         COLOR_NEGATIVE=COLOR_NEGATIVE,
         divergences=divergences,
