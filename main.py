@@ -61,7 +61,7 @@ def run():
     # 4) Marktführer nach Minervini screenen
     leaders = screen_universe_minervini(min_score=5)
     
-    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly)
+    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
     
     # 5) Report senden
     send_email(html)
