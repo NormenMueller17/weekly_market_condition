@@ -4,7 +4,6 @@ import pandas as pd
 from jinja2 import Template
 
 from indicators import rsi, macd, pct_above_ma
-#from breadth import compute_breadth_snapshots
 from breadth import compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
 
 
@@ -112,6 +111,31 @@ HTML_TMPL = """
 
     <h2>4) Fazit</h2>
     <p>{{ summary }}</p>
+
+    <h2>5) Marktführer nach Minervini</h2>
+    {% if leaders.empty %}
+    <p>Keine Aktien erfüllen mindestens 5 von 7 Kriterien.</p>
+    {% else %}
+    <table>
+      <tr>
+        <th class="left">Ticker</th>
+        <th>Score</th>
+        {% for col in leaders.columns if col != "score" %}
+          <th>{{ col }}</th>
+        {% endfor %}
+      </tr>
+      {% for t, row in leaders.iterrows() %}
+      <tr>
+        <td class="left">{{ t }}</td>
+        <td>{{ row["score"] }}</td>
+        {% for col in leaders.columns if col != "score" %}
+          <td>{{ "✔" if row[col] else "✘" }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    
 </body>
 </html>
 """
@@ -135,7 +159,7 @@ def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float,
     return out
 
 
-def build_html_report(breadth, idx, risk, summary, report_date, weekly_data):
+def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders):
     divergences = build_divergence_text(idx)    
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
     tmpl = Template(HTML_TMPL)
