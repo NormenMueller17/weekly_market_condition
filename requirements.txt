@@ -4,7 +4,6 @@ numpy
 python-dotenv
 Jinja2
 matplotlib
-pandas-ta
 requests
 beautifulsoup4
 lxml
