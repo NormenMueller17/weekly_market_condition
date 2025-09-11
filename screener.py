@@ -46,19 +46,41 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
 
 
 def screen_universe_minervini(min_score: int = 5) -> pd.DataFrame:
-    """ Läuft über get_universe() und liefert alle Aktien, die >= min_score erfüllen. """
     tickers = get_universe()
     results = {}
     for t in tickers:
         try:
             df = yf.download(t, period="2y", interval="1d", progress=False)
-            if df.empty: 
+            if df.empty:
+                print(f"{t}: keine Daten")
                 continue
+
+            # Manche Ticker haben nur 'Adj Close'
+            if not set(["Close", "High", "Low", "Volume"]).issubset(df.columns):
+                if "Adj Close" in df.columns:
+                    df["Close"] = df["Adj Close"]
+                    df["High"] = df["Close"]
+                    df["Low"] = df["Close"]
+                    df["Volume"] = 0
+                else:
+                    print(f"{t}: unvollständige Spalten {df.columns}")
+                    continue
+
             res = compute_minervini_template(df)
             results[t] = res
         except Exception as e:
             print(f"Fehler bei {t}: {e}")
             continue
+
+    if not results:
+        return pd.DataFrame()  # leer zurückgeben, statt Fehler
+
+    df_results = pd.DataFrame(results).T
+    if "score" not in df_results.columns:
+        return pd.DataFrame()
+
+    leaders = df_results[df_results["score"] >= min_score].sort_values("score", ascending=False)
+    return leaders
 
     df_results = pd.DataFrame(results).T
     leaders = df_results[df_results["score"] >= min_score].sort_values("score", ascending=False)
