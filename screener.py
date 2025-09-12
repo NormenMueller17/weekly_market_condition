@@ -47,6 +47,12 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     else:
         vol_breakout = False
 
+    # NEU: Wochenvergleich Close
+    if len(close) >= 2:
+        weekly_momentum = close.iloc[-1] > close.iloc[-2]
+    else:
+        weekly_momentum = False
+
     criteria = {
         "SMA10W steigend": sma10_rising,
         "SMA30W steigend": sma30_rising,
@@ -55,6 +61,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "52W Range OK": tt_range_ok,
         "RS-Trend ↑": rs_trend,
         "Vol-Breakout": vol_breakout,
+        "Close > Vorwoche": weekly_momentum,
     }
     score = sum(int(v) for v in criteria.values())
 
