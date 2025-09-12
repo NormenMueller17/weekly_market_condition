@@ -115,6 +115,8 @@ def screen_universe_minervini(min_score: int = 5) -> pd.DataFrame:
     df_results = pd.DataFrame(results).T
     if "score" not in df_results.columns:
         return pd.DataFrame()
-
-    leaders = df_results[df_results["score"] >= min_score].sort_values("score", ascending=False)
+        
+    mask = (df_results["Vol-Breakout"] == True) & (df_results["score"] - df_results["Vol-Breakout"].astype(int) >= min_score)
+    leaders = df_results[mask].sort_values("score", ascending=False)
+    #leaders = df_results[df_results["score"] >= min_score].sort_values("score", ascending=False)
     return leaders
