@@ -114,7 +114,7 @@ HTML_TMPL = """
 
     <h2>5) Marktführer nach Minervini</h2>
     {% if leaders.empty %}
-    <p>Keine Aktien erfüllen mindestens 5 von 7 Kriterien.</p>
+    <p>Keine Aktien erfüllen mindestens 5 von 8 Kriterien.</p>
     {% else %}
     <table>
       <tr>
