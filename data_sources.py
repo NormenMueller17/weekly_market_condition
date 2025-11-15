@@ -108,11 +108,7 @@ def load_weekly_history(tickers: List[str], weeks: int = 60) -> Dict[str, pd.Dat
                     # fehlgeschlagene Einzeldownloads ignorieren
                     continue
         time.sleep(0.4)  # nett zu YF
-
-    #Log-Ausgabe zur Datenqualität
-    ok = sum(1 for t, df in weeks.items() if isinstance(df, pd.DataFrame) and not df.empty)
-    print(f"[DEBUG] Weekly non-empty datasets: {ok}/{len(weekly)}")
-    
+   
     return data
 
 def load_index_series():
