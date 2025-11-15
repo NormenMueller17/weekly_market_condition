@@ -62,6 +62,9 @@ def run():
     leaders = screen_universe_minervini(min_score=5)
     
     html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
+
+    #Screener-Ausgabe prüfen
+    print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
     
     # 5) Report senden
     send_email(html)
