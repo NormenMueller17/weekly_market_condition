@@ -122,7 +122,7 @@ def load_index_series():
         "VIX": "^VIX",   # Volatilität
         "TNX": "^TNX",   # 10y Yield * 10
         "UUP": "UUP",    # USD-Proxy ETF
-        "CPC": "^CPC",   # Put/Call Ratio (oft nur daily verfügbar)
+        #"CPC": "^CPC",   # Put/Call Ratio (oft nur daily verfügbar)
     }
     out = {}
     start = _start_date_for_weeks(max(SETTINGS.lookback_weeks, 260))
