@@ -70,9 +70,35 @@ def _start_date_for_weeks(weeks: int) -> datetime:
     return datetime.utcnow() - timedelta(weeks=weeks + 10)
 
 def load_weekly_history(tickers: List[str], weeks: int = 60) -> Dict[str, pd.DataFrame]:
-    """Lädt Weekly OHLCV je Ticker mittels start=... und interval='1wk'."""
+    """
+    Lädt Weekly OHLCV je Ticker mittels start=... und interval='1wk' und
+    splittet robust pro Ticker – egal, ob der MultiIndex (Feld, Ticker)
+    oder (Ticker, Feld) ist.
+    """
+    def _slice_per_ticker(frame: pd.DataFrame, t: str) -> pd.DataFrame | None:
+        """Gibt das (Open, High, Low, Close, Adj Close, Volume)-Teil für Ticker t zurück."""
+        if not isinstance(frame.columns, pd.MultiIndex):
+            # Einzel-Ticker ohne MultiIndex
+            sub = frame.copy()
+        else:
+            lvl0 = list(frame.columns.get_level_values(0))
+            lvl1 = list(frame.columns.get_level_values(1))
+            if t in lvl0:
+                sub = frame.xs(t, axis=1, level=0)
+            elif t in lvl1:
+                sub = frame.xs(t, axis=1, level=1)
+            else:
+                return None
+
+        # Spaltennamen normieren und nur erwartete Spalten behalten
+        sub.columns = [str(c).strip().title() for c in sub.columns]
+        keep = [c for c in ["Open", "High", "Low", "Close", "Adj Close", "Volume"] if c in sub.columns]
+        sub = sub[keep].dropna(how="all")
+        return sub if not sub.empty else None
+
     data: Dict[str, pd.DataFrame] = {}
     start = _start_date_for_weeks(weeks)
+
     for i in range(0, len(tickers), 50):
         batch = tickers[i:i+50]
         try:
@@ -91,24 +117,21 @@ def load_weekly_history(tickers: List[str], weeks: int = 60) -> Dict[str, pd.Dat
 
         if len(batch) == 1:
             t = batch[0]
-            sub = df.copy()
-            if isinstance(sub.columns, pd.MultiIndex):
-                # yfinance variiert – ggf. Ebene wählen
-                try:
-                    sub = df.xs(t, axis=1, level=0)
-                except Exception:
-                    pass
-            data[t] = sub.dropna(how="all")
+            sub = _slice_per_ticker(df, t)
+            if sub is not None:
+                data[t] = sub
         else:
             for t in batch:
                 try:
-                    sub = df[t] if (t,) in df.columns else df.xs(t, axis=1, level=0)
-                    data[t] = sub.dropna(how="all")
+                    sub = _slice_per_ticker(df, t)
+                    if sub is not None:
+                        data[t] = sub
                 except Exception:
-                    # fehlgeschlagene Einzeldownloads ignorieren
-                    continue
+                    # Einzelticker, die nicht extrahiert werden können, überspringen
+                    pass
+
         time.sleep(0.4)  # nett zu YF
-   
+
     return data
 
 def load_index_series():
