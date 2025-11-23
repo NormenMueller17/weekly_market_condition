@@ -25,8 +25,7 @@ def run():
     idx_data = load_index_series()
 
     print(f"[DEBUG] Universe size: {len(universe)}")
-    non_empty = sum(1 for t, df in weekly.items() if isinstance(df, pd.DataFrame) and not df.empty)
-    print(f"[DEBUG] Weekly non-empty datasets: {non_empty}")
+    print("[DEBUG] First 10 tickers:", universe[:10])
 
     # 2) Kennzahlen berechnen
     breadth_df = compute_breadth(weekly)
