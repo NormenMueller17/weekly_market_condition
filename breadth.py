@@ -11,7 +11,6 @@ def compute_breadth(weekly_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
         if df is None or df.empty or "Close" not in df:
             continue
         s = pd.to_numeric(df["Close"], errors="coerce")
-        # Jede Zeile bekommt den Ticker als Spalte, Index = Datum
         frame = pd.DataFrame({
             "close": s,
             "ma50": s.rolling(50).mean(),
@@ -23,21 +22,14 @@ def compute_breadth(weekly_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
         rows.append(frame)
 
     if not rows:
-        # leeres, aber gültiges Resultat
         return pd.DataFrame({
             "%>50w": [0.0], "%>200w": [0.0], "advancers_wow_%": [0.0],
             "new_highs_52w": [0], "new_lows_52w": [0], "universe_size": [0]
         })
 
-    # Zusammenführen
     panel = pd.concat(rows, axis=0)
-
-    # Index = Datum → vor reset_index benennen, damit die neue Spalte garantiert 'date' heißt
     panel.index.name = "date"
-    panel = panel.reset_index()  # hat nun Spalten: date, close, ma50, ma200, hh_52w, ll_52w, ticker
-
-    # Sort & Aggregation je Ticker
-    panel = panel.sort_values(["ticker", "date"])
+    panel = panel.reset_index().sort_values(["ticker", "date"])
     grp = panel.groupby("ticker", as_index=True)
 
     def _prev(x: pd.Series):
@@ -52,12 +44,12 @@ def compute_breadth(weekly_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
         last_ll52=("ll_52w", "last"),
     )
 
-    # Kennzahlen (NaN werden in Vergleichen ignoriert)
-    pct_gt_50  = (agg["last_close"] > agg["last_ma50"]).mean() * 100
-    pct_gt_200 = (agg["last_close"] > agg["last_ma200"]).mean() * 100
-    advancers  = (agg["last_close"] > agg["prev_close"]).mean() * 100
-    new_highs  = (agg["last_close"] >= agg["last_hh52"]).sum()
-    new_lows   = (agg["last_close"] <= agg["last_ll52"]).sum()
+    # NA-sichere Vergleiche
+    pct_gt_50  = agg["last_close"].gt(agg["last_ma50"], fill_value=False).mean() * 100
+    pct_gt_200 = agg["last_close"].gt(agg["last_ma200"], fill_value=False).mean() * 100
+    advancers  = agg["last_close"].gt(agg["prev_close"], fill_value=False).mean() * 100
+    new_highs  = agg["last_close"].ge(agg["last_hh52"], fill_value=False).sum()
+    new_lows   = agg["last_close"].le(agg["last_ll52"], fill_value=False).sum()
     uni_size   = len(agg)
 
     return pd.DataFrame({
