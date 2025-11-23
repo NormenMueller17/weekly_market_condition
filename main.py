@@ -18,6 +18,8 @@ from report_builder import (
     compute_breadth_snapshots
 )
 
+_CVS_FILE = "SP_micro_3.csv"
+
 def run():
     # 1) Daten laden
     universe = get_universe()
@@ -66,7 +68,7 @@ def run():
     leaders = screen_universe_minervini(min_score=5)
     from data_sources import get_company_info_map_from_csv
 
-    info_map = get_company_info_map_from_csv("data/universe.csv")
+    info_map = get_company_info_map_from_csv(_CVS_FILE)
     
     if not leaders.empty:
         # Spalten 'Company' und 'Industry' ergänzen
