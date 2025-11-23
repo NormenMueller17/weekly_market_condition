@@ -114,22 +114,29 @@ HTML_TMPL = """
 
     <h2>5) Marktführer nach Minervini</h2>
     {% if leaders.empty %}
-    <p>Keine Aktien erfüllen mindestens 5 von 8 Kriterien.</p>
+    <p>Keine Aktien erfüllen mindestens 6 von 8 Kriterien.</p>
     {% else %}
     <table>
       <tr>
         <th class="left">Ticker</th>
+        <th class="left">Unternehmen</th>
+        <th class="left">Branche</th>
         <th>Score</th>
-        {% for col in leaders.columns if col != "score" %}
+        {% for col in leaders.columns if col not in ["score", "Company", "Industry"] %}
           <th>{{ col }}</th>
         {% endfor %}
       </tr>
       {% for t, row in leaders.iterrows() %}
       <tr>
         <td class="left">{{ t }}</td>
+        <td class="left">{{ row["Company"] }}</td>
+        <td class="left">{{ row["Industry"] }}</td>
         <td>{{ row["score"] }}</td>
-        {% for col in leaders.columns if col != "score" %}
-          <td>{{ "✔" if row[col] else "✘" }}</td>
+        {% for col in leaders.columns if col not in ["score", "Company", "Industry"] %}
+          {% set val = row[col] %}
+          <td class="{{ 'pos' if val is sameas(true) else 'neg' if val is sameas(false) else '' }}">
+            {{ "✔" if val is sameas(true) else "✘" if val is sameas(false) else (val|string) }}
+          </td>
         {% endfor %}
       </tr>
       {% endfor %}
