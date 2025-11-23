@@ -58,12 +58,12 @@ def get_sp500_tickers() -> list[str]:
     tickers = [t for t in dict.fromkeys(tickers) if t]
     return tickers
 
-def get_universe() -> List[str]:
-    if SETTINGS.universe == "sp500":
-        return get_sp500_tickers()
-    if SETTINGS.universe == "custom" and SETTINGS.custom_tickers:
-        return [t.strip() for t in SETTINGS.custom_tickers.split(",") if t.strip()]
-    return get_sp500_tickers()
+#def get_universe() -> List[str]:
+#    if SETTINGS.universe == "sp500":
+#        return get_sp500_tickers()
+#    if SETTINGS.universe == "custom" and SETTINGS.custom_tickers:
+#        return [t.strip() for t in SETTINGS.custom_tickers.split(",") if t.strip()]
+#    return get_sp500_tickers()
 
 _UA = {"User-Agent": "Mozilla/5.0 (compatible; WeeklySST/1.0; +https://example.com)"}
 
