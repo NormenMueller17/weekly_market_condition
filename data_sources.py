@@ -113,70 +113,100 @@ def _start_date_for_weeks(weeks: int) -> datetime:
     # +10 Wochen Puffer für MAs etc.
     return datetime.utcnow() - timedelta(weeks=weeks + 10)
 
-def load_weekly_history(tickers: List[str], weeks: int = 60) -> Dict[str, pd.DataFrame]:
+
+def _slice_ticker_from_downloaded(df: pd.DataFrame, ticker: str) -> pd.DataFrame | None:
     """
-    Lädt Weekly OHLCV je Ticker mittels start=... und interval='1wk' und
-    splittet robust pro Ticker – egal, ob der MultiIndex (Feld, Ticker)
-    oder (Ticker, Feld) ist.
+    Schneidet aus einem yfinance-Download-DataFrame die Spalten für 'ticker' heraus – 
+    robust gegen verschiedene MultiIndex-Layouts (Ticker in Level 0 oder 1)
+    und gegen Single-Ticker-Frames ohne MultiIndex.
     """
-    def _slice_per_ticker(frame: pd.DataFrame, t: str) -> pd.DataFrame | None:
-        """Gibt das (Open, High, Low, Close, Adj Close, Volume)-Teil für Ticker t zurück."""
-        if not isinstance(frame.columns, pd.MultiIndex):
-            # Einzel-Ticker ohne MultiIndex
-            sub = frame.copy()
+    if df is None or df.empty:
+        return None
+
+    # Fall A: Single-Ticker-Frame (keine MultiIndex-Spalten)
+    if not isinstance(df.columns, pd.MultiIndex):
+        cols = [c for c in ["Open", "High", "Low", "Close", "Adj Close", "Volume"] if c in df.columns]
+        return df[cols] if cols else None
+
+    # Fall B: MultiIndex – versuche zuerst Ticker in Level 0, sonst in Level 1
+    try:
+        if ticker in df.columns.get_level_values(0):
+            sub = df.xs(ticker, axis=1, level=0, drop_level=False)
+        elif ticker in df.columns.get_level_values(1):
+            sub = df.xs(ticker, axis=1, level=1, drop_level=False)
         else:
-            lvl0 = list(frame.columns.get_level_values(0))
-            lvl1 = list(frame.columns.get_level_values(1))
-            if t in lvl0:
-                sub = frame.xs(t, axis=1, level=0)
-            elif t in lvl1:
-                sub = frame.xs(t, axis=1, level=1)
-            else:
-                return None
+            return None
+    except Exception:
+        return None
 
-        # Spaltennamen normieren und nur erwartete Spalten behalten
-        sub.columns = [str(c).strip().title() for c in sub.columns]
-        keep = [c for c in ["Open", "High", "Low", "Close", "Adj Close", "Volume"] if c in sub.columns]
-        sub = sub[keep].dropna(how="all")
-        return sub if not sub.empty else None
+    # Nach xs kann noch eine Ticker-Ebene übrig sein – versuche die OHLCV-Ebene zu isolieren
+    if isinstance(sub.columns, pd.MultiIndex) and \
+       any(x in sub.columns.get_level_values(-1) for x in ["Open", "High", "Low", "Close", "Adj Close", "Volume"]):
+        sub = sub.droplevel(0, axis=1) if sub.columns.nlevels > 1 else sub
 
-    data: Dict[str, pd.DataFrame] = {}
-    start = _start_date_for_weeks(weeks)
+    cols = [c for c in ["Open", "High", "Low", "Close", "Adj Close", "Volume"] if c in sub.columns]
+    return sub[cols] if cols else None
 
-    for i in range(0, len(tickers), 50):
-        batch = tickers[i:i+50]
-        try:
-            df = yf.download(
-                batch,
-                start=start.strftime("%Y-%m-%d"),
-                interval="1wk",
-                auto_adjust=False,
-                group_by="ticker",
-                threads=True,
-                progress=False,
-            )
-        except Exception:
-            time.sleep(1.0)
+
+def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.DataFrame]:
+    """
+    Lädt Weekly-Serien (Close) für alle Ticker im Universe.
+    Robust gegen yfinance-MultiIndex-Varianten, lädt in Chunks, säubert NaNs.
+    Gibt dict[ticker] -> DataFrame({'Close': Series}) zurück.
+    """
+    out: Dict[str, pd.DataFrame] = {}
+
+    tickers = list(dict.fromkeys([t for t in universe if isinstance(t, str) and t.strip()]))
+    if not tickers:
+        print("[WARN] load_weekly_history: empty tickers list")
+        return out
+
+    CHUNK = 40
+    for i in range(0, len(tickers), CHUNK):
+        chunk = tickers[i:i+CHUNK]
+        tries = 2
+        raw = None
+
+        for attempt in range(tries):
+            try:
+                raw = yf.download(
+                    tickers=chunk,
+                    period="3y",           # 2–3 Jahre, damit 104 Wochen sicher drin sind
+                    interval="1wk",
+                    group_by="ticker",
+                    auto_adjust=False,
+                    progress=False,
+                    threads=True,
+                )
+                break
+            except Exception as e:
+                print(f"[WARN] yfinance chunk {i//CHUNK+1} attempt {attempt+1} failed: {e}")
+                time.sleep(0.8)
+
+        if raw is None or raw.empty:
             continue
 
-        if len(batch) == 1:
-            t = batch[0]
-            sub = _slice_per_ticker(df, t)
-            if sub is not None:
-                data[t] = sub
-        else:
-            for t in batch:
-                try:
-                    sub = _slice_per_ticker(df, t)
-                    if sub is not None:
-                        data[t] = sub
-                except Exception:
-                    # Einzelticker, die nicht extrahiert werden können, überspringen
-                    pass
+        for t in chunk:
+            sub = _slice_ticker_from_downloaded(raw, t)
+            if sub is None or "Close" not in sub.columns:
+                continue
 
-        time.sleep(0.4)  # nett zu YF
+            s = pd.to_numeric(sub["Close"], errors="coerce").dropna()
+            if s.empty:
+                continue
 
-    return data
+            # Tail auf benötigte Anzahl Wochen
+            s = s.tail(weeks)
+            if s.empty:
+                continue
+
+            out[t] = pd.DataFrame({"Close": s})
+
+        # leichte Pause, um Rate Limits zu meiden
+        time.sleep(0.2)
+
+    print(f"[DEBUG] load_weekly_history: built {len(out)} series (of {len(tickers)})")
+    return out
 
 def load_index_series():
     """
