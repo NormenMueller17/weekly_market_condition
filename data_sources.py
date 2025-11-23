@@ -13,8 +13,8 @@ from datetime import datetime, timedelta
 from config import SETTINGS
 
 _SP500_WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-#_CVS_FILE = "SP_micro.csv"
-_CVS_FILE = "202511_most_capitalized_500M.csv"
+_CVS_FILE = "SP_micro_3.csv"
+#_CVS_FILE = "202511_most_capitalized_500M.csv"
 
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
