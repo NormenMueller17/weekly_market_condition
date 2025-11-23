@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from datetime import datetime
 from config import SETTINGS
-from data_sources import get_universe, load_weekly_history, load_index_series
+from data_sources import get_company_info_map_from_csv, load_weekly_history, load_index_series
 from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
 from report_builder import build_html_report
 from emailer import send_email
@@ -66,8 +66,6 @@ def run():
     
     # 4) Marktführer nach Minervini screenen
     leaders = screen_universe_minervini(min_score=6)
-    from data_sources import get_company_info_map_from_csv
-
     info_map = get_company_info_map_from_csv(_CVS_FILE)
     
     if not leaders.empty:
