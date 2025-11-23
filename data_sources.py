@@ -58,56 +58,36 @@ def get_sp500_tickers() -> list[str]:
     tickers = [t for t in dict.fromkeys(tickers) if t]
     return tickers
 
-#def get_universe() -> List[str]:
-#    if SETTINGS.universe == "sp500":
-#        return get_sp500_tickers()
-#    if SETTINGS.universe == "custom" and SETTINGS.custom_tickers:
-#        return [t.strip() for t in SETTINGS.custom_tickers.split(",") if t.strip()]
-#    return get_sp500_tickers()
-
-_UA = {"User-Agent": "Mozilla/5.0 (compatible; WeeklySST/1.0; +https://example.com)"}
-
-def get_universe(max_n: int = 1500) -> list[str]:
+def get_universe_from_csv(path: str = "data/universe.csv") -> list[str]:
     """
-    Liefert eine Tickerliste (Yahoo!-kompatibel).
-    Standard: S&P500 (503 Symbole). Fallback, falls Wikipedia nicht parst.
+    Liest eine CSV-Datei mit einer Spalte 'Symbol' ein und gibt eine
+    bereinigte Liste von Ticker-Symbolen zurück (für yfinance kompatibel).
     """
-    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    try:
-        resp = requests.get(url, headers=_UA, timeout=15)
-        resp.raise_for_status()
-        tables = pd.read_html(resp.text)
-        # Tabelle mit "Symbol" finden (Wikipedia ändert manchmal die Position)
-        df = next(tbl for tbl in tables if any(col.lower() == "symbol" for col in tbl.columns))
-        syms = df["Symbol"].astype(str)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"CSV-Datei für Universe nicht gefunden: {path}")
 
-        # Säubern: Trim, Upper, BRK.B -> BRK-B, Fußnoten entfernen, nur A-Z 0-9 -
-        syms = (syms.str.strip()
-                    .str.upper()
-                    .str.replace(r"\s+", "", regex=True)
-                    .str.replace(".", "-", regex=False)
-                    .str.replace(r"[^A-Z0-9\-]", "", regex=True))
+    df = pd.read_csv(path)
+    if "Symbol" not in df.columns:
+        raise ValueError(f"Spalte 'Symbol' nicht gefunden in {path}")
 
-        # offensichtliche Nullen/Leere raus
-        syms = syms[syms.notna() & (syms != "")]
+    tickers = (
+        df["Symbol"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .str.replace(r"\s+", "", regex=True)
+        .str.replace(".", "-", regex=False)  # BRK.B → BRK-B
+    )
 
-        # Einige duplizierte oder Spezialfälle (z.B. "META" war mal "FB") sind ok.
-        out = syms.drop_duplicates().tolist()
+    tickers = [t for t in dict.fromkeys(tickers) if t and t != "NAN"]
 
-        # Kappung (falls du später auf R1000/1500 erweiterst)
-        out = out[:max_n]
+    print(f"[UNIVERSE] {len(tickers)} Symbole aus {path} geladen.")
+    return tickers
 
-        # Sanity-Check: Mindestens ~100 Symbole
-        if len(out) < 100:
-            raise ValueError(f"Universe too small ({len(out)})")
 
-        return out
-        
-    except Exception as e:
-        # Fallback – damit der Rest nicht „leer“ läuft
-        fallback = ["AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "BRK-B", "TSLA", "AVGO", "JPM"]
-        print(f"[WARN] get_universe fallback ({type(e).__name__}): {e}")
-        return fallback
+def get_universe() -> list[str]:
+    """Wrapper, damit dein restlicher Code unverändert bleibt."""
+    return get_universe_from_csv("data/202511_most_capitalized_500M.csv")
 
 def _start_date_for_weeks(weeks: int) -> datetime:
     # +10 Wochen Puffer für MAs etc.
