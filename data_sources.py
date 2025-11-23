@@ -61,18 +61,22 @@ def get_sp500_tickers() -> list[str]:
     tickers = [t for t in dict.fromkeys(tickers) if t]
     return tickers
 
-def get_universe_from_csv(path: str = _CVS_FILE) -> list[str]:
+def get_company_info_map_from_csv(path: str = _CVS_FILE) -> dict[str, dict[str, str]]:
     """
-    Liest eine CSV-Datei mit einer Spalte 'Symbol' ein und gibt eine
-    bereinigte Liste von Ticker-Symbolen zurück (für yfinance-kompatibel).
-    Entfernt ungültige Zeichen und Duplikate.
+    Liefert ein Mapping {Ticker -> {"Company": Name, "Industry": Branche}} aus der CSV.
+    CSV muss Spalten 'Symbol', 'Company' und 'Industry' enthalten.
     """
     if not os.path.exists(path):
-        raise FileNotFoundError(f"CSV-Datei für Universe nicht gefunden: {path}")
+        return {}
 
     df = pd.read_csv(path)
+
     if "Symbol" not in df.columns:
-        raise ValueError(f"Spalte 'Symbol' nicht gefunden in {path}")
+        raise ValueError("Spalte 'Symbol' fehlt in der CSV-Datei.")
+
+    # Spaltenname-Fallbacks
+    name_col = "Company" if "Company" in df.columns else None
+    ind_col = "Industry" if "Industry" in df.columns else None
 
     tickers = (
         df["Symbol"]
@@ -80,22 +84,18 @@ def get_universe_from_csv(path: str = _CVS_FILE) -> list[str]:
         .str.strip()
         .str.upper()
         .str.replace(r"\s+", "", regex=True)
-        .str.replace(r"\.", "-", regex=True)        # BRK.B → BRK-B
+        .str.replace(r"\.", "-", regex=True)  # BRK.B → BRK-B
     )
 
-    # ungültige Sonderzeichen filtern (/ ^ Leerzeichen etc.)
-    tickers = tickers[~tickers.str.contains(r"[\/\^\s]", regex=True)]
-
-    # Duplikate entfernen, leere und NaN rausfiltern
-    tickers = [t for t in dict.fromkeys(tickers.tolist()) if t and t != "NAN"]
-
-    print(f"[UNIVERSE] {len(tickers)} gültige Symbole aus {path} geladen.")
-    return tickers
-
-
-def get_universe() -> list[str]:
-    """Wrapper, damit dein restlicher Code unverändert bleibt."""
-    return get_universe_from_csv(_CVS_FILE)
+    info_map = {}
+    for i, t in enumerate(tickers):
+        if not t or t == "NAN":
+            continue
+        info_map[t] = {
+            "Company": str(df.loc[i, name_col]) if name_col else "n/a",
+            "Industry": str(df.loc[i, ind_col]) if ind_col else "n/a",
+        }
+    return info_map
 
 def _start_date_for_weeks(weeks: int) -> datetime:
     # +10 Wochen Puffer für MAs etc.
