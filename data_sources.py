@@ -97,6 +97,42 @@ def get_company_info_map_from_csv(path: str = _CVS_FILE) -> dict[str, dict[str, 
         }
     return info_map
 
+def get_universe_from_csv(path: str = _CVS_FILE) -> list[str]:
+    """
+    Liest eine CSV-Datei mit einer Spalte 'Symbol' ein und gibt eine
+    bereinigte Liste von Ticker-Symbolen zurück (für yfinance-kompatibel).
+    Entfernt ungültige Zeichen und Duplikate.
+    """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"CSV-Datei für Universe nicht gefunden: {path}")
+
+    df = pd.read_csv(path)
+    if "Symbol" not in df.columns:
+        raise ValueError(f"Spalte 'Symbol' nicht gefunden in {path}")
+
+    tickers = (
+        df["Symbol"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .str.replace(r"\s+", "", regex=True)
+        .str.replace(r"\.", "-", regex=True)        # BRK.B → BRK-B
+    )
+
+    # ungültige Sonderzeichen filtern (/ ^ Leerzeichen etc.)
+    tickers = tickers[~tickers.str.contains(r"[\/\^\s]", regex=True)]
+
+    # Duplikate entfernen, leere und NaN rausfiltern
+    tickers = [t for t in dict.fromkeys(tickers.tolist()) if t and t != "NAN"]
+
+    print(f"[UNIVERSE] {len(tickers)} gültige Symbole aus {path} geladen.")
+    return tickers
+
+def get_universe() -> list[str]:
+    """Wrapper, damit dein restlicher Code unverändert bleibt."""
+    return get_universe_from_csv(_CVS_FILE)
+    
+
 def _start_date_for_weeks(weeks: int) -> datetime:
     # +10 Wochen Puffer für MAs etc.
     return datetime.utcnow() - timedelta(weeks=weeks + 10)
