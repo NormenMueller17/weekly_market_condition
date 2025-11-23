@@ -64,6 +64,17 @@ def run():
     
     # 4) Marktführer nach Minervini screenen
     leaders = screen_universe_minervini(min_score=5)
+    from data_sources import get_company_info_map_from_csv
+
+    info_map = get_company_info_map_from_csv("data/universe.csv")
+    
+    if not leaders.empty:
+        # Spalten 'Company' und 'Industry' ergänzen
+        company_series = leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a"))
+        industry_series = leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a"))
+    
+        leaders.insert(0, "Industry", industry_series)
+        leaders.insert(0, "Company", company_series)
     
     html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
 
