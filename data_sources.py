@@ -13,6 +13,8 @@ from datetime import datetime, timedelta
 from config import SETTINGS
 
 _SP500_WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+_CVS_FILE = "SP_micro.csv"
+#_CVS_FILE = "202511_most_capitalized_500M.csv"
 
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
@@ -59,8 +61,7 @@ def get_sp500_tickers() -> list[str]:
     tickers = [t for t in dict.fromkeys(tickers) if t]
     return tickers
 
-def get_universe_from_csv(path: str = "202511_most_capitalized_500M.csv") -> list[str]:
-#def get_universe_from_csv(path: str = "data/202511_most_capitalized_500M.csv") -> list[str]:
+def get_universe_from_csv(path: str = _CVS_FILE) -> list[str]:
     """
     Liest eine CSV-Datei mit einer Spalte 'Symbol' ein und gibt eine
     bereinigte Liste von Ticker-Symbolen zurück (für yfinance-kompatibel).
@@ -94,7 +95,7 @@ def get_universe_from_csv(path: str = "202511_most_capitalized_500M.csv") -> lis
 
 def get_universe() -> list[str]:
     """Wrapper, damit dein restlicher Code unverändert bleibt."""
-    return get_universe_from_csv("202511_most_capitalized_500M.csv")
+    return get_universe_from_csv(_CVS_FILE)
 
 def _start_date_for_weeks(weeks: int) -> datetime:
     # +10 Wochen Puffer für MAs etc.
