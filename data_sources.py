@@ -58,7 +58,7 @@ def get_sp500_tickers() -> list[str]:
     tickers = [t for t in dict.fromkeys(tickers) if t]
     return tickers
 
-def get_universe_from_csv(path: str = "data/universe.csv") -> list[str]:
+def get_universe_from_csv(path: str = "202511_most_capitalized_500M.csv") -> list[str]:
     """
     Liest eine CSV-Datei mit einer Spalte 'Symbol' ein und gibt eine
     bereinigte Liste von Ticker-Symbolen zurück (für yfinance kompatibel).
@@ -87,7 +87,7 @@ def get_universe_from_csv(path: str = "data/universe.csv") -> list[str]:
 
 def get_universe() -> list[str]:
     """Wrapper, damit dein restlicher Code unverändert bleibt."""
-    return get_universe_from_csv("data/202511_most_capitalized_500M.csv")
+    return get_universe_from_csv("202511_most_capitalized_500M.csv")
 
 def _start_date_for_weeks(weeks: int) -> datetime:
     # +10 Wochen Puffer für MAs etc.
