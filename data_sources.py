@@ -5,6 +5,7 @@ import json
 import requests
 import pandas as pd
 import yfinance as yf
+import re
 from pathlib import Path
 from typing import List, Dict
 from datetime import datetime, timedelta
@@ -59,9 +60,11 @@ def get_sp500_tickers() -> list[str]:
     return tickers
 
 def get_universe_from_csv(path: str = "202511_most_capitalized_500M.csv") -> list[str]:
+#def get_universe_from_csv(path: str = "data/202511_most_capitalized_500M.csv") -> list[str]:
     """
     Liest eine CSV-Datei mit einer Spalte 'Symbol' ein und gibt eine
-    bereinigte Liste von Ticker-Symbolen zurück (für yfinance kompatibel).
+    bereinigte Liste von Ticker-Symbolen zurück (für yfinance-kompatibel).
+    Entfernt ungültige Zeichen und Duplikate.
     """
     if not os.path.exists(path):
         raise FileNotFoundError(f"CSV-Datei für Universe nicht gefunden: {path}")
@@ -76,12 +79,16 @@ def get_universe_from_csv(path: str = "202511_most_capitalized_500M.csv") -> lis
         .str.strip()
         .str.upper()
         .str.replace(r"\s+", "", regex=True)
-        .str.replace(".", "-", regex=False)  # BRK.B → BRK-B
+        .str.replace(r"\.", "-", regex=True)        # BRK.B → BRK-B
     )
 
-    tickers = [t for t in dict.fromkeys(tickers) if t and t != "NAN"]
+    # ungültige Sonderzeichen filtern (/ ^ Leerzeichen etc.)
+    tickers = tickers[~tickers.str.contains(r"[\/\^\s]", regex=True)]
 
-    print(f"[UNIVERSE] {len(tickers)} Symbole aus {path} geladen.")
+    # Duplikate entfernen, leere und NaN rausfiltern
+    tickers = [t for t in dict.fromkeys(tickers.tolist()) if t and t != "NAN"]
+
+    print(f"[UNIVERSE] {len(tickers)} gültige Symbole aus {path} geladen.")
     return tickers
 
 
