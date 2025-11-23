@@ -24,6 +24,10 @@ def run():
     weekly = load_weekly_history(universe, weeks=SETTINGS.lookback_weeks)
     idx_data = load_index_series()
 
+    print(f"[DEBUG] Universe size: {len(universe)}")
+    non_empty = sum(1 for t, df in weekly.items() if isinstance(df, pd.DataFrame) and not df.empty)
+    print(f"[DEBUG] Weekly non-empty datasets: {non_empty}")
+
     # 2) Kennzahlen berechnen
     breadth_df = compute_breadth(weekly)
     idx_rows = build_index_rows(idx_data)
