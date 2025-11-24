@@ -4,10 +4,7 @@ from datetime import datetime
 from config import SETTINGS
 from data_sources import get_universe, get_company_info_map_from_csv, load_weekly_history, load_index_series
 from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
-from report_builder import build_html_report
 from emailer import send_email
-#from indicators import compute_index_indicators  # falls du es nutzt
-#from risk import compute_risk_metrics  # falls ausgelagert
 from screener import screen_universe_minervini
 
 from report_builder import (
