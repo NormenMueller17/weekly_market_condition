@@ -2,7 +2,6 @@ import pandas as pd
 import yfinance as yf
 from data_sources import get_universe
 
-
 def compute_minervini_template(df: pd.DataFrame) -> dict:
     """Berechnet die 7 Minervini-Kriterien für ein Kurs-DataFrame mit OHLCV-Daten."""
 
@@ -68,30 +67,34 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     return {"score": score, **criteria}
 
 
-def screen_universe_minervini(min_score: int = 5) -> pd.DataFrame:
-    """Screening des Universums nach Minervini. Liefert alle Aktien mit >= min_score."""
+def screen_universe_minervini(universe=None, min_score: int = 5) -> pd.DataFrame:
+    """
+    Screeningt ein Universum nach Minervini.
+    - universe: optionale Iterable von Ticker-Symbolen. Wenn None, wird get_universe() benutzt.
+    - min_score: Mindestanzahl erfüllter Kriterien (zusätzlich zum Pflicht-Kriterium 'Vol-Breakout').
+    """
+    # 1) Universum festlegen
+    tickers = list(universe) if universe is not None else list(get_universe())
 
-    tickers = get_universe()
     results = {}
-
     for t in tickers:
         try:
             df = yf.download(
-                            t,
-                            period="2y",
-                            interval="1d",
-                            auto_adjust=True,   # Close/High/Low werden split-/dividend-adjusted geliefert
-                            actions=False,      # keine Div/Splits-Spalten
-                            repair=True,        # füllt bekannte Lücken/Fehler
-                            progress=False,
-                            threads=False,
-                        )
+                t,
+                period="2y",
+                interval="1d",
+                auto_adjust=True,
+                actions=False,
+                repair=True,
+                progress=False,
+                threads=False,
+            )
 
             if df.empty:
                 print(f"{t}: keine Daten")
                 continue
 
-            # MultiIndex abfangen (falls mehrere Ticker zurückkommen)
+            # MultiIndex (selten, aber möglich)
             if isinstance(df.columns, pd.MultiIndex):
                 try:
                     df = df.xs(t, axis=1, level=1)
@@ -99,16 +102,17 @@ def screen_universe_minervini(min_score: int = 5) -> pd.DataFrame:
                     print(f"{t}: MultiIndex ohne {t} – übersprungen")
                     continue
 
-            # Fehlende Spalten auffüllen
-            required = ["Close", "High", "Low", "Volume"]
-            if not set(required).issubset(df.columns):
-                if "Adj Close" in df.columns:
+            # Fehlende Spalten robuster auffüllen
+            required = {"Close", "High", "Low", "Volume"}
+            have = set(df.columns)
+            if not required.issubset(have):
+                if "Adj Close" in df.columns and "Close" not in have:
                     df["Close"] = df["Adj Close"]
-                if "High" not in df.columns:
+                if "High" not in have:
                     df["High"] = df["Close"]
-                if "Low" not in df.columns:
+                if "Low" not in have:
                     df["Low"] = df["Close"]
-                if "Volume" not in df.columns:
+                if "Volume" not in have:
                     df["Volume"] = 0
 
             res = compute_minervini_template(df)
@@ -124,8 +128,11 @@ def screen_universe_minervini(min_score: int = 5) -> pd.DataFrame:
     df_results = pd.DataFrame(results).T
     if "score" not in df_results.columns:
         return pd.DataFrame()
-        
-    mask = (df_results["Vol-Breakout"] == True) & (df_results["score"] - df_results["Vol-Breakout"].astype(int) >= min_score)
-    leaders = df_results[mask].sort_values("score", ascending=False)
-    #leaders = df_results[df_results["score"] >= min_score].sort_values("score", ascending=False)
+
+    # Bedingung: Vol-Breakout MUSS wahr sein UND zusätzlich mind. 'min_score' weitere Kriterien
+    leaders = df_results[
+        (df_results["Vol-Breakout"] == True) &
+        ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
+    ].sort_values("score", ascending=False)
+
     return leaders
