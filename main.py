@@ -12,7 +12,6 @@ from report_builder import (
     build_index_rows,
     build_risk_rows,
     heuristic_verdict,
-    compute_breadth_snapshots
 )
 
 _CVS_FILE = "SP_micro_3.csv"
