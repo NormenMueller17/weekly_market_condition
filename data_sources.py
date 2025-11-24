@@ -18,6 +18,42 @@ _CSV_FILE = "SP_micro_3.csv"
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
 
+def get_company_info_map_from_csv(path: str = _CSV_FILE) -> dict[str, dict[str, str]]:
+    """
+    Liefert ein Mapping {Ticker -> {"Company": Name, "Industry": Branche}} aus der CSV.
+    CSV muss Spalten 'Symbol', 'Company' und 'Industry' enthalten.
+    """
+    if not os.path.exists(path):
+        return {}
+
+    df = pd.read_csv(path)
+
+    if "Symbol" not in df.columns:
+        raise ValueError("Spalte 'Symbol' fehlt in der CSV-Datei.")
+
+    # Spaltenname-Fallbacks
+    name_col = "Company" if "Company" in df.columns else None
+    ind_col = "Industry" if "Industry" in df.columns else None
+
+    tickers = (
+        df["Symbol"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .str.replace(r"\s+", "", regex=True)
+        .str.replace(r"\.", "-", regex=True)  # BRK.B → BRK-B
+    )
+
+    info_map = {}
+    for i, t in enumerate(tickers):
+        if not t or t == "NAN":
+            continue
+        info_map[t] = {
+            "Company": str(df.loc[i, name_col]) if name_col else "n/a",
+            "Industry": str(df.loc[i, ind_col]) if ind_col else "n/a",
+        }
+    return info_map
+
 def _read_universe_csv_smart(path: str) -> pd.DataFrame:
     """
     Liest 'Symbol' (+ optional 'Company', 'Industry') robust ein.
