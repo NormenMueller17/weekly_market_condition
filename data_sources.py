@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 
 from config import SETTINGS
 
+TICKER_META: dict[str, dict] = {}
 _CSV_FILE = "SP_micro_3.csv"
 #_CSV_FILE = "202511_most_capitalized_500M.csv"
 
