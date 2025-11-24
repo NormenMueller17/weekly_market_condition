@@ -76,7 +76,16 @@ def screen_universe_minervini(min_score: int = 5) -> pd.DataFrame:
 
     for t in tickers:
         try:
-            df = yf.download(t, period="2y", interval="1d", progress=False)
+            df = yf.download(
+                            t,
+                            period="2y",
+                            interval="1d",
+                            auto_adjust=True,   # Close/High/Low werden split-/dividend-adjusted geliefert
+                            actions=False,      # keine Div/Splits-Spalten
+                            repair=True,        # füllt bekannte Lücken/Fehler
+                            progress=False,
+                            threads=False,
+                        )
 
             if df.empty:
                 print(f"{t}: keine Daten")
