@@ -12,126 +12,164 @@ from datetime import datetime, timedelta
 
 from config import SETTINGS
 
-_SP500_WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 _CVS_FILE = "SP_micro_3.csv"
 #_CVS_FILE = "202511_most_capitalized_500M.csv"
 
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
 
-def get_sp500_tickers() -> list[str]:
+def _read_universe_csv_smart(path: str) -> pd.DataFrame:
     """
-    Holt die S&P 500 Ticker von Wikipedia, setzt einen Browser-User-Agent
-    (wichtig für GitHub Actions) und gibt Yahoo-kompatible Symbole zurück
-    (z.B. 'BRK.B' -> 'BRK-B').
-    """
-    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    headers = {
-        # einfacher, unauffälliger UA – verhindert 403 auf dem Runner
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/123.0 Safari/537.36"
-    }
-
-    resp = requests.get(url, headers=headers, timeout=20)
-    resp.raise_for_status()  # wirft bei 4xx/5xx eine Exception
-
-    # HTML lokalen Parsern übergeben (nicht mehr direkt mit read_html(url) -> 403)
-    tables = pd.read_html(resp.text)
-    if not tables:
-        raise RuntimeError("Keine Tabellen auf der S&P500-Wikipedia-Seite gefunden.")
-
-    df = tables[0]  # die erste Tabelle enthält die Konstituenten
-    if "Symbol" not in df.columns:
-        # gelegentlich ändert Wikipedia Spaltennamen geringfügig
-        # Fallback: erste Spalte annehmen
-        symbol_col = df.columns[0]
-    else:
-        symbol_col = "Symbol"
-
-    # Symbole bereinigen und Yahoo-kompatibel machen
-    tickers = (
-        df[symbol_col]
-        .astype(str)
-        .str.strip()
-        .str.replace(r"\.", "-", regex=True)  # BRK.B -> BRK-B
-        .tolist()
-    )
-
-    # optional: Dubletten und leere Werte raus
-    tickers = [t for t in dict.fromkeys(tickers) if t]
-    return tickers
-
-def get_company_info_map_from_csv(path: str = _CVS_FILE) -> dict[str, dict[str, str]]:
-    """
-    Liefert ein Mapping {Ticker -> {"Company": Name, "Industry": Branche}} aus der CSV.
-    CSV muss Spalten 'Symbol', 'Company' und 'Industry' enthalten.
+    Liest 'Symbol' (+ optional 'Company', 'Industry') robust ein.
+    Erkennt gängige Separatoren (',',';','\\t') und normalisiert Header.
     """
     if not os.path.exists(path):
-        return {}
+        # auch relativen Pfad relativ zu dieser Datei probieren
+        here = os.path.dirname(__file__)
+        alt = os.path.join(here, path)
+        if os.path.exists(alt):
+            path = alt
+        else:
+            raise FileNotFoundError(f"CSV-Datei nicht gefunden: {path}")
 
-    df = pd.read_csv(path)
+    # 1) Sniff: erst sep=None (python-engine), dann fallbacks
+    df = None
+    try:
+        df = pd.read_csv(path, sep=None, engine="python", dtype=str, on_bad_lines="skip")
+    except Exception:
+        pass
+    if df is None or df.empty:
+        for sep in [",", ";", "\t", "|"]:
+            try:
+                df = pd.read_csv(path, sep=sep, dtype=str, on_bad_lines="skip")
+                if not df.empty:
+                    break
+            except Exception:
+                continue
+    if df is None or df.empty:
+        raise ValueError(f"CSV konnte nicht gelesen werden oder ist leer: {path}")
 
-    if "Symbol" not in df.columns:
-        raise ValueError("Spalte 'Symbol' fehlt in der CSV-Datei.")
+    # 2) Header normalisieren
+    norm_map = {c: c.strip() for c in df.columns}
+    df = df.rename(columns=norm_map)
+    lower = {c.lower(): c for c in df.columns}
 
-    # Spaltenname-Fallbacks
-    name_col = "Company" if "Company" in df.columns else None
-    ind_col = "Industry" if "Industry" in df.columns else None
+    # Symbol-Spalte finden (fallback: erste Spalte)
+    sym_col = lower.get("symbol") or lower.get("ticker") or list(df.columns)[0]
+    comp_col = lower.get("company")
+    ind_col  = lower.get("industry")
 
-    tickers = (
-        df["Symbol"]
-        .astype(str)
+    use_cols = [sym_col] + [c for c in [comp_col, ind_col] if c]
+    df = df[use_cols].copy()
+
+    # 3) Spaltennamen vereinheitlichen
+    rename_map = {sym_col: "Symbol"}
+    if comp_col: rename_map[comp_col] = "Company"
+    if ind_col:  rename_map[ind_col]  = "Industry"
+    df = df.rename(columns=rename_map)
+
+    # 4) Ticker normalisieren (Trim, Upper, Whitespace raus, BRK.B -> BRK-B)
+    df["Symbol"] = (
+        df["Symbol"].astype(str)
         .str.strip()
         .str.upper()
         .str.replace(r"\s+", "", regex=True)
-        .str.replace(r"\.", "-", regex=True)  # BRK.B → BRK-B
+        .str.replace(".", "-", regex=False)
     )
+    df = df.dropna(subset=["Symbol"])
+    df = df[df["Symbol"] != ""]
+    df = df.drop_duplicates(subset=["Symbol"], keep="first")
 
-    info_map = {}
-    for i, t in enumerate(tickers):
-        if not t or t == "NAN":
-            continue
-        info_map[t] = {
-            "Company": str(df.loc[i, name_col]) if name_col else "n/a",
-            "Industry": str(df.loc[i, ind_col]) if ind_col else "n/a",
-        }
-    return info_map
-
-def get_universe_from_csv(path: str = _CVS_FILE) -> list[str]:
+    return dfdef _read_universe_csv_smart(path: str) -> pd.DataFrame:
     """
-    Liest eine CSV-Datei mit einer Spalte 'Symbol' ein und gibt eine
-    bereinigte Liste von Ticker-Symbolen zurück (für yfinance-kompatibel).
-    Entfernt ungültige Zeichen und Duplikate.
+    Liest 'Symbol' (+ optional 'Company', 'Industry') robust ein.
+    Erkennt gängige Separatoren (',',';','\\t') und normalisiert Header.
     """
     if not os.path.exists(path):
-        raise FileNotFoundError(f"CSV-Datei für Universe nicht gefunden: {path}")
+        # auch relativen Pfad relativ zu dieser Datei probieren
+        here = os.path.dirname(__file__)
+        alt = os.path.join(here, path)
+        if os.path.exists(alt):
+            path = alt
+        else:
+            raise FileNotFoundError(f"CSV-Datei nicht gefunden: {path}")
 
-    df = pd.read_csv(path)
-    if "Symbol" not in df.columns:
-        raise ValueError(f"Spalte 'Symbol' nicht gefunden in {path}")
+    # 1) Sniff: erst sep=None (python-engine), dann fallbacks
+    df = None
+    try:
+        df = pd.read_csv(path, sep=None, engine="python", dtype=str, on_bad_lines="skip")
+    except Exception:
+        pass
+    if df is None or df.empty:
+        for sep in [",", ";", "\t", "|"]:
+            try:
+                df = pd.read_csv(path, sep=sep, dtype=str, on_bad_lines="skip")
+                if not df.empty:
+                    break
+            except Exception:
+                continue
+    if df is None or df.empty:
+        raise ValueError(f"CSV konnte nicht gelesen werden oder ist leer: {path}")
 
-    tickers = (
-        df["Symbol"]
-        .astype(str)
+    # 2) Header normalisieren
+    norm_map = {c: c.strip() for c in df.columns}
+    df = df.rename(columns=norm_map)
+    lower = {c.lower(): c for c in df.columns}
+
+    # Symbol-Spalte finden (fallback: erste Spalte)
+    sym_col = lower.get("symbol") or lower.get("ticker") or list(df.columns)[0]
+    comp_col = lower.get("company")
+    ind_col  = lower.get("industry")
+
+    use_cols = [sym_col] + [c for c in [comp_col, ind_col] if c]
+    df = df[use_cols].copy()
+
+    # 3) Spaltennamen vereinheitlichen
+    rename_map = {sym_col: "Symbol"}
+    if comp_col: rename_map[comp_col] = "Company"
+    if ind_col:  rename_map[ind_col]  = "Industry"
+    df = df.rename(columns=rename_map)
+
+    # 4) Ticker normalisieren (Trim, Upper, Whitespace raus, BRK.B -> BRK-B)
+    df["Symbol"] = (
+        df["Symbol"].astype(str)
         .str.strip()
         .str.upper()
         .str.replace(r"\s+", "", regex=True)
-        .str.replace(r"\.", "-", regex=True)        # BRK.B → BRK-B
+        .str.replace(".", "-", regex=False)
     )
+    df = df.dropna(subset=["Symbol"])
+    df = df[df["Symbol"] != ""]
+    df = df.drop_duplicates(subset=["Symbol"], keep="first")
 
-    # ungültige Sonderzeichen filtern (/ ^ Leerzeichen etc.)
-    tickers = tickers[~tickers.str.contains(r"[\/\^\s]", regex=True)]
+    return df
 
-    # Duplikate entfernen, leere und NaN rausfiltern
-    tickers = [t for t in dict.fromkeys(tickers.tolist()) if t and t != "NAN"]
+def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
+    """
+    Liefert die Ticker-Liste aus der CSV und füllt optional TICKER_META
+    mit 'Company'/'Industry' (falls vorhanden).
+    """
+    df = _read_universe_csv_smart(path)
 
-    print(f"[UNIVERSE] {len(tickers)} gültige Symbole aus {path} geladen.")
+    # optionales Metadaten-Mapping befüllen
+    TICKER_META.clear()
+    has_company = "Company" in df.columns
+    has_industry = "Industry" in df.columns
+    if has_company or has_industry:
+        for _, row in df.iterrows():
+            TICKER_META[row["Symbol"]] = {
+                "company": row.get("Company"),
+                "industry": row.get("Industry"),
+            }
+
+    tickers = df["Symbol"].tolist()
+    print(f"[UNIVERSE] {len(tickers)} Symbole aus {os.path.basename(path)} geladen.")
     return tickers
 
 def get_universe() -> list[str]:
-    """Wrapper, damit dein restlicher Code unverändert bleibt."""
-    return get_universe_from_csv(_CVS_FILE)
-    
+    """Einheitlicher Einstiegspunkt – aktuell CSV-Modus."""
+    return get_universe_from_csv(_CSV_FILE)
+
 
 def _start_date_for_weeks(weeks: int) -> datetime:
     # +10 Wochen Puffer für MAs etc.
