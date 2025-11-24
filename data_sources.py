@@ -80,68 +80,6 @@ def _read_universe_csv_smart(path: str) -> pd.DataFrame:
     df = df[df["Symbol"] != ""]
     df = df.drop_duplicates(subset=["Symbol"], keep="first")
 
-    return dfdef _read_universe_csv_smart(path: str) -> pd.DataFrame:
-    """
-    Liest 'Symbol' (+ optional 'Company', 'Industry') robust ein.
-    Erkennt gängige Separatoren (',',';','\\t') und normalisiert Header.
-    """
-    if not os.path.exists(path):
-        # auch relativen Pfad relativ zu dieser Datei probieren
-        here = os.path.dirname(__file__)
-        alt = os.path.join(here, path)
-        if os.path.exists(alt):
-            path = alt
-        else:
-            raise FileNotFoundError(f"CSV-Datei nicht gefunden: {path}")
-
-    # 1) Sniff: erst sep=None (python-engine), dann fallbacks
-    df = None
-    try:
-        df = pd.read_csv(path, sep=None, engine="python", dtype=str, on_bad_lines="skip")
-    except Exception:
-        pass
-    if df is None or df.empty:
-        for sep in [",", ";", "\t", "|"]:
-            try:
-                df = pd.read_csv(path, sep=sep, dtype=str, on_bad_lines="skip")
-                if not df.empty:
-                    break
-            except Exception:
-                continue
-    if df is None or df.empty:
-        raise ValueError(f"CSV konnte nicht gelesen werden oder ist leer: {path}")
-
-    # 2) Header normalisieren
-    norm_map = {c: c.strip() for c in df.columns}
-    df = df.rename(columns=norm_map)
-    lower = {c.lower(): c for c in df.columns}
-
-    # Symbol-Spalte finden (fallback: erste Spalte)
-    sym_col = lower.get("symbol") or lower.get("ticker") or list(df.columns)[0]
-    comp_col = lower.get("company")
-    ind_col  = lower.get("industry")
-
-    use_cols = [sym_col] + [c for c in [comp_col, ind_col] if c]
-    df = df[use_cols].copy()
-
-    # 3) Spaltennamen vereinheitlichen
-    rename_map = {sym_col: "Symbol"}
-    if comp_col: rename_map[comp_col] = "Company"
-    if ind_col:  rename_map[ind_col]  = "Industry"
-    df = df.rename(columns=rename_map)
-
-    # 4) Ticker normalisieren (Trim, Upper, Whitespace raus, BRK.B -> BRK-B)
-    df["Symbol"] = (
-        df["Symbol"].astype(str)
-        .str.strip()
-        .str.upper()
-        .str.replace(r"\s+", "", regex=True)
-        .str.replace(".", "-", regex=False)
-    )
-    df = df.dropna(subset=["Symbol"])
-    df = df[df["Symbol"] != ""]
-    df = df.drop_duplicates(subset=["Symbol"], keep="first")
-
     return df
 
 def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
