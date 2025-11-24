@@ -93,10 +93,10 @@ def screen_universe_minervini(min_score: int = 5) -> pd.DataFrame:
 
             # MultiIndex abfangen (falls mehrere Ticker zurückkommen)
             if isinstance(df.columns, pd.MultiIndex):
-                if t in df.columns.levels[1]:
+                try:
                     df = df.xs(t, axis=1, level=1)
-                else:
-                    print(f"{t}: MultiIndex ohne {t}")
+                except Exception:
+                    print(f"{t}: MultiIndex ohne {t} – übersprungen")
                     continue
 
             # Fehlende Spalten auffüllen
