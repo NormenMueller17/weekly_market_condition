@@ -60,7 +60,7 @@ def run():
     ]
     
     # 4) Marktführer nach Minervini screenen
-    leaders = screen_universe_minervini(min_score=6)
+    leaders = screen_universe_minervini(universe, min_score=6)
     info_map = get_company_info_map_from_csv(_CVS_FILE)
     
     if not leaders.empty:
