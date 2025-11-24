@@ -54,11 +54,10 @@ def run():
             return "pos" if invert else "neg"
         return "neutral"
     
-    
     risk_df["Δ_farbe"] = [
-        classify_delta(delta, invert=(metrik == "VIX"))
-        for metrik, delta in zip(risk_df.index, risk_df["Δ"])
-                        ]
+        classify_delta(delta, invert=("Volatility Index" in name))
+        for name, delta in zip(risk_df.index, risk_df["Δ"])
+    ]
     
     # 4) Marktführer nach Minervini screenen
     leaders = screen_universe_minervini(min_score=6)
