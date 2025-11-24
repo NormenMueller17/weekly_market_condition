@@ -14,7 +14,7 @@ from report_builder import (
     heuristic_verdict,
 )
 
-_CVS_FILE = "SP_micro_3.csv"
+#_CVS_FILE = "SP_micro_3.csv"
 
 def run():
     # 1) Daten laden
@@ -42,7 +42,7 @@ def run():
     risk_df.rename(index={"UUP": "US Dollar Index (UUP)"}, inplace=True)
     
     # Snapshots inkl. Advancers
-    breadth_snap = compute_breadth_snapshots(weekly)
+    #breadth_snap = compute_breadth_snapshots(weekly)
 
     # Hintergrundfarben für alle Δ-Werte in risk_df
     def classify_delta(value: float, invert: bool = False) -> str:
@@ -61,7 +61,7 @@ def run():
     
     # 4) Marktführer nach Minervini screenen
     leaders = screen_universe_minervini(universe, min_score=6)
-    info_map = get_company_info_map_from_csv(_CVS_FILE)
+    info_map = get_company_info_map_from_csv()
     
     if not leaders.empty:
         # Spalten 'Company' und 'Industry' ergänzen
