@@ -89,17 +89,17 @@ def run():
     wb = load_workbook(out_path)
     ws = wb.active
     for col_idx, col_cells in enumerate(ws.columns, start=1):
-    max_len = 0
-    for cell in col_cells:
-        try:
-            val = str(cell.value) if cell.value is not None else ""
-            if len(val) > max_len:
-                max_len = len(val)
-        except Exception:
-            pass
+        max_len = 0
+        for cell in col_cells:
+            try:
+                val = str(cell.value) if cell.value is not None else ""
+                if len(val) > max_len:
+                    max_len = len(val)
+            except Exception:
+                pass
         adjusted_width = (max_len + 2)
         ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
-    
+
     wb.save(out_path)
         
     # 5) Report senden
