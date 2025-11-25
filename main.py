@@ -87,7 +87,8 @@ def run():
         leaders_out.to_excel(xw, index=False, sheet_name="Leaders")
     # 5) Report senden
     #send_email(html)
-    send_email(html, subject="Weekly US Market Report", attachments=[out_path])
+    send_email(html, subject_suffix="Weekly US Market Report", attachments=[out_path])
+    #send_email(html, subject_suffix="Weekly US Market Report", attachments=["market_leaders_2025-11-26.xlsx"])
 
 if __name__ == "__main__":
     run()
