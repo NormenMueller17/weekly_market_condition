@@ -67,7 +67,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     return {"score": score, **criteria}
 
 
-def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame:
+def screen_universe_minervini(universe=None, min_score: int = 4) -> pd.DataFrame:
     """
     Screeningt ein Universum nach Minervini.
     - universe: optionale Iterable von Ticker-Symbolen. Wenn None, wird get_universe() benutzt.
