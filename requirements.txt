@@ -8,3 +8,4 @@ requests
 beautifulsoup4
 lxml
 requests>=2.31.0
+scipy==1.11.4
