@@ -76,10 +76,11 @@ def run():
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
 
-    # leaders_df ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
+    # leaders ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
     # Optional sortieren:
-    leaders_out = leaders.sort_values(["score", "Ticker"], ascending=[False, True])
-
+    #leaders_out = leaders.sort_values(["Score", "Ticker"], ascending=[False, True])
+    leaders_out = leaders
+    
     # Dateiname + Pfad
     out_path = f"market_leaders_{report_date}.xlsx"  # z.B. 2025-09-04
     # Excel schreiben (benötigt openpyxl in requirements.txt)
