@@ -83,7 +83,7 @@ def run():
     #leaders_out = leaders.sort_values(["Score", "Ticker"], ascending=[False, True])
     leaders_out = leaders
     
-    # Dateiname + Pfad
+    # Excel Attachment
     out_path = f"market_leaders_{report_date}.xlsx"  # z.B. 2025-09-04
     
     wb = load_workbook(out_path)
