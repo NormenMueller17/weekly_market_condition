@@ -19,7 +19,7 @@ _CSV_FILE = "SP_micro_3.csv"
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
 
-def get_company_info_map_from_csv(path: str = None):
+def get_company_info_map_from_csv(path: str = _CSV_FILE):
     """
     Liest eine CSV mit mindestens 'Symbol' und optional 'Company', 'Industry'.
     Robust ggü. , / ; als Separator und Anführungszeichen in Namen.
