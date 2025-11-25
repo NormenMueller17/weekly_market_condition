@@ -21,42 +21,40 @@ def _ensure_cache_dir():
 
 def get_company_info_map_from_csv(path: str = _CSV_FILE) -> dict[str, dict[str, str]]:
     """
-    Liest path (CSV) und liefert ein Mapping:
-      { 'AAPL': {'Company': 'Apple Inc.', 'Industry': '...'}, ... }
-    Erkennt automatisch, ob die Namensspalte 'Company' oder 'Description' heißt
-    und normalisiert Ticker identisch zu get_universe_from_csv (upper, trim, '.'->'-').
+    Liefert ein Mapping {Ticker -> {"Company": Name, "Industry": Branche}} aus der CSV.
+    CSV muss Spalten 'Symbol', 'Company' und 'Industry' enthalten.
     """
     if not os.path.exists(path):
-        raise FileNotFoundError(f"CSV-Datei für Company/Industry nicht gefunden: {path}")
+        return {}
 
     df = pd.read_csv(path)
 
-    # Spalten robust ermitteln
     if "Symbol" not in df.columns:
-        raise ValueError(f"Spalte 'Symbol' fehlt in {path}")
-    company_col = "Company" if "Company" in df.columns else "Description"
-    industry_col = "Industry" if "Industry" in df.columns else None
+        raise ValueError("Spalte 'Symbol' fehlt in der CSV-Datei.")
 
-    # Normalisieren wie im Universe-Loader
-    sym = (
-        df["Symbol"].astype(str).str.strip().str.upper()
+    # Spaltenname-Fallbacks
+    name_col = "Company" if "Company" in df.columns else None
+    ind_col = "Industry" if "Industry" in df.columns else None
+
+    tickers = (
+        df["Symbol"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
         .str.replace(r"\s+", "", regex=True)
-        .str.replace(".", "-", regex=False)
+        .str.replace(r"\.", "-", regex=True)  # BRK.B → BRK-B
     )
 
-    company = df[company_col].astype(str).fillna("n/a").str.strip()
-    if industry_col:
-        industry = df[industry_col].astype(str).fillna("n/a").str.strip()
-    else:
-        industry = pd.Series(["n/a"] * len(df), index=df.index)
-
-    info_map = {s: {"Company": c if c else "n/a", "Industry": i if i else "n/a"}
-                for s, c, i in zip(sym, company, industry)}
-
-    print(f"[INFO MAP] {len(info_map)} Einträge aus {os.path.basename(path)} geladen.")
-    # Optional: ein paar Beispiele ausgeben
-    # for k in list(info_map)[:5]: print(k, "->", info_map[k])
+    info_map = {}
+    for i, t in enumerate(tickers):
+        if not t or t == "NAN":
+            continue
+        info_map[t] = {
+            "Company": str(df.loc[i, name_col]) if name_col else "n/a",
+            "Industry": str(df.loc[i, ind_col]) if ind_col else "n/a",
+        }
     return info_map
+
 
 def _read_universe_csv_smart(path: str) -> pd.DataFrame:
     """
