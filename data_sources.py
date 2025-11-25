@@ -19,40 +19,50 @@ _CSV_FILE = "SP_micro_3.csv"
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
 
-def get_company_info_map_from_csv(path: str = _CSV_FILE) -> dict[str, dict[str, str]]:
+def get_company_info_map_from_csv(path: str = None):
     """
-    Liefert ein Mapping {Ticker -> {"Company": Name, "Industry": Branche}} aus der CSV.
-    CSV muss Spalten 'Symbol', 'Company' und 'Industry' enthalten.
+    Liest eine CSV mit mindestens 'Symbol' und optional 'Company', 'Industry'.
+    Robust ggü. , / ; als Separator und Anführungszeichen in Namen.
+    Gibt ein Dict: {symbol: {"company": str|None, "industry": str|None}} zurück.
     """
+    if path is None:
+        path = _CSV_INFO_FILE
+
     if not os.path.exists(path):
-        return {}
+        raise FileNotFoundError(f"CSV-Datei nicht gefunden: {path}")
 
-    df = pd.read_csv(path)
+    # WICHTIG: sep=None + engine='python' -> pandas versucht den Separator zu erkennen
+    df = pd.read_csv(path, sep=None, engine="python", encoding="utf-8-sig")
 
-    if "Symbol" not in df.columns:
-        raise ValueError("Spalte 'Symbol' fehlt in der CSV-Datei.")
+    # Spaltennamen vereinheitlichen (manchmal klein/anders geschrieben)
+    cols = {c.lower(): c for c in df.columns}
+    # Mindestens 'symbol' muss vorhanden sein
+    if "symbol" not in cols:
+        raise ValueError(f"Spalte 'Symbol' nicht gefunden in {path}. Gefunden: {list(df.columns)}")
 
-    # Spaltenname-Fallbacks
-    name_col = "Company" if "Company" in df.columns else None
-    ind_col = "Industry" if "Industry" in df.columns else None
+    sym_col = cols["symbol"]
+    comp_col = cols.get("company")
+    ind_col  = cols.get("industry")
 
-    tickers = (
-        df["Symbol"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
+    # Strings säubern
+    df[sym_col] = (
+        df[sym_col].astype(str).str.strip().str.upper()
         .str.replace(r"\s+", "", regex=True)
-        .str.replace(r"\.", "-", regex=True)  # BRK.B → BRK-B
+        .str.replace(".", "-", regex=False)  # BRK.B -> BRK-B
     )
 
+    # Doppelte Symbole entfernen, letzte Angabe gewinnt
+    df = df.dropna(subset=[sym_col]).drop_duplicates(subset=[sym_col], keep="last")
+
     info_map = {}
-    for i, t in enumerate(tickers):
-        if not t or t == "NAN":
-            continue
-        info_map[t] = {
-            "Company": str(df.loc[i, name_col]) if name_col else "n/a",
-            "Industry": str(df.loc[i, ind_col]) if ind_col else "n/a",
-        }
+    for _, row in df.iterrows():
+        symbol = row[sym_col]
+        company = str(row[comp_col]).strip() if comp_col in row and pd.notna(row[comp_col]) else None
+        industry = str(row[ind_col]).strip() if ind_col in row and pd.notna(row[ind_col]) else None
+        info_map[symbol] = {"company": company, "industry": industry}
+
+    # Optional: kleines Logging
+    print(f"[INFO MAP] {len(info_map)} Einträge aus {path} geladen.")
     return info_map
 
 def _read_universe_csv_smart(path: str) -> pd.DataFrame:
