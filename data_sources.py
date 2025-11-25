@@ -26,7 +26,7 @@ def get_company_info_map_from_csv(path: str = None):
     Gibt ein Dict: {symbol: {"company": str|None, "industry": str|None}} zurück.
     """
     if path is None:
-        path = _CSV_INFO_FILE
+        raise FileNotFoundError("CSV-Datei nicht gefunden")
 
     if not os.path.exists(path):
         raise FileNotFoundError(f"CSV-Datei nicht gefunden: {path}")
