@@ -8,6 +8,7 @@ from emailer import send_email
 from screener import screen_universe_minervini
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
+from pathlib import Path
 
 from report_builder import (
     build_html_report,
