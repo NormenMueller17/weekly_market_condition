@@ -75,10 +75,19 @@ def run():
 
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
-    
-    # 5) Report senden
-    send_email(html)
 
+    # leaders_df ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
+    # Optional sortieren:
+    leaders_out = leaders_df.sort_values(["score", "Ticker"], ascending=[False, True])
+
+    # Dateiname + Pfad
+    out_path = f"market_leaders_{report_date}.xlsx"  # z.B. 2025-09-04
+    # Excel schreiben (benötigt openpyxl in requirements.txt)
+    with pd.ExcelWriter(out_path, engine="openpyxl") as xw:
+        leaders_out.to_excel(xw, index=False, sheet_name="Leaders")
+    # 5) Report senden
+    #send_email(html)
+    send_email(html, subject="Weekly US Market Report", attachments=[out_path])
 
 if __name__ == "__main__":
     run()
