@@ -19,7 +19,7 @@ _CSV_FILE = "SP_micro_3.csv"
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
 
-def get_company_info_map_from_csv(path: str = _CVS_FILE) -> dict[str, dict[str, str]]:
+def get_company_info_map_from_csv(path: str = _CSV_FILE) -> dict[str, dict[str, str]]:
     """
     Liest path (CSV) und liefert ein Mapping:
       { 'AAPL': {'Company': 'Apple Inc.', 'Industry': '...'}, ... }
