@@ -6,6 +6,8 @@ from data_sources import get_universe, get_company_info_map_from_csv, load_weekl
 from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
 from emailer import send_email
 from screener import screen_universe_minervini
+from openpyxl.utils import get_column_letter
+from openpyxl import load_workbook
 
 from report_builder import (
     build_html_report,
@@ -83,9 +85,23 @@ def run():
     
     # Dateiname + Pfad
     out_path = f"market_leaders_{report_date}.xlsx"  # z.B. 2025-09-04
-    # Excel schreiben (benötigt openpyxl in requirements.txt)
-    with pd.ExcelWriter(out_path, engine="openpyxl") as xw:
-        leaders_out.to_excel(xw, index=False, sheet_name="Leaders")
+    
+    wb = load_workbook(out_path)
+    ws = wb.active
+    for col_idx, col_cells in enumerate(ws.columns, start=1):
+    max_len = 0
+    for cell in col_cells:
+        try:
+            val = str(cell.value) if cell.value is not None else ""
+            if len(val) > max_len:
+                max_len = len(val)
+        except Exception:
+            pass
+        adjusted_width = (max_len + 2)
+        ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
+    
+    wb.save(out_path)
+        
     # 5) Report senden
     #send_email(html)
     send_email(html, subject_suffix="Weekly US Market Report", attachments=[out_path])
