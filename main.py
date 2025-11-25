@@ -79,28 +79,41 @@ def run():
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
 
     # leaders ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
-    # Optional sortieren:
-    #leaders_out = leaders.sort_values(["Score", "Ticker"], ascending=[False, True])
-    leaders_out = leaders
+    #leaders_out = leaders
+    leaders_out = leaders_df.reset_index().rename(columns={"index": "Ticker"})
+    leaders_out = leaders_out.sort_values(["score", "Ticker"], ascending=[False, True])
     
-    # Excel Attachment
-    out_path = f"market_leaders_{report_date}.xlsx"  # z.B. 2025-09-04
+    # 1) Zielpfad sicherstellen (eigener Output-Ordner ist sauberer)
+    out_dir = Path("artifacts")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"market_leaders_{report_date}.xlsx"
     
-    wb = load_workbook(out_path)
-    ws = wb.active
-    for col_idx, col_cells in enumerate(ws.columns, start=1):
-        max_len = 0
-        for cell in col_cells:
-            try:
-                val = str(cell.value) if cell.value is not None else ""
+    # 2) Immer schreiben – auch wenn leer (dann gibt's wenigstens Header)
+    leaders_out.to_excel(out_path, index=False, sheet_name="Leaders")
+    
+    # 3) Auto-Fit nur, wenn Datei existiert und nicht leer
+    if out_path.exists() and leaders_out.shape[1] > 0:
+        wb = load_workbook(out_path)
+        ws = wb.active
+    
+        for col_idx, col_cells in enumerate(ws.columns, start=1):
+            max_len = 0
+            for cell in col_cells:
+                val = "" if cell.value is None else str(cell.value)
                 if len(val) > max_len:
                     max_len = len(val)
-            except Exception:
-                pass
-        adjusted_width = (max_len + 2)
-        ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
-
-    wb.save(out_path)
+            ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
+    
+        wb.save(out_path)
+    else:
+        print(f"[WARN] Excel not created or empty: {out_path}")
+    
+    # 4) Beim Mailversand denselben Pfad anhängen
+    send_email(
+        html,
+        subject_suffix="Weekly US Market Report",
+        attachments=[str(out_path)]
+    )
         
     # 5) Report senden
     #send_email(html)
