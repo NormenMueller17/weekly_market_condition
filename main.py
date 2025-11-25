@@ -8,6 +8,7 @@ from emailer import send_email
 from screener import screen_universe_minervini
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
+from openpyxl.styles import PatternFill, Font, Alignment
 from pathlib import Path
 
 from report_builder import (
@@ -17,7 +18,48 @@ from report_builder import (
     heuristic_verdict,
 )
 
-#_CVS_FILE = "SP_micro_3.csv"
+
+BOOLEAN_HEADERS = [
+    "SMA10W steigend",
+    "SMA30W steigend",
+    "SMA40W steigend",
+    "MA-Ordnung 10>30>40",
+    "52W Range OK",
+    "RS-Trend ↑",
+    "Vol-Breakout",
+    "Close > Vorwoche",
+        ]
+
+def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> None:
+    """Färbt Bool-Spalten: True -> hellgrün, False -> hellrot; Text grau & zentriert."""
+    # Header -> Spaltenindex (1-based)
+    header_to_col = {cell.value: cell.column for cell in ws[header_row] if cell.value}
+
+    fill_green = PatternFill(fill_type="solid", fgColor="E6F4EA")  # hellgrün
+    fill_red   = PatternFill(fill_type="solid", fgColor="FDE8E8")  # hellrot
+    font_gray  = Font(color="666666")
+    center     = Alignment(horizontal="center", vertical="center")
+
+    for head in headers:
+        col = header_to_col.get(head)
+        if not col:
+            continue
+        for row in range(header_row + 1, ws.max_row + 1):
+            cell = ws.cell(row=row, column=col)
+            # robust: bool, WAHR/FALSCH, TRUE/FALSE, 1/0 …
+            val = cell.value
+            sval = ("" if val is None else str(val)).strip().lower()
+            is_true  = sval in ("true", "wahr", "1")
+            is_false = sval in ("false", "falsch", "0")
+            cell.font = font_gray
+            cell.alignment = center
+            if is_true:
+                cell.fill = fill_green
+            elif is_false:
+                cell.fill = fill_red
+            else:
+                # neutral: z.B. leere Zellen
+                pass
 
 def run():
     # 1) Daten laden
@@ -104,22 +146,17 @@ def run():
                 if len(val) > max_len:
                     max_len = len(val)
             ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
-    
+            
+        style_boolean_columns(ws)
         wb.save(out_path)
     else:
         print(f"[WARN] Excel not created or empty: {out_path}")
     
     # 4) Beim Mailversand denselben Pfad anhängen
-    send_email(
-        html,
-        subject_suffix="Weekly US Market Report",
-        attachments=[str(out_path)]
-    )
+    send_email(html, subject_suffix="Weekly US Market Report", attachments=[str(out_path)])
         
     # 5) Report senden
-    #send_email(html)
-    send_email(html, subject_suffix="Weekly US Market Report", attachments=[out_path])
-    #send_email(html, subject_suffix="Weekly US Market Report", attachments=["market_leaders_2025-11-26.xlsx"])
+    #send_email(html, subject_suffix="Weekly US Market Report", attachments=[out_path])
 
 if __name__ == "__main__":
     run()
