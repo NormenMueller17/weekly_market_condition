@@ -80,8 +80,8 @@ def run():
 
     # leaders ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
     #leaders_out = leaders
-    leaders_out = leaders_df.reset_index().rename(columns={"index": "Ticker"})
-    leaders_out = leaders_out.sort_values(["score", "Ticker"], ascending=[False, True])
+    leaders_out = leaders.reset_index().rename(columns={"index": "Ticker"})
+    #leaders_out = leaders.sort_values(["score", "Ticker"], ascending=[False, True])
     
     # 1) Zielpfad sicherstellen (eigener Output-Ordner ist sauberer)
     out_dir = Path("artifacts")
