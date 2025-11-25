@@ -67,7 +67,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     return {"score": score, **criteria}
 
 
-def screen_universe_minervini(universe=None, min_score: int = 4) -> pd.DataFrame:
+def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame:
     """
     Screeningt ein Universum nach Minervini.
     - universe: optionale Iterable von Ticker-Symbolen. Wenn None, wird get_universe() benutzt.
@@ -131,7 +131,7 @@ def screen_universe_minervini(universe=None, min_score: int = 4) -> pd.DataFrame
 
     # Bedingung: Vol-Breakout MUSS wahr sein UND zusätzlich mind. 'min_score' weitere Kriterien
     leaders = df_results[
-        (df_results["Vol-Breakout"] == True) &
+        #(df_results["Vol-Breakout"] == True) &
         ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
     ].sort_values("score", ascending=False)
 
