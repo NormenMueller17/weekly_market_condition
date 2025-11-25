@@ -83,7 +83,7 @@ def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame
                 t,
                 period="2y",
                 interval="1d",
-                auto_adjust=True,
+                auto_adjust=False,
                 actions=False,
                 repair=True,
                 progress=False,
