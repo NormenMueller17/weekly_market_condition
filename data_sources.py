@@ -21,41 +21,36 @@ def _ensure_cache_dir():
 
 def get_company_info_map_from_csv(path: str = _CSV_FILE) -> dict[str, dict[str, str]]:
     """
-    Liest path (CSV) und liefert ein Mapping:
+    Liest path (CSV) robust ein (Separator-Autodetect) und liefert ein Mapping:
       { 'AAPL': {'Company': 'Apple Inc.', 'Industry': '...'}, ... }
-    Erkennt automatisch, ob die Namensspalte 'Company' oder 'Description' heißt
-    und normalisiert Ticker identisch zu get_universe_from_csv (upper, trim, '.'->'-').
+
+    Erkennt automatisch, ob die Namensspalte 'Company' oder 'Description' heißt.
+    Ticker werden identisch zu get_universe_from_csv normalisiert.
     """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"CSV-Datei für Company/Industry nicht gefunden: {path}")
+    # -> robustes Einlesen (unterstützt ',', ';', '\t', '|', on_bad_lines='skip')
+    df = _read_universe_csv_smart(path)
+    if df is None or df.empty:
+        return {}
 
-    df = pd.read_csv(path)
-
-    # Spalten robust ermitteln
-    if "Symbol" not in df.columns:
-        raise ValueError(f"Spalte 'Symbol' fehlt in {path}")
-    company_col = "Company" if "Company" in df.columns else "Description"
-    industry_col = "Industry" if "Industry" in df.columns else None
-
-    # Normalisieren wie im Universe-Loader
-    sym = (
-        df["Symbol"].astype(str).str.strip().str.upper()
-        .str.replace(r"\s+", "", regex=True)
-        .str.replace(".", "-", regex=False)
+    # Spalten wie im Smart-Loader vereinheitlichen: Symbol, Company?, Industry?
+    # Falls keine Company/Industry vorliegen, mit 'n/a' auffüllen.
+    comp = (
+        df["Company"].astype(str).fillna("n/a").str.strip()
+        if "Company" in df.columns else
+        pd.Series(["n/a"] * len(df), index=df.index)
+    )
+    ind = (
+        df["Industry"].astype(str).fillna("n/a").str.strip()
+        if "Industry" in df.columns else
+        pd.Series(["n/a"] * len(df), index=df.index)
     )
 
-    company = df[company_col].astype(str).fillna("n/a").str.strip()
-    if industry_col:
-        industry = df[industry_col].astype(str).fillna("n/a").str.strip()
-    else:
-        industry = pd.Series(["n/a"] * len(df), index=df.index)
-
-    info_map = {s: {"Company": c if c else "n/a", "Industry": i if i else "n/a"}
-                for s, c, i in zip(sym, company, industry)}
+    info_map = {
+        sym: {"Company": c if c else "n/a", "Industry": i if i else "n/a"}
+        for sym, c, i in zip(df["Symbol"], comp, ind)
+    }
 
     print(f"[INFO MAP] {len(info_map)} Einträge aus {os.path.basename(path)} geladen.")
-    # Optional: ein paar Beispiele ausgeben
-    # for k in list(info_map)[:5]: print(k, "->", info_map[k])
     return info_map
 
 
