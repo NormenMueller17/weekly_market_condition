@@ -78,7 +78,7 @@ def run():
 
     # leaders_df ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
     # Optional sortieren:
-    leaders_out = leaders_df.sort_values(["score", "Ticker"], ascending=[False, True])
+    leaders_out = leaders.sort_values(["score", "Ticker"], ascending=[False, True])
 
     # Dateiname + Pfad
     out_path = f"market_leaders_{report_date}.xlsx"  # z.B. 2025-09-04
