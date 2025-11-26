@@ -132,8 +132,11 @@ def run():
         
         leaders.insert(0, "Industry", industry_series)
         leaders.insert(0, "Company", company_series)
-        leaders.insert(leaders.columns.get_loc("Industry") + 1, "Close", quote_df["Close"])
+        leaders.insert(leaders.columns.get_loc("Industry") + 1, "Close (USD)", quote_df["Close"])
         leaders.insert(leaders.columns.get_loc("Industry") + 2, "MarketCap (Mio USD)", quote_df["MarketCap_Mio"])
+        # --- Werte formatieren ---
+        leaders["Close (USD)"] = leaders["Close (USD)"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
     
     html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
 
