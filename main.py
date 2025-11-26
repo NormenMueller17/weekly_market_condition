@@ -10,6 +10,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from pathlib import Path
+import yfinance as yf
 
 from report_builder import (
     build_html_report,
@@ -108,13 +109,31 @@ def run():
     leaders = screen_universe_minervini(universe, min_score=7)
     info_map = get_company_info_map_from_csv()
     
+    # --- Aktuellen Schlusskurs & Marktkapitalisierung ergänzen ---
+    def fetch_quote_data(ticker: str) -> dict:
+        try:
+            info = yf.Ticker(ticker)
+            fast = getattr(info, "fast_info", {}) or {}
+            close = fast.get("lastPrice") or fast.get("last_price") or info.info.get("regularMarketPrice")
+            market_cap = fast.get("marketCap") or info.info.get("marketCap")
+    
+            # Marktkapitalisierung in Mio USD
+            market_cap_mio = market_cap / 1_000_000 if market_cap else None
+            return {"Close": close, "MarketCap_Mio": market_cap_mio}
+        except Exception:
+            return {"Close": None, "MarketCap_Mio": None}
+    
     if not leaders.empty:
         # Spalten 'Company' und 'Industry' ergänzen
         company_series = leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a"))
         industry_series = leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a"))
-    
+        quote_data = leaders.index.map(lambda t: fetch_quote_data(t))
+        quote_df = pd.DataFrame(list(quote_data), index=leaders.index)    
+        
         leaders.insert(0, "Industry", industry_series)
         leaders.insert(0, "Company", company_series)
+        leaders.insert(leaders.columns.get_loc("Industry") + 1, "Close", quote_df["Close"])
+        leaders.insert(leaders.columns.get_loc("Industry") + 2, "MarketCap (Mio USD)", quote_df["MarketCap_Mio"])
     
     html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
 
