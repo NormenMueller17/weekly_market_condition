@@ -2,6 +2,8 @@ import pandas as pd
 import yfinance as yf
 from data_sources import get_universe
 
+_VOLUME_BREAKOUT_SCORE = 1.4
+
 def compute_minervini_template(df: pd.DataFrame) -> dict:
     """Berechnet die 7 Minervini-Kriterien für ein Kurs-DataFrame mit OHLCV-Daten."""
 
@@ -41,10 +43,21 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     rs_trend = len(sma13.dropna()) > 0 and close.iloc[-1] > sma13.iloc[-1]
 
     # Volumen-Breakout
+    #if len(volume.dropna()) > 20:
+    #    vol_breakout = volume.iloc[-1] > volume.rolling(20).mean().iloc[-1] * _VOLUME_BREAKOUT_SCORE
+    #else:
+    #    vol_breakout = False
+
+    # --- Volumen-Breakout ---
     if len(volume.dropna()) > 20:
-        vol_breakout = volume.iloc[-1] > volume.rolling(20).mean().iloc[-1] * 1.5
+        vol20 = volume.rolling(20).mean()
+        vol_breakout = volume.iloc[-1] > vol20.iloc[-1] * _VOLUME_BREAKOUT_SCORE
+        vol20_val = vol20.iloc[-1]
+        vol_score = volume.iloc[-1] / vol20_val if vol20_val and vol20_val != 0 else float("nan")
     else:
         vol_breakout = False
+        vol20_val = float("nan")
+        vol_score = float("nan")
 
     # NEU: Wochenvergleich Close
     if len(close) >= 2:
@@ -62,9 +75,15 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "Vol-Breakout": vol_breakout,
         "Close > Vorwoche": weekly_momentum,
     }
+
     score = sum(int(v) for v in criteria.values())
 
-    return {"score": score, **criteria}
+    return {
+        "score": score,
+        **criteria,
+        "vol20": vol20_val,
+        "vol_score": vol_score,
+        }
 
 
 def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame:
