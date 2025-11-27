@@ -2,7 +2,7 @@ import pandas as pd
 import yfinance as yf
 from data_sources import get_universe
 
-_VOLUME_BREAKOUT_SCORE = 1.4
+_VOLUME_BREAKOUT_SCORE = 1.0
 
 def compute_minervini_template(df: pd.DataFrame) -> dict:
     """Berechnet die 7 Minervini-Kriterien für ein Kurs-DataFrame mit OHLCV-Daten."""
@@ -150,7 +150,7 @@ def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame
 
     # Bedingung: Vol-Breakout MUSS wahr sein UND zusätzlich mind. 'min_score' weitere Kriterien
     leaders = df_results[
-        #(df_results["Vol-Breakout"] == True) &
+        (df_results["Vol-Breakout"] == True) &
         ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
     ].sort_values("score", ascending=False)
 
