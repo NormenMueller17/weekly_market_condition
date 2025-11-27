@@ -138,7 +138,7 @@ def run():
         leaders["Close (USD)"] = leaders["Close (USD)"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
         leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["vol20"] = leaders["vol20"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
-        leaders["vol_score"] = leaders["vol_score"].apply(lambda x: f"{x:.2f}x" if pd.notna(x) else "n/a")    
+        leaders["vol_score"] = leaders["vol_score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")    
     
     html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
 
