@@ -43,12 +43,6 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     rs_trend = len(sma13.dropna()) > 0 and close.iloc[-1] > sma13.iloc[-1]
 
     # Volumen-Breakout
-    #if len(volume.dropna()) > 20:
-    #    vol_breakout = volume.iloc[-1] > volume.rolling(20).mean().iloc[-1] * _VOLUME_BREAKOUT_SCORE
-    #else:
-    #    vol_breakout = False
-
-    # --- Volumen-Breakout ---
     if len(volume.dropna()) > 20:
         vol20 = volume.rolling(20).mean()
         vol_breakout = volume.iloc[-1] > vol20.iloc[-1] * _VOLUME_BREAKOUT_SCORE
