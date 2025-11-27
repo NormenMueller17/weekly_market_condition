@@ -125,20 +125,36 @@ def run():
     
     if not leaders.empty:
         # Spalten 'Company' und 'Industry' ergänzen
-        company_series = leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a"))
-        industry_series = leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a"))
-        quote_data = leaders.index.map(lambda t: fetch_quote_data(t))
-        quote_df = pd.DataFrame(list(quote_data), index=leaders.index)    
-        
-        leaders.insert(0, "Industry", industry_series)
-        leaders.insert(0, "Company", company_series)
-        leaders.insert(leaders.columns.get_loc("Industry") + 1, "Close (USD)", quote_df["Close"])
-        leaders.insert(leaders.columns.get_loc("Industry") + 2, "MarketCap (Mio USD)", quote_df["MarketCap_Mio"])
-        # --- Werte formatieren ---
-        leaders["Close (USD)"] = leaders["Close (USD)"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        #company_series = leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a"))
+        #industry_series = leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a"))
+        #quote_data = leaders.index.map(lambda t: fetch_quote_data(t))
+        #quote_df = pd.DataFrame(list(quote_data), index=leaders.index)    
+        #leaders.insert(0, "Industry", industry_series)
+        #leaders.insert(0, "Company", company_series)        
+        #leaders.insert(leaders.columns.get_loc("Industry") + 1, "Close (USD)", quote_df["Close"])
+        #leaders.insert(leaders.columns.get_loc("Industry") + 2, "MarketCap (Mio USD)", quote_df["MarketCap_Mio"])
+        #Formatierung
+        #leaders["Close (USD)"] = leaders["Close (USD)"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        #leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
+        #leaders["Ø-Volume 20W"] = leaders["vol20"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
+        #leaders["Volume Ratio Curr. W."] = leaders["vol_score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")   
+
+        # Company & Industry (bereits geladen über info_map)
+        leaders.insert(1, "Company", leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a")))
+        leaders.insert(2, "Industry", leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
+        # Close & MarketCap ergänzen
+        leaders.insert(3, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
+        leaders.insert(4, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
+        leaders.insert(5, "Ø-Volume 20W", leaders["vol20"])
+        leaders.insert(6, "Volume Score", leaders["vol_score"])
+
+        leaders["Close"] = leaders["Close"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
         leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
-        leaders["Ø-Volume 20W"] = leaders["vol20"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
-        leaders["Volume Ratio Curr. W."] = leaders["vol_score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")    
+        leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
+        leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}x" if pd.notna(x) else "n/a") 
+
+        # Jetzt die alten Spalten entfernen, da sie durch die neuen ersetzt wurden
+        leaders.drop(columns=["vol20", "vol_score"], inplace=True)
     
     html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
 
