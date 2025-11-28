@@ -183,7 +183,7 @@ def _extract_close_series(df: pd.DataFrame) -> pd.Series:
     return pd.Series(dtype=float)
 
 
-def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float, float, float]]:
+def build_risk_rows(idx_data: dict) -> list[tuple]:
 """
 Builds Risk & Sentiment rows:
 - VIX
