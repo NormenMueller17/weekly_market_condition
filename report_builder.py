@@ -184,14 +184,14 @@ def _extract_close_series(df: pd.DataFrame) -> pd.Series:
 
 
 def build_risk_rows(idx_data: dict) -> list[tuple]:
-"""
-Builds Risk & Sentiment rows:
-- VIX
-- TNX (10-year yield)
-- UUP (Dollar index)
-Uses robust close extraction so it works for MultiIndex DF.
-Returns list of tuples: (Label, Now, Prev, Delta %)
-"""
+    """
+    Builds Risk & Sentiment rows:
+    - VIX
+    - TNX (10-year yield)
+    - UUP (Dollar index)
+    Uses robust close extraction so it works for MultiIndex DF.
+    Returns list of tuples: (Label, Now, Prev, Delta %)
+    """
     rows = []   # ← FIXED: must be defined at the top
     risk_keys = [
         ("VIX", "VIX"),
