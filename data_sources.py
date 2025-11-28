@@ -106,18 +106,44 @@ def _read_universe_csv_smart(path: str) -> pd.DataFrame:
     df = df.rename(columns=rename_map)
 
     # 4) Ticker normalisieren (Trim, Upper, Whitespace raus, BRK.B -> BRK-B)
-    df["Symbol"] = (
-        df["Symbol"].astype(str)
-        .str.strip()
-        .str.upper()
-        .str.replace(r"\s+", "", regex=True)
-        .str.replace(".", "-", regex=False)
-    )
+    #df["Symbol"] = (
+    #    df["Symbol"].astype(str)
+    #    .str.strip()
+    #    .str.upper()
+    #    .str.replace(r"\s+", "", regex=True)
+    #    .str.replace(".", "-", regex=False)
+    #)
+    
+    df["Symbol"] = df["Symbol"].apply(_normalize_symbol)
     df = df.dropna(subset=["Symbol"])
     df = df[df["Symbol"] != ""]
     df = df.drop_duplicates(subset=["Symbol"], keep="first")
 
     return df
+
+def _normalize_symbol(sym: str) -> str:
+    """
+    Normalisiert Ticker:
+    - Whitespace entfernen
+    - Großbuchstaben
+    - BRK.B -> BRK-B
+    - SAP.DE, SIE.DE usw. bleiben mit '.DE' erhalten
+    """
+    if not isinstance(sym, str):
+        sym = str(sym)
+
+    s = sym.strip().upper()
+    s = re.sub(r"\s+", "", s)
+
+    # Deutsche Listings mit .DE am Ende NICHT anfassen
+    if s.endswith(".DE"):
+        return s
+
+    # Bei anderen Tickers (z.B. BRK.B) den Punkt in Dash wandeln
+    # (falls du das weiterhin brauchst)
+    s = s.replace(".", "-")
+    return s
+
 
 def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
     """
@@ -137,7 +163,9 @@ def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
                 "industry": row.get("Industry"),
             }
 
-    tickers = df["Symbol"].tolist()
+    #tickers = df["Symbol"].tolist()
+    tickers = df["Symbol"].apply(_normalize_symbol)
+    tickers = [t for t in dict.fromkeys(tickers) if t and t != "NAN"]
     print(f"[UNIVERSE] {len(tickers)} Symbole aus {os.path.basename(path)} geladen.")
     return tickers
 
@@ -213,7 +241,7 @@ def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.D
                     group_by="ticker",
                     auto_adjust=False,
                     progress=False,
-                    threads=True,
+                    threads=False,
                 )
                 break
             except Exception as e:
