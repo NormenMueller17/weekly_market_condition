@@ -147,30 +147,66 @@ HTML_TMPL = """
 </html>
 """
 
+def _extract_close_series(df: pd.DataFrame) -> pd.Series:
+    """
+    Versucht robust, eine eindimensionale 'Close'-Serie aus verschiedenen
+    yfinance-Formaten zu extrahieren (normale Spalten, MultiIndex etc.).
+    Gibt eine leere Serie zurück, wenn nichts Sinnvolles gefunden wird.
+    """
+    if df is None or len(df) == 0:
+        return pd.Series(dtype=float)
+
+    # Falls direkt eine Series übergeben wurde
+    if isinstance(df, pd.Series):
+        return pd.to_numeric(df, errors="coerce").dropna()
+
+    if not isinstance(df, pd.DataFrame):
+        return pd.Series(dtype=float)
+
+    # 1) Einfacher Fall: normale Spalte "Close"
+    if "Close" in df.columns:
+        s = df["Close"]
+        # Falls das immer noch ein DataFrame ist → erste Spalte nehmen
+        if isinstance(s, pd.DataFrame):
+            s = s.iloc[:, 0]
+        return pd.to_numeric(s, errors="coerce").dropna()
+
+    # 2) MultiIndex-Spalten: Ebene 0 == "Close"
+    if hasattr(df.columns, "levels"):
+        close_cols = [c for c in df.columns if isinstance(c, tuple) and c[0] == "Close"]
+        if close_cols:
+            s = df[close_cols[0]]
+            if isinstance(s, pd.DataFrame):
+                s = s.iloc[:, 0]
+            return pd.to_numeric(s, errors="coerce").dropna()
+
+    # Falls alles schiefgeht → leere Serie
+    return pd.Series(dtype=float)
+
+
 def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float, float, float]]:
-    risk_keys = ["VIX", "TNX", "UUP"] #, "CPC"
-    out: List[Tuple[str, float, float, float]] = []
-    for key in risk_keys:
-        df = idx_data.get(key, pd.DataFrame())
-        
-        if df is None or df.empty or "Close" not in df:
-            out.append((key, 0.0, 0.0, 0.0))
+    risk_keys = [
+        ("VIX", "VIX"),
+        ("TNX", "10Y Interest Rate"),
+        ("UUP", "UUP"),
+        ]
+    
+    for key, label in risk_keys:
+        df = idx_data.get(key)
+        if df is None or len(df) == 0:
             continue
-            
-        close = pd.to_numeric(df["Close"], errors="coerce").dropna()
-        if len(close) < 2:
-            out.append((key, 0.0, 0.0, 0.0))
+
+        close = _extract_close_series(df)
+        if close.empty:
             continue
-            
-        # Letzter und vorletzter Schlusskurs
+
         now = float(close.iloc[-1])
-        prev = float(close.iloc[-2])
-        delta = now - prev
-        
-        out.append((key, now, prev, delta))
+        prev = float(close.iloc[-2]) if len(close) > 1 else now
+        delta = (now - prev) / prev * 100 if prev != 0 else 0.0
+
+        rows.append((label, now, prev, delta))
         
     return out
-
 
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders):
     divergences = build_divergence_text(idx)    
