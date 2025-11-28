@@ -148,21 +148,27 @@ HTML_TMPL = """
 """
 
 def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float, float, float]]:
-    risk_keys = ["VIX", "CPC", "TNX", "UUP"]
-    out = []
+    risk_keys = ["VIX", "TNX", "UUP"] #, "CPC"
+    out: List[Tuple[str, float, float, float]] = []
     for key in risk_keys:
         df = idx_data.get(key, pd.DataFrame())
+        
         if df is None or df.empty or "Close" not in df:
             out.append((key, 0.0, 0.0, 0.0))
             continue
-        close = df["Close"].dropna()
+            
+        close = pd.to_numeric(df["Close"], errors="coerce").dropna()
         if len(close) < 2:
             out.append((key, 0.0, 0.0, 0.0))
             continue
-        now = float(last["Close"].iloc[-1])
-        prev = float(last["Close"].iloc[-2])
+            
+        # Letzter und vorletzter Schlusskurs
+        now = float(close.iloc[-1])
+        prev = float(close.iloc[-2])
         delta = now - prev
+        
         out.append((key, now, prev, delta))
+        
     return out
 
 
