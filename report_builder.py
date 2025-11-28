@@ -149,29 +149,28 @@ HTML_TMPL = """
 
 def _extract_close_series(df: pd.DataFrame) -> pd.Series:
     """
-    Versucht robust, eine eindimensionale 'Close'-Serie aus verschiedenen
-    yfinance-Formaten zu extrahieren (normale Spalten, MultiIndex etc.).
-    Gibt eine leere Serie zurück, wenn nichts Sinnvolles gefunden wird.
+    Robustly extract a one-dimensional Close series from various yfinance formats.
+    Handles:
+    - normal DataFrames with "Close"
+    - MultiIndex DataFrames (('Close', 'TICKER'), etc.)
+    - Series inputs
+    Returns a cleaned numeric Series or an empty Series.
     """
     if df is None or len(df) == 0:
         return pd.Series(dtype=float)
 
-    # Falls direkt eine Series übergeben wurde
+    # Case 1: Already a Series
     if isinstance(df, pd.Series):
         return pd.to_numeric(df, errors="coerce").dropna()
 
-    if not isinstance(df, pd.DataFrame):
-        return pd.Series(dtype=float)
-
-    # 1) Einfacher Fall: normale Spalte "Close"
+    # Case 2: Normal DataFrame with "Close"
     if "Close" in df.columns:
         s = df["Close"]
-        # Falls das immer noch ein DataFrame ist → erste Spalte nehmen
-        if isinstance(s, pd.DataFrame):
+        if isinstance(s, pd.DataFrame):   # can happen for MultiIndex
             s = s.iloc[:, 0]
         return pd.to_numeric(s, errors="coerce").dropna()
 
-    # 2) MultiIndex-Spalten: Ebene 0 == "Close"
+    # Case 3: MultiIndex columns: ('Close', TKR)
     if hasattr(df.columns, "levels"):
         close_cols = [c for c in df.columns if isinstance(c, tuple) and c[0] == "Close"]
         if close_cols:
@@ -180,11 +179,20 @@ def _extract_close_series(df: pd.DataFrame) -> pd.Series:
                 s = s.iloc[:, 0]
             return pd.to_numeric(s, errors="coerce").dropna()
 
-    # Falls alles schiefgeht → leere Serie
+    # Fall-through: Nothing usable
     return pd.Series(dtype=float)
 
 
 def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float, float, float]]:
+"""
+Builds Risk & Sentiment rows:
+- VIX
+- TNX (10-year yield)
+- UUP (Dollar index)
+Uses robust close extraction so it works for MultiIndex DF.
+Returns list of tuples: (Label, Now, Prev, Delta %)
+"""
+    rows = []   # ← FIXED: must be defined at the top
     risk_keys = [
         ("VIX", "VIX"),
         ("TNX", "10Y Interest Rate"),
