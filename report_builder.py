@@ -159,10 +159,10 @@ def build_risk_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, float,
         if len(close) < 2:
             out.append((key, 0.0, 0.0, 0.0))
             continue
-        now = close.iloc[-1]
-        prev = close.iloc[-2]
+        now = float(last["Close"].iloc[-1])
+        prev = float(last["Close"].iloc[-2])
         delta = now - prev
-        out.append((key, float(now), float(prev), float(delta)))
+        out.append((key, now, prev, delta))
     return out
 
 
