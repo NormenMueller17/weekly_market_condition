@@ -214,7 +214,7 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
 
         rows.append((label, now, prev, delta))
         
-    return out
+    return rows
 
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders):
     divergences = build_divergence_text(idx)    
