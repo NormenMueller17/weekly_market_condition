@@ -1,8 +1,82 @@
 import pandas as pd
 import yfinance as yf
+import numpy as np
 from data_sources import get_universe
 
 _VOLUME_BREAKOUT_SCORE = 1.0
+
+def _compute_weighted_perf(close: pd.Series) -> float:
+    """
+    Berechnet eine gewichtete Performance aus 3M, 6M, 12M
+    (ca. 63 / 126 / 252 Handelstage).
+    Gibt np.nan zurück, falls zu wenig Historie vorhanden ist.
+    """
+    close = pd.to_numeric(close, errors="coerce").dropna()
+    if len(close) < 252 + 1:
+        return np.nan
+
+    c_now = close.iloc[-1]
+
+    def _ret(days: int) -> float:
+        if len(close) <= days:
+            return np.nan
+        c_past = close.iloc[-days - 1]
+        if c_past <= 0:
+            return np.nan
+        return c_now / c_past - 1.0
+
+    r3  = _ret(63)   # ~ 3 Monate
+    r6  = _ret(126)  # ~ 6 Monate
+    r12 = _ret(252)  # ~ 12 Monate
+
+    # Falls zu viele NaN → keine sinnvolle Kennzahl
+    vals = [r for r in (r3, r6, r12) if not np.isnan(r)]
+    if len(vals) == 0:
+        return np.nan
+
+    # Gewichte wie oft in der Literatur zu O'Neil-Nachbauten verwendet
+    w3, w6, w12 = 0.1, 0.2, 0.7
+    # fehlende Zeiträume werden einfach mit 0 gewichtet, wenn NaN
+    r3  = 0.0 if np.isnan(r3)  else r3
+    r6  = 0.0 if np.isnan(r6)  else r6
+    r12 = 0.0 if np.isnan(r12) else r12
+
+    weighted = w3 * r3 + w6 * r6 + w12 * r12
+    return float(weighted)
+
+def _compute_rs_scores(weighted_perfs: dict[str, float]) -> dict[str, float]:
+    """
+    Wandelt ein dict {ticker: weighted_perf} in O'Neil-ähnliche RS-Scores (1–99) um.
+    RS = Prozentrang der gewichteten Performance im Universum.
+    """
+    # Nur gültige Werte verwenden
+    items = [(t, p) for t, p in weighted_perfs.items() if p is not None and not np.isnan(p)]
+    if not items:
+        return {t: np.nan for t in weighted_perfs.keys()}
+
+    # Nach Performance sortieren (schlechteste zuerst)
+    items_sorted = sorted(items, key=lambda x: x[1])
+    n = len(items_sorted)
+
+    rs_map: dict[str, float] = {}
+    for rank_idx, (ticker, perf) in enumerate(items_sorted):
+        # Prozentrang 0..100
+        if n == 1:
+            pct = 100.0
+        else:
+            pct = rank_idx / (n - 1) * 100.0
+        # O'Neil skaliert auf 1–99; wir nehmen gerundet
+        rs_val = round(pct)
+        # clamp auf 1..99
+        rs_val = max(1, min(99, rs_val))
+        rs_map[ticker] = float(rs_val)
+
+    # Ticker ohne gültige Performance bekommen NaN
+    for t in weighted_perfs.keys():
+        if t not in rs_map:
+            rs_map[t] = np.nan
+
+    return rs_map
 
 def compute_minervini_template(df: pd.DataFrame) -> dict:
     """Berechnet die 7 Minervini-Kriterien für ein Kurs-DataFrame mit OHLCV-Daten."""
