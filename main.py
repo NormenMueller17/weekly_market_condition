@@ -155,7 +155,6 @@ def run():
         # ---- Spaltenreihenfolge: Score sichtbar + 52W-Spalten nach Close ----
     # score kommt aus dem Screener; wir nehmen ihn explizit nach vorne
     preferred_order = [
-        "score",
         "Company",
         "Industry",
         "MarketCap (Mio USD)",
@@ -164,6 +163,7 @@ def run():
         "Dist to 52W High (%)",
         "Ø-Volume 20W",
         "Volume Score",
+        "score",
         "SMA10W steigend",
         "SMA30W steigend",
         "SMA40W steigend",
