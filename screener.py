@@ -30,13 +30,25 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     sma40_rising = len(sma40.dropna()) > 1 and sma40.iloc[-1] > sma40.iloc[-2]
     ma_order = len(sma40.dropna()) > 0 and sma10.iloc[-1] > sma30.iloc[-1] and sma30.iloc[-1] > sma40.iloc[-1]
 
-    # 52W-Regel
+    # --- 52W-Regel + 52W High + Distanz ---
     if len(close) >= 52:
-        high_52w = high.rolling(52).max().iloc[-1]
-        low_52w = low.rolling(52).min().iloc[-1]
+        high_52w_series = high.rolling(52).max()
+        low_52w_series = low.rolling(52).min()
+
+        high_52w = float(high_52w_series.iloc[-1])
+        low_52w = float(low_52w_series.iloc[-1])
+
         tt_range_ok = (close.iloc[-1] >= 1.30 * low_52w) and (close.iloc[-1] >= 0.75 * high_52w)
     else:
+        high_52w = float("nan")
+        low_52w = float("nan")
         tt_range_ok = False
+
+    last_close = float(close.iloc[-1])
+    if not pd.isna(high_52w) and high_52w > 0:
+        dist_to_52w_high_pct = (high_52w - last_close) / high_52w * 100.0
+    else:
+        dist_to_52w_high_pct = float("nan")
 
     # RS-Trend
     sma13 = close.rolling(13).mean()
@@ -46,7 +58,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     if len(volume.dropna()) > 20:
         vol20 = volume.rolling(20).mean()
         vol_breakout = volume.iloc[-1] > vol20.iloc[-1] * _VOLUME_BREAKOUT_SCORE
-        vol20_val = vol20.iloc[-1]
+        vol20_val = float(vol20.iloc[-1])
         vol_score = volume.iloc[-1] / vol20_val if vol20_val and vol20_val != 0 else float("nan")
     else:
         vol_breakout = False
@@ -75,9 +87,12 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     return {
         "score": score,
         **criteria,
+        # zusätzliche Kennzahlen, die wir später im Report nutzen:
+        "52W High": high_52w,
+        "Dist to 52W High (%)": dist_to_52w_high_pct,
         "vol20": vol20_val,
         "vol_score": vol_score,
-        }
+    }
 
 
 def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame:
