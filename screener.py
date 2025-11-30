@@ -175,10 +175,11 @@ def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame
     - universe: optionale Iterable von Ticker-Symbolen. Wenn None, wird get_universe() benutzt.
     - min_score: Mindestanzahl erfüllter Kriterien (zusätzlich zum Pflicht-Kriterium 'Vol-Breakout').
     """
-    # 1) Universum festlegen
     tickers = list(universe) if universe is not None else list(get_universe())
 
     results = {}
+    weighted_perfs: dict[str, float] = {}   # <-- NEU: für RS-Berechnung
+
     for t in tickers:
         try:
             df = yf.download(
@@ -217,6 +218,12 @@ def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame
                 if "Volume" not in have:
                     df["Volume"] = 0
 
+            # ---- NEU: RS-Performance vorbereiten ----
+            close_daily = pd.to_numeric(df["Close"], errors="coerce").dropna()
+            weighted_perf = _compute_weighted_perf(close_daily)
+            weighted_perfs[t] = weighted_perf
+
+            # ---- Minervini-Kriterien ----
             res = compute_minervini_template(df)
             results[t] = res
 
@@ -228,10 +235,16 @@ def screen_universe_minervini(universe=None, min_score: int = 6) -> pd.DataFrame
         return pd.DataFrame()
 
     df_results = pd.DataFrame(results).T
+
+    # Wenn score fehlt → sofort abbrechen
     if "score" not in df_results.columns:
         return pd.DataFrame()
 
-    # Bedingung: Vol-Breakout MUSS wahr sein UND zusätzlich mind. 'min_score' weitere Kriterien
+    # ---- NEU: RS-Werte berechnen ----
+    rs_map = _compute_rs_scores(weighted_perfs)
+    df_results["RS (O'Neil)"] = df_results.index.map(lambda t: rs_map.get(t, np.nan))
+
+    # ---- Minervini Leader filtern ----
     leaders = df_results[
         (df_results["Vol-Breakout"] == True) &
         ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
