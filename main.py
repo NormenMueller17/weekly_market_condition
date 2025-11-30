@@ -130,6 +130,13 @@ def run():
         # Close & MarketCap ergänzen
         leaders.insert(3, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
         leaders.insert(4, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
+
+      # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
+        if "52W High" not in leaders.columns:
+            leaders["52W High"] = pd.NA
+        if "Dist to 52W High (%)" not in leaders.columns:
+            leaders["Dist to 52W High (%)"] = pd.NA
+        
         leaders.insert(5, "Ø-Volume 20W", leaders["vol20"])
         leaders.insert(6, "Volume Score", leaders["vol_score"])
 
@@ -137,9 +144,39 @@ def run():
         leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a") 
+        leaders["52W High"] = leaders["52W High"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        leaders["Dist to 52W High (%)"] = leaders["Dist to 52W High (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
+        
+        # Alte Roh-Spalten nicht mehr gebraucht
+        drop_cols = [c for c in ["vol20", "vol_score"] if c in leaders.columns]
+        if drop_cols:
+            leaders.drop(columns=drop_cols, inplace=True)
 
-        # Jetzt die alten Spalten entfernen, da sie durch die neuen ersetzt wurden
-        leaders.drop(columns=["vol20", "vol_score"], inplace=True)
+        # ---- Spaltenreihenfolge: Score sichtbar + 52W-Spalten nach Close ----
+    # score kommt aus dem Screener; wir nehmen ihn explizit nach vorne
+    preferred_order = [
+        "score",
+        "Company",
+        "Industry",
+        "MarketCap (Mio USD)",
+        "Close",
+        "52W High",
+        "Dist to 52W High (%)",
+        "Ø-Volume 20W",
+        "Volume Score",
+        "SMA10W steigend",
+        "SMA30W steigend",
+        "SMA40W steigend",
+        "MA-Ordnung 10>30>40",
+        "52W Range OK",
+        "RS-Trend ↑",
+        "Vol-Breakout",
+        "Close > Vorwoche",
+    ]
+
+    existing_pref = [c for c in preferred_order if c in leaders.columns]
+    remaining = [c for c in leaders.columns if c not in existing_pref]
+    leaders = leaders[existing_pref + remaining]
     
     html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
 
