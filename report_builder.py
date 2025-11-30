@@ -133,12 +133,12 @@ HTML_TMPL = """
         <td class="left">{{ row["Industry"] }}</td>
         <td>{{ row["score"] }}</td>
         
-        #In Mail nicht alle Metriken anzeigen
-        #{% for col in leaders.columns if col not in ["score", "Company", "Industry"] %}
-        #  {% set val = row[col] %}
-        #  <td class="{{ 'pos' if val is sameas(true) else 'neg' if val is sameas(false) else '' }}">
-        #    {{ "✔" if val is sameas(true) else "✘" if val is sameas(false) else (val|string) }}
-          </td>
+        <!--In Mail nicht alle Metriken anzeigen
+        {% for col in leaders.columns if col not in ["score", "Company", "Industry"] %}
+          {% set val = row[col] %}
+          <td class="{{ 'pos' if val is sameas(true) else 'neg' if val is sameas(false) else '' }}">
+            {{ "✔" if val is sameas(true) else "✘" if val is sameas(false) else (val|string) }} 
+          </td> -->
         {% endfor %}
       </tr>
       {% endfor %}
