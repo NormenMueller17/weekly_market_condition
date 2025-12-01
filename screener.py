@@ -94,6 +94,23 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     low = dfw["Low"]
     volume = dfw["Volume"]
 
+    # --- Neuer Block: Close aktuell / Vorwoche / Veränderung in % ---
+    if len(close_w) >= 2:
+        close_weekly_now = float(close_w.iloc[-1])
+        close_weekly_prev = float(close_w.iloc[-2])
+        if close_weekly_prev != 0:
+            close_weekly_change_pct = (close_weekly_now / close_weekly_prev - 1.0) * 100.0
+        else:
+            close_weekly_change_pct = float("nan")
+    elif len(close_w) == 1:
+        close_weekly_now = float(close_w.iloc[-1])
+        close_weekly_prev = float("nan")
+        close_weekly_change_pct = float("nan")
+    else:
+        close_weekly_now = float("nan")
+        close_weekly_prev = float("nan")
+        close_weekly_change_pct = float("nan")    
+
     # Gleitende Durchschnitte
     sma10 = close.rolling(10).mean()
     sma30 = close.rolling(30).mean()
@@ -166,6 +183,9 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "Dist to 52W High (%)": dist_to_52w_high_pct,
         "vol20": vol20_val,
         "vol_score": vol_score,
+        "close_weekly_now": close_weekly_now,
+        "close_weekly_prev": close_weekly_prev,
+        "close_weekly_change_pct": close_weekly_change_pct,
     }
 
 
