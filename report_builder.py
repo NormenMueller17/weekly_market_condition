@@ -126,6 +126,8 @@ HTML_TMPL = """
         <th>Score</th>
         <th>RS</th>
         <th>Close</th>
+        <th>Close Vorwoche</th>
+        <th>Veränderung in %</th>        
         <th>52W High</th>
         <th>Dist<br>52W High (%)</th>
         <th>Ø-Vol<br>20W</th>
@@ -140,6 +142,8 @@ HTML_TMPL = """
         <td>{{ row["score"] }}</td>
         <td>{{ row["RS (O'Neil)"] }}</td>
         <td>{{ row["Close"] }}</td>
+        <td>{{ row["Close Vorwoche"] }}</td>
+        <td>{{ row["Veränderung in %"] }}</td>        
         <td>{{ row["52W High"] }}</td>
         <td>{{ row["Dist to 52W High (%)"] }}</td>
         <td>{{ row["Ø-Volume 20W"] }}</td>
