@@ -136,11 +136,24 @@ def run():
             leaders["52W High"] = pd.NA
         if "Dist to 52W High (%)" not in leaders.columns:
             leaders["Dist to 52W High (%)"] = pd.NA
+
+        # NEU: "Close Vorwoche" und "Veränderung in %"
+        if "close_weekly_prev" in leaders.columns:
+            leaders.insert(5, "Close Vorwoche", leaders["close_weekly_prev"])
+        else:
+            leaders.insert(5, "Close Vorwoche", pd.NA)
+
+        if "close_weekly_change_pct" in leaders.columns:
+            leaders.insert(6, "Veränderung in %", leaders["close_weekly_change_pct"])
+        else:
+            leaders.insert(6, "Veränderung in %", pd.NA)
         
-        leaders.insert(5, "Ø-Volume 20W", leaders["vol20"])
-        leaders.insert(6, "Volume Score", leaders["vol_score"])
+        leaders.insert(7, "Ø-Volume 20W", leaders["vol20"])
+        leaders.insert(8, "Volume Score", leaders["vol_score"])
 
         leaders["Close"] = leaders["Close"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        leaders["Close Vorwoche"] = leaders["Close Vorwoche"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        leaders["Veränderung in %"] = leaders["Veränderung in %"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
         leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a") 
@@ -148,7 +161,7 @@ def run():
         leaders["Dist to 52W High (%)"] = leaders["Dist to 52W High (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
         
         # Alte Roh-Spalten nicht mehr gebraucht
-        drop_cols = [c for c in ["vol20", "vol_score"] if c in leaders.columns]
+        drop_cols = [c for c in ["vol20", "vol_score", "close_weekly_now", "close_weekly_prev", "close_weekly_change_pct"] if c in leaders.columns]
         if drop_cols:
             leaders.drop(columns=drop_cols, inplace=True)
 
@@ -159,6 +172,8 @@ def run():
         "Industry",
         "MarketCap (Mio USD)",
         "Close",
+        "Close Vorwoche",
+        "Veränderung in %",        
         "52W High",
         "Dist to 52W High (%)",
         "Ø-Volume 20W",
