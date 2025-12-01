@@ -3,7 +3,7 @@ import yfinance as yf
 import numpy as np
 from data_sources import get_universe
 
-_VOLUME_BREAKOUT_SCORE = 1.0
+_VOLUME_BREAKOUT_SCORE = 0.3
 
 def _compute_weighted_perf(close: pd.Series) -> float:
     """
