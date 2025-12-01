@@ -90,7 +90,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     }).dropna()
 
     close_w = dfw["Close"].dropna()
-    #close = dfw["Close"]
+    close = dfw["Close"]
     high = dfw["High"]
     low = dfw["Low"]
     volume = dfw["Volume"]
