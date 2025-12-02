@@ -111,25 +111,51 @@ def run():
     
     # --- Aktuellen Schlusskurs & Marktkapitalisierung ergänzen ---
     def fetch_quote_data(ticker: str) -> dict:
+        """
+        Holt Schlusskurs, MarketCap (in Mio) und EPS (TTM) robust über yfinance.
+        Wenn eine Kennzahl nicht verfügbar ist, wird None zurückgegeben.
+        """
         try:
             info = yf.Ticker(ticker)
             fast = getattr(info, "fast_info", {}) or {}
-            close = fast.get("lastPrice") or fast.get("last_price") or info.info.get("regularMarketPrice")
+
+            # Close
+            close = (
+                fast.get("lastPrice")
+                or fast.get("last_price")
+                or info.info.get("regularMarketPrice")
+            )
+
+            # MarketCap
             market_cap = fast.get("marketCap") or info.info.get("marketCap")
-    
-            # Marktkapitalisierung in Mio USD
             market_cap_mio = market_cap / 1_000_000 if market_cap else None
-            return {"Close": close, "MarketCap_Mio": market_cap_mio}
+
+            # EPS (TTM)
+            eps_ttm = fast.get("epsTrailingTwelveMonths")
+            if eps_ttm is None:
+                eps_ttm = info.info.get("trailingEps")
+
+            return {
+                "Close": close,
+                "MarketCap_Mio": market_cap_mio,
+                "EPS_TTM": eps_ttm,
+            }
         except Exception:
-            return {"Close": None, "MarketCap_Mio": None}
+            return {
+                "Close": None,
+                "MarketCap_Mio": None,
+                "EPS_TTM": None,
+            }
     
     if not leaders.empty:
         # Company & Industry (bereits geladen über info_map)
         leaders.insert(1, "Company", leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a")))
         leaders.insert(2, "Industry", leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
-        # Close & MarketCap ergänzen
+        # Close, MarketCap & EPS ergänzen
         leaders.insert(3, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
         leaders.insert(4, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
+        leaders.insert(5, "EPS (TTM)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_TTM")))
+
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -139,22 +165,23 @@ def run():
 
         # NEU: "Close Vorwoche" und "Veränderung in %"
         if "close_weekly_prev" in leaders.columns:
-            leaders.insert(5, "Close Vorwoche", leaders["close_weekly_prev"])
+            leaders.insert(6, "Close Vorwoche", leaders["close_weekly_prev"])
         else:
-            leaders.insert(5, "Close Vorwoche", pd.NA)
+            leaders.insert(6, "Close Vorwoche", pd.NA)
 
         if "close_weekly_change_pct" in leaders.columns:
-            leaders.insert(6, "Veränderung in %", leaders["close_weekly_change_pct"])
+            leaders.insert(7, "Veränderung in %", leaders["close_weekly_change_pct"])
         else:
-            leaders.insert(6, "Veränderung in %", pd.NA)
+            leaders.insert(7, "Veränderung in %", pd.NA)
         
-        leaders.insert(7, "Ø-Volume 20W", leaders["vol20"])
-        leaders.insert(8, "Volume Score", leaders["vol_score"])
+        leaders.insert(8, "Ø-Volume 20W", leaders["vol20"])
+        leaders.insert(9, "Volume Score", leaders["vol_score"])
 
         leaders["Close"] = leaders["Close"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
         leaders["Close Vorwoche"] = leaders["Close Vorwoche"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
         leaders["Veränderung in %"] = leaders["Veränderung in %"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
         leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
+        leaders["EPS (TTM)"] = leaders["EPS (TTM)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
         leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a") 
         leaders["52W High"] = leaders["52W High"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
@@ -171,6 +198,7 @@ def run():
         "Company",
         "Industry",
         "MarketCap (Mio USD)",
+        "EPS (TTM)",
         "Close",
         "Close Vorwoche",
         "Veränderung in %",        
