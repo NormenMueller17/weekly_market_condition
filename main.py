@@ -111,41 +111,47 @@ def run():
     
     # --- Aktuellen Schlusskurs & Marktkapitalisierung ergänzen ---
     def fetch_quote_data(ticker: str) -> dict:
-        """
-        Holt Schlusskurs, MarketCap (in Mio) und EPS (TTM) robust über yfinance.
-        Wenn eine Kennzahl nicht verfügbar ist, wird None zurückgegeben.
-        """
-        try:
-            info = yf.Ticker(ticker)
-            fast = getattr(info, "fast_info", {}) or {}
+    """
+    Holt Schlusskurs, MarketCap (Mio) und EPS (Forward, mit TTM-Fallback) robust über yfinance.
+    Wenn eine Kennzahl nicht verfügbar ist, wird None zurückgegeben.
+    """
+    try:
+        info = yf.Ticker(ticker)
+        fast = getattr(info, "fast_info", {}) or {}
 
-            # Close
-            close = (
-                fast.get("lastPrice")
-                or fast.get("last_price")
-                or info.info.get("regularMarketPrice")
+        # Close
+        close = (
+            fast.get("lastPrice")
+            or fast.get("last_price")
+            or info.info.get("regularMarketPrice")
+        )
+
+        # MarketCap
+        market_cap = fast.get("marketCap") or info.info.get("marketCap")
+        market_cap_mio = market_cap / 1_000_000 if market_cap else None
+
+        # EPS: zuerst Forward, dann TTM als Fallback
+        eps = (
+            fast.get("epsForward")
+            or info.info.get("forwardEps")
+        )
+        if eps is None:
+            eps = (
+                fast.get("epsTrailingTwelveMonths")
+                or info.info.get("trailingEps")
             )
 
-            # MarketCap
-            market_cap = fast.get("marketCap") or info.info.get("marketCap")
-            market_cap_mio = market_cap / 1_000_000 if market_cap else None
-
-            # EPS (TTM)
-            eps_ttm = fast.get("epsTrailingTwelveMonths")
-            if eps_ttm is None:
-                eps_ttm = info.info.get("trailingEps")
-
-            return {
-                "Close": close,
-                "MarketCap_Mio": market_cap_mio,
-                "EPS_TTM": eps_ttm,
-            }
-        except Exception:
-            return {
-                "Close": None,
-                "MarketCap_Mio": None,
-                "EPS_TTM": None,
-            }
+        return {
+            "Close": close,
+            "MarketCap_Mio": market_cap_mio,
+            "EPS_FWD_TTM": eps,
+        }
+    except Exception:
+        return {
+            "Close": None,
+            "MarketCap_Mio": None,
+            "EPS_FWD_TTM": None,
+        }
     
     if not leaders.empty:
         # Company & Industry (bereits geladen über info_map)
@@ -154,7 +160,7 @@ def run():
         # Close, MarketCap & EPS ergänzen
         leaders.insert(3, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
         leaders.insert(4, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
-        leaders.insert(5, "EPS (TTM)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_TTM")))
+        leaders.insert(5, "EPS (Forward/TTM)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_FWD_TTM")))
 
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
@@ -181,7 +187,7 @@ def run():
         leaders["Close Vorwoche"] = leaders["Close Vorwoche"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
         leaders["Veränderung in %"] = leaders["Veränderung in %"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
         leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
-        leaders["EPS (TTM)"] = leaders["EPS (TTM)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+        leaders["EPS (Forward/TTM)"] = leaders["EPS (Forward/TTM)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
         leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a") 
         leaders["52W High"] = leaders["52W High"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
@@ -198,7 +204,7 @@ def run():
         "Company",
         "Industry",
         "MarketCap (Mio USD)",
-        "EPS (TTM)",
+        "EPS (Forward/TTM)",
         "Close",
         "Close Vorwoche",
         "Veränderung in %",        
