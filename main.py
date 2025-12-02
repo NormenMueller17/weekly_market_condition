@@ -111,47 +111,47 @@ def run():
     
     # --- Aktuellen Schlusskurs & Marktkapitalisierung ergänzen ---
     def fetch_quote_data(ticker: str) -> dict:
-    """
-    Holt Schlusskurs, MarketCap (Mio) und EPS (Forward, mit TTM-Fallback) robust über yfinance.
-    Wenn eine Kennzahl nicht verfügbar ist, wird None zurückgegeben.
-    """
-    try:
-        info = yf.Ticker(ticker)
-        fast = getattr(info, "fast_info", {}) or {}
-
-        # Close
-        close = (
-            fast.get("lastPrice")
-            or fast.get("last_price")
-            or info.info.get("regularMarketPrice")
-        )
-
-        # MarketCap
-        market_cap = fast.get("marketCap") or info.info.get("marketCap")
-        market_cap_mio = market_cap / 1_000_000 if market_cap else None
-
-        # EPS: zuerst Forward, dann TTM als Fallback
-        eps = (
-            fast.get("epsForward")
-            or info.info.get("forwardEps")
-        )
-        if eps is None:
-            eps = (
-                fast.get("epsTrailingTwelveMonths")
-                or info.info.get("trailingEps")
+        """
+        Holt Schlusskurs, MarketCap (Mio) und EPS (Forward, mit TTM-Fallback) robust über yfinance.
+        Wenn eine Kennzahl nicht verfügbar ist, wird None zurückgegeben.
+        """
+        try:
+            info = yf.Ticker(ticker)
+            fast = getattr(info, "fast_info", {}) or {}
+    
+            # Close
+            close = (
+                fast.get("lastPrice")
+                or fast.get("last_price")
+                or info.info.get("regularMarketPrice")
             )
-
-        return {
-            "Close": close,
-            "MarketCap_Mio": market_cap_mio,
-            "EPS_FWD_TTM": eps,
-        }
-    except Exception:
-        return {
-            "Close": None,
-            "MarketCap_Mio": None,
-            "EPS_FWD_TTM": None,
-        }
+    
+            # MarketCap
+            market_cap = fast.get("marketCap") or info.info.get("marketCap")
+            market_cap_mio = market_cap / 1_000_000 if market_cap else None
+    
+            # EPS: zuerst Forward, dann TTM als Fallback
+            eps = (
+                fast.get("epsForward")
+                or info.info.get("forwardEps")
+            )
+            if eps is None:
+                eps = (
+                    fast.get("epsTrailingTwelveMonths")
+                    or info.info.get("trailingEps")
+                )
+    
+            return {
+                "Close": close,
+                "MarketCap_Mio": market_cap_mio,
+                "EPS_FWD_TTM": eps,
+            }
+        except Exception:
+            return {
+                "Close": None,
+                "MarketCap_Mio": None,
+                "EPS_FWD_TTM": None,
+            }
     
     if not leaders.empty:
         # Company & Industry (bereits geladen über info_map)
