@@ -194,16 +194,16 @@ def run():
         leaders.insert(9, "Ø-Volume 20W", leaders["vol20"])
         leaders.insert(10, "Volume Score", leaders["vol_score"])
 
-        leaders["Close"] = leaders["Close"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
-        leaders["Close Vorwoche"] = leaders["Close Vorwoche"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
-        leaders["Veränderung in %"] = leaders["Veränderung in %"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
-        leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
-        leaders["EPS (Forward/TTM)"] = leaders["EPS (Forward/TTM)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
-        leaders["EPS Wachstum FWD/TTM (%)"] = leaders["EPS Wachstum FWD/TTM (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
-        leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
-        leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a") 
-        leaders["52W High"] = leaders["52W High"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
-        leaders["Dist to 52W High (%)"] = leaders["Dist to 52W High (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
+        #leaders["Close"] = leaders["Close"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        #leaders["Close Vorwoche"] = leaders["Close Vorwoche"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        #leaders["Veränderung in %"] = leaders["Veränderung in %"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
+        #leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
+        #leaders["EPS (Forward/TTM)"] = leaders["EPS (Forward/TTM)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+        #leaders["EPS Wachstum FWD/TTM (%)"] = leaders["EPS Wachstum FWD/TTM (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+        #leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
+        #leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a") 
+        #leaders["52W High"] = leaders["52W High"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
+        #leaders["Dist to 52W High (%)"] = leaders["Dist to 52W High (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
         
         # Alte Roh-Spalten nicht mehr gebraucht
         drop_cols = [c for c in ["vol20", "vol_score", "close_weekly_now", "close_weekly_prev", "close_weekly_change_pct"] if c in leaders.columns]
