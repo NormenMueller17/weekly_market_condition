@@ -126,6 +126,7 @@ HTML_TMPL = """
         <th>Score</th>
         <th>RS</th>
         <th>EPS (Forward/TTM)</th>
+        <th>EPS Wachstum<br>FWD/TTM (%)</th>
         <th>Close</th>
         <th>Close Vorwoche</th>
         <th>Veränderung in %</th>        
@@ -143,6 +144,7 @@ HTML_TMPL = """
         <td>{{ row["score"] }}</td>
         <td>{{ row["RS (O'Neil)"] }}</td>
         <td>{{ row["EPS (Forward/TTM)"] }}</td>
+        <td>{{ row["EPS Wachstum FWD/TTM (%)"] }}</td>
         <td>{{ row["Close"] }}</td>
         <td>{{ row["Close Vorwoche"] }}</td>
         <td>{{ row["Veränderung in %"] }}</td>        
