@@ -19,7 +19,6 @@ from report_builder import (
     heuristic_verdict,
 )
 
-
 BOOLEAN_HEADERS = [
     "SMA10W steigend",
     "SMA30W steigend",
@@ -130,27 +129,39 @@ def run():
             market_cap = fast.get("marketCap") or info.info.get("marketCap")
             market_cap_mio = market_cap / 1_000_000 if market_cap else None
     
-            # EPS: zuerst Forward, dann TTM als Fallback
-            eps = (
+            # EPS: Forward + TTM
+            eps_forward = (
                 fast.get("epsForward")
                 or info.info.get("forwardEps")
             )
-            if eps is None:
-                eps = (
-                    fast.get("epsTrailingTwelveMonths")
-                    or info.info.get("trailingEps")
-                )
+            eps_trailing = (
+                fast.get("epsTrailingTwelveMonths")
+                or info.info.get("trailingEps")
+            )
+            
+            # EPS, wie bisher in der Spalte "EPS (Forward/TTM)" angezeigt:
+            eps_fwd_ttm = eps_forward if eps_forward is not None else eps_trailing
+    
+            # EPS-Wachstum (Forward vs. TTM) in %:
+            eps_growth_pct = None
+            if eps_forward is not None and eps_trailing not in (None, 0):
+                try:
+                    eps_growth_pct = (eps_forward / eps_trailing - 1.0) * 100.0
+                except Exception:
+                    eps_growth_pct = None
     
             return {
                 "Close": close,
                 "MarketCap_Mio": market_cap_mio,
-                "EPS_FWD_TTM": eps,
+                "EPS_FWD_TTM": eps_fwd_ttm,
+                "EPS_GROWTH_FWD_TTM": eps_growth_pct,
             }
         except Exception:
             return {
                 "Close": None,
                 "MarketCap_Mio": None,
                 "EPS_FWD_TTM": None,
+                "EPS_GROWTH_FWD_TTM": None,
             }
     
     if not leaders.empty:
@@ -161,7 +172,7 @@ def run():
         leaders.insert(3, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
         leaders.insert(4, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
         leaders.insert(5, "EPS (Forward/TTM)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_FWD_TTM")))
-
+        leaders.insert(6, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_GROWTH_FWD_TTM")))
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -171,23 +182,24 @@ def run():
 
         # NEU: "Close Vorwoche" und "Veränderung in %"
         if "close_weekly_prev" in leaders.columns:
-            leaders.insert(6, "Close Vorwoche", leaders["close_weekly_prev"])
+            leaders.insert(7, "Close Vorwoche", leaders["close_weekly_prev"])
         else:
-            leaders.insert(6, "Close Vorwoche", pd.NA)
+            leaders.insert(7, "Close Vorwoche", pd.NA)
 
         if "close_weekly_change_pct" in leaders.columns:
-            leaders.insert(7, "Veränderung in %", leaders["close_weekly_change_pct"])
+            leaders.insert(8, "Veränderung in %", leaders["close_weekly_change_pct"])
         else:
-            leaders.insert(7, "Veränderung in %", pd.NA)
+            leaders.insert(8, "Veränderung in %", pd.NA)
         
-        leaders.insert(8, "Ø-Volume 20W", leaders["vol20"])
-        leaders.insert(9, "Volume Score", leaders["vol_score"])
+        leaders.insert(9, "Ø-Volume 20W", leaders["vol20"])
+        leaders.insert(10, "Volume Score", leaders["vol_score"])
 
         leaders["Close"] = leaders["Close"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
         leaders["Close Vorwoche"] = leaders["Close Vorwoche"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
         leaders["Veränderung in %"] = leaders["Veränderung in %"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
         leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["EPS (Forward/TTM)"] = leaders["EPS (Forward/TTM)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+        leaders["EPS Wachstum FWD/TTM (%)"] = leaders["EPS Wachstum FWD/TTM (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
         leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
         leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a") 
         leaders["52W High"] = leaders["52W High"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
@@ -205,6 +217,7 @@ def run():
         "Industry",
         "MarketCap (Mio USD)",
         "EPS (Forward/TTM)",
+        "EPS Wachstum FWD/TTM (%)",
         "Close",
         "Close Vorwoche",
         "Veränderung in %",        
