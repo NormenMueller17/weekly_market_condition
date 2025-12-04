@@ -149,12 +149,22 @@ def run():
                     eps_growth_pct = (eps_forward / eps_trailing - 1.0) * 100.0
                 except Exception:
                     eps_growth_pct = None
+
+            # Revenue Growth TTM YoY (%), direkt aus Yahoo:
+            rev_growth_pct = None
+            try:
+                rg = info.info.get("revenueGrowth")
+                if rg is not None:
+                    rev_growth_pct = float(rg) * 100.0
+            except Exception:
+                rev_growth_pct = None
     
             return {
                 "Close": close,
                 "MarketCap_Mio": market_cap_mio,
                 "EPS_FWD_TTM": eps_fwd_ttm,
                 "EPS_GROWTH_FWD_TTM": eps_growth_pct,
+                "REV_GROWTH_TTM_YOY": rev_growth_pct,
             }
         except Exception:
             return {
@@ -162,6 +172,7 @@ def run():
                 "MarketCap_Mio": None,
                 "EPS_FWD_TTM": None,
                 "EPS_GROWTH_FWD_TTM": None,
+                "REV_GROWTH_TTM_YOY": None,
             }
     
     if not leaders.empty:
@@ -173,6 +184,7 @@ def run():
         leaders.insert(4, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
         leaders.insert(5, "EPS (Forward/TTM)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_FWD_TTM")))
         leaders.insert(6, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_GROWTH_FWD_TTM")))
+        leaders.insert(7, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("REV_GROWTH_TTM_YOY")))
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -182,17 +194,17 @@ def run():
 
         # NEU: "Close Vorwoche" und "Veränderung in %"
         if "close_weekly_prev" in leaders.columns:
-            leaders.insert(7, "Close Vorwoche", leaders["close_weekly_prev"])
+            leaders.insert(8, "Close Vorwoche", leaders["close_weekly_prev"])
         else:
-            leaders.insert(7, "Close Vorwoche", pd.NA)
+            leaders.insert(8, "Close Vorwoche", pd.NA)
 
         if "close_weekly_change_pct" in leaders.columns:
-            leaders.insert(8, "Veränderung in %", leaders["close_weekly_change_pct"])
+            leaders.insert(9, "Veränderung in %", leaders["close_weekly_change_pct"])
         else:
-            leaders.insert(8, "Veränderung in %", pd.NA)
+            leaders.insert(9, "Veränderung in %", pd.NA)
         
-        leaders.insert(9, "Ø-Volume 20W", leaders["vol20"])
-        leaders.insert(10, "Volume Score", leaders["vol_score"])
+        leaders.insert(10, "Ø-Volume 20W", leaders["vol20"])
+        leaders.insert(11, "Volume Score", leaders["vol_score"])
         
         # Alte Roh-Spalten nicht mehr gebraucht
         drop_cols = [c for c in ["vol20", "vol_score", "close_weekly_now", "close_weekly_prev", "close_weekly_change_pct"] if c in leaders.columns]
@@ -207,8 +219,9 @@ def run():
         "MarketCap (Mio USD)",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
-        "Close",
+        "Revenue Wachstum TTM YoY (%)",
         "Close Vorwoche",
+        "Close", 
         "Veränderung in %",        
         "52W High",
         "Dist to 52W High (%)",
@@ -243,6 +256,7 @@ def run():
     for col in [
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
+        "Revenue Wachstum TTM YoY (%)",
         "Close",
         "Close Vorwoche",
         "Veränderung in %",
@@ -307,6 +321,7 @@ def run():
     two_dec_cols = [
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
+        "Revenue Wachstum TTM YoY (%)",
         "Close",
         "Close Vorwoche",
         "Veränderung in %",
@@ -339,26 +354,6 @@ def run():
     # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
     style_boolean_columns(ws)
     wb.save(out_path)
-
-    #-ende neu
-    
-    # 3) Auto-Fit nur, wenn Datei existiert und nicht leer
-    #if out_path.exists() and leaders_out.shape[1] > 0:
-    #    wb = load_workbook(out_path)
-    #    ws = wb.active
-    #
-    #    for col_idx, col_cells in enumerate(ws.columns, start=1):
-    #        max_len = 0
-    #        for cell in col_cells:
-    #            val = "" if cell.value is None else str(cell.value)
-    #            if len(val) > max_len:
-    #                max_len = len(val)
-    #        ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
-    #        
-    #    style_boolean_columns(ws)
-    #    wb.save(out_path)
-    #else:
-    #    print(f"[WARN] Excel not created or empty: {out_path}")
     
     # 4) Beim Mailversand denselben Pfad anhängen
     send_email(html, subject_suffix="Weekly US Market Report", attachments=[str(out_path)])
