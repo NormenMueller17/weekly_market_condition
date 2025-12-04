@@ -193,17 +193,6 @@ def run():
         
         leaders.insert(9, "Ø-Volume 20W", leaders["vol20"])
         leaders.insert(10, "Volume Score", leaders["vol_score"])
-
-        #leaders["Close"] = leaders["Close"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
-        #leaders["Close Vorwoche"] = leaders["Close Vorwoche"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
-        #leaders["Veränderung in %"] = leaders["Veränderung in %"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
-        #leaders["MarketCap (Mio USD)"] = leaders["MarketCap (Mio USD)"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
-        #leaders["EPS (Forward/TTM)"] = leaders["EPS (Forward/TTM)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
-        #leaders["EPS Wachstum FWD/TTM (%)"] = leaders["EPS Wachstum FWD/TTM (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "")
-        #leaders["Ø-Volume 20W"] = leaders["Ø-Volume 20W"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "n/a")
-        #leaders["Volume Score"] = leaders["Volume Score"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a") 
-        #leaders["52W High"] = leaders["52W High"].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "n/a")
-        #leaders["Dist to 52W High (%)"] = leaders["Dist to 52W High (%)"].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "n/a")
         
         # Alte Roh-Spalten nicht mehr gebraucht
         drop_cols = [c for c in ["vol20", "vol_score", "close_weekly_now", "close_weekly_prev", "close_weekly_change_pct"] if c in leaders.columns]
@@ -258,24 +247,83 @@ def run():
     
     # 2) Immer schreiben – auch wenn leer (dann gibt's wenigstens Header)
     leaders_out.to_excel(out_path, index=False, sheet_name="Leaders")
+
+    
+    # Excel laden - neu
+    wb = load_workbook(out_path)
+    ws = wb.active
+    
+    # -------------------------------
+    # Auto-Fit für alle Spalten
+    # -------------------------------
+    for col_idx, col_cells in enumerate(ws.columns, start=1):
+        max_len = 0
+        for cell in col_cells:
+            val = "" if cell.value is None else str(cell.value)
+            max_len = max(max_len, len(val))
+        ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
+    
+    # -------------------------------
+    # Number-Format Regeln
+    # -------------------------------
+    
+    # Spaltennamen zu Spaltenindex mappen
+    header_row = {cell.value: cell.column for cell in ws[1] if cell.value}
+    
+    # 2 Nachkommastellen
+    two_dec_cols = [
+        "EPS (Forward/TTM)",
+        "EPS Wachstum FWD/TTM (%)",
+        "Close",
+        "Close Vorwoche",
+        "Veränderung in %",
+        "52W High",
+        "Dist to 52W High (%)",
+        "Volume Score",
+    ]
+    
+    # Ganze Zahlen (ohne Nachkommastellen)
+    zero_dec_cols = [
+        "MarketCap (Mio USD)",
+        "Ø-Volume 20W",
+    ]
+    
+    # --- Anwenden der Formate ---
+    for col_name in two_dec_cols:
+        if col_name in header_row:
+            col_letter = get_column_letter(header_row[col_name])
+            for cell in ws[col_letter][1:]:  # alle Zeilen außer Header
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = "0.00"
+    
+    for col_name in zero_dec_cols:
+        if col_name in header_row:
+            col_letter = get_column_letter(header_row[col_name])
+            for cell in ws[col_letter][1:]:
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = "#,##0"
+    
+    wb.save(out_path)
+
+    #-ende neu
     
     # 3) Auto-Fit nur, wenn Datei existiert und nicht leer
-    if out_path.exists() and leaders_out.shape[1] > 0:
-        wb = load_workbook(out_path)
-        ws = wb.active
-    
-        for col_idx, col_cells in enumerate(ws.columns, start=1):
-            max_len = 0
-            for cell in col_cells:
-                val = "" if cell.value is None else str(cell.value)
-                if len(val) > max_len:
-                    max_len = len(val)
-            ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
-            
-        style_boolean_columns(ws)
-        wb.save(out_path)
-    else:
-        print(f"[WARN] Excel not created or empty: {out_path}")
+    #if out_path.exists() and leaders_out.shape[1] > 0:
+    #    wb = load_workbook(out_path)
+    #    ws = wb.active
+    #
+    #    for col_idx, col_cells in enumerate(ws.columns, start=1):
+    #        max_len = 0
+    #        for cell in col_cells:
+    #            val = "" if cell.value is None else str(cell.value)
+    #            if len(val) > max_len:
+    #                max_len = len(val)
+    #        ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
+    #        
+    #    style_boolean_columns(ws)
+    #    wb.save(out_path)
+    #else:
+    #    print(f"[WARN] Excel not created or empty: {out_path}")
     
     # 4) Beim Mailversand denselben Pfad anhängen
     send_email(html, subject_suffix="Weekly US Market Report", attachments=[str(out_path)])
