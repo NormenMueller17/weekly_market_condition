@@ -229,8 +229,41 @@ def run():
     existing_pref = [c for c in preferred_order if c in leaders.columns]
     remaining = [c for c in leaders.columns if c not in existing_pref]
     leaders = leaders[existing_pref + remaining]
-    
-    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
+
+    # --- Formatierte Kopie NUR für HTML-Report ---
+    leaders_html = leaders.copy()
+
+    def fmt_2dec(x):
+        return f"{x:.2f}" if pd.notna(x) else ""
+
+    def fmt_int(x):
+        return f"{x:,.0f}" if pd.notna(x) else ""
+
+    # Spalten mit 2 Nachkommastellen
+    for col in [
+        "EPS (Forward/TTM)",
+        "EPS Wachstum FWD/TTM (%)",
+        "Close",
+        "Close Vorwoche",
+        "Veränderung in %",
+        "52W High",
+        "Dist to 52W High (%)",
+        "Volume Score",
+    ]:
+        if col in leaders_html.columns:
+            leaders_html[col] = leaders_html[col].apply(fmt_2dec)
+
+    # Spalten mit ganzen Zahlen
+    for col in [
+        "MarketCap (Mio USD)",
+        "Ø-Volume 20W",
+    ]:
+        if col in leaders_html.columns:
+            leaders_html[col] = leaders_html[col].apply(fmt_int)
+
+    # HTML-Report bekommt die formatierte Kopie
+    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders_html)    
+    #html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
 
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
@@ -302,7 +335,9 @@ def run():
             for cell in ws[col_letter][1:]:
                 if isinstance(cell.value, (int, float)):
                     cell.number_format = "#,##0"
-    
+                    
+    # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
+    style_boolean_columns(ws)
     wb.save(out_path)
 
     #-ende neu
