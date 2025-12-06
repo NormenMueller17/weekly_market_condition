@@ -390,9 +390,6 @@ def run():
     
     # 4) Beim Mailversand denselben Pfad anhängen
     send_email(html, subject_suffix="Weekly US Market Report", attachments=[str(out_path)])
-        
-    # 5) Report senden
-    #send_email(html, subject_suffix="Weekly US Market Report", attachments=[out_path])
 
 if __name__ == "__main__":
     run()
