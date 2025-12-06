@@ -176,15 +176,23 @@ def run():
             }
     
     if not leaders.empty:
+        # --- Sicherheitskopie (sehr wichtig für HTML-Formatierung später) ---
+        leaders = leaders.copy()
+    
+        # Hilfsfunktion zum Entfernen von .DE
+        def _strip_de_suffix(ticker: str) -> str:
+            return ticker.split(".")[0]
+
         # Company & Industry (bereits geladen über info_map)
         leaders.insert(1, "Company", leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a")))
-        leaders.insert(2, "Industry", leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
+        leaders.insert(2, "SA", leaders.index.map(lambda t: f"https://stockanalysis.com/stocks/{_strip_de_suffix(t)}"))       
+        leaders.insert(3, "Industry", leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
         # Close, MarketCap & EPS ergänzen
-        leaders.insert(3, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
-        leaders.insert(4, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
-        leaders.insert(5, "EPS (Forward/TTM)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_FWD_TTM")))
-        leaders.insert(6, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_GROWTH_FWD_TTM")))
-        leaders.insert(7, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("REV_GROWTH_TTM_YOY")))
+        leaders.insert(4, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
+        leaders.insert(5, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
+        leaders.insert(6, "EPS (Forward/TTM)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_FWD_TTM")))
+        leaders.insert(7, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_GROWTH_FWD_TTM")))
+        leaders.insert(8, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("REV_GROWTH_TTM_YOY")))
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -194,17 +202,17 @@ def run():
 
         # NEU: "Close Vorwoche" und "Veränderung in %"
         if "close_weekly_prev" in leaders.columns:
-            leaders.insert(8, "Close Vorwoche", leaders["close_weekly_prev"])
+            leaders.insert(9, "Close Vorwoche", leaders["close_weekly_prev"])
         else:
-            leaders.insert(8, "Close Vorwoche", pd.NA)
+            leaders.insert(9, "Close Vorwoche", pd.NA)
 
         if "close_weekly_change_pct" in leaders.columns:
-            leaders.insert(9, "Veränderung in %", leaders["close_weekly_change_pct"])
+            leaders.insert(10, "Veränderung in %", leaders["close_weekly_change_pct"])
         else:
-            leaders.insert(9, "Veränderung in %", pd.NA)
+            leaders.insert(10, "Veränderung in %", pd.NA)
         
-        leaders.insert(10, "Ø-Volume 20W", leaders["vol20"])
-        leaders.insert(11, "Volume Score", leaders["vol_score"])
+        leaders.insert(11, "Ø-Volume 20W", leaders["vol20"])
+        leaders.insert(12, "Volume Score", leaders["vol_score"])
         
         # Alte Roh-Spalten nicht mehr gebraucht
         drop_cols = [c for c in ["vol20", "vol_score", "close_weekly_now", "close_weekly_prev", "close_weekly_change_pct"] if c in leaders.columns]
@@ -251,7 +259,7 @@ def run():
 
     def fmt_int(x):
         return f"{x:,.0f}" if pd.notna(x) else ""
-
+    
     # Spalten mit 2 Nachkommastellen
     for col in [
         "EPS (Forward/TTM)",
@@ -299,6 +307,23 @@ def run():
     # Excel laden - neu
     wb = load_workbook(out_path)
     ws = wb.active
+
+    # Spalte "SA" finden
+    sa_col_idx = None
+    for cell in ws[1]:
+        if cell.value == "SA":
+            sa_col_idx = cell.column
+            break
+    
+    if sa_col_idx is not None:
+        sa_col_letter = get_column_letter(sa_col_idx)
+        for row in range(2, ws.max_row + 1):
+            cell = ws[f"{sa_col_letter}{row}"]
+            url = cell.value
+            if url and isinstance(url, str):
+                cell.value = "SA"
+                cell.hyperlink = url
+                cell.font = Font(color="0000EE", underline="single")  # Blau + Unterstrichen
     
     # -------------------------------
     # Auto-Fit für alle Spalten
