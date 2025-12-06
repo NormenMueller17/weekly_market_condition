@@ -249,12 +249,19 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
     return rows
 
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders):
-    # 1) Divergenzen und Breadth-Snapshots
-    divergences = build_divergence_text(idx)
+    # 1) Divergenzen & Breadth-Snapshots
+    divergences = build_divergence_text(idx)    
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
 
-    # 2) Kopie des Leaders-DF für den HTML-Report
+    # 2) Kopie für HTML-Rendering
     leaders_html = leaders.copy()
+
+    # --- NEU: nur Ticker mit 8/8 Score im MAIL-Report anzeigen ---
+    if "score" in leaders_html.columns:
+        # Sicherheitshalber in numerisch umwandeln
+        leaders_html = leaders_html.copy()
+        leaders_html["score_num"] = pd.to_numeric(leaders_html["score"], errors="coerce")
+        leaders_html = leaders_html[leaders_html["score_num"] == 8].drop(columns=["score_num"])
 
     # 3) SA-Spalte in HTML-Buttons umwandeln (falls vorhanden)
     if "SA" in leaders_html.columns:
@@ -270,7 +277,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
             )
         leaders_html["SA"] = leaders_html["SA"].apply(_sa_button)
 
-    # 4) Template rendern – wichtig: leaders=leaders_html
+    # 4) Template rendern – HTML sieht nur die gefilterten Leaders
     tmpl = Template(HTML_TMPL)
     html = tmpl.render(
         breadth=breadth,
@@ -283,7 +290,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         COLOR_POSITIVE=COLOR_POSITIVE,
         COLOR_NEGATIVE=COLOR_NEGATIVE,
         divergences=divergences,
-    )
+        )
     return html
 
 def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]]:
