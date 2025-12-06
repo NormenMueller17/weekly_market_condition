@@ -3,7 +3,7 @@ import yfinance as yf
 import numpy as np
 from data_sources import get_universe
 
-_VOLUME_BREAKOUT_SCORE = 0.3
+_VOLUME_BREAKOUT_SCORE = 1.3
 
 def _compute_weighted_perf(close: pd.Series) -> float:
     """
@@ -267,7 +267,7 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
 
     # ---- Minervini Leader filtern ----
     leaders = df_results[
-        #(df_results["Vol-Breakout"] == True) &
+        (df_results["Vol-Breakout"] == True) &
         ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
     ].sort_values("score", ascending=False)
 
