@@ -153,11 +153,7 @@ HTML_TMPL = """
       <tr>
         <td class="left">{{ idx }}</td>
         <td class="left">{{ row["Company"] }}</td>
-        <td class="left">
-          <a class="btn-sa"
-             href="https://stockanalysis.com/stocks/{{ base_ticker }}"
-             target="_blank">SA</a>
-        </td>
+        <td class="left">{{ row["SA"] | safe }}</td>
         <td class="left">{{ row["Industry"] }}</td>
         <td>{{ row["score"] }}</td>
         <td>{{ row["RS (O'Neil)"] }}</td>
@@ -253,8 +249,28 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
     return rows
 
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders):
-    divergences = build_divergence_text(idx)    
+    # 1) Divergenzen und Breadth-Snapshots
+    divergences = build_divergence_text(idx)
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
+
+    # 2) Kopie des Leaders-DF für den HTML-Report
+    leaders_html = leaders.copy()
+
+    # 3) SA-Spalte in HTML-Buttons umwandeln (falls vorhanden)
+    if "SA" in leaders_html.columns:
+        def _sa_button(url: str) -> str:
+            if not isinstance(url, str) or not url:
+                return ""
+            return (
+                f'<a href="{url}" target="_blank" '
+                f'style="display:inline-block;padding:4px 8px;'
+                f'background-color:#007bff;color:white;'
+                f'text-decoration:none;border-radius:4px;'
+                f'font-size:12px;">SA</a>'
+            )
+        leaders_html["SA"] = leaders_html["SA"].apply(_sa_button)
+
+    # 4) Template rendern – wichtig: leaders=leaders_html
     tmpl = Template(HTML_TMPL)
     html = tmpl.render(
         breadth=breadth,
@@ -263,7 +279,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         risk=risk,
         summary=summary,
         report_date=report_date,
-        leaders=leaders,
+        leaders=leaders_html,
         COLOR_POSITIVE=COLOR_POSITIVE,
         COLOR_NEGATIVE=COLOR_NEGATIVE,
         divergences=divergences,
