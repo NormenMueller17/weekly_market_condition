@@ -22,6 +22,16 @@ HTML_TMPL = """
         th.left, td.left { text-align: left; }
         .pos    { color: green; }
         .neg    { color: red; }
+        .btn-sa {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: #0052cc;
+            color: #ffffff;
+            font-size: 0.8em;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .btn-sa:hover { background-color: #003d99; }
     </style>
 </head>
 <body>
@@ -122,6 +132,7 @@ HTML_TMPL = """
       <tr>
         <th class="left">Ticker</th>
         <th class="left">Unternehmen</th>
+        <th class="left">SA</th> 
         <th class="left">Branche</th>
         <th>Score</th>
         <th>RS</th>
@@ -138,9 +149,15 @@ HTML_TMPL = """
       </tr>
     
       {% for idx, row in leaders.iterrows() %}
+      {% set base_ticker = idx.split('.')[0] %}
       <tr>
         <td class="left">{{ idx }}</td>
         <td class="left">{{ row["Company"] }}</td>
+        <td class="left">
+          <a class="btn-sa"
+             href="https://stockanalysis.com/stocks/{{ base_ticker }}"
+             target="_blank">SA</a>
+        </td>
         <td class="left">{{ row["Industry"] }}</td>
         <td>{{ row["score"] }}</td>
         <td>{{ row["RS (O'Neil)"] }}</td>
