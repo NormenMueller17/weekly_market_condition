@@ -180,12 +180,22 @@ def run():
         leaders = leaders.copy()
     
         # Hilfsfunktion zum Entfernen von .DE
-        def _strip_de_suffix(ticker: str) -> str:
-            return ticker.split(".")[0]
+        def _make_sa_url(ticker: str) -> str:
+            """
+            Für US-Aktien:
+                https://stockanalysis.com/stocks/TICKER
+            Für deutsche (.DE):
+                https://stockanalysis.com/quote/etr/TICKER (ohne .DE)
+            """
+            base = ticker.split(".")[0]
+            if ticker.upper().endswith(".DE"):
+                return f"https://stockanalysis.com/quote/etr/{base}"
+            else:
+                return f"https://stockanalysis.com/stocks/{base}"
 
         # Company & Industry (bereits geladen über info_map)
         leaders.insert(1, "Company", leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a")))
-        leaders.insert(2, "SA", leaders.index.map(lambda t: f"https://stockanalysis.com/stocks/{_strip_de_suffix(t)}"))       
+        leaders.insert(2, "SA", leaders.index.map(_make_sa_url))      
         leaders.insert(3, "Industry", leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
         # Close, MarketCap & EPS ergänzen
         leaders.insert(4, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
@@ -223,6 +233,7 @@ def run():
     # score kommt aus dem Screener; wir nehmen ihn explizit nach vorne
     preferred_order = [
         "Company",
+        "SA",
         "Industry",
         "MarketCap (Mio USD)",
         "EPS (Forward/TTM)",
