@@ -296,15 +296,12 @@ def run():
 
     # HTML-Report bekommt die formatierte Kopie
     html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders_html)    
-    #html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders)
-
+    
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
 
     # leaders ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
-    #leaders_out = leaders
     leaders_out = leaders.reset_index().rename(columns={"index": "Ticker"})
-    #leaders_out = leaders.sort_values(["score", "Ticker"], ascending=[False, True])
     
     # 1) Zielpfad sicherstellen (eigener Output-Ordner ist sauberer)
     out_dir = Path("artifacts")
