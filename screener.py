@@ -267,7 +267,7 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
 
     # ---- Minervini Leader filtern ----
     leaders = df_results[
-        (df_results["Vol-Breakout"] == True) &
+        #(df_results["Vol-Breakout"] == True) &
         ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
     ].sort_values("score", ascending=False)
 
