@@ -110,26 +110,32 @@ def run():
     
     # --- Aktuellen Schlusskurs & Marktkapitalisierung ergänzen ---
     def fetch_quote_data(ticker: str) -> dict:
-        """
-        Holt Schlusskurs, MarketCap (Mio) und EPS (Forward, mit TTM-Fallback) robust über yfinance.
-        Wenn eine Kennzahl nicht verfügbar ist, wird None zurückgegeben.
-        """
+    """
+    Holt Close, MarketCap (Mio), EPS (Forward/TTM) und Revenue Growth (TTM YoY)
+    mit Retry-Mechanismus, falls Yahoo Finance temporär nicht antwortet.
+    """
+    MAX_RETRIES = 3
+    SLEEP_SECONDS = 1
+
+    for attempt in range(MAX_RETRIES):
         try:
             info = yf.Ticker(ticker)
+
+            # ------- fast_info (schnell, stabiler) -------
             fast = getattr(info, "fast_info", {}) or {}
-    
+
             # Close
             close = (
                 fast.get("lastPrice")
                 or fast.get("last_price")
                 or info.info.get("regularMarketPrice")
             )
-    
+
             # MarketCap
             market_cap = fast.get("marketCap") or info.info.get("marketCap")
             market_cap_mio = market_cap / 1_000_000 if market_cap else None
-    
-            # EPS: Forward + TTM
+
+            # ------- EPS Forward / TTM -------
             eps_forward = (
                 fast.get("epsForward")
                 or info.info.get("forwardEps")
@@ -138,11 +144,10 @@ def run():
                 fast.get("epsTrailingTwelveMonths")
                 or info.info.get("trailingEps")
             )
-            
-            # EPS, wie bisher in der Spalte "EPS (Forward/TTM)" angezeigt:
+
             eps_fwd_ttm = eps_forward if eps_forward is not None else eps_trailing
-    
-            # EPS-Wachstum (Forward vs. TTM) in %:
+
+            # EPS-Wachstum (Forward vs. TTM)
             eps_growth_pct = None
             if eps_forward is not None and eps_trailing not in (None, 0):
                 try:
@@ -150,7 +155,7 @@ def run():
                 except Exception:
                     eps_growth_pct = None
 
-            # Revenue Growth TTM YoY (%), direkt aus Yahoo:
+            # ------- Revenue Growth (TTM YoY) -------
             rev_growth_pct = None
             try:
                 rg = info.info.get("revenueGrowth")
@@ -158,7 +163,8 @@ def run():
                     rev_growth_pct = float(rg) * 100.0
             except Exception:
                 rev_growth_pct = None
-    
+
+            # Wenn erfolgreich → Rückgabe
             return {
                 "Close": close,
                 "MarketCap_Mio": market_cap_mio,
@@ -166,14 +172,25 @@ def run():
                 "EPS_GROWTH_FWD_TTM": eps_growth_pct,
                 "REV_GROWTH_TTM_YOY": rev_growth_pct,
             }
-        except Exception:
-            return {
-                "Close": None,
-                "MarketCap_Mio": None,
-                "EPS_FWD_TTM": None,
-                "EPS_GROWTH_FWD_TTM": None,
-                "REV_GROWTH_TTM_YOY": None,
-            }
+
+        except Exception as e:
+            # --- Retry only for first (max_retries-1) attempts ---
+            if attempt < MAX_RETRIES - 1:
+                print(f"[WARN] fetch_quote_data({ticker}) Versuch {attempt+1} fehlgeschlagen ({e}). "
+                      f"Retry in {SLEEP_SECONDS}s ...")
+                time.sleep(SLEEP_SECONDS)
+                continue
+            else:
+                print(f"[ERROR] fetch_quote_data({ticker}) dauerhaft fehlgeschlagen ({e}).")
+
+    # Wenn alle Versuche fehlgeschlagen sind:
+    return {
+        "Close": None,
+        "MarketCap_Mio": None,
+        "EPS_FWD_TTM": None,
+        "EPS_GROWTH_FWD_TTM": None,
+        "REV_GROWTH_TTM_YOY": None,
+    }
     
     if not leaders.empty:
         # --- Sicherheitskopie (sehr wichtig für HTML-Formatierung später) ---
