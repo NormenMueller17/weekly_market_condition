@@ -11,6 +11,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 
 from report_builder import (
@@ -109,11 +110,12 @@ def run():
     leaders = screen_universe_minervini(universe, min_score=0)
     info_map = get_company_info_map_from_csv()
     
+
     # --- Aktuellen Schlusskurs & Marktkapitalisierung ergänzen ---
-    def fetch_quote_data(ticker: str) -> dict:
+    def fetch_quote_data_single(ticker: str) -> dict:
         """
         Holt Close, MarketCap (Mio), EPS (Forward/TTM) und Revenue Growth (TTM YoY)
-        mit Retry-Mechanismus, falls Yahoo Finance temporär nicht antwortet.
+        für EINEN Ticker. Mit kleinem Retry-Mechanismus.
         """
         MAX_RETRIES = 3
         SLEEP_SECONDS = 1
@@ -121,8 +123,6 @@ def run():
         for attempt in range(MAX_RETRIES):
             try:
                 info = yf.Ticker(ticker)
-    
-                # ------- fast_info (schnell, stabiler) -------
                 fast = getattr(info, "fast_info", {}) or {}
     
                 # Close
@@ -136,7 +136,7 @@ def run():
                 market_cap = fast.get("marketCap") or info.info.get("marketCap")
                 market_cap_mio = market_cap / 1_000_000 if market_cap else None
     
-                # ------- EPS Forward / TTM -------
+                # EPS: Forward + TTM
                 eps_forward = (
                     fast.get("epsForward")
                     or info.info.get("forwardEps")
@@ -145,7 +145,6 @@ def run():
                     fast.get("epsTrailingTwelveMonths")
                     or info.info.get("trailingEps")
                 )
-    
                 eps_fwd_ttm = eps_forward if eps_forward is not None else eps_trailing
     
                 # EPS-Wachstum (Forward vs. TTM)
@@ -156,7 +155,7 @@ def run():
                     except Exception:
                         eps_growth_pct = None
     
-                # ------- Revenue Growth (TTM YoY) -------
+                # Revenue Growth (TTM YoY)
                 rev_growth_pct = None
                 try:
                     rg = info.info.get("revenueGrowth")
@@ -165,7 +164,6 @@ def run():
                 except Exception:
                     rev_growth_pct = None
     
-                # Wenn erfolgreich → Rückgabe
                 return {
                     "Close": close,
                     "MarketCap_Mio": market_cap_mio,
@@ -175,16 +173,15 @@ def run():
                 }
     
             except Exception as e:
-                # --- Retry only for first (max_retries-1) attempts ---
                 if attempt < MAX_RETRIES - 1:
-                    print(f"[WARN] fetch_quote_data({ticker}) Versuch {attempt+1} fehlgeschlagen ({e}). "
+                    print(f"[WARN] fetch_quote_data_single({ticker}) Versuch {attempt+1} fehlgeschlagen ({e}). "
                           f"Retry in {SLEEP_SECONDS}s ...")
                     time.sleep(SLEEP_SECONDS)
                     continue
                 else:
-                    print(f"[ERROR] fetch_quote_data({ticker}) dauerhaft fehlgeschlagen ({e}).")
+                    print(f"[ERROR] fetch_quote_data_single({ticker}) dauerhaft fehlgeschlagen ({e}).")
     
-        # Wenn alle Versuche fehlgeschlagen sind:
+        # Fallback: alles None
         return {
             "Close": None,
             "MarketCap_Mio": None,
@@ -192,6 +189,41 @@ def run():
             "EPS_GROWTH_FWD_TTM": None,
             "REV_GROWTH_TTM_YOY": None,
         }
+
+    def batch_fetch_quote_data(tickers) -> dict:
+        """
+        Holt Fundamentaldaten für eine Liste von Tickern parallel.
+        Rückgabe: dict[ticker] -> dict mit Feldern wie in fetch_quote_data_single.
+        """
+        results = {}
+        tickers = list(dict.fromkeys(tickers))  # Duplikate raus
+    
+        # Anzahl Threads begrenzen – 8-16 ist ein guter Startwert
+        max_workers = min(16, max(4, len(tickers) // 20))  # z.B. 4–16 Threads
+    
+        print(f"[INFO] Starte batch_fetch_quote_data für {len(tickers)} Ticker "
+              f"mit {max_workers} Threads ...")
+    
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_ticker = {executor.submit(fetch_quote_data_single, t): t for t in tickers}
+    
+            for future in as_completed(future_to_ticker):
+                tkr = future_to_ticker[future]
+                try:
+                    data = future.result()
+                except Exception as e:
+                    print(f"[ERROR] batch_fetch_quote_data: {tkr} -> {e}")
+                    data = {
+                        "Close": None,
+                        "MarketCap_Mio": None,
+                        "EPS_FWD_TTM": None,
+                        "EPS_GROWTH_FWD_TTM": None,
+                        "REV_GROWTH_TTM_YOY": None,
+                    }
+                results[tkr] = data
+
+        return results    
+
     
     if not leaders.empty:
         # --- Sicherheitskopie (sehr wichtig für HTML-Formatierung später) ---
@@ -210,17 +242,20 @@ def run():
                 return f"https://stockanalysis.com/quote/etr/{base}"
             else:
                 return f"https://stockanalysis.com/stocks/{base}"
-
+                
         # Company & Industry (bereits geladen über info_map)
         leaders.insert(1, "Company", leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a")))
         leaders.insert(2, "SA", leaders.index.map(_make_sa_url))      
         leaders.insert(3, "Industry", leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
-        # Close, MarketCap & EPS ergänzen
-        leaders.insert(4, "Close", leaders.index.map(lambda t: fetch_quote_data(t).get("Close")))
-        leaders.insert(5, "MarketCap (Mio USD)", leaders.index.map(lambda t: fetch_quote_data(t).get("MarketCap_Mio")))
-        leaders.insert(6, "EPS (Forward/TTM)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_FWD_TTM")))
-        leaders.insert(7, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("EPS_GROWTH_FWD_TTM")))
-        leaders.insert(8, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: fetch_quote_data(t).get("REV_GROWTH_TTM_YOY")))
+
+        # --- NEU: Fundamentaldaten für ALLE Leaders in einem Rutsch laden ---
+        #from fetch_quote_data import batch_fetch_quote_data  # oder dort, wo du sie definiert hast
+        quote_map = batch_fetch_quote_data(leaders.index.tolist())
+        leaders.insert(4, "Close", leaders.index.map(lambda t: quote_map.get(t, {}).get("Close")))
+        leaders.insert(5, "MarketCap (Mio USD)", leaders.index.map(lambda t: quote_map.get(t, {}).get("MarketCap_Mio")))
+        leaders.insert(6, "EPS (Forward/TTM)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_FWD_TTM")))
+        leaders.insert(7, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_GROWTH_FWD_TTM")))
+        leaders.insert(8, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_GROWTH_TTM_YOY")))
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
