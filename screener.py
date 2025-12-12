@@ -2,6 +2,7 @@ import pandas as pd
 import yfinance as yf
 import numpy as np
 from data_sources import get_universe
+from detect_vcp import detect_vcp
 
 _VOLUME_BREAKOUT_SCORE = 1.3
 
@@ -88,6 +89,12 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "Low": "min",
         "Volume": "sum"
     }).dropna()
+
+    vcp_result = detect_vcp(dfw, window=20)
+    vcp_flag = vcp_result.get("VCP", False)
+    vcp_waves = vcp_result.get("Waves", 0)
+    vcp_entry = vcp_result.get("Entry_Signal", False)
+    vcp_breakout = vcp_result.get("Breakout_Level", None)
 
     close_w = dfw["Close"].dropna()
     close = dfw["Close"]
@@ -187,6 +194,10 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "close_weekly_now": close_weekly_now,
         "close_weekly_prev": close_weekly_prev,
         "close_weekly_change_pct": close_weekly_change_pct,
+        "VCP": vcp_flag,
+        "VCP Waves": vcp_waves,
+        "VCP Entry": vcp_entry,
+        "VCP Breakout Level": vcp_breakout,
     }
 
 
