@@ -1,63 +1,83 @@
 import pandas as pd
+import numpy as np
 
-def detect_vcp(df: pd.DataFrame, window: int = 20,
-               min_waves: int = 2, max_waves: int = 4,
-               volume_factor: float = 0.8,
-               breakout_buffer: float = 0.01) -> dict:
+def detect_vcp(df: pd.DataFrame, window: int = 120) -> dict:
     """
-    Erkennung eines Volatility Contraction Patterns (VCP) nach Minervini-Logik.
-
-    Args:
-        df: DataFrame mit ['High','Low','Close','Volume']
-        window: Anzahl Perioden für Analyse (z.B. 20 Wochen)
-        min_waves: minimale Kontraktionswellen
-        max_waves: maximale Kontraktionswellen
-        volume_factor: erwartete Volumenreduktion (z.B. 0.8 = 20% Rückgang)
-        breakout_buffer: Puffer oberhalb Breakout-Level (z.B. 0.01 = 1%)
-
-    Returns:
-        dict mit Infos:
-        {
-          "VCP": True/False,
-          "Waves": int,
-          "Breakout_Level": float,
-          "Entry_Signal": True/False
-        }
+    Verbesserter VCP-Detektor nach Minervini.
+    Gibt IMMER ein Dictionary zurück, das von screener.py erwartet wird.
     """
-
-    if df is None or df.empty or len(df) < window:
-        return {"VCP": False, "Waves": 0, "Breakout_Level": None, "Entry_Signal": False}
-
-    recent = df[-window:].copy()
-    recent['Range'] = recent['High'] - recent['Low']
-
-    # 1. Kontraktionswellen über lokale Range-Peaks
-    ranges = recent['Range'].values
-    waves = []
-    for i in range(1, len(ranges) - 1):
-        if ranges[i] > ranges[i-1] and ranges[i] > ranges[i+1]:
-            waves.append(ranges[i])
-
-    contracting = all(waves[i] > waves[i+1] for i in range(len(waves)-1)) if len(waves) >= 2 else False
-
-    # 2. Volumen-Kontraktion prüfen (letztes ØVol < erstes ØVol * Faktor)
-    vol = recent['Volume'].rolling(3).mean().dropna().values
-    volume_contracting = len(vol) > 1 and vol[-1] < vol[0] * volume_factor
-
-    # 3. Breakout-Level = höchster Schlusskurs im Fenster
-    breakout_level = recent['Close'].max()
-
-    # 4. Entry-Signal prüfen: aktueller Schlusskurs > Breakout_Level * (1+buffer)
-    last_close = recent['Close'].iloc[-1]
-    entry_signal = last_close > breakout_level * (1 + breakout_buffer)
-
-    # 5. Ergebnis zurückgeben
-    vcp_detected = contracting and volume_contracting and min_waves <= len(waves) <= max_waves
-
-    return {
-        "VCP": vcp_detected,
-        "Waves": len(waves),
-        "Breakout_Level": breakout_level,
-        "Entry_Signal": entry_signal
+    result = {
+        "VCP": False,
+        "Waves": 0,
+        "Entry_Signal": False,
+        "Breakout_Level": None,
     }
+
+    if df is None or df.empty or "Close" not in df:
+        return result
+
+    # --- Nur letzten 'window' Bars betrachten ---
+    data = df.tail(window).copy()
+    closes = data["Close"].astype(float)
+    vols = data["Volume"].astype(float) if "Volume" in data.columns else None
+
+    if len(closes) < 60:
+        return result
+
+    # === 1) Uptrend erforderlich ===
+    hh = closes.max()
+    last_close = closes.iloc[-1]
+
+    if last_close < 0.80 * hh:
+        return result
+
+    ma20 = closes.rolling(20).mean()
+    ma50 = closes.rolling(50).mean()
+
+    if not (last_close > ma20.iloc[-1] > ma50.iloc[-1]):
+        return result
+
+    if not (ma20.iloc[-1] > ma20.iloc[-5] and ma50.iloc[-1] > ma50.iloc[-5]):
+        return result
+
+    # === 2) Volatility Contraction ===
+    ret_abs = closes.pct_change().abs().dropna()
+    n = len(ret_abs)
+    k = n // 3
+    early, mid, late = ret_abs[:k], ret_abs[k:2*k], ret_abs[2*k:]
+
+    def _drop(a, b, min_rel=0.15):
+        return (a > b) and ((a - b) / max(a, 1e-9) >= min_rel)
+
+    if not (_drop(early.mean(), mid.mean()) and _drop(mid.mean(), late.mean())):
+        return result
+
+    # === 3) Volumenkontraktion (optional) ===
+    if vols is not None and not vols.isna().all():
+        v = vols.tail(window).replace(0, np.nan).dropna()
+        if len(v) > 20:
+            vk = len(v) // 3
+            ve, vm, vl = v[:vk], v[vk:2*vk], v[2*vk:]
+            if not (_drop(ve.mean(), vm.mean(), 0.10) and _drop(vm.mean(), vl.mean(), 0.10)):
+                return result
+
+    # === 4) Tightness der letzten 10 Bars ===
+    last10 = closes.tail(10)
+    if (last10.max() - last10.min()) / last_close > 0.10:
+        return result
+
+    # === Breakout-Level ===
+    breakout_level = closes.max()
+
+    # === Entry-Signal: aktueller Close > Pivot * 1.01 ===
+    entry_signal = last_close > breakout_level * 1.01
+
+    # === Ergebnis zusammenstellen ===
+    result["VCP"] = True
+    result["Waves"] = 3   # wir haben keine echte Wave-Count-Logik, daher Dummy
+    result["Entry_Signal"] = entry_signal
+    result["Breakout_Level"] = breakout_level
+
+    return result
+
 
