@@ -194,6 +194,10 @@ def run():
         "RS-Trend ↑",
         "Vol-Breakout",
         "Close > Vorwoche",
+        "VCP",
+        "VCP Waves",
+        "VCP Entry",
+        "VCP Breakout Level",
     ]
 
     existing_pref = [c for c in preferred_order if c in leaders.columns]
@@ -220,6 +224,8 @@ def run():
         "52W High",
         "Dist to 52W High (%)",
         "Volume Score",
+        "VCP Entry",
+        "VCP Breakout Level",
     ]:
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_2dec)
