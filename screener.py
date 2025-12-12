@@ -90,7 +90,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "Volume": "sum"
     }).dropna()
 
-    vcp_result = detect_vcp(dfw, window=20)
+    vcp_result = detect_vcp(dfw, window=60)
     vcp_flag = vcp_result.get("VCP", False)
     vcp_waves = vcp_result.get("Waves", 0)
     vcp_entry = vcp_result.get("Entry_Signal", False)
