@@ -1,3 +1,5 @@
+import pandas as pd
+
 def detect_vcp(df: pd.DataFrame, window: int = 20,
                min_waves: int = 2, max_waves: int = 4,
                volume_factor: float = 0.8,
@@ -58,3 +60,4 @@ def detect_vcp(df: pd.DataFrame, window: int = 20,
         "Breakout_Level": breakout_level,
         "Entry_Signal": entry_signal
     }
+
