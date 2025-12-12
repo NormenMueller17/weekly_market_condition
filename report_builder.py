@@ -146,6 +146,10 @@ HTML_TMPL = """
         <th>Dist<br>52W High (%)</th>
         <th>Ø-Vol<br>20W</th>
         <th>Vol Score</th>
+        <th>VCP</th>
+        <!--<th>Waves</th>-->
+        <!--<th>Entry</th>-->
+        <th>BO-Level</th>
       </tr>
     
       {% for idx, row in leaders.iterrows() %}
@@ -167,6 +171,10 @@ HTML_TMPL = """
         <td>{{ row["Dist to 52W High (%)"] }}</td>
         <td>{{ row["Ø-Volume 20W"] }}</td>
         <td>{{ row["Volume Score"] }}</td>
+        <td>{{ row["VCP"] }}</td>
+        <!--<td>{{ row["VCP Waves"] }}</td>-->
+        <!--<td>{{ row["VCP Entry"] }}</td>-->
+        <td>{{ row["VCP Breakout Level"] }}</td>
       </tr>
       {% endfor %}
     
