@@ -70,7 +70,14 @@ def detect_vcp(df: pd.DataFrame, window: int = 120) -> dict:
     breakout_level = closes.max()
 
     # === Entry-Signal: aktueller Close > Pivot * 1.01 ===
-    entry_signal = last_close > breakout_level * 1.01
+    #entry_signal = last_close > breakout_level * 1.01  
+    still_vcp = last_close < breakout_level * 1.03   # 3% Puffer
+    
+    if entry_signal and still_vcp:
+        # Early-Breakout: immer noch VCP-Kandidat
+        result["VCP"] = True
+    else:
+        result["VCP"] = (alle anderen Checks)
 
     # === Ergebnis zusammenstellen ===
     result["VCP"] = True
@@ -79,5 +86,6 @@ def detect_vcp(df: pd.DataFrame, window: int = 120) -> dict:
     result["Breakout_Level"] = breakout_level
 
     return result
+
 
 
