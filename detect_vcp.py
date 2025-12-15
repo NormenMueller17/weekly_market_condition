@@ -8,9 +8,9 @@ def detect_vcp(
     df: pd.DataFrame,
     window: int = 180,
     n_segments: int = 4,
-    max_close_to_resistance: float = 0.03,
-    min_contraction: float = 0.55,
-    max_pullback: float = 0.15,
+    max_close_to_resistance: float = 0.05,   # war 0.03
+    min_contraction: float = 0.70,           # war 0.55
+    max_pullback: float = 0.30,              # war 0.15
     ) -> dict:
     """
     Verbesserte VCP-Detektion (Variante B) nach Minervini.
@@ -158,3 +158,4 @@ def detect_vcp(
     }
 
     return result
+
