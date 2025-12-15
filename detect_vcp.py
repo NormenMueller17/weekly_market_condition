@@ -1,162 +1,160 @@
 from __future__ import annotations
-
-import math
-from typing import Optional
-
-import numpy as np
 import pandas as pd
+import numpy as np
+import math
 
 
 def detect_vcp(
     df: pd.DataFrame,
     window: int = 180,
     n_segments: int = 4,
-    max_high_drift: float = 0.08,
-    min_contraction: float = 0.5,
-    max_last_pullback: float = 0.12,
     max_close_to_resistance: float = 0.03,
-    ) -> bool:
+    min_contraction: float = 0.55,
+    max_pullback: float = 0.15,
+    ) -> dict:
     """
-    Variante B: VCP über grobe Segment-Analyse („Kisten“)
-    ----------------------------------------------------
-    Idee:
-      1. Nur die letzten `window` Handelstage betrachten.
-      2. Einen groben Widerstand aus den höchsten Schlusskursen bestimmen.
-      3. Das Zeitfenster in `n_segments` Segmente teilen.
-         Für jedes Segment:
-            - tiefster Kurs (min Low)
-            - höchster Kurs (max High)
-            - Durchschnittsvolumen
-      4. Prüfen, ob:
-            - die Segment-Spannen (High-Low) deutlich kleiner werden
-              (mind. `1 - min_contraction` Reduktion von Segment 1 → letztes)
-            - die Tiefs höher kommen (Pullbacks werden flacher)
-            - die Pullbacks nicht zu tief werden
-            - das Volumen in den späteren Segmenten abnimmt
-            - der Schlusskurs am Ende nah am Widerstand liegt
-    Die Funktion liefert nur einen boolschen Wert zurück: True = VCP erkannt.
+    Verbesserte VCP-Detektion (Variante B) nach Minervini.
+
+    Rückgabe ist IMMER ein Dictionary, damit screener.py stabil bleibt.
     """
 
-    # --- Basisprüfungen ----------------------------------------------------- #
+    # --- Standard-Result falls etwas schief geht ---
+    result = {
+        "VCP": False,
+        "Waves": 0,
+        "Entry_Signal": False,
+        "Breakout_Level": None,
+    }
+
+    # --- Basischecks ---
     if df is None or df.empty:
-        return False
+        return result
 
-    cols_needed = {"Close", "High", "Low", "Volume"}
-    if not cols_needed.issubset(df.columns):
-        # Daten sind nicht vollständig genug
-        return False
+    required = {"Close", "High", "Low", "Volume"}
+    if not required.issubset(df.columns):
+        return result
 
-    if len(df) < max(window, n_segments * 10):
-        # Zu wenig Historie um Muster zu erkennen
-        return False
+    df = df.dropna().copy()
+    if len(df) < window:
+        return result
 
-    # Nur das Analysefenster betrachten
-    df_win = df.tail(window).copy()
+    # Letzte „window“-Bars extrahieren
+    data = df.tail(window).copy()
+    close = data["Close"].astype(float)
+    high = data["High"].astype(float)
+    low = data["Low"].astype(float)
+    vol = data["Volume"].astype(float)
 
-    close = pd.to_numeric(df_win["Close"], errors="coerce")
-    high = pd.to_numeric(df_win["High"], errors="coerce")
-    low = pd.to_numeric(df_win["Low"], errors="coerce")
-    vol = pd.to_numeric(df_win["Volume"], errors="coerce")
-
-    # Falls viele NaNs vorhanden sind, abbrechen
-    if close.isna().mean() > 0.2 or high.isna().mean() > 0.2:
-        return False
-
-    # --- 1. Widerstand bestimmen ------------------------------------------- #
-    # Näherung: oberes 90-Perzentil der Schlusskurse im Fenster
-    res_level = float(close.quantile(0.9))
-    if not math.isfinite(res_level) or res_level <= 0:
-        return False
-
-    # Letzter Schlusskurs sollte in der Nähe des Widerstands liegen
     last_close = float(close.iloc[-1])
     if not math.isfinite(last_close):
-        return False
+        return result
 
-    dist_to_res = abs(last_close / res_level - 1.0)
-    if dist_to_res > max_close_to_resistance:
-        # Kurs ist zu weit weg vom "Deckel" – typischerweise kein fertiges VCP
-        return False
+    # -----------------------------------------------------------------------
+    # 1) Widerstands-/Pivotlevel bestimmen (oberes 90. Perzentil)
+    # -----------------------------------------------------------------------
+    resistance = float(close.quantile(0.9))
+    if not math.isfinite(resistance) or resistance <= 0:
+        return result
 
-    # --- 2. Fenster in Segmente aufteilen ---------------------------------- #
-    n = len(df_win)
+    # Kurs muss in Breakout-Nähe sein (Variante B erlaubt 3 % Puffer)
+    rel_dist = abs(last_close / resistance - 1.0)
+    if rel_dist > max_close_to_resistance:
+        return result
+
+    # -----------------------------------------------------------------------
+    # 2) Trend muss intakt sein (kein Downtrend!)
+    # -----------------------------------------------------------------------
+    ma20 = close.rolling(20).mean()
+    ma50 = close.rolling(50).mean()
+
+    if (
+        last_close < ma20.iloc[-1]
+        or ma20.iloc[-1] < ma50.iloc[-1]
+        or ma20.iloc[-1] < ma20.iloc[-5]
+        or ma50.iloc[-1] < ma50.iloc[-5]
+    ):
+        return result  # kein Trend, kein VCP
+
+    # -----------------------------------------------------------------------
+    # 3) Base in Segmente teilen
+    # -----------------------------------------------------------------------
+    n = len(close)
     seg_len = n // n_segments
     if seg_len < 5:
-        # zu kurze Segmente
-        return False
+        return result
 
-    seg_lows = []
-    seg_highs = []
-    seg_spreads = []
-    seg_vol = []
+    seg_lows, seg_highs, seg_spread, seg_volume = [], [], [], []
 
-    for i in range(n_segments):
-        start = i * seg_len
-        end = n if i == n_segments - 1 else (i + 1) * seg_len
-        seg = df_win.iloc[start:end]
+    for s in range(n_segments):
+        start = s * seg_len
+        end = n if s == n_segments - 1 else (s + 1) * seg_len
+        seg = data.iloc[start:end]
 
-        seg_low = float(seg["Low"].min())
-        seg_high = float(seg["High"].max())
-        seg_volume = float(seg["Volume"].mean())
+        low_s = float(seg["Low"].min())
+        high_s = float(seg["High"].max())
+        spread = (high_s - low_s) / resistance
+        vol_s = float(seg["Volume"].mean())
 
-        if not (math.isfinite(seg_low) and math.isfinite(seg_high)):
-            return False
-
-        seg_lows.append(seg_low)
-        seg_highs.append(seg_high)
-        seg_spreads.append((seg_high - seg_low) / res_level)
-        seg_vol.append(seg_volume)
+        seg_lows.append(low_s)
+        seg_highs.append(high_s)
+        seg_spread.append(spread)
+        seg_volume.append(vol_s)
 
     seg_lows = np.array(seg_lows)
-    seg_spreads = np.array(seg_spreads)
-    seg_vol = np.array(seg_vol)
+    seg_spread = np.array(seg_spread)
+    seg_volume = np.array(seg_volume)
 
-    # --- 3. Pullbacks & Spannen prüfen ------------------------------------- #
+    # -----------------------------------------------------------------------
+    # 4) Pullbacks müssen flacher werden (höhere Tiefs)
+    # -----------------------------------------------------------------------
+    pullbacks = (resistance - seg_lows) / resistance
 
-    # 3a) Pullback-Tiefe je Segment (Abstand low zum Widerstand)
-    pullbacks = (res_level - seg_lows) / res_level  # ~"Tiefe" unterhalb Widerstand
+    # Kein Pullback darf zu tief sein
+    if np.any(pullbacks > max_pullback):
+        return result
 
-    # Pullbacks dürfen nicht zu tief sein (z.B. > 12 %)
-    if np.any(pullbacks > max_last_pullback * 1.5):  # etwas Toleranz
-        return False
-
-    # Die Pullbacks sollten im Zeitverlauf tendenziell flacher werden:
-    # d.h. pullbacks[0] > pullbacks[1] > ... (mit Toleranz)
-    # Wir prüfen einfach, ob es eine negative lineare Regression gibt
+    # Regression: Pullbacks sollten fallenden Trend haben
     x = np.arange(n_segments)
     if np.std(pullbacks) > 0:
         slope_pb = np.polyfit(x, pullbacks, 1)[0]
         if slope_pb >= 0:
-            # Pullbacks werden nicht kleiner
-            return False
+            return result
 
-    # 3b) Spreads sollten sinken (Volatilität wird geringer)
-    if seg_spreads[0] <= 0:
-        return False
+    # -----------------------------------------------------------------------
+    # 5) Volatilitätskontraktion
+    # -----------------------------------------------------------------------
+    if seg_spread[0] <= 0 or seg_spread[-1] / seg_spread[0] > min_contraction:
+        return result
 
-    contraction_ratio = seg_spreads[-1] / seg_spreads[0]
-    if contraction_ratio > min_contraction:
-        # z.B. min_contraction=0.5 => letztes Segment max. 50% der ursprünglichen Spanne
-        return False
-
-    if np.std(seg_spreads) > 0:
-        slope_spread = np.polyfit(x, seg_spreads, 1)[0]
+    if np.std(seg_spread) > 0:
+        slope_spread = np.polyfit(x, seg_spread, 1)[0]
         if slope_spread >= 0:
-            # Spreads werden nicht kleiner
-            return False
+            return result
 
-    # --- 4. Volumenverhalten ------------------------------------------------ #
-    # Volumen im Verlauf sollte im Mittel abnehmen
-    if np.std(seg_vol) > 0 and seg_vol[0] > 0:
-        slope_vol = np.polyfit(x, seg_vol, 1)[0]
+    # -----------------------------------------------------------------------
+    # 6) Volumenkontraktion
+    # -----------------------------------------------------------------------
+    if np.std(seg_volume) > 0:
+        slope_vol = np.polyfit(x, seg_volume, 1)[0]
         if slope_vol >= 0:
-            # Volumen nimmt nicht ab
-            return False
+            return result
 
-    # Letztes Segment sollte klar unter dem mittleren Volumen liegen
-    overall_vol_mean = float(vol.mean())
-    if seg_vol[-1] > overall_vol_mean:
-        return False
+    # -----------------------------------------------------------------------
+    # 7) Breakout-Level & Entry-Signal (Variante B Logik)
+    # -----------------------------------------------------------------------
+    breakout_level = resistance
+    entry_signal = last_close > breakout_level * 1.01  # letzte 1 % über Pivot
 
-    # --- Wenn alle Filter durchlaufen sind, werten wir es als VCP ---------- #
-    return True
+    # Variante B: wenn Kurs < Pivot + 3 %, gilt es weiter als VCP
+    still_vcp_zone = last_close < breakout_level * 1.03
+
+    vcp_flag = True  # Alle Bedingungen bestanden
+
+    result = {
+        "VCP": vcp_flag and still_vcp_zone,   # True trotz Früh-Breakout
+        "Waves": n_segments,
+        "Entry_Signal": bool(entry_signal),
+        "Breakout_Level": breakout_level,
+    }
+
+    return result
