@@ -225,6 +225,7 @@ def run():
         "52W High",
         "Dist to 52W High (%)",
         "Volume Score",
+        "ΔRS 4W",
         "VCP Entry",
         "VCP Breakout Level",
     ]:
