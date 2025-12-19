@@ -136,6 +136,7 @@ HTML_TMPL = """
         <th class="left">Branche</th>
         <th>Score</th>
         <th>RS</th>
+        <th>ΔRS 4W</th>
         <th>EPS (Forward/TTM)</th>
         <th>EPS Wachstum<br>FWD/TTM (%)</th>
         <th>Revenue Wachstum<br>TTM YoY (%)</th>
@@ -161,6 +162,7 @@ HTML_TMPL = """
         <td class="left">{{ row["Industry"] }}</td>
         <td>{{ row["score"] }}</td>
         <td>{{ row["RS (O'Neil)"] }}</td>
+        <td>{{ row["RS_delta_4w"] }}</td>
         <td>{{ row["EPS (Forward/TTM)"] }}</td>
         <td>{{ row["EPS Wachstum FWD/TTM (%)"] }}</td>
         <td>{{ row["Revenue Wachstum TTM YoY (%)"] }}</td>
