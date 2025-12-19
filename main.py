@@ -162,7 +162,7 @@ def run():
         leaders.insert(11, "Ø-Volume 20W", leaders["vol20"])
         leaders.insert(12, "Volume Score", leaders["vol_score"])
         
-         if "RS_delta_4w" in leaders.columns and "ΔRS 4W" not in leaders.columns:
+        if "RS_delta_4w" in leaders.columns and "ΔRS 4W" not in leaders.columns:
             leaders["ΔRS 4W"] = leaders["RS_delta_4w"]
              
         # Alte Roh-Spalten nicht mehr gebraucht
