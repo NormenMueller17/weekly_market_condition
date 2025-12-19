@@ -210,7 +210,8 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
     tickers = list(universe) if universe is not None else list(get_universe())
 
     results = {}
-    weighted_perfs: dict[str, float] = {}   # <-- NEU: für RS-Berechnung
+    weighted_perfs: dict[str, float] = {}   # <-- NEU: für RS-Berechnung (aktuell)
+    daily_data: dict[str, pd.DataFrame] = {}  # speichert die Daily-DFs fürs 4W-Backtest
 
     for t in tickers:
         try:
@@ -255,6 +256,12 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
             weighted_perf = _compute_weighted_perf(close_daily)
             weighted_perfs[t] = weighted_perf
 
+            # store df for later 4-week snapshot calculation
+            # ensure datetimeindex
+            if not isinstance(df.index, pd.DatetimeIndex):
+                df.index = pd.to_datetime(df.index)
+            daily_data[t] = df.copy()
+
             # ---- Minervini-Kriterien ----
             res = compute_minervini_template(df)
             results[t] = res
@@ -272,13 +279,45 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
     if "score" not in df_results.columns:
         return pd.DataFrame()
 
-    # ---- NEU: RS-Werte berechnen ----
+    # ---- NEU: RS-Werte berechnen (aktuell) ----
     rs_map = _compute_rs_scores(weighted_perfs)
     df_results["RS (O'Neil)"] = df_results.index.map(lambda t: rs_map.get(t, np.nan))
 
+    # ---- NEU: weighted_perfs_4w berechnen (cut-off 4 Wochen vorher) ----
+    weighted_perfs_4w: dict[str, float] = {}
+    for t, df in daily_data.items():
+        try:
+            # letzter verfügbarer Tag
+            last_dt = df.index.max()
+            cutoff = last_dt - pd.Timedelta(weeks=4)
+
+            # slice up to cutoff (inclusive)
+            df_cut = df.loc[:cutoff]
+            if df_cut is None or df_cut.empty:
+                weighted_perfs_4w[t] = np.nan
+                continue
+
+            close_cut = pd.to_numeric(df_cut["Close"], errors="coerce").dropna()
+            wp4 = _compute_weighted_perf(close_cut)
+            weighted_perfs_4w[t] = wp4
+        except Exception:
+            weighted_perfs_4w[t] = np.nan
+
+    # ---- RS-Scores für 4W ----
+    rs_map_4w = _compute_rs_scores(weighted_perfs_4w)
+
+    # ---- ΔRS_4w berechnen und in df_results mappen ----
+    def safe_get(mapping, key):
+        v = mapping.get(key, np.nan)
+        return np.nan if v is None else v
+
+    df_results["RS_now"] = df_results.index.map(lambda t: safe_get(rs_map, t))
+    df_results["RS_4w"] = df_results.index.map(lambda t: safe_get(rs_map_4w, t))
+    # delta: now - 4w
+    df_results["RS_delta_4w"] = df_results["RS_now"] - df_results["RS_4w"]
+
     # ---- Minervini Leader filtern ----
     leaders = df_results[
-        #(df_results["Vol-Breakout"] == True) &
         ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
     ].sort_values("score", ascending=False)
 
