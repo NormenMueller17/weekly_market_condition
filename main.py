@@ -163,7 +163,17 @@ def run():
         leaders.insert(12, "Volume Score", leaders["vol_score"])
         
         # Alte Roh-Spalten nicht mehr gebraucht
-        drop_cols = [c for c in ["vol20", "vol_score", "close_weekly_now", "close_weekly_prev", "close_weekly_change_pct"] if c in leaders.columns]
+        drop_cols = [
+            "vol20",
+            "vol_score",
+            "close_weekly_now",
+            "close_weekly_prev",
+            "close_weekly_change_pct",
+            "RS_now",
+            "RS_4w",
+            "RS_delta_4w",
+        ]
+        drop_cols = [c for c in drop_cols if c in leaders.columns]
         if drop_cols:
             leaders.drop(columns=drop_cols, inplace=True)
 
