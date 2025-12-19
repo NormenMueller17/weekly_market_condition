@@ -186,6 +186,7 @@ def run():
         "Volume Score",
         "score",
         "RS (O'Neil)",
+        "ΔRS 4W",
         "SMA10W steigend",
         "SMA30W steigend",
         "SMA40W steigend",
