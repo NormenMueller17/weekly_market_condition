@@ -162,6 +162,9 @@ def run():
         leaders.insert(11, "Ø-Volume 20W", leaders["vol20"])
         leaders.insert(12, "Volume Score", leaders["vol_score"])
         
+         if "RS_delta_4w" in leaders.columns and "ΔRS 4W" not in leaders.columns:
+            leaders["ΔRS 4W"] = leaders["RS_delta_4w"]
+             
         # Alte Roh-Spalten nicht mehr gebraucht
         drop_cols = [
             "vol20",
@@ -194,9 +197,9 @@ def run():
         "Dist to 52W High (%)",
         "Ø-Volume 20W",
         "Volume Score",
-        "score",
         "RS (O'Neil)",
         "ΔRS 4W",
+        "score",
         "SMA10W steigend",
         "SMA30W steigend",
         "SMA40W steigend",
