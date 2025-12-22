@@ -15,6 +15,8 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 
+from industry_strength import compute_industry_scores
+
 from report_builder import (
     build_html_report,
     build_index_rows,
@@ -180,12 +182,29 @@ def run():
         if drop_cols:
             leaders.drop(columns=drop_cols, inplace=True)
 
+        # ------------------------------------------------------------
+        # NEU: Industry Strength Scoring
+        # Adds: Industry RS Score, Industry Strong Stock Score,
+        #       Industry Volume Score (Activity*Direction, Variant 2),
+        #       and the composite Industry Score.
+        # ------------------------------------------------------------
+        try:
+            leaders, industry_table = compute_industry_scores(leaders)
+            if industry_table is not None and not industry_table.empty:
+                print(f"[INFO] Computed industry scores for {len(industry_table)} industries")
+        except Exception as e:
+            print(f"[WARN] Industry scoring failed: {e}")
+
         # ---- Spaltenreihenfolge: Score sichtbar + 52W-Spalten nach Close ----
     # score kommt aus dem Screener; wir nehmen ihn explizit nach vorne
     preferred_order = [
         "Company",
         "SA",
         "Industry",
+        "Industry Score",
+        "Industry RS Score",
+        "Industry Strong Stock Score",
+        "Industry Volume Score",
         "MarketCap (Mio USD)",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
@@ -229,6 +248,10 @@ def run():
     
     # Spalten mit 2 Nachkommastellen
     for col in [
+        "Industry Score",
+        "Industry RS Score",
+        "Industry Strong Stock Score",
+        "Industry Volume Score",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
         "Revenue Wachstum TTM YoY (%)",
@@ -311,6 +334,10 @@ def run():
     
     # 2 Nachkommastellen
     two_dec_cols = [
+        "Industry Score",
+        "Industry RS Score",
+        "Industry Strong Stock Score",
+        "Industry Volume Score",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
         "Revenue Wachstum TTM YoY (%)",
