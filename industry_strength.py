@@ -68,10 +68,17 @@ def _download_recent_daily(ticker: str, period: str = "3mo") -> pd.DataFrame:
 
 
 def _compute_volume_activity_direction(daily: pd.DataFrame) -> Tuple[Optional[float], Optional[int]]:
-    """Return (volume_ratio, direction_flag) for latest day.
+    """Return (volume_ratio, direction_flag) with holiday-aware week normalization.
 
-    - volume_ratio = Volume_last / MA20(Volume)
+    The goal is to make the volume signal comparable across weeks with fewer
+    trading days (e.g., Christmas week).
+
+    Definitions:
+    - volume_ratio = AvgDailyVolume_last_week / MA20(Volume)
+        where AvgDailyVolume_last_week = Sum(Volume in last trading week) / (# trading days in that week)
+        and MA20(Volume) is the 20-day rolling mean of daily volume (daily average).
     - direction_flag = 1 if Close_last > MA20(Close) else 0
+
     Returns (None, None) if insufficient data.
     """
     if daily is None or daily.empty:
@@ -92,12 +99,22 @@ def _compute_volume_activity_direction(daily: pd.DataFrame) -> Tuple[Optional[fl
     close_ma20 = close.rolling(20).mean().iloc[-1]
     vol_ma20 = vol.rolling(20).mean().iloc[-1]
     close_last = close.iloc[-1]
-    vol_last = vol.iloc[-1]
 
     if pd.isna(close_ma20) or pd.isna(vol_ma20) or vol_ma20 == 0:
         return None, None
 
-    volume_ratio = float(vol_last / vol_ma20)
+    # Last (completed) trading week based on the last available trading day.
+    # Using 'W-FRI' aligns with typical weekly bars (week ends on Friday).
+    week_id = vol.index.to_period("W-FRI")
+    last_week = week_id[-1]
+    vol_week = vol[week_id == last_week].dropna()
+    n_days = int(len(vol_week))
+    if n_days <= 0:
+        return None, None
+
+    avg_daily_week_vol = float(vol_week.sum() / n_days)
+    volume_ratio = float(avg_daily_week_vol / vol_ma20)
+
     direction = int(close_last > close_ma20)
     return volume_ratio, direction
 

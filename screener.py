@@ -153,12 +153,30 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     sma13 = close.rolling(13).mean()
     rs_trend = len(sma13.dropna()) > 0 and close.iloc[-1] > sma13.iloc[-1]
 
-    # Volumen-Breakout
+    # Volumen-Breakout (handelstagsbereinigt)
+    # Idee: Vergleiche das durchschnittliche Tagesvolumen der letzten Handelswoche
+    #       mit dem 20-Tage-Durchschnitt (ebenfalls Tagesdurchschnitt).
+    #
+    # Dadurch sind Wochen mit 3/4 Handelstagen (Feiertage) fair vergleichbar
+    # mit normalen 5-Tage-Wochen.
     if len(volume.dropna()) > 20:
         vol20 = volume.rolling(20).mean()
-        vol_breakout = volume.iloc[-1] > vol20.iloc[-1] * _VOLUME_BREAKOUT_SCORE
         vol20_val = float(vol20.iloc[-1])
-        vol_score = volume.iloc[-1] / vol20_val if vol20_val and vol20_val != 0 else float("nan")
+
+        # letzte (abgeschlossene) Handelswoche anhand des letzten Datums bestimmen
+        # 'W-FRI' passt zu den üblichen Wochenbars (Freitag als Wochenende)
+        week_id = volume.index.to_period('W-FRI')
+        last_week = week_id.iloc[-1]
+        vol_week = volume[week_id == last_week].dropna()
+        n_days = int(len(vol_week))
+
+        if n_days > 0 and vol20_val and vol20_val != 0:
+            avg_daily_week_vol = float(vol_week.sum() / n_days)
+            vol_score = avg_daily_week_vol / vol20_val
+            vol_breakout = avg_daily_week_vol > vol20_val * _VOLUME_BREAKOUT_SCORE
+        else:
+            vol_score = float("nan")
+            vol_breakout = False
     else:
         vol_breakout = False
         vol20_val = float("nan")
