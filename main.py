@@ -188,6 +188,7 @@ def run():
         #       Industry Volume Score (Activity*Direction, Variant 2),
         #       and the composite Industry Score.
         # ------------------------------------------------------------
+        industry_table = pd.DataFrame()  # will be populated by compute_industry_scores
         try:
             leaders, industry_table = compute_industry_scores(leaders)
             if industry_table is not None and not industry_table.empty:
@@ -292,12 +293,33 @@ def run():
     out_path = out_dir / f"market_leaders_{report_date}.xlsx"
     
     # 2) Immer schreiben – auch wenn leer (dann gibt's wenigstens Header)
-    leaders_out.to_excel(out_path, index=False, sheet_name="Leaders")
+    # Excel Export:
+    # - Sheet 'Leaders' enthält nur Industry Ranking + Industry RS Score als Industry-Metriken
+    # - Sheet 'Industries' enthält alle Industry-Metriken (Ranking + Teilmetriken + Composite)
+    leaders_out_excel = leaders_out.copy()
+    drop_ind_cols = [
+        'Industry Score',
+        'Industry Strong Stock Score',
+        'Industry Volume Score',
+    ]
+    leaders_out_excel.drop(columns=[c for c in drop_ind_cols if c in leaders_out_excel.columns], inplace=True, errors='ignore')
+    
+    with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
+        leaders_out_excel.to_excel(writer, index=False, sheet_name='Leaders')
+        # Industries sheet (may be empty if scoring failed)
+        if industry_table is not None and not industry_table.empty:
+            industry_table.to_excel(writer, index=False, sheet_name='Industries')
+        else:
+            # Write an empty template so the sheet always exists
+            pd.DataFrame(columns=['Industry', 'Industry Ranking', 'Industry RS Score',
+                                  'Industry Strong Stock Score', 'Industry Volume Score', 'Industry Score']).to_excel(
+                writer, index=False, sheet_name='Industries'
+            )
 
     
     # Excel laden - neu
     wb = load_workbook(out_path)
-    ws = wb.active
+    ws = wb['Leaders']
 
     # Spalte "SA" finden
     sa_col_idx = None
