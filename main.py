@@ -138,11 +138,12 @@ def run():
 
         # --- NEU: Fundamentaldaten für ALLE Leaders in einem Rutsch laden ---
         quote_map = batch_fetch_quote_data(leaders.index.tolist())
-        leaders.insert(4, "Close", leaders.index.map(lambda t: quote_map.get(t, {}).get("Close")))
-        leaders.insert(5, "MarketCap (Mio USD)", leaders.index.map(lambda t: quote_map.get(t, {}).get("MarketCap_Mio")))
-        leaders.insert(6, "EPS (Forward/TTM)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_FWD_TTM")))
-        leaders.insert(7, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_GROWTH_FWD_TTM")))
-        leaders.insert(8, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_GROWTH_TTM_YOY")))
+        leaders.insert(4, "Sektor", leaders.index.map(lambda t: quote_map.get(t, {}).get("Sector", "n/a")))
+        leaders.insert(5, "Close", leaders.index.map(lambda t: quote_map.get(t, {}).get("Close")))
+        leaders.insert(6, "MarketCap (Mio USD)", leaders.index.map(lambda t: quote_map.get(t, {}).get("MarketCap_Mio")))
+        leaders.insert(7, "EPS (Forward/TTM)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_FWD_TTM")))
+        leaders.insert(8, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_GROWTH_FWD_TTM")))
+        leaders.insert(9, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_GROWTH_TTM_YOY")))
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -152,9 +153,9 @@ def run():
 
         # NEU: "Close Vorwoche" und "Veränderung in %"
         if "close_weekly_prev" in leaders.columns:
-            leaders.insert(9, "Close Vorwoche", leaders["close_weekly_prev"])
+            leaders.insert(10, "Close Vorwoche", leaders["close_weekly_prev"])
         else:
-            leaders.insert(9, "Close Vorwoche", pd.NA)
+            leaders.insert(10, "Close Vorwoche", pd.NA)
 
         if "close_weekly_change_pct" in leaders.columns:
             leaders.insert(10, "Veränderung in %", leaders["close_weekly_change_pct"])
@@ -308,11 +309,20 @@ def run():
         leaders_out_excel.to_excel(writer, index=False, sheet_name='Leaders')
         # Industries sheet (may be empty if scoring failed)
         if industry_table is not None and not industry_table.empty:
-            industry_table.to_excel(writer, index=False, sheet_name='Industries')
+            # Sort industries by ranking (ascending: 1 is best)
+            industry_out = industry_table.copy()
+            if 'Industry Ranking' in industry_out.columns:
+                industry_out = industry_out.sort_values('Industry Ranking', ascending=True, kind='mergesort')
+            # Ensure column order (Industry, Sektor, ...)
+            if 'Sektor' in industry_out.columns:
+                cols = ['Industry', 'Sektor'] + [c for c in industry_out.columns if c not in ('Industry','Sektor')]
+                industry_out = industry_out[cols]
+            industry_out.to_excel(writer, index=False, sheet_name='Industries')
         else:
             # Write an empty template so the sheet always exists
-            pd.DataFrame(columns=['Industry', 'Industry Ranking', 'Industry RS Score',
-                                  'Industry Strong Stock Score', 'Industry Volume Score', 'Industry Score']).to_excel(
+            pd.DataFrame(columns=['Industry', 'Sektor', 'Industry Ranking', 'Industry_RS_raw', 'Valid_RS_Count',
+                                  'Industry RS Score', 'Industry Strong Stock Score', 'Activity', 'Direction',
+                                  'Industry Volume Score', 'Industry Score']).to_excel(
                 writer, index=False, sheet_name='Industries'
             )
 
@@ -395,6 +405,42 @@ def run():
                     
     # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
     style_boolean_columns(ws)
+
+    # -------------------------------
+    # Format Industries sheet
+    # -------------------------------
+    if 'Industries' in wb.sheetnames:
+        ws_ind = wb['Industries']
+
+        # Auto-width based on header length (not data length)
+        for col_idx, cell in enumerate(ws_ind[1], start=1):
+            header = "" if cell.value is None else str(cell.value)
+            ws_ind.column_dimensions[get_column_letter(col_idx)].width = max(10, len(header) + 2)
+
+        # Number formats (2 decimals) for selected industry metrics
+        header_ind = {cell.value: cell.column for cell in ws_ind[1] if cell.value}
+        ind_two_dec_cols = [
+            "Industry RS Score",
+            "Industry Strong Stock Score",
+            "Activity",
+            "Direction",
+            "Industry Volume Score",
+            "Industry Score",
+        ]
+        for col_name in ind_two_dec_cols:
+            if col_name in header_ind:
+                col_letter = get_column_letter(header_ind[col_name])
+                for cell in ws_ind[col_letter][1:]:
+                    if isinstance(cell.value, (int, float)):
+                        cell.number_format = "0.00"
+
+        # Keep ranking as integer
+        if "Industry Ranking" in header_ind:
+            col_letter = get_column_letter(header_ind["Industry Ranking"])
+            for cell in ws_ind[col_letter][1:]:
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = "0"
+
     wb.save(out_path)
     
     # 4) Beim Mailversand denselben Pfad anhängen

@@ -123,6 +123,7 @@ def compute_industry_scores(
     leaders: pd.DataFrame,
     *,
     industry_col: str = "Industry",
+    sector_col: str = "Sektor",
     rs_col: str = "RS (O'Neil)",
     strong_rs_threshold: float = 80.0,
     weights: IndustryScoreWeights = IndustryScoreWeights(),
@@ -142,6 +143,20 @@ def compute_industry_scores(
     if industry_col not in df.columns or rs_col not in df.columns:
         # Can't compute without these.
         return df, pd.DataFrame()
+
+    # --- 0b) Sector (optional) ---
+    # If available, compute the most common sector per industry.
+    sector_mode = None
+    if sector_col in df.columns:
+        sec_valid = df[[industry_col, sector_col]].dropna()
+        sec_valid = sec_valid[sec_valid[industry_col].astype(str).str.lower().ne("n/a")]
+        sec_valid = sec_valid[sec_valid[sector_col].astype(str).str.lower().ne("n/a")]
+        if not sec_valid.empty:
+            sector_mode = (
+                sec_valid.groupby(industry_col)[sector_col]
+                .agg(lambda s: s.value_counts().index[0])
+                .rename("Sektor")
+            )
 
     # --- 1) Per-ticker daily features (volume_ratio, direction) ---
     tickers = list(df.index)
@@ -208,6 +223,9 @@ def compute_industry_scores(
     # --- 5) Composite score ---
     # Align all metrics on industries
     industry_tbl = pd.concat([rs_raw, rs_score, strong_score, vol_score, activity, direction, valid_counts], axis=1)
+    if sector_mode is not None:
+        industry_tbl = industry_tbl.join(sector_mode, how='left')
+
 
     industry_tbl["Industry Score"] = (
         weights.rs * industry_tbl["Industry RS Score"]
@@ -227,4 +245,9 @@ def compute_industry_scores(
 
     # Cleanup internal helper cols
     df.drop(columns=["_vol_ratio_20d", "_direction_ma20", "_rs_num"], inplace=True, errors="ignore")
-    return df, industry_tbl.reset_index().rename(columns={industry_col: "Industry"})
+    out_tbl = industry_tbl.reset_index().rename(columns={industry_col: "Industry"})
+    # Prefer column order: Industry, Sektor, ...
+    if "Sektor" in out_tbl.columns:
+        cols = ["Industry", "Sektor"] + [c for c in out_tbl.columns if c not in ("Industry", "Sektor")]
+        out_tbl = out_tbl[cols]
+    return df, out_tbl

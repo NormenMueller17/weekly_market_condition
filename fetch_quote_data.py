@@ -28,6 +28,7 @@ def batch_fetch_quote_data(tickers) -> dict:
 				data = {
 					"Close": None,
 					"MarketCap_Mio": None,
+		"Sector": None,
 					"EPS_FWD_TTM": None,
 					"EPS_GROWTH_FWD_TTM": None,
 					"REV_GROWTH_TTM_YOY": None,
@@ -60,6 +61,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			market_cap = fast.get("marketCap") or info.info.get("marketCap")
 			market_cap_mio = market_cap / 1_000_000 if market_cap else None
 
+			# Sector
+			sector = info.info.get("sector")
+
 			# EPS: Forward + TTM
 			eps_forward = (
 				fast.get("epsForward")
@@ -91,6 +95,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			return {
 				"Close": close,
 				"MarketCap_Mio": market_cap_mio,
+				"Sector": sector,
 				"EPS_FWD_TTM": eps_fwd_ttm,
 				"EPS_GROWTH_FWD_TTM": eps_growth_pct,
 				"REV_GROWTH_TTM_YOY": rev_growth_pct,
@@ -109,6 +114,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
 	return {
 		"Close": None,
 		"MarketCap_Mio": None,
+		"Sector": None,
 		"EPS_FWD_TTM": None,
 		"EPS_GROWTH_FWD_TTM": None,
 		"REV_GROWTH_TTM_YOY": None,
