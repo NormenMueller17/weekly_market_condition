@@ -201,6 +201,7 @@ def run():
         "Company",
         "SA",
         "Industry",
+        "Industry Ranking",
         "Industry Score",
         "Industry RS Score",
         "Industry Strong Stock Score",

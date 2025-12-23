@@ -215,8 +215,14 @@ def compute_industry_scores(
         + weights.volume * industry_tbl["Industry Volume Score"]
     )
 
+    # --- 5b) Industry ranking (1 = highest Industry Score) ---
+    # "min" gives tied industries the same best rank.
+    industry_tbl["Industry Ranking"] = (
+        industry_tbl["Industry Score"].rank(ascending=False, method="min").astype(int)
+    )
+
     # --- 6) Map industry scores back to tickers ---
-    for col in ["Industry RS Score", "Industry Strong Stock Score", "Industry Volume Score", "Industry Score"]:
+    for col in ["Industry Ranking", "Industry RS Score", "Industry Strong Stock Score", "Industry Volume Score", "Industry Score"]:
         df[col] = df[industry_col].map(industry_tbl[col])
 
     # Cleanup internal helper cols

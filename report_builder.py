@@ -134,6 +134,7 @@ HTML_TMPL = """
         <th class="left">Unternehmen</th>
         <th class="left">SA</th> 
         <th class="left">Branche</th>
+        <th>Industry Ranking</th>
         <th>Industry Score</th>
         <th>Score</th>
         <th>RS</th>
@@ -161,6 +162,7 @@ HTML_TMPL = """
         <td class="left">{{ row["Company"] }}</td>
         <td class="left">{{ row["SA"] | safe }}</td>
         <td class="left">{{ row["Industry"] }}</td>
+        <td>{{ row["Industry Ranking"] }}</td>
         <td>{{ row["Industry Score"] }}</td>
         <td>{{ row["score"] }}</td>
         <td>{{ row["RS (O'Neil)"] }}</td>
