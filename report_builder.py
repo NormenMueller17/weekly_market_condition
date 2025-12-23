@@ -173,7 +173,7 @@ HTML_TMPL = """
         <td>{{ row["Veränderung in %"] }}</td>        
         <td>{{ row["52W High"] }}</td>
         <td>{{ row["Dist to 52W High (%)"] }}</td>
-        <td>{{ row["Ø-Volume 20W"] }}</td>
+        <td>{{ row["Ø-Volume 20T"] }}</td>
         <td>{{ row["Volume Score"] }}</td>
         <td>{{ row["VCP"] }}</td>
         <!--<td>{{ row["VCP Waves"] }}</td>-->

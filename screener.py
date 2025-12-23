@@ -159,18 +159,16 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     #
     # Dadurch sind Wochen mit 3/4 Handelstagen (Feiertage) fair vergleichbar
     # mit normalen 5-Tage-Wochen.
-    if len(volume.dropna()) > 20:
-        vol20 = volume.rolling(20).mean()
-        vol20_val = float(vol20.iloc[-1])
-
-        # letzte (abgeschlossene) Handelswoche anhand des letzten Datums bestimmen
-        # 'W-FRI' passt zu den üblichen Wochenbars (Freitag als Wochenende)
-        week_id = volume.index.to_period('W-FRI')
+    # --- Volume (holiday-aware): compare avg DAILY volume of last trading week vs MA20 of DAILY volume ---
+    daily_vol = pd.to_numeric(df["Volume"], errors="coerce").dropna() if "Volume" in df.columns else pd.Series(dtype=float)
+    if len(daily_vol) >= 20:
+        vol20_val = float(daily_vol.rolling(20).mean().iloc[-1])
+        # Last (completed) trading week based on last available trading day (W-FRI).
+        week_id = daily_vol.index.to_period("W-FRI")
         last_week = week_id[-1]
-        vol_week = volume[week_id == last_week].dropna()
+        vol_week = daily_vol[week_id == last_week].dropna()
         n_days = int(len(vol_week))
-
-        if n_days > 0 and vol20_val and vol20_val != 0:
+        if n_days > 0 and (not pd.isna(vol20_val)) and vol20_val != 0:
             avg_daily_week_vol = float(vol_week.sum() / n_days)
             vol_score = avg_daily_week_vol / vol20_val
             vol_breakout = avg_daily_week_vol > vol20_val * _VOLUME_BREAKOUT_SCORE
@@ -181,7 +179,6 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         vol_breakout = False
         vol20_val = float("nan")
         vol_score = float("nan")
-
     # NEU: Wochenvergleich Close
     if len(close) >= 2:
         weekly_momentum = close.iloc[-1] > close.iloc[-2]

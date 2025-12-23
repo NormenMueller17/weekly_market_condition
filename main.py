@@ -161,7 +161,7 @@ def run():
         else:
             leaders.insert(10, "Veränderung in %", pd.NA)
         
-        leaders.insert(11, "Ø-Volume 20W", leaders["vol20"])
+        leaders.insert(11, "Ø-Volume 20T", leaders["vol20"])
         leaders.insert(12, "Volume Score", leaders["vol_score"])
         
         if "RS_delta_4w" in leaders.columns and "ΔRS 4W" not in leaders.columns:
@@ -214,7 +214,7 @@ def run():
         "Veränderung in %",        
         "52W High",
         "Dist to 52W High (%)",
-        "Ø-Volume 20W",
+        "Ø-Volume 20T",
         "Volume Score",
         "RS (O'Neil)",
         "ΔRS 4W",
@@ -271,7 +271,7 @@ def run():
     # Spalten mit ganzen Zahlen
     for col in [
         "MarketCap (Mio USD)",
-        "Ø-Volume 20W",
+        "Ø-Volume 20T",
     ]:
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_int)
@@ -352,7 +352,7 @@ def run():
     # Ganze Zahlen (ohne Nachkommastellen)
     zero_dec_cols = [
         "MarketCap (Mio USD)",
-        "Ø-Volume 20W",
+        "Ø-Volume 20T",
     ]
     
     # --- Anwenden der Formate ---
