@@ -166,7 +166,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         # letzte (abgeschlossene) Handelswoche anhand des letzten Datums bestimmen
         # 'W-FRI' passt zu den üblichen Wochenbars (Freitag als Wochenende)
         week_id = volume.index.to_period('W-FRI')
-        last_week = week_id.iloc[-1]
+        last_week = week_id[-1]
         vol_week = volume[week_id == last_week].dropna()
         n_days = int(len(vol_week))
 
