@@ -14,8 +14,9 @@ from config import SETTINGS
 
 TICKER_META: dict[str, dict] = {}
 #_CSV_FILE = "SP_micro_3.csv"
-_CSV_FILE = "202511_most_capitalized_500M_3.csv"
+#_CSV_FILE = "202511_most_capitalized_500M_3.csv"
 #_CSV_FILE = "2025_11_Most_Capitalized_DE.csv"
+_CSV_FILE = "202511_test_3.csv"
 
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
