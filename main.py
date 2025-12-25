@@ -144,6 +144,11 @@ def run():
         leaders.insert(7, "EPS (Forward/TTM)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_FWD_TTM")))
         leaders.insert(8, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_GROWTH_FWD_TTM")))
         leaders.insert(9, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_GROWTH_TTM_YOY")))
+        leaders.insert(10, "ROE (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("ROE")))
+        leaders.insert(11, "Operating Margin (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("Operating_Margin")))
+        leaders.insert(12, "FCF Margin (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("FCF_Margin")))
+        leaders.insert(13, "Debt to Equity", leaders.index.map(lambda t: quote_map.get(t, {}).get("Debt_to_Equity")))
+        leaders.insert(14, "EPS Acceleration (pp)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Acceleration")))
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -153,17 +158,17 @@ def run():
 
         # NEU: "Close Vorwoche" und "Veränderung in %"
         if "close_weekly_prev" in leaders.columns:
-            leaders.insert(10, "Close Vorwoche", leaders["close_weekly_prev"])
+            leaders.insert(15, "Close Vorwoche", leaders["close_weekly_prev"])
         else:
-            leaders.insert(10, "Close Vorwoche", pd.NA)
+            leaders.insert(15, "Close Vorwoche", pd.NA)
 
         if "close_weekly_change_pct" in leaders.columns:
-            leaders.insert(10, "Veränderung in %", leaders["close_weekly_change_pct"])
+            leaders.insert(16, "Veränderung in %", leaders["close_weekly_change_pct"])
         else:
-            leaders.insert(10, "Veränderung in %", pd.NA)
+            leaders.insert(16, "Veränderung in %", pd.NA)
         
-        leaders.insert(11, "Ø-Volume 20T", leaders["vol20"])
-        leaders.insert(12, "Volume Score", leaders["vol_score"])
+        leaders.insert(17, "Ø-Volume 20T", leaders["vol20"])
+        leaders.insert(18, "Volume Score", leaders["vol_score"])
         
         if "RS_delta_4w" in leaders.columns and "ΔRS 4W" not in leaders.columns:
             leaders["ΔRS 4W"] = leaders["RS_delta_4w"]
@@ -212,6 +217,11 @@ def run():
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
         "Revenue Wachstum TTM YoY (%)",
+        "ROE (%)",
+        "Operating Margin (%)",
+        "FCF Margin (%)",
+        "Debt to Equity",
+        "EPS Acceleration (pp)",
         "Close Vorwoche",
         "Close", 
         "Veränderung in %",        

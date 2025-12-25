@@ -1,6 +1,7 @@
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
+import pandas as pd
 
 def batch_fetch_quote_data(tickers) -> dict:
 	"""
@@ -90,7 +91,89 @@ def fetch_quote_data_single(ticker: str) -> dict:
 				if rg is not None:
 					rev_growth_pct = float(rg) * 100.0
 			except Exception:
-				rev_growth_pct = None
+				rev_gr
+			# --- Additional fundamental metrics (free Yahoo data) ---
+			def _sf(x):
+				try:
+					if x is None:
+						return None
+					return float(x)
+				except Exception:
+					return None
+
+			net_income = _sf(info.info.get("netIncomeToCommon") or info.info.get("netIncome"))
+			equity = _sf(info.info.get("totalStockholderEquity"))
+			operating_income = _sf(info.info.get("operatingIncome"))
+			revenue = _sf(info.info.get("totalRevenue"))
+			free_cash_flow = _sf(info.info.get("freeCashflow"))
+			total_debt = _sf(info.info.get("totalDebt"))
+
+			# ROE (%)
+			roe = None
+			if net_income is not None and equity not in (None, 0):
+				roe = (net_income / equity) * 100.0
+
+			# Operating Margin (%): prefer computed from Operating Income / Revenue; fallback to operatingMargins
+			op_margin = None
+			if operating_income is not None and revenue not in (None, 0):
+				op_margin = (operating_income / revenue) * 100.0
+			else:
+				om = _sf(info.info.get("operatingMargins"))
+				if om is not None:
+					op_margin = om * 100.0
+
+			# FCF Margin (%)
+			fcf_margin = None
+			if free_cash_flow is not None and revenue not in (None, 0):
+				fcf_margin = (free_cash_flow / revenue) * 100.0
+
+			# Debt to Equity (ratio)
+			debt_to_equity = None
+			if total_debt is not None and equity not in (None, 0):
+				debt_to_equity = total_debt / equity
+			else:
+				d2e = _sf(info.info.get("debtToEquity"))
+				if d2e is not None:
+					# Yahoo sometimes returns debtToEquity as percentage (e.g., 45.3). Convert if it looks like percent.
+					debt_to_equity = d2e / 100.0 if d2e > 10 else d2e
+
+			# EPS Acceleration (percentage points): derived from quarterly income statement EPS if available
+			eps_acceleration = None
+			try:
+				qs = getattr(info, "quarterly_income_stmt", None)
+				if qs is None or getattr(qs, "empty", True):
+					get_stmt = getattr(info, "get_income_stmt", None)
+					if callable(get_stmt):
+						qs = get_stmt(freq="quarterly")
+				if qs is not None and not qs.empty:
+					# Try to find an EPS row
+					row_name = None
+					for cand in ["Diluted EPS", "Basic EPS", "Earnings Per Share"]:
+						if cand in qs.index:
+							row_name = cand
+							break
+					if row_name is not None:
+						eps_series = pd.to_numeric(qs.loc[row_name], errors="coerce").dropna()
+						# Need at least 6 quarters to compute 2 YoY growth values (q0 vs q4, q1 vs q5)
+						if len(eps_series) >= 6:
+							eps_vals = eps_series.values
+							# Ensure order newest->oldest
+							# yfinance columns are typically in reverse-chronological already; sort just in case
+							if hasattr(eps_series, "index"):
+								eps_series = eps_series.sort_index(ascending=False)
+								eps_vals = eps_series.values
+							g_latest = None
+							g_prev = None
+							if eps_vals[4] not in (0, None) and not pd.isna(eps_vals[4]):
+								g_latest = (eps_vals[0] / eps_vals[4] - 1.0) * 100.0
+							if eps_vals[5] not in (0, None) and not pd.isna(eps_vals[5]):
+								g_prev = (eps_vals[1] / eps_vals[5] - 1.0) * 100.0
+							if g_latest is not None and g_prev is not None:
+								eps_acceleration = g_latest - g_prev
+			except Exception:
+				eps_acceleration = None
+
+owth_pct = None
 
 			return {
 				"Close": close,
@@ -99,6 +182,11 @@ def fetch_quote_data_single(ticker: str) -> dict:
 				"EPS_FWD_TTM": eps_fwd_ttm,
 				"EPS_GROWTH_FWD_TTM": eps_growth_pct,
 				"REV_GROWTH_TTM_YOY": rev_growth_pct,
+			"ROE": roe,
+			"Operating_Margin": op_margin,
+			"FCF_Margin": fcf_margin,
+			"Debt_to_Equity": debt_to_equity,
+			"EPS_Acceleration": eps_acceleration,
 			}
 
 		except Exception as e:
@@ -118,5 +206,10 @@ def fetch_quote_data_single(ticker: str) -> dict:
 		"EPS_FWD_TTM": None,
 		"EPS_GROWTH_FWD_TTM": None,
 		"REV_GROWTH_TTM_YOY": None,
+		"ROE": None,
+		"Operating_Margin": None,
+		"FCF_Margin": None,
+		"Debt_to_Equity": None,
+		"EPS_Acceleration": None,
 	}
 
