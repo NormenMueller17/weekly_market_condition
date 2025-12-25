@@ -181,11 +181,11 @@ def fetch_quote_data_single(ticker: str) -> dict:
 				"EPS_FWD_TTM": eps_fwd_ttm,
 				"EPS_GROWTH_FWD_TTM": eps_growth_pct,
 				"REV_GROWTH_TTM_YOY": rev_growth_pct,
-			"ROE": roe,
-			"Operating_Margin": op_margin,
-			"FCF_Margin": fcf_margin,
-			"Debt_to_Equity": debt_to_equity,
-			"EPS_Acceleration": eps_acceleration,
+				"ROE": roe,
+				"Operating_Margin": op_margin,
+				"FCF_Margin": fcf_margin,
+				"Debt_to_Equity": debt_to_equity,
+				"EPS_Acceleration": eps_acceleration,
 			}
 
 		except Exception as e:
