@@ -173,7 +173,6 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			except Exception:
 				eps_acceleration = None
 
-owth_pct = None
 
 			return {
 				"Close": close,
