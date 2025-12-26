@@ -175,6 +175,15 @@ def run():
         leaders.insert(12, "FCF Margin (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("FCF_Margin")))
         leaders.insert(13, "Debt to Equity", leaders.index.map(lambda t: quote_map.get(t, {}).get("Debt_to_Equity")))
         leaders.insert(14, "EPS Acceleration (pp)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Acceleration")))
+        # --- Quality compounder metrics (Phase 1; descriptive only) ---
+        leaders.insert(15, "ROIC (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("ROIC")))
+        leaders.insert(16, "Cash Conversion", leaders.index.map(lambda t: quote_map.get(t, {}).get("Cash_Conversion")))
+        leaders.insert(17, "Op Margin Stability (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("Op_Margin_Stability_5y")))
+        # ATR / Price comes from daily OHLC (computed in screener). Reposition it next to other fundamentals.
+        _atr_series = leaders["ATR / Price (%)"] if "ATR / Price (%)" in leaders.columns else pd.Series([pd.NA] * len(leaders), index=leaders.index)
+        if "ATR / Price (%)" in leaders.columns:
+            leaders.drop(columns=["ATR / Price (%)"], inplace=True)
+        leaders.insert(18, "ATR / Price (%)", _atr_series)
         # --- Industry-relative percentile helper columns (0..1) ---
         # Used for conditional formatting of ROE/Operating Margin/FCF Margin within each Industry.
         if "Industry" in leaders.columns:
@@ -199,17 +208,17 @@ def run():
 
         # NEU: "Close Vorwoche" und "Veränderung in %"
         if "close_weekly_prev" in leaders.columns:
-            leaders.insert(15, "Close Vorwoche", leaders["close_weekly_prev"])
+            leaders.insert(19, "Close Vorwoche", leaders["close_weekly_prev"])
         else:
-            leaders.insert(15, "Close Vorwoche", pd.NA)
+            leaders.insert(19, "Close Vorwoche", pd.NA)
 
         if "close_weekly_change_pct" in leaders.columns:
-            leaders.insert(16, "Veränderung in %", leaders["close_weekly_change_pct"])
+            leaders.insert(20, "Veränderung in %", leaders["close_weekly_change_pct"])
         else:
-            leaders.insert(16, "Veränderung in %", pd.NA)
+            leaders.insert(20, "Veränderung in %", pd.NA)
         
-        leaders.insert(17, "Ø-Volume 20T", leaders["vol20"])
-        leaders.insert(18, "Volume Score", leaders["vol_score"])
+        leaders.insert(21, "Ø-Volume 20T", leaders["vol20"])
+        leaders.insert(22, "Volume Score", leaders["vol_score"])
         
         if "RS_delta_4w" in leaders.columns and "ΔRS 4W" not in leaders.columns:
             leaders["ΔRS 4W"] = leaders["RS_delta_4w"]
@@ -438,6 +447,12 @@ def run():
         "FCF Margin (%)": "0.00",
         "Debt to Equity": "0.00",
         "EPS Acceleration (pp)": "0.00",
+
+        # Quality compounder (Phase 1)
+        "ROIC (%)": "0.00",
+        "Cash Conversion": "0.00",
+        "Op Margin Stability (5y)": "0.00",
+        "ATR / Price (%)": "0.00",
 
         # integers
         "Industry Ranking": "0",

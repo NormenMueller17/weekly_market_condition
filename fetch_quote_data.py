@@ -33,6 +33,9 @@ def batch_fetch_quote_data(tickers) -> dict:
 					"EPS_FWD_TTM": None,
 					"EPS_GROWTH_FWD_TTM": None,
 					"REV_GROWTH_TTM_YOY": None,
+					"ROIC": None,
+					"Cash_Conversion": None,
+					"Op_Margin_Stability_5y": None,
 				}
 			results[tkr] = data
 	return results
@@ -98,6 +101,53 @@ def fetch_quote_data_single(ticker: str) -> dict:
 					if x is None:
 						return None
 					return float(x)
+				except Exception:
+					return None
+
+			
+			def _pick_row(stmt: pd.DataFrame, candidates: list[str]) -> str | None:
+				if stmt is None or getattr(stmt, "empty", True):
+					return None
+				for c in candidates:
+					if c in stmt.index:
+						return c
+				return None
+
+			def _latest_stmt_value(stmt: pd.DataFrame, row_candidates: list[str]) -> float | None:
+				"""Return latest (most recent) numeric value for a row in a statement."""
+				row = _pick_row(stmt, row_candidates)
+				if row is None:
+					return None
+				try:
+					ser = pd.to_numeric(stmt.loc[row], errors="coerce").dropna()
+					if ser.empty:
+						return None
+					# columns are dates; yfinance typically provides newest first, but we handle both
+					ser = ser.sort_index(ascending=False)
+					return _sf(ser.iloc[0])
+				except Exception:
+					return None
+
+			def _last_n_years_op_margin_std(stmt: pd.DataFrame, years: int = 5) -> float | None:
+				"""Std-dev of Operating Margin (%) over last N yearly periods."""
+				if stmt is None or getattr(stmt, "empty", True):
+					return None
+				op_row = _pick_row(stmt, ["Operating Income", "OperatingIncome", "Operating Income or Loss"])
+				rev_row = _pick_row(stmt, ["Total Revenue", "TotalRevenue", "Operating Revenue", "OperatingRevenue"])
+				if op_row is None or rev_row is None:
+					return None
+				try:
+					op = pd.to_numeric(stmt.loc[op_row], errors="coerce")
+					rev = pd.to_numeric(stmt.loc[rev_row], errors="coerce")
+					m = (op / rev) * 100.0
+					m = m.replace([pd.NA, pd.NaT, float("inf"), float("-inf")], pd.NA).dropna()
+					if m.empty:
+						return None
+					m = m.sort_index(ascending=False).head(years)
+					if len(m) < 3:
+						# too few points for a meaningful stability measure
+						return None
+					return float(m.std(ddof=0))
 				except Exception:
 					return None
 
@@ -199,6 +249,68 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			                eps_acceleration = g_latest - g_prev
 			except Exception:
 			    eps_acceleration = None
+
+			# --- Quality compounder metrics (Phase 1) ---
+			# Cash Conversion = FCF / Net Income
+			cash_conversion = None
+			if free_cash_flow is not None and net_income not in (None, 0) and not pd.isna(net_income):
+				try:
+					cash_conversion = float(free_cash_flow) / float(net_income)
+				except Exception:
+					cash_conversion = None
+
+			# Yearly income statement & balance sheet (for ROIC + margin stability)
+			ys = getattr(info, "income_stmt", None)
+			if ys is None or getattr(ys, "empty", True):
+				get_stmt = getattr(info, "get_income_stmt", None)
+				if callable(get_stmt):
+					ys = get_stmt(freq="yearly")
+
+			bs = getattr(info, "balance_sheet", None)
+			if bs is None or getattr(bs, "empty", True):
+				get_bs = getattr(info, "get_balance_sheet", None)
+				if callable(get_bs):
+					bs = get_bs(freq="yearly")
+
+			# Operating margin stability (std dev of operating margin % over last 5 years)
+			op_margin_stability_5y = _last_n_years_op_margin_std(ys, years=5)
+
+			# ROIC (%): NOPAT / (Total Assets - Current Liabilities)
+			roic_pct = None
+			try:
+				operating_income_latest = operating_income
+				if operating_income_latest is None:
+					operating_income_latest = _latest_stmt_value(ys, ["Operating Income", "OperatingIncome", "Operating Income or Loss"])
+
+				tax_exp = _latest_stmt_value(ys, ["Tax Provision", "Income Tax Expense", "Income Tax Expense Benefit", "Tax Expense"])
+				pretax = _latest_stmt_value(ys, ["Pretax Income", "PretaxIncome"])
+				tax_rate = None
+				if tax_exp is not None and pretax not in (None, 0) and not pd.isna(pretax):
+					try:
+						tr = float(tax_exp) / float(pretax)
+						# clamp to plausible range
+						if 0 <= tr <= 0.6:
+							tax_rate = tr
+					except Exception:
+						tax_rate = None
+				if tax_rate is None:
+					tax_rate = 0.21  # fallback (US statutory-ish); good enough for cross-sectional ranking
+
+				total_assets = _latest_stmt_value(bs, ["Total Assets", "TotalAssets"])
+				curr_liab = _latest_stmt_value(bs, ["Total Current Liabilities", "TotalCurrentLiabilities", "Current Liabilities", "CurrentLiabilities"])
+
+				if (
+					operating_income_latest is not None
+					and total_assets not in (None, 0)
+					and curr_liab is not None
+				):
+					invested_capital = float(total_assets) - float(curr_liab)
+					if invested_capital not in (0, None) and invested_capital > 0:
+						nopat = float(operating_income_latest) * (1.0 - float(tax_rate))
+						roic_pct = (nopat / invested_capital) * 100.0
+			except Exception:
+				roic_pct = None
+
 			return {
 				"Close": close,
 				"MarketCap_Mio": market_cap_mio,
@@ -211,6 +323,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			"FCF_Margin": fcf_margin,
 			"Debt_to_Equity": debt_to_equity,
 			"EPS_Acceleration": eps_acceleration,
+			"ROIC": roic_pct,
+			"Cash_Conversion": cash_conversion,
+			"Op_Margin_Stability_5y": op_margin_stability_5y,
 			}
 
 		except Exception as e:
@@ -223,6 +338,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
 				print(f"[ERROR] fetch_quote_data_single({ticker}) dauerhaft fehlgeschlagen ({e}).")
 
 	# Fallback: alles None
+	
 	return {
 		"Close": None,
 		"MarketCap_Mio": None,
@@ -235,4 +351,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
 		"FCF_Margin": None,
 		"Debt_to_Equity": None,
 		"EPS_Acceleration": None,
+		"ROIC": None,
+		"Cash_Conversion": None,
+		"Op_Margin_Stability_5y": None,
 	}

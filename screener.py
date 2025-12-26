@@ -179,7 +179,31 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         vol_breakout = False
         vol20_val = float("nan")
         vol_score = float("nan")
-    # NEU: Wochenvergleich Close
+    
+    # --- ATR / Price (14) on DAILY data ---
+    # ATR is computed on daily bars and normalized by last close to get a comparable volatility metric.
+    atr_pct = float("nan")
+    try:
+        dfd = df[["High", "Low", "Close"]].copy()
+        dfd["High"] = pd.to_numeric(dfd["High"], errors="coerce")
+        dfd["Low"] = pd.to_numeric(dfd["Low"], errors="coerce")
+        dfd["Close"] = pd.to_numeric(dfd["Close"], errors="coerce")
+        dfd = dfd.dropna()
+        if len(dfd) >= 15:
+            prev_close = dfd["Close"].shift(1)
+            tr = pd.concat([
+                (dfd["High"] - dfd["Low"]).abs(),
+                (dfd["High"] - prev_close).abs(),
+                (dfd["Low"] - prev_close).abs(),
+            ], axis=1).max(axis=1)
+            atr14 = tr.rolling(14).mean().iloc[-1]
+            last_close_d = float(dfd["Close"].iloc[-1])
+            if last_close_d not in (0, None) and not pd.isna(atr14):
+                atr_pct = float(atr14) / last_close_d * 100.0
+    except Exception:
+        atr_pct = float("nan")
+
+# NEU: Wochenvergleich Close
     if len(close) >= 2:
         weekly_momentum = close.iloc[-1] > close.iloc[-2]
     else:
@@ -213,6 +237,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "VCP Waves": vcp_waves,
         "VCP Entry": vcp_entry,
         "VCP Breakout Level": vcp_breakout,
+        "ATR / Price (%)": atr_pct,
     }
 
 
