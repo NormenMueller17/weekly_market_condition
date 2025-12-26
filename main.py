@@ -179,11 +179,23 @@ def run():
         leaders.insert(15, "ROIC (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("ROIC")))
         leaders.insert(16, "Cash Conversion", leaders.index.map(lambda t: quote_map.get(t, {}).get("Cash_Conversion")))
         leaders.insert(17, "Op Margin Stability (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("Op_Margin_Stability_5y")))
+        # --- Quality compounder metrics (Phase 2; descriptive only) ---
+        leaders.insert(18, "Rev Neg YoY Years (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_Neg_YoY_Count_5y")))
+        leaders.insert(19, "Rev Growth Std (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_Growth_Std_5y")))
+        leaders.insert(20, "EPS Neg YoY Years (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Neg_YoY_Count_5y")))
+        leaders.insert(21, "EPS Growth Std (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Growth_Std_5y")))
         # ATR / Price comes from daily OHLC (computed in screener). Reposition it next to other fundamentals.
         _atr_series = leaders["ATR / Price (%)"] if "ATR / Price (%)" in leaders.columns else pd.Series([pd.NA] * len(leaders), index=leaders.index)
         if "ATR / Price (%)" in leaders.columns:
             leaders.drop(columns=["ATR / Price (%)"], inplace=True)
-        leaders.insert(18, "ATR / Price (%)", _atr_series)
+        leaders.insert(22, "ATR / Price (%)", _atr_series)
+
+        # Reposition Max Drawdown columns next to ATR if they exist
+        for dd_col, insert_at in [("Max Drawdown 5Y (%)", 23), ("Max Drawdown 10Y (%)", 24)]:
+            if dd_col in leaders.columns:
+                _dd = leaders[dd_col].copy()
+                leaders.drop(columns=[dd_col], inplace=True)
+                leaders.insert(insert_at, dd_col, _dd)
         # --- Industry-relative percentile helper columns (0..1) ---
         # Used for conditional formatting of ROE/Operating Margin/FCF Margin within each Industry.
         if "Industry" in leaders.columns:
@@ -454,10 +466,20 @@ def run():
         "Op Margin Stability (5y)": "0.00",
         "ATR / Price (%)": "0.00",
 
+        # Phase 2 (stability + risk)
+        "Rev Growth Std (5y)": "0.00",
+        "EPS Growth Std (5y)": "0.00",
+        "Max Drawdown 5Y (%)": "0.00",
+        "Max Drawdown 10Y (%)": "0.00",
+
+
         # integers
         "Industry Ranking": "0",
         "MarketCap (Mio USD)": "#,##0",
         "Ø-Volume 20T": "#,##0",
+        "Rev Neg YoY Years (5y)": "0",
+        "EPS Neg YoY Years (5y)": "0",
+
     }
 
     # Leaders: do NOT sort (keep existing ordering)

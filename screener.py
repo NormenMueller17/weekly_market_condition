@@ -6,6 +6,54 @@ from detect_vcp import detect_vcp
 
 _VOLUME_BREAKOUT_SCORE = 1.3
 
+
+def _max_drawdown_pct(close: pd.Series) -> float:
+    """Return max drawdown in percent (negative number)."""
+    if close is None or len(close) < 5:
+        return float("nan")
+    c = pd.to_numeric(close, errors="coerce").dropna()
+    if c.empty:
+        return float("nan")
+    running_max = c.cummax()
+    dd = (c / running_max) - 1.0
+    mdd = dd.min()
+    return float(mdd * 100.0)
+
+
+def _fetch_weekly_close_for_drawdown(ticker: str) -> pd.Series | None:
+    """Fetch weekly close series for drawdown metrics (lightweight vs daily)."""
+    try:
+        dfw = yf.download(
+            ticker,
+            period="10y",
+            interval="1wk",
+            auto_adjust=False,
+            actions=False,
+            repair=True,
+            progress=False,
+            threads=False,
+        )
+        if dfw is None or dfw.empty or "Close" not in dfw.columns:
+            return None
+        s = dfw["Close"].dropna()
+        if not isinstance(s.index, pd.DatetimeIndex):
+            s.index = pd.to_datetime(s.index)
+        return s.sort_index()
+    except Exception:
+        return None
+
+
+def _compute_mdd_5y_10y(ticker: str) -> tuple[float, float]:
+    """Compute max drawdown over last 5y and 10y from weekly closes."""
+    s = _fetch_weekly_close_for_drawdown(ticker)
+    if s is None or s.empty:
+        return float("nan"), float("nan")
+    # Weekly bars: ~52 per year
+    s10 = s.tail(52 * 10 + 5)
+    s5 = s.tail(52 * 5 + 5)
+    return _max_drawdown_pct(s5), _max_drawdown_pct(s10)
+
+
 def _compute_weighted_perf(close: pd.Series) -> float:
     """
     Berechnet eine gewichtete Performance aus 3M, 6M, 12M
@@ -304,6 +352,12 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
 
             # ---- Minervini-Kriterien ----
             res = compute_minervini_template(df)
+
+            # ---- Phase 2 (Risk): Max Drawdown 5y / 10y (weekly data) ----
+            mdd_5y, mdd_10y = _compute_mdd_5y_10y(t)
+            res["Max Drawdown 5Y (%)"] = mdd_5y
+            res["Max Drawdown 10Y (%)"] = mdd_10y
+
             results[t] = res
 
         except Exception as e:
