@@ -158,20 +158,14 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			revenue = _sf(info.info.get("totalRevenue"))
 			free_cash_flow = _sf(info.info.get("freeCashflow"))
 			total_debt = _sf(info.info.get("totalDebt"))
-
+			
 			# ROE (%)
 			roe = None
-			if net_income is not None and equity not in (None, 0):
-				roe = (net_income / equity) * 100.0
-
-			# Operating Margin (%): prefer computed from Operating Income / Revenue; fallback to operatingMargins
-			op_margin = None
-			if operating_income is not None and revenue not in (None, 0):
-				op_margin = (operating_income / revenue) * 100.0
-			else:
-				om = _sf(info.info.get("operatingMargins"))
-				if om is not None:
-					op_margin = om * 100.0
+			roe_info = _sf(info.info.get("returnOnEquity"))
+			if roe_info is not None:
+			    roe = roe_info * 100.0
+			elif net_income is not None and equity not in (None, 0):
+			    roe = (net_income / equity) * 100.0
 
 			# FCF Margin (%)
 			fcf_margin = None
@@ -188,42 +182,58 @@ def fetch_quote_data_single(ticker: str) -> dict:
 					# Yahoo sometimes returns debtToEquity as percentage (e.g., 45.3). Convert if it looks like percent.
 					debt_to_equity = d2e / 100.0 if d2e > 10 else d2e
 
-			# EPS Acceleration (percentage points): derived from quarterly income statement EPS if available
+			# EPS Acceleration (percentage points)
 			eps_acceleration = None
 			try:
-				qs = getattr(info, "quarterly_income_stmt", None)
-				if qs is None or getattr(qs, "empty", True):
-					get_stmt = getattr(info, "get_income_stmt", None)
-					if callable(get_stmt):
-						qs = get_stmt(freq="quarterly")
-				if qs is not None and not qs.empty:
-					# Try to find an EPS row
-					row_name = None
-					for cand in ["Diluted EPS", "Basic EPS", "Earnings Per Share"]:
-						if cand in qs.index:
-							row_name = cand
-							break
-					if row_name is not None:
-						eps_series = pd.to_numeric(qs.loc[row_name], errors="coerce").dropna()
-						# Need at least 6 quarters to compute 2 YoY growth values (q0 vs q4, q1 vs q5)
-						if len(eps_series) >= 6:
-							eps_vals = eps_series.values
-							# Ensure order newest->oldest
-							# yfinance columns are typically in reverse-chronological already; sort just in case
-							if hasattr(eps_series, "index"):
-								eps_series = eps_series.sort_index(ascending=False)
-								eps_vals = eps_series.values
-							g_latest = None
-							g_prev = None
-							if eps_vals[4] not in (0, None) and not pd.isna(eps_vals[4]):
-								g_latest = (eps_vals[0] / eps_vals[4] - 1.0) * 100.0
-							if eps_vals[5] not in (0, None) and not pd.isna(eps_vals[5]):
-								g_prev = (eps_vals[1] / eps_vals[5] - 1.0) * 100.0
-							if g_latest is not None and g_prev is not None:
-								eps_acceleration = g_latest - g_prev
+			    # 1) Quarterly EPS acceleration (needs >= 6 quarters)
+			    qs = getattr(info, "quarterly_income_stmt", None)
+			    if qs is None or getattr(qs, "empty", True):
+			        get_stmt = getattr(info, "get_income_stmt", None)
+			        if callable(get_stmt):
+			            qs = get_stmt(freq="quarterly")
+			
+			    def _extract_eps_series(stmt):
+			        if stmt is None or getattr(stmt, "empty", True):
+			            return None
+			        row_name = None
+			        for cand in ["Diluted EPS", "Basic EPS", "Earnings Per Share"]:
+			            if cand in stmt.index:
+			                row_name = cand
+			                break
+			        if row_name is None:
+			            return None
+			        s = pd.to_numeric(stmt.loc[row_name], errors="coerce").dropna()
+			        # ensure newest->oldest (works for Timestamp columns too)
+			        s = s.sort_index(ascending=False)
+			        return s
+			
+			    eps_q = _extract_eps_series(qs)
+			    if eps_q is not None and len(eps_q) >= 6:
+			        eps_vals = eps_q.values
+			        # YoY latest (q0 vs q4), YoY previous (q1 vs q5)
+			        g_latest = (eps_vals[0] / eps_vals[4] - 1.0) * 100.0 if eps_vals[4] not in (0, None) and not pd.isna(eps_vals[4]) else None
+			        g_prev   = (eps_vals[1] / eps_vals[5] - 1.0) * 100.0 if eps_vals[5] not in (0, None) and not pd.isna(eps_vals[5]) else None
+			        if g_latest is not None and g_prev is not None:
+			            eps_acceleration = g_latest - g_prev
+			
+			    # 2) Fallback: Annual EPS acceleration (needs >= 3 years)
+			    if eps_acceleration is None:
+			        ys = getattr(info, "income_stmt", None)
+			        if ys is None or getattr(ys, "empty", True):
+			            get_stmt = getattr(info, "get_income_stmt", None)
+			            if callable(get_stmt):
+			                ys = get_stmt(freq="yearly")
+			        eps_y = _extract_eps_series(ys)
+			        if eps_y is not None and len(eps_y) >= 3:
+			            v = eps_y.values  # newest->oldest
+			            # YoY latest (y0 vs y1), YoY previous (y1 vs y2)
+			            g_latest = (v[0] / v[1] - 1.0) * 100.0 if v[1] not in (0, None) and not pd.isna(v[1]) else None
+			            g_prev   = (v[1] / v[2] - 1.0) * 100.0 if v[2] not in (0, None) and not pd.isna(v[2]) else None
+			            if g_latest is not None and g_prev is not None:
+			                eps_acceleration = g_latest - g_prev
+			
 			except Exception:
-				eps_acceleration = None
-
+			    eps_acceleration = None
 
 			return {
 				"Close": close,
