@@ -11,6 +11,7 @@ from fetch_quote_data import batch_fetch_quote_data, fetch_quote_data_single
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
+from excel_formatting import format_sheet
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
@@ -378,96 +379,70 @@ def run():
             val = "" if cell.value is None else str(cell.value)
             max_len = max(max_len, len(val))
         ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
-    
     # -------------------------------
-    # Number-Format Regeln
+    # Excel formatting (reusable helper)
     # -------------------------------
-    
-    # Spaltennamen zu Spaltenindex mappen
-    header_row = {cell.value: cell.column for cell in ws[1] if cell.value}
-    
-    # 2 Nachkommastellen
-    two_dec_cols = [
-        "Industry Score",
-        "Industry RS Score",
-        "Industry Strong Stock Score",
-        "Industry Volume Score",
-        "EPS (Forward/TTM)",
-        "EPS Wachstum FWD/TTM (%)",
-        "Revenue Wachstum TTM YoY (%)",
-        "ROE (%)",
-        "Operating Margin (%)",
-        "FCF Margin (%)",
-        "Debt to Equity",
-        "EPS Acceleration (pp)",
-        "Close",
-        "Close Vorwoche",
-        "Veränderung in %",
-        "52W High",
-        "Dist to 52W High (%)",
-        "Volume Score",
-    ]
-    
-    # Ganze Zahlen (ohne Nachkommastellen)
-    zero_dec_cols = [
-        "MarketCap (Mio USD)",
-        "Ø-Volume 20T",
-    ]
-    
-    # --- Anwenden der Formate ---
-    for col_name in two_dec_cols:
-        if col_name in header_row:
-            col_letter = get_column_letter(header_row[col_name])
-            for cell in ws[col_letter][1:]:  # alle Zeilen außer Header
-                if isinstance(cell.value, (int, float)):
-                    cell.number_format = "0.00"
-    
-    for col_name in zero_dec_cols:
-        if col_name in header_row:
-            col_letter = get_column_letter(header_row[col_name])
-            for cell in ws[col_letter][1:]:
-                if isinstance(cell.value, (int, float)):
-                    cell.number_format = "#,##0"
-                    
-    # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
-    style_boolean_columns(ws)
+    leaders_formats = {
+        # 2 decimals
+        "Industry Score": "0.00",
+        "Industry RS Score": "0.00",
+        "Industry Strong Stock Score": "0.00",
+        "Industry Volume Score": "0.00",
+        "EPS (Forward/TTM)": "0.00",
+        "EPS Wachstum FWD/TTM (%)": "0.00",
+        "Revenue Wachstum TTM YoY (%)": "0.00",
+        "Close": "0.00",
+        "Close Vorwoche": "0.00",
+        "Veränderung in %": "0.00",
+        "52W High": "0.00",
+        "Dist to 52W High (%)": "0.00",
+        "Volume Score": "0.00",
 
-    # -------------------------------
-    # Format Industries sheet
-    # -------------------------------
+        # 5 new fundamentals (Excel headers)
+        "ROE (%)": "0.00",
+        "Operating Margin (%)": "0.00",
+        "FCF Margin (%)": "0.00",
+        "Debt to Equity": "0.00",
+        "EPS Acceleration (pp)": "0.00",
+
+        # integers
+        "Industry Ranking": "0",
+        "MarketCap (Mio USD)": "#,##0",
+        "Ø-Volume 20T": "#,##0",
+    }
+
+    # Leaders: do NOT sort (keep existing ordering)
+    format_sheet(
+        ws,
+        formats_by_colname=leaders_formats,
+        autofit_headers=True,
+        sort_by=None,
+    )
+
+    # Industries: sort by rank + apply formats
     if 'Industries' in wb.sheetnames:
         ws_ind = wb['Industries']
+        industries_formats = {
+            "Industry Ranking": "0",
+            "Industry RS Score": "0.00",
+            "Industry Strong Stock Score": "0.00",
+            "Activity": "0.00",
+            "Direction": "0.00",
+            "Industry Volume Score": "0.00",
+            "Industry Score": "0.00",
+            "Industry_RS_raw": "0.00",
+        }
 
-        # Auto-width based on header length (not data length)
-        for col_idx, cell in enumerate(ws_ind[1], start=1):
-            header = "" if cell.value is None else str(cell.value)
-            ws_ind.column_dimensions[get_column_letter(col_idx)].width = max(10, len(header) + 2)
-
-        # Number formats (2 decimals) for selected industry metrics
-        header_ind = {cell.value: cell.column for cell in ws_ind[1] if cell.value}
-        ind_two_dec_cols = [
-            "Industry RS Score",
-            "Industry Strong Stock Score",
-            "Activity",
-            "Direction",
-            "Industry Volume Score",
-            "Industry Score",
-        ]
-        for col_name in ind_two_dec_cols:
-            if col_name in header_ind:
-                col_letter = get_column_letter(header_ind[col_name])
-                for cell in ws_ind[col_letter][1:]:
-                    if isinstance(cell.value, (int, float)):
-                        cell.number_format = "0.00"
-
-        # Keep ranking as integer
-        if "Industry Ranking" in header_ind:
-            col_letter = get_column_letter(header_ind["Industry Ranking"])
-            for cell in ws_ind[col_letter][1:]:
-                if isinstance(cell.value, (int, float)):
-                    cell.number_format = "0"
+        format_sheet(
+            ws_ind,
+            formats_by_colname=industries_formats,
+            autofit_headers=True,
+            sort_by="Industry Ranking",
+            sort_ascending=True,
+        )
 
     wb.save(out_path)
+
     
     # 4) Beim Mailversand denselben Pfad anhängen
     send_email(html, subject_suffix="Weekly US Market Report", attachments=[str(out_path)])
