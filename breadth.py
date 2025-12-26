@@ -107,10 +107,11 @@ def compute_breadth_snapshots_with_advancers(weekly_data: Dict[str, pd.DataFrame
 
     snapshots = {}
     for off in offsets:
-        snaps = (
-            panel.groupby("ticker", as_index=False, group_keys=False)
-            .apply(lambda g: take_nth(g, off))
-        )
+        gb = panel.groupby("ticker", as_index=False, group_keys=False)
+        try:
+            snaps = gb.apply(lambda g: take_nth(g, off), include_groups=False)
+        except TypeError:
+            snaps = gb.apply(lambda g: take_nth(g, off))
         snapshots[off] = snaps
 
     def pct_true(series: pd.Series) -> float:

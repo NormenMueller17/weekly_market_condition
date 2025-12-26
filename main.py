@@ -14,6 +14,12 @@ from openpyxl.styles import PatternFill, Font, Alignment
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
+import warnings
+
+# Silence noisy third-party warnings (optional)
+warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"yfinance\.scrapers\.fundamentals")
+warnings.filterwarnings("ignore", category=FutureWarning, module=r"breadth")
+
 
 from industry_strength import compute_industry_scores
 
@@ -268,11 +274,6 @@ def run():
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
         "Revenue Wachstum TTM YoY (%)",
-        "Operating Margin (%)",
-        "FCF Margin (%)",
-        "Debt to Equity",
-        "EPS Acceleration (pp)",
-        "ROE (%)",
         "Close",
         "Close Vorwoche",
         "Veränderung in %",

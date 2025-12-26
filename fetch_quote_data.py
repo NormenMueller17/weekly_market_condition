@@ -45,63 +45,12 @@ def fetch_quote_data_single(ticker: str) -> dict:
 	"""
 	MAX_RETRIES = 3
 	SLEEP_SECONDS = 0.75
-	
+
 	for attempt in range(MAX_RETRIES):
 		try:
 			info = yf.Ticker(ticker)
 			fast = getattr(info, "fast_info", {}) or {}
-			
-			# DEBUG FUNDAMENTALS (temporär, nur für einen Test-Ticker)
-			DEBUG_TICKER = "MSFT"   # <-- hier ggf. ändern (z.B. "MSFT")
-			print(yf.__version__)
-			if ticker.upper() == DEBUG_TICKER:
-				print("\n[DEBUG FUNDAMENTALS]", ticker)
-			
-				# 3A) info-Keys prüfen (ROE)
-				info_dict = info.info
-				print("returnOnEquity in info:",
-					  "returnOnEquity" in info_dict,
-					  info_dict.get("returnOnEquity"))
-			
-				print("netIncome in info:",
-					  "netIncome" in info_dict,
-					  info_dict.get("netIncome"))
-			
-				print("netIncomeToCommon in info:",
-					  "netIncomeToCommon" in info_dict,
-					  info_dict.get("netIncomeToCommon"))
-			
-				print("totalStockholderEquity in info:",
-					  "totalStockholderEquity" in info_dict,
-					  info_dict.get("totalStockholderEquity"))
-			
-				# 3B) Quarterly Income Statement (EPS?)
-				try:
-					qs = getattr(info, "quarterly_income_stmt", None)
-					print("quarterly_income_stmt empty?",
-						  qs is None or getattr(qs, "empty", True))
-					if qs is not None and not qs.empty:
-						print("quarterly_income_stmt rows:",
-							  list(qs.index))
-						print("quarterly_income_stmt columns:",
-							  list(qs.columns)[:8])
-				except Exception as e:
-					print("quarterly_income_stmt ERROR:", repr(e))
-			
-				# 3C) quarterly_earnings (oft KEIN EPS!)
-				try:
-					qe = getattr(info, "quarterly_earnings", None)
-					print("quarterly_earnings empty?",
-						  qe is None or qe.empty)
-					if qe is not None and not qe.empty:
-						print("quarterly_earnings columns:",
-							  list(qe.columns))
-						print(qe.tail(6))
-				except Exception as e:
-					print("quarterly_earnings ERROR:", repr(e))
-			
-				print("[/DEBUG FUNDAMENTALS]\n")
-		
+
 			# Close
 			close = (
 				fast.get("lastPrice")
@@ -142,7 +91,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
 				if rg is not None:
 					rev_growth_pct = float(rg) * 100.0
 			except Exception:
-				rev_gr
+				rev_growth_pct = None
 			# --- Additional fundamental metrics (free Yahoo data) ---
 			def _sf(x):
 				try:
@@ -158,14 +107,23 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			revenue = _sf(info.info.get("totalRevenue"))
 			free_cash_flow = _sf(info.info.get("freeCashflow"))
 			total_debt = _sf(info.info.get("totalDebt"))
-			
+
 			# ROE (%)
 			roe = None
 			roe_info = _sf(info.info.get("returnOnEquity"))
 			if roe_info is not None:
-			    roe = roe_info * 100.0
+				roe = roe_info * 100.0
 			elif net_income is not None and equity not in (None, 0):
-			    roe = (net_income / equity) * 100.0
+				roe = (net_income / equity) * 100.0
+
+			# Operating Margin (%): prefer computed from Operating Income / Revenue; fallback to operatingMargins
+			op_margin = None
+			if operating_income is not None and revenue not in (None, 0):
+				op_margin = (operating_income / revenue) * 100.0
+			else:
+				om = _sf(info.info.get("operatingMargins"))
+				if om is not None:
+					op_margin = om * 100.0
 
 			# FCF Margin (%)
 			fcf_margin = None
@@ -183,15 +141,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
 					debt_to_equity = d2e / 100.0 if d2e > 10 else d2e
 
 			# EPS Acceleration (percentage points)
+			# Prefer quarterly Diluted EPS (needs >= 6 quarters for 2 YoY rates). Fallback: yearly Diluted EPS (needs >= 3 years).
 			eps_acceleration = None
 			try:
-			    # 1) Quarterly EPS acceleration (needs >= 6 quarters)
-			    qs = getattr(info, "quarterly_income_stmt", None)
-			    if qs is None or getattr(qs, "empty", True):
-			        get_stmt = getattr(info, "get_income_stmt", None)
-			        if callable(get_stmt):
-			            qs = get_stmt(freq="quarterly")
-			
 			    def _extract_eps_series(stmt):
 			        if stmt is None or getattr(stmt, "empty", True):
 			            return None
@@ -203,38 +155,50 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			        if row_name is None:
 			            return None
 			        s = pd.to_numeric(stmt.loc[row_name], errors="coerce").dropna()
-			        # ensure newest->oldest (works for Timestamp columns too)
-			        s = s.sort_index(ascending=False)
+			        if hasattr(s, "sort_index"):
+			            s = s.sort_index(ascending=False)  # newest -> oldest
 			        return s
-			
+
+			    # --- Quarterly EPS Acceleration ---
+			    qs = getattr(info, "quarterly_income_stmt", None)
+			    if qs is None or getattr(qs, "empty", True):
+			        get_stmt = getattr(info, "get_income_stmt", None)
+			        if callable(get_stmt):
+			            qs = get_stmt(freq="quarterly")
+
 			    eps_q = _extract_eps_series(qs)
 			    if eps_q is not None and len(eps_q) >= 6:
-			        eps_vals = eps_q.values
-			        # YoY latest (q0 vs q4), YoY previous (q1 vs q5)
-			        g_latest = (eps_vals[0] / eps_vals[4] - 1.0) * 100.0 if eps_vals[4] not in (0, None) and not pd.isna(eps_vals[4]) else None
-			        g_prev   = (eps_vals[1] / eps_vals[5] - 1.0) * 100.0 if eps_vals[5] not in (0, None) and not pd.isna(eps_vals[5]) else None
+			        v = eps_q.values  # newest->oldest
+			        g_latest = None
+			        g_prev = None
+			        if v[4] not in (0, None) and not pd.isna(v[4]):
+			            g_latest = (v[0] / v[4] - 1.0) * 100.0
+			        if v[5] not in (0, None) and not pd.isna(v[5]):
+			            g_prev = (v[1] / v[5] - 1.0) * 100.0
 			        if g_latest is not None and g_prev is not None:
 			            eps_acceleration = g_latest - g_prev
-			
-			    # 2) Fallback: Annual EPS acceleration (needs >= 3 years)
+
+			    # --- Yearly fallback ---
 			    if eps_acceleration is None:
 			        ys = getattr(info, "income_stmt", None)
 			        if ys is None or getattr(ys, "empty", True):
 			            get_stmt = getattr(info, "get_income_stmt", None)
 			            if callable(get_stmt):
 			                ys = get_stmt(freq="yearly")
+
 			        eps_y = _extract_eps_series(ys)
 			        if eps_y is not None and len(eps_y) >= 3:
 			            v = eps_y.values  # newest->oldest
-			            # YoY latest (y0 vs y1), YoY previous (y1 vs y2)
-			            g_latest = (v[0] / v[1] - 1.0) * 100.0 if v[1] not in (0, None) and not pd.isna(v[1]) else None
-			            g_prev   = (v[1] / v[2] - 1.0) * 100.0 if v[2] not in (0, None) and not pd.isna(v[2]) else None
+			            g_latest = None
+			            g_prev = None
+			            if v[1] not in (0, None) and not pd.isna(v[1]):
+			                g_latest = (v[0] / v[1] - 1.0) * 100.0
+			            if v[2] not in (0, None) and not pd.isna(v[2]):
+			                g_prev = (v[1] / v[2] - 1.0) * 100.0
 			            if g_latest is not None and g_prev is not None:
 			                eps_acceleration = g_latest - g_prev
-			
 			except Exception:
 			    eps_acceleration = None
-
 			return {
 				"Close": close,
 				"MarketCap_Mio": market_cap_mio,
@@ -242,11 +206,11 @@ def fetch_quote_data_single(ticker: str) -> dict:
 				"EPS_FWD_TTM": eps_fwd_ttm,
 				"EPS_GROWTH_FWD_TTM": eps_growth_pct,
 				"REV_GROWTH_TTM_YOY": rev_growth_pct,
-				"ROE": roe,
-				"Operating_Margin": op_margin,
-				"FCF_Margin": fcf_margin,
-				"Debt_to_Equity": debt_to_equity,
-				"EPS_Acceleration": eps_acceleration,
+			"ROE": roe,
+			"Operating_Margin": op_margin,
+			"FCF_Margin": fcf_margin,
+			"Debt_to_Equity": debt_to_equity,
+			"EPS_Acceleration": eps_acceleration,
 			}
 
 		except Exception as e:
@@ -272,4 +236,3 @@ def fetch_quote_data_single(ticker: str) -> dict:
 		"Debt_to_Equity": None,
 		"EPS_Acceleration": None,
 	}
-
