@@ -11,7 +11,7 @@ from fetch_quote_data import batch_fetch_quote_data, fetch_quote_data_single
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
-from excel_formatting import format_sheet
+from excel_formatting import format_sheet, apply_debt_eps_conditional_formatting
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
@@ -20,6 +20,17 @@ import warnings
 # Silence noisy third-party warnings (optional)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"yfinance\.scrapers\.fundamentals")
 warnings.filterwarnings("ignore", category=FutureWarning, module=r"breadth")
+# -------------------------------------------------------------------
+# Conditional-format thresholds (easy to adjust later)
+# -------------------------------------------------------------------
+DEBT_EQ_THR_LOW = 0.50   # <= low -> green
+DEBT_EQ_THR_MED = 1.00   # (low..med] -> yellow
+DEBT_EQ_THR_HIGH = 2.00  # (med..high] -> orange; >high -> red
+
+EPS_ACCEL_THR_STRONG = 10.0  # >= strong -> green
+EPS_ACCEL_THR_MILD = 3.0     # >= mild -> light green
+EPS_ACCEL_THR_FLAT = 3.0     # (-flat..flat) -> yellow; <= -flat -> orange/red
+
 
 
 from industry_strength import compute_industry_scores
@@ -417,6 +428,19 @@ def run():
         formats_by_colname=leaders_formats,
         autofit_headers=True,
         sort_by=None,
+    )
+
+    # Conditional formatting (Ampel) for risk & momentum flags
+    apply_debt_eps_conditional_formatting(
+    ws,
+    debt_col="Debt to Equity",
+    eps_col="EPS Acceleration (pp)",
+    debt_thr_low=DEBT_EQ_THR_LOW,
+    debt_thr_med=DEBT_EQ_THR_MED,
+    debt_thr_high=DEBT_EQ_THR_HIGH,
+    eps_thr_strong=EPS_ACCEL_THR_STRONG,
+    eps_thr_mild=EPS_ACCEL_THR_MILD,
+    eps_thr_flat=EPS_ACCEL_THR_FLAT,
     )
 
     # Industries: sort by rank + apply formats
