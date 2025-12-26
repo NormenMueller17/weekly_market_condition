@@ -50,42 +50,58 @@ def fetch_quote_data_single(ticker: str) -> dict:
 		try:
 			info = yf.Ticker(ticker)
 			fast = getattr(info, "fast_info", {}) or {}
-		
-			# --- DEBUG (temporär): nur für einen Test-Ticker ausgeben ---
-			DEBUG_TICKER = "AAPL"   # <-- hier deinen Testticker setzen, z.B. "MSFT"
+			
+			# DEBUG FUNDAMENTALS (temporär, nur für einen Test-Ticker)
+			DEBUG_TICKER = "AAPL"   # <-- hier ggf. ändern (z.B. "MSFT")
+			
 			if ticker.upper() == DEBUG_TICKER:
-			    print("\n[DEBUG FUNDAMENTALS]", symbol)
+				print("\n[DEBUG FUNDAMENTALS]", ticker)
 			
-			    # 3A) Check, welche Keys in info vorhanden sind
-			    print("returnOnEquity in info:", "returnOnEquity" in info, info.get("returnOnEquity"))
-			    print("netIncome in info:", "netIncome" in info, info.get("netIncome"))
-			    print("totalStockholderEquity in info:", "totalStockholderEquity" in info, info.get("totalStockholderEquity"))
-			    print("netIncomeToCommon in info:", "netIncomeToCommon" in info, info.get("netIncomeToCommon"))
+				# 3A) info-Keys prüfen (ROE)
+				info_dict = info.info
+				print("returnOnEquity in info:",
+					  "returnOnEquity" in info_dict,
+					  info_dict.get("returnOnEquity"))
 			
-			    # 3B) Check Quarterly Income Statement (EPS-Zeilen)
-			    try:
-			        qi = t.quarterly_income_stmt
-			        print("quarterly_income_stmt empty?", qi is None or qi.empty)
-			        if qi is not None and not qi.empty:
-			            print("quarterly_income_stmt index (rows):", list(qi.index)[:25])
-			            print("quarterly_income_stmt columns (quarters):", list(qi.columns)[:8])
-			    except Exception as e:
-			        print("quarterly_income_stmt error:", repr(e))
+				print("netIncome in info:",
+					  "netIncome" in info_dict,
+					  info_dict.get("netIncome"))
 			
-			    # 3C) Check quarterly_earnings (oft Revenue/Earnings, nicht EPS)
-			    try:
-			        qe = getattr(t, "quarterly_earnings", None)
-			        print("quarterly_earnings empty?", qe is None or qe.empty)
-			        if qe is not None and not qe.empty:
-			            print("quarterly_earnings columns:", list(qe.columns))
-			            print(qe.tail(6))
-			    except Exception as e:
-			        print("quarterly_earnings error:", repr(e))
+				print("netIncomeToCommon in info:",
+					  "netIncomeToCommon" in info_dict,
+					  info_dict.get("netIncomeToCommon"))
 			
-			    print("[/DEBUG FUNDAMENTALS]\n")
-			# --- END DEBUG ---
+				print("totalStockholderEquity in info:",
+					  "totalStockholderEquity" in info_dict,
+					  info_dict.get("totalStockholderEquity"))
 			
-
+				# 3B) Quarterly Income Statement (EPS?)
+				try:
+					qs = getattr(info, "quarterly_income_stmt", None)
+					print("quarterly_income_stmt empty?",
+						  qs is None or getattr(qs, "empty", True))
+					if qs is not None and not qs.empty:
+						print("quarterly_income_stmt rows:",
+							  list(qs.index))
+						print("quarterly_income_stmt columns:",
+							  list(qs.columns)[:8])
+				except Exception as e:
+					print("quarterly_income_stmt ERROR:", repr(e))
+			
+				# 3C) quarterly_earnings (oft KEIN EPS!)
+				try:
+					qe = getattr(info, "quarterly_earnings", None)
+					print("quarterly_earnings empty?",
+						  qe is None or qe.empty)
+					if qe is not None and not qe.empty:
+						print("quarterly_earnings columns:",
+							  list(qe.columns))
+						print(qe.tail(6))
+				except Exception as e:
+					print("quarterly_earnings ERROR:", repr(e))
+			
+				print("[/DEBUG FUNDAMENTALS]\n")
+		
 			# Close
 			close = (
 				fast.get("lastPrice")
