@@ -139,9 +139,14 @@ def apply_formula_fills(
 
     col_letter = ws.cell(row=header_row, column=col_idx).column_letter
     rng = f"{col_letter}{data_start_row}:{col_letter}{ws.max_row}"
-
-    for formula, rgb in formula_fill_pairs:
-        fill = PatternFill(start_color=rgb, end_color=rgb, fill_type="solid")
+    
+    for formula, fill_spec in formula_fill_pairs:
+        # fill_spec can be a 6-hex RGB string (e.g. "C6EFCE") or a prebuilt PatternFill
+        if isinstance(fill_spec, PatternFill):
+            fill = fill_spec
+        else:
+            rgb = str(fill_spec)
+            fill = PatternFill(start_color=rgb, end_color=rgb, fill_type="solid")
         rule = FormulaRule(formula=[formula], fill=fill, stopIfTrue=True)
         ws.conditional_formatting.add(rng, rule)
 
