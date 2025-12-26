@@ -222,3 +222,60 @@ def apply_debt_eps_conditional_formatting(
             header_row=header_row,
             data_start_row=data_start_row,
         )
+
+
+
+def apply_industry_percentile_conditional_formatting(
+    ws: Worksheet,
+    metric_col: str,
+    pctl_col: str,
+    thr_top: float = 0.75,
+    thr_mid: float = 0.50,
+    thr_low: float = 0.25,
+    header_row: int = 1,
+    data_start_row: int = 2,
+    hide_pctl_col: bool = True,
+) -> None:
+    """Color the *metric_col* cells based on a percentile column (0..1) in the same row.
+
+    Typical thresholds:
+      >=thr_top  -> GREEN
+      >=thr_mid  -> LIGHT_GREEN
+      >=thr_low  -> YELLOW
+      < thr_low  -> RED
+      non-numeric -> GREY
+    """
+    header_map = _build_header_map(ws, header_row=header_row)
+    metric_idx = header_map.get(metric_col)
+    pctl_idx = header_map.get(pctl_col)
+    if not metric_idx or not pctl_idx:
+        return
+
+    metric_letter = ws.cell(row=header_row, column=metric_idx).column_letter
+    pctl_letter = ws.cell(row=header_row, column=pctl_idx).column_letter
+
+    # same palette as debt/eps
+    GREY = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    GREEN = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    LIGHT_GREEN = PatternFill(start_color="E2F0D9", end_color="E2F0D9", fill_type="solid")
+    YELLOW = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+    RED = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+
+    pairs = [
+        (f"=NOT(ISNUMBER(${pctl_letter}2))", GREY),
+        (f"=AND(ISNUMBER(${pctl_letter}2),${pctl_letter}2>={thr_top})", GREEN),
+        (f"=AND(ISNUMBER(${pctl_letter}2),${pctl_letter}2>={thr_mid},${pctl_letter}2<{thr_top})", LIGHT_GREEN),
+        (f"=AND(ISNUMBER(${pctl_letter}2),${pctl_letter}2>={thr_low},${pctl_letter}2<{thr_mid})", YELLOW),
+        (f"=AND(ISNUMBER(${pctl_letter}2),${pctl_letter}2<{thr_low})", RED),
+    ]
+    # apply fills to metric_col range, but formulas reference pctl column
+    apply_formula_fills(
+        ws,
+        metric_col,
+        [(f, c) for f, c in pairs],
+        header_row=header_row,
+        data_start_row=data_start_row,
+    )
+
+    if hide_pctl_col:
+        ws.column_dimensions[pctl_letter].hidden = True

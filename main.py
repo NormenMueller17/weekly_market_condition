@@ -11,7 +11,7 @@ from fetch_quote_data import batch_fetch_quote_data, fetch_quote_data_single
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
-from excel_formatting import format_sheet, apply_debt_eps_conditional_formatting
+from excel_formatting import format_sheet, apply_debt_eps_conditional_formatting, apply_industry_percentile_conditional_formatting
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
@@ -30,6 +30,14 @@ DEBT_EQ_THR_HIGH = 2.00  # (med..high] -> orange; >high -> red
 EPS_ACCEL_THR_STRONG = 10.0  # >= strong -> green
 EPS_ACCEL_THR_MILD = 3.0     # >= mild -> light green
 EPS_ACCEL_THR_FLAT = 3.0     # (-flat..flat) -> yellow; <= -flat -> orange/red
+
+
+# -------------------------------------------------------------------
+# Industry-relative percentile thresholds (easy to adjust later)
+# -------------------------------------------------------------------
+IND_PCTL_THR_TOP = 0.75   # >= top -> green
+IND_PCTL_THR_MID = 0.50   # >= mid -> light green
+IND_PCTL_THR_LOW = 0.25   # >= low -> yellow, <low -> red
 
 
 
@@ -167,6 +175,21 @@ def run():
         leaders.insert(12, "FCF Margin (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("FCF_Margin")))
         leaders.insert(13, "Debt to Equity", leaders.index.map(lambda t: quote_map.get(t, {}).get("Debt_to_Equity")))
         leaders.insert(14, "EPS Acceleration (pp)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Acceleration")))
+        # --- Industry-relative percentile helper columns (0..1) ---
+        # Used for conditional formatting of ROE/Operating Margin/FCF Margin within each Industry.
+        if "Industry" in leaders.columns:
+            _ind_cols = ["ROE (%)", "Operating Margin (%)", "FCF Margin (%)"]
+            for _c in _ind_cols:
+                if _c in leaders.columns:
+                    leaders[_c] = pd.to_numeric(leaders[_c], errors="coerce")
+            for _c, _pctl in [
+                ("ROE (%)", "ROE Ind Pctl"),
+                ("Operating Margin (%)", "Operating Margin Ind Pctl"),
+                ("FCF Margin (%)", "FCF Margin Ind Pctl"),
+            ]:
+                if _c in leaders.columns:
+                    leaders[_pctl] = leaders.groupby("Industry")[_c].transform(lambda s: s.rank(pct=True))
+
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -432,18 +455,48 @@ def run():
 
     # Conditional formatting (Ampel) for risk & momentum flags
     apply_debt_eps_conditional_formatting(
-    ws,
-    debt_col="Debt to Equity",
-    eps_col="EPS Acceleration (pp)",
-    debt_thr_low=DEBT_EQ_THR_LOW,
-    debt_thr_med=DEBT_EQ_THR_MED,
-    debt_thr_high=DEBT_EQ_THR_HIGH,
-    eps_thr_strong=EPS_ACCEL_THR_STRONG,
-    eps_thr_mild=EPS_ACCEL_THR_MILD,
-    eps_thr_flat=EPS_ACCEL_THR_FLAT,
+        ws,
+        debt_col="Debt to Equity",
+        eps_col="EPS Acceleration (pp)",
+        debt_thr_low=DEBT_EQ_THR_LOW,
+        debt_thr_med=DEBT_EQ_THR_MED,
+        debt_thr_high=DEBT_EQ_THR_HIGH,
+        eps_thr_strong=EPS_ACCEL_THR_STRONG,
+        eps_thr_mild=EPS_ACCEL_THR_MILD,
+        eps_thr_flat=EPS_ACCEL_THR_FLAT,
+    )
+
+    # Industry-relative conditional formatting (based on percentile helper cols)
+    apply_industry_percentile_conditional_formatting(
+        ws,
+        metric_col="ROE (%)",
+        pctl_col="ROE Ind Pctl",
+        thr_top=IND_PCTL_THR_TOP,
+        thr_mid=IND_PCTL_THR_MID,
+        thr_low=IND_PCTL_THR_LOW,
+        hide_pctl_col=True,
+    )
+    apply_industry_percentile_conditional_formatting(
+        ws,
+        metric_col="Operating Margin (%)",
+        pctl_col="Operating Margin Ind Pctl",
+        thr_top=IND_PCTL_THR_TOP,
+        thr_mid=IND_PCTL_THR_MID,
+        thr_low=IND_PCTL_THR_LOW,
+        hide_pctl_col=True,
+    )
+    apply_industry_percentile_conditional_formatting(
+        ws,
+        metric_col="FCF Margin (%)",
+        pctl_col="FCF Margin Ind Pctl",
+        thr_top=IND_PCTL_THR_TOP,
+        thr_mid=IND_PCTL_THR_MID,
+        thr_low=IND_PCTL_THR_LOW,
+        hide_pctl_col=True,
     )
 
     # Industries: sort by rank + apply formats
+
     if 'Industries' in wb.sheetnames:
         ws_ind = wb['Industries']
         industries_formats = {
