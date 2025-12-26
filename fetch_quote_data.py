@@ -53,7 +53,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
 			
 			# DEBUG FUNDAMENTALS (temporär, nur für einen Test-Ticker)
 			DEBUG_TICKER = "MSFT"   # <-- hier ggf. ändern (z.B. "MSFT")
-			print(yfinance.__version__)
+			print(yf.__version__)
 			if ticker.upper() == DEBUG_TICKER:
 				print("\n[DEBUG FUNDAMENTALS]", ticker)
 			
