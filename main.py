@@ -11,7 +11,6 @@ from fetch_quote_data import batch_fetch_quote_data, fetch_quote_data_single
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
-from excel_formatting import format_sheet, apply_debt_eps_conditional_formatting, apply_industry_percentile_conditional_formatting
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
@@ -20,25 +19,6 @@ import warnings
 # Silence noisy third-party warnings (optional)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"yfinance\.scrapers\.fundamentals")
 warnings.filterwarnings("ignore", category=FutureWarning, module=r"breadth")
-# -------------------------------------------------------------------
-# Conditional-format thresholds (easy to adjust later)
-# -------------------------------------------------------------------
-DEBT_EQ_THR_LOW = 0.50   # <= low -> green
-DEBT_EQ_THR_MED = 1.00   # (low..med] -> yellow
-DEBT_EQ_THR_HIGH = 2.00  # (med..high] -> orange; >high -> red
-
-EPS_ACCEL_THR_STRONG = 10.0  # >= strong -> green
-EPS_ACCEL_THR_MILD = 3.0     # >= mild -> light green
-EPS_ACCEL_THR_FLAT = 3.0     # (-flat..flat) -> yellow; <= -flat -> orange/red
-
-
-# -------------------------------------------------------------------
-# Industry-relative percentile thresholds (easy to adjust later)
-# -------------------------------------------------------------------
-IND_PCTL_THR_TOP = 0.75   # >= top -> green
-IND_PCTL_THR_MID = 0.50   # >= mid -> light green
-IND_PCTL_THR_LOW = 0.25   # >= low -> yellow, <low -> red
-
 
 
 from industry_strength import compute_industry_scores
@@ -62,7 +42,7 @@ BOOLEAN_HEADERS = [
         ]
 
 # -------------------------------------------------------------------
-# Boolean (Minervini) cell fill colors (easy to adjust)
+# Boolean (Minervini) Excel cell fill colors (easy to adjust)
 # -------------------------------------------------------------------
 BOOL_TRUE_FILL_RGB  = "C6EFCE"  # True/WAHR -> green
 BOOL_FALSE_FILL_RGB = "FFC7CE"  # False/FALSCH -> red
@@ -70,14 +50,13 @@ BOOL_FONT_RGB       = "666666"  # text color
 
 
 def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> None:
-    """Färbt Bool-Spalten: True/WAHR -> grün, False/FALSCH -> rot; Text grau & zentriert."""
-    # Header -> Spaltenindex (1-based)
+    """Color boolean Minervini columns: True/WAHR -> green, False/FALSCH -> red (centered, gray font)."""
     header_to_col = {cell.value: cell.column for cell in ws[header_row] if cell.value}
 
     fill_green = PatternFill(fill_type="solid", fgColor=BOOL_TRUE_FILL_RGB)
-    fill_red   = PatternFill(fill_type="solid", fgColor=BOOL_FALSE_FILL_RGB)
-    font_gray  = Font(color=BOOL_FONT_RGB)
-    center     = Alignment(horizontal="center", vertical="center")
+    fill_red = PatternFill(fill_type="solid", fgColor=BOOL_FALSE_FILL_RGB)
+    font_gray = Font(color=BOOL_FONT_RGB)
+    center = Alignment(horizontal="center", vertical="center")
 
     for head in headers:
         col = header_to_col.get(head)
@@ -85,20 +64,17 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
             continue
         for row in range(header_row + 1, ws.max_row + 1):
             cell = ws.cell(row=row, column=col)
-            # robust: bool, WAHR/FALSCH, TRUE/FALSE, 1/0 …
             val = cell.value
             sval = ("" if val is None else str(val)).strip().lower()
-            is_true  = sval in ("true", "wahr", "1")
+            is_true = sval in ("true", "wahr", "1")
             is_false = sval in ("false", "falsch", "0")
+
             cell.font = font_gray
             cell.alignment = center
             if is_true:
                 cell.fill = fill_green
             elif is_false:
                 cell.fill = fill_red
-            else:
-                # neutral: z.B. leere Zellen
-                pass
 
 def run():
     # 1) Daten laden
@@ -183,42 +159,6 @@ def run():
         leaders.insert(12, "FCF Margin (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("FCF_Margin")))
         leaders.insert(13, "Debt to Equity", leaders.index.map(lambda t: quote_map.get(t, {}).get("Debt_to_Equity")))
         leaders.insert(14, "EPS Acceleration (pp)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Acceleration")))
-        # --- Quality compounder metrics (Phase 1; descriptive only) ---
-        leaders.insert(15, "ROIC (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("ROIC")))
-        leaders.insert(16, "Cash Conversion", leaders.index.map(lambda t: quote_map.get(t, {}).get("Cash_Conversion")))
-        leaders.insert(17, "Op Margin Stability (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("Op_Margin_Stability_5y")))
-        # --- Quality compounder metrics (Phase 2; descriptive only) ---
-        leaders.insert(18, "Rev Neg YoY Years (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_Neg_YoY_Count_5y")))
-        leaders.insert(19, "Rev Growth Std (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_Growth_Std_5y")))
-        leaders.insert(20, "EPS Neg YoY Years (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Neg_YoY_Count_5y")))
-        leaders.insert(21, "EPS Growth Std (5y)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Growth_Std_5y")))
-        # ATR / Price comes from daily OHLC (computed in screener). Reposition it next to other fundamentals.
-        _atr_series = leaders["ATR / Price (%)"] if "ATR / Price (%)" in leaders.columns else pd.Series([pd.NA] * len(leaders), index=leaders.index)
-        if "ATR / Price (%)" in leaders.columns:
-            leaders.drop(columns=["ATR / Price (%)"], inplace=True)
-        leaders.insert(22, "ATR / Price (%)", _atr_series)
-
-        # Reposition Max Drawdown columns next to ATR if they exist
-        for dd_col, insert_at in [("Max Drawdown 5Y (%)", 23), ("Max Drawdown 10Y (%)", 24)]:
-            if dd_col in leaders.columns:
-                _dd = leaders[dd_col].copy()
-                leaders.drop(columns=[dd_col], inplace=True)
-                leaders.insert(insert_at, dd_col, _dd)
-        # --- Industry-relative percentile helper columns (0..1) ---
-        # Used for conditional formatting of ROE/Operating Margin/FCF Margin within each Industry.
-        if "Industry" in leaders.columns:
-            _ind_cols = ["ROE (%)", "Operating Margin (%)", "FCF Margin (%)"]
-            for _c in _ind_cols:
-                if _c in leaders.columns:
-                    leaders[_c] = pd.to_numeric(leaders[_c], errors="coerce")
-            for _c, _pctl in [
-                ("ROE (%)", "ROE Ind Pctl"),
-                ("Operating Margin (%)", "Operating Margin Ind Pctl"),
-                ("FCF Margin (%)", "FCF Margin Ind Pctl"),
-            ]:
-                if _c in leaders.columns:
-                    leaders[_pctl] = leaders.groupby("Industry")[_c].transform(lambda s: s.rank(pct=True))
-
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -228,17 +168,17 @@ def run():
 
         # NEU: "Close Vorwoche" und "Veränderung in %"
         if "close_weekly_prev" in leaders.columns:
-            leaders.insert(19, "Close Vorwoche", leaders["close_weekly_prev"])
+            leaders.insert(15, "Close Vorwoche", leaders["close_weekly_prev"])
         else:
-            leaders.insert(19, "Close Vorwoche", pd.NA)
+            leaders.insert(15, "Close Vorwoche", pd.NA)
 
         if "close_weekly_change_pct" in leaders.columns:
-            leaders.insert(20, "Veränderung in %", leaders["close_weekly_change_pct"])
+            leaders.insert(16, "Veränderung in %", leaders["close_weekly_change_pct"])
         else:
-            leaders.insert(20, "Veränderung in %", pd.NA)
+            leaders.insert(16, "Veränderung in %", pd.NA)
         
-        leaders.insert(21, "Ø-Volume 20T", leaders["vol20"])
-        leaders.insert(22, "Volume Score", leaders["vol_score"])
+        leaders.insert(17, "Ø-Volume 20T", leaders["vol20"])
+        leaders.insert(18, "Volume Score", leaders["vol_score"])
         
         if "RS_delta_4w" in leaders.columns and "ΔRS 4W" not in leaders.columns:
             leaders["ΔRS 4W"] = leaders["RS_delta_4w"]
@@ -445,129 +385,91 @@ def run():
             val = "" if cell.value is None else str(cell.value)
             max_len = max(max_len, len(val))
         ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
+    
     # -------------------------------
-    # Excel formatting (reusable helper)
+    # Number-Format Regeln
     # -------------------------------
-    leaders_formats = {
-        # 2 decimals
-        "Industry Score": "0.00",
-        "Industry RS Score": "0.00",
-        "Industry Strong Stock Score": "0.00",
-        "Industry Volume Score": "0.00",
-        "EPS (Forward/TTM)": "0.00",
-        "EPS Wachstum FWD/TTM (%)": "0.00",
-        "Revenue Wachstum TTM YoY (%)": "0.00",
-        "Close": "0.00",
-        "Close Vorwoche": "0.00",
-        "Veränderung in %": "0.00",
-        "52W High": "0.00",
-        "Dist to 52W High (%)": "0.00",
-        "Volume Score": "0.00",
+    
+    # Spaltennamen zu Spaltenindex mappen
+    header_row = {cell.value: cell.column for cell in ws[1] if cell.value}
+    
+    # 2 Nachkommastellen
+    two_dec_cols = [
+        "Industry Score",
+        "Industry RS Score",
+        "Industry Strong Stock Score",
+        "Industry Volume Score",
+        "EPS (Forward/TTM)",
+        "EPS Wachstum FWD/TTM (%)",
+        "Revenue Wachstum TTM YoY (%)",
+        "Close",
+        "Close Vorwoche",
+        "Veränderung in %",
+        "52W High",
+        "Dist to 52W High (%)",
+        "Volume Score",
+    ]
+    
+    # Ganze Zahlen (ohne Nachkommastellen)
+    zero_dec_cols = [
+        "MarketCap (Mio USD)",
+        "Ø-Volume 20T",
+    ]
+    
+    # --- Anwenden der Formate ---
+    for col_name in two_dec_cols:
+        if col_name in header_row:
+            col_letter = get_column_letter(header_row[col_name])
+            for cell in ws[col_letter][1:]:  # alle Zeilen außer Header
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = "0.00"
+    
+    for col_name in zero_dec_cols:
+        if col_name in header_row:
+            col_letter = get_column_letter(header_row[col_name])
+            for cell in ws[col_letter][1:]:
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = "#,##0"
+                    
+    # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
+    style_boolean_columns(ws)
 
-        # 5 new fundamentals (Excel headers)
-        "ROE (%)": "0.00",
-        "Operating Margin (%)": "0.00",
-        "FCF Margin (%)": "0.00",
-        "Debt to Equity": "0.00",
-        "EPS Acceleration (pp)": "0.00",
-
-        # Quality compounder (Phase 1)
-        "ROIC (%)": "0.00",
-        "Cash Conversion": "0.00",
-        "Op Margin Stability (5y)": "0.00",
-        "ATR / Price (%)": "0.00",
-
-        # Phase 2 (stability + risk)
-        "Rev Growth Std (5y)": "0.00",
-        "EPS Growth Std (5y)": "0.00",
-        "Max Drawdown 5Y (%)": "0.00",
-        "Max Drawdown 10Y (%)": "0.00",
-
-
-        # integers
-        "Industry Ranking": "0",
-        "MarketCap (Mio USD)": "#,##0",
-        "Ø-Volume 20T": "#,##0",
-        "Rev Neg YoY Years (5y)": "0",
-        "EPS Neg YoY Years (5y)": "0",
-
-    }
-
-    # Leaders: do NOT sort (keep existing ordering)
-    format_sheet(
-        ws,
-        formats_by_colname=leaders_formats,
-        autofit_headers=True,
-        sort_by=None,
-    )
-
-    # Conditional formatting (Ampel) for risk & momentum flags
-    apply_debt_eps_conditional_formatting(
-        ws,
-        debt_col="Debt to Equity",
-        eps_col="EPS Acceleration (pp)",
-        debt_thr_low=DEBT_EQ_THR_LOW,
-        debt_thr_med=DEBT_EQ_THR_MED,
-        debt_thr_high=DEBT_EQ_THR_HIGH,
-        eps_thr_strong=EPS_ACCEL_THR_STRONG,
-        eps_thr_mild=EPS_ACCEL_THR_MILD,
-        eps_thr_flat=EPS_ACCEL_THR_FLAT,
-    )
-
-    # Industry-relative conditional formatting (based on percentile helper cols)
-    apply_industry_percentile_conditional_formatting(
-        ws,
-        metric_col="ROE (%)",
-        pctl_col="ROE Ind Pctl",
-        thr_top=IND_PCTL_THR_TOP,
-        thr_mid=IND_PCTL_THR_MID,
-        thr_low=IND_PCTL_THR_LOW,
-        hide_pctl_col=True,
-    )
-    apply_industry_percentile_conditional_formatting(
-        ws,
-        metric_col="Operating Margin (%)",
-        pctl_col="Operating Margin Ind Pctl",
-        thr_top=IND_PCTL_THR_TOP,
-        thr_mid=IND_PCTL_THR_MID,
-        thr_low=IND_PCTL_THR_LOW,
-        hide_pctl_col=True,
-    )
-    apply_industry_percentile_conditional_formatting(
-        ws,
-        metric_col="FCF Margin (%)",
-        pctl_col="FCF Margin Ind Pctl",
-        thr_top=IND_PCTL_THR_TOP,
-        thr_mid=IND_PCTL_THR_MID,
-        thr_low=IND_PCTL_THR_LOW,
-        hide_pctl_col=True,
-    )
-
-    # Industries: sort by rank + apply formats
-
+    # -------------------------------
+    # Format Industries sheet
+    # -------------------------------
     if 'Industries' in wb.sheetnames:
         ws_ind = wb['Industries']
-        industries_formats = {
-            "Industry Ranking": "0",
-            "Industry RS Score": "0.00",
-            "Industry Strong Stock Score": "0.00",
-            "Activity": "0.00",
-            "Direction": "0.00",
-            "Industry Volume Score": "0.00",
-            "Industry Score": "0.00",
-            "Industry_RS_raw": "0.00",
-        }
 
-        format_sheet(
-            ws_ind,
-            formats_by_colname=industries_formats,
-            autofit_headers=True,
-            sort_by="Industry Ranking",
-            sort_ascending=True,
-        )
+        # Auto-width based on header length (not data length)
+        for col_idx, cell in enumerate(ws_ind[1], start=1):
+            header = "" if cell.value is None else str(cell.value)
+            ws_ind.column_dimensions[get_column_letter(col_idx)].width = max(10, len(header) + 2)
+
+        # Number formats (2 decimals) for selected industry metrics
+        header_ind = {cell.value: cell.column for cell in ws_ind[1] if cell.value}
+        ind_two_dec_cols = [
+            "Industry RS Score",
+            "Industry Strong Stock Score",
+            "Activity",
+            "Direction",
+            "Industry Volume Score",
+            "Industry Score",
+        ]
+        for col_name in ind_two_dec_cols:
+            if col_name in header_ind:
+                col_letter = get_column_letter(header_ind[col_name])
+                for cell in ws_ind[col_letter][1:]:
+                    if isinstance(cell.value, (int, float)):
+                        cell.number_format = "0.00"
+
+        # Keep ranking as integer
+        if "Industry Ranking" in header_ind:
+            col_letter = get_column_letter(header_ind["Industry Ranking"])
+            for cell in ws_ind[col_letter][1:]:
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = "0"
 
     wb.save(out_path)
-
     
     # 4) Beim Mailversand denselben Pfad anhängen
     send_email(html, subject_suffix="Weekly US Market Report", attachments=[str(out_path)])
