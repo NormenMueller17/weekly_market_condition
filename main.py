@@ -574,7 +574,7 @@ def run():
     apply_industry_percentile_conditional_formatting(ws, metric_header="Operating Margin (%)", pctl_header="OpMargin Ind Pctl", start_row=2, hide_pctl=True)
     apply_industry_percentile_conditional_formatting(ws, metric_header="FCF Margin (%)", pctl_header="FCFMargin Ind Pctl", start_row=2, hide_pctl=True)
 
---- Boolesche Spalten (Minervini-Kriterien) einfärben ---
+    # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
     style_boolean_columns(ws)
 
     # -------------------------------
