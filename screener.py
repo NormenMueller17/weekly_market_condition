@@ -19,7 +19,40 @@ def _max_drawdown_pct(close: pd.Series) -> float:
     mdd = dd.min()
     return float(mdd * 100.0)
 
+def _max_drawdown_pct_from_close(close: pd.Series) -> float:
+    """Return max drawdown in percent (negative number)."""
+    if close is None:
+        return float("nan")
+    c = pd.to_numeric(close, errors="coerce").dropna()
+    if len(c) < 20:
+        return float("nan")
+    running_max = c.cummax()
+    dd = (c / running_max) - 1.0
+    return float(dd.min() * 100.0)
 
+def _compute_mdd_5y_10y_from_daily_df(df: pd.DataFrame) -> tuple[float, float]:
+    """
+    Compute max drawdown over last 5y and 10y based on daily closes already loaded.
+    Uses calendar time slicing.
+    """
+    if df is None or df.empty or "Close" not in df.columns:
+        return float("nan"), float("nan")
+
+    s = pd.to_numeric(df["Close"], errors="coerce").dropna()
+    if s.empty:
+        return float("nan"), float("nan")
+
+    if not isinstance(s.index, pd.DatetimeIndex):
+        s.index = pd.to_datetime(s.index)
+
+    last_dt = s.index.max()
+    s5 = s.loc[s.index >= (last_dt - pd.Timedelta(days=365 * 5))]
+    s10 = s.loc[s.index >= (last_dt - pd.Timedelta(days=365 * 10))]
+
+    mdd5 = _max_drawdown_pct_from_close(s5)
+    mdd10 = _max_drawdown_pct_from_close(s10)
+    return mdd5, mdd10
+    
 def _fetch_weekly_close_for_drawdown(ticker: str) -> pd.Series | None:
     """Fetch weekly close series for drawdown metrics (lightweight vs daily)."""
     try:
@@ -354,7 +387,7 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
             res = compute_minervini_template(df)
 
             # ---- Phase 2 (Risk): Max Drawdown 5y / 10y (weekly data) ----
-            mdd_5y, mdd_10y = _compute_mdd_5y_10y(t)
+            mdd_5y, mdd_10y = _compute_mdd_5y_10y_from_daily_df(df)
             res["Max Drawdown 5Y (%)"] = mdd_5y
             res["Max Drawdown 10Y (%)"] = mdd_10y
 
