@@ -227,25 +227,35 @@ def fetch_quote_data_single(ticker: str) -> dict:
                     return s
 
                 def _yoy_growth_stats(s, years: int = 5):
-                    """Compute (neg_count, std_growth_pct) for YoY growth over last N years.
-                    Expects s newest->oldest. Returns None, None if insufficient data."""
-                    if s is None or len(s) < years + 1:
-                        return None, None
+                    """
+                    Compute (neg_count, std_growth_pct, window_used) for YoY growth.
+                    Uses as many years as available up to `years`.
+                    Expects s newest->oldest or date-indexed; handles both.
+                
+                    Returns (None, None, 0) if insufficient data (<3 annual points => <2 YoY).
+                    """
+                    if s is None or len(s) < 3:
+                        return None, None, 0
+                
                     try:
-                        # convert to oldest->newest for pct_change
                         s2 = s.copy()
                         if hasattr(s2, "sort_index"):
-                            s2 = s2.sort_index(ascending=True)
-                        g = s2.pct_change().dropna() * 100.0
-                        if len(g) < years:
-                            return None, None
-                        g_last = g.tail(years)
+                            s2 = s2.sort_index(ascending=True)  # oldest->newest for pct_change
+                
+                        g = s2.pct_change().dropna() * 100.0  # YoY growth rates
+                        if g.empty:
+                            return None, None, 0
+                
+                        window_used = int(min(years, len(g)))
+                        if window_used < 2:
+                            return None, None, window_used
+                
+                        g_last = g.tail(window_used)
                         neg_count = int((g_last < 0).sum())
                         std_growth = float(g_last.std(ddof=0))
-                        return neg_count, std_growth
+                        return neg_count, std_growth, window_used
                     except Exception:
-                        return None, None
-
+                        return None, None, 0
 # --- Quarterly EPS Acceleration ---
                 qs = getattr(info, "quarterly_income_stmt", None)
                 if qs is None or getattr(qs, "empty", True):
