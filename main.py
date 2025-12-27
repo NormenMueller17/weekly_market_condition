@@ -61,14 +61,22 @@ BOOLEAN_HEADERS = [
     "Close > Vorwoche",
         ]
 
+# -------------------------------------------------------------------
+# Boolean (Minervini) cell fill colors (easy to adjust)
+# -------------------------------------------------------------------
+BOOL_TRUE_FILL_RGB  = "C6EFCE"  # True/WAHR -> green
+BOOL_FALSE_FILL_RGB = "FFC7CE"  # False/FALSCH -> red
+BOOL_FONT_RGB       = "666666"  # text color
+
+
 def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> None:
-    """Färbt Bool-Spalten: True -> hellgrün, False -> hellrot; Text grau & zentriert."""
+    """Färbt Bool-Spalten: True/WAHR -> grün, False/FALSCH -> rot; Text grau & zentriert."""
     # Header -> Spaltenindex (1-based)
     header_to_col = {cell.value: cell.column for cell in ws[header_row] if cell.value}
 
-    fill_green = PatternFill(fill_type="solid", fgColor="E6F4EA")  # hellgrün
-    fill_red   = PatternFill(fill_type="solid", fgColor="FDE8E8")  # hellrot
-    font_gray  = Font(color="666666")
+        fill_green = PatternFill(fill_type="solid", fgColor=BOOL_TRUE_FILL_RGB)
+        fill_red   = PatternFill(fill_type="solid", fgColor=BOOL_FALSE_FILL_RGB)
+        font_gray  = Font(color=BOOL_FONT_RGB)
     center     = Alignment(horizontal="center", vertical="center")
 
     for head in headers:
@@ -407,6 +415,9 @@ def run():
     # Excel laden - neu
     wb = load_workbook(out_path)
     ws = wb['Leaders']
+
+    # Apply Minervini boolean cell coloring (True/False -> green/red)
+    style_boolean_columns(ws)
 
     # Spalte "SA" finden
     sa_col_idx = None
