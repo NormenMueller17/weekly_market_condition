@@ -74,9 +74,9 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
     # Header -> Spaltenindex (1-based)
     header_to_col = {cell.value: cell.column for cell in ws[header_row] if cell.value}
 
-        fill_green = PatternFill(fill_type="solid", fgColor=BOOL_TRUE_FILL_RGB)
-        fill_red   = PatternFill(fill_type="solid", fgColor=BOOL_FALSE_FILL_RGB)
-        font_gray  = Font(color=BOOL_FONT_RGB)
+    fill_green = PatternFill(fill_type="solid", fgColor=BOOL_TRUE_FILL_RGB)
+    fill_red   = PatternFill(fill_type="solid", fgColor=BOOL_FALSE_FILL_RGB)
+    font_gray  = Font(color=BOOL_FONT_RGB)
     center     = Alignment(horizontal="center", vertical="center")
 
     for head in headers:
