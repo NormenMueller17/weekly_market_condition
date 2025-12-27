@@ -11,7 +11,6 @@ from fetch_quote_data import batch_fetch_quote_data, fetch_quote_data_single
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
-from openpyxl.formatting.rule import FormulaRule
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
@@ -42,51 +41,110 @@ BOOLEAN_HEADERS = [
     "Close > Vorwoche",
         ]
 
-# -------------------------------------------------------------------
-# Boolean (Minervini) Excel cell fill colors (easy to adjust)
-# -------------------------------------------------------------------
-BOOL_TRUE_FILL_RGB  = "C6EFCE"  # True/WAHR -> green
-BOOL_FALSE_FILL_RGB = "FFC7CE"  # False/FALSCH -> red
-BOOL_FONT_RGB       = "666666"  # text color
 
 # -------------------------------------------------------------------
-# Conditional Formatting colors (Excel-like "Good/Neutral/Bad")
+# Excel fill colors (central, easy to adjust)
+# (These match typical Excel Conditional Formatting "Good/Neutral/Bad")
 # -------------------------------------------------------------------
-CF_GREEN_RGB      = "C6EFCE"
-CF_LIGHTGREEN_RGB = "EBF1DE"
-CF_YELLOW_RGB     = "FFEB9C"
-CF_ORANGE_RGB     = "F8CBAD"
-CF_RED_RGB        = "FFC7CE"
-CF_GRAY_RGB       = "E7E6E6"
+CF_GREEN_RGB      = "C6EFCE"  # Good (green)
+CF_LIGHTGREEN_RGB = "EBF1DE"  # Mild positive
+CF_YELLOW_RGB     = "FFEB9C"  # Neutral
+CF_ORANGE_RGB     = "F8CBAD"  # Warning
+CF_RED_RGB        = "FFC7CE"  # Bad (red)
+CF_GRAY_RGB       = "E7E6E6"  # N/A
 
-# -------------------------------------------------------------------
-# Debt / EPS thresholds (easy to adjust later)
-# -------------------------------------------------------------------
+# Boolean Minervini columns
+BOOL_TRUE_FILL_RGB  = CF_GREEN_RGB
+BOOL_FALSE_FILL_RGB = CF_RED_RGB
+BOOL_FONT_RGB       = "666666"
+
+# Thresholds for the 5 highlighted metrics
 DEBT_EQ_THR_LOW  = 0.50
 DEBT_EQ_THR_MED  = 1.00
 DEBT_EQ_THR_HIGH = 2.00
 
 EPS_ACCEL_THR_STRONG = 10.0
 EPS_ACCEL_THR_MILD   = 3.0
-EPS_ACCEL_THR_FLAT   = 3.0  # +/- neutral band
+EPS_ACCEL_THR_FLAT   = 3.0  # +/- band
 
-# -------------------------------------------------------------------
-# Industry-percentile thresholds for ROE/Margins (easy to adjust)
-# -------------------------------------------------------------------
 IND_PCTL_THR_TOP = 0.75
 IND_PCTL_THR_MID = 0.50
 IND_PCTL_THR_LOW = 0.25
 
 
+from openpyxl.formatting.rule import FormulaRule
+
+def _col_letter_by_header(ws, header_name: str, header_row: int = 1):
+    header_map = {cell.value: cell.column for cell in ws[header_row] if cell.value}
+    col_idx = header_map.get(header_name)
+    if not col_idx:
+        return None
+    return get_column_letter(col_idx)
+
+def _apply_cf_formula_fill(ws, cell_range: str, formula: str, rgb: str, stop: bool = True):
+    fill = PatternFill(start_color=rgb, end_color=rgb, fill_type="solid")
+    rule = FormulaRule(formula=[formula], fill=fill, stopIfTrue=stop)
+    ws.conditional_formatting.add(cell_range, rule)
+
+def apply_debt_eps_conditional_formatting(ws, debt_header: str = "Debt to Equity", eps_header: str = "EPS Acceleration (pp)", start_row: int = 2):
+    """Conditional formatting for Debt-to-Equity and EPS Acceleration."""
+    debt_col = _col_letter_by_header(ws, debt_header)
+    eps_col = _col_letter_by_header(ws, eps_header)
+
+    if debt_col:
+        rng = f"{debt_col}{start_row}:{debt_col}{ws.max_row}"
+        c = debt_col
+        r = start_row
+        _apply_cf_formula_fill(ws, rng, f"NOT(ISNUMBER(${c}{r}))", CF_GRAY_RGB, stop=False)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}<={DEBT_EQ_THR_LOW})", CF_GREEN_RGB)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>{DEBT_EQ_THR_LOW},${c}{r}<={DEBT_EQ_THR_MED})", CF_YELLOW_RGB)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>{DEBT_EQ_THR_MED},${c}{r}<={DEBT_EQ_THR_HIGH})", CF_ORANGE_RGB)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>{DEBT_EQ_THR_HIGH})", CF_RED_RGB)
+
+    if eps_col:
+        rng = f"{eps_col}{start_row}:{eps_col}{ws.max_row}"
+        c = eps_col
+        r = start_row
+        _apply_cf_formula_fill(ws, rng, f"NOT(ISNUMBER(${c}{r}))", CF_GRAY_RGB, stop=False)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>={EPS_ACCEL_THR_STRONG})", CF_GREEN_RGB)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>={EPS_ACCEL_THR_MILD},${c}{r}<{EPS_ACCEL_THR_STRONG})", CF_LIGHTGREEN_RGB)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>-{EPS_ACCEL_THR_FLAT},${c}{r}<{EPS_ACCEL_THR_FLAT})", CF_YELLOW_RGB)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}<=-{EPS_ACCEL_THR_FLAT},${c}{r}>-{EPS_ACCEL_THR_STRONG})", CF_ORANGE_RGB)
+        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}<=-{EPS_ACCEL_THR_STRONG})", CF_RED_RGB)
+
+def apply_industry_percentile_conditional_formatting(ws, metric_header: str, pctl_header: str, start_row: int = 2, hide_pctl: bool = True):
+    """Color metric cells based on helper percentile column (0..1)."""
+    m_col = _col_letter_by_header(ws, metric_header)
+    p_col = _col_letter_by_header(ws, pctl_header)
+    if not m_col or not p_col:
+        return
+
+    rng = f"{m_col}{start_row}:{m_col}{ws.max_row}"
+    c = p_col
+    r = start_row
+    _apply_cf_formula_fill(ws, rng, f"NOT(ISNUMBER(${c}{r}))", CF_GRAY_RGB, stop=False)
+    _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>={IND_PCTL_THR_TOP})", CF_GREEN_RGB)
+    _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>={IND_PCTL_THR_MID},${c}{r}<{IND_PCTL_THR_TOP})", CF_LIGHTGREEN_RGB)
+    _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}>={IND_PCTL_THR_LOW},${c}{r}<{IND_PCTL_THR_MID})", CF_YELLOW_RGB)
+    _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER(${c}{r}),${c}{r}<{IND_PCTL_THR_LOW})", CF_RED_RGB)
+
+    if hide_pctl:
+        # hide helper column
+        header_map = {cell.value: cell.column for cell in ws[1] if cell.value}
+        col_idx = header_map.get(pctl_header)
+        if col_idx:
+            ws.column_dimensions[get_column_letter(col_idx)].hidden = True
+
+
 
 def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> None:
-    """Color boolean Minervini columns: True/WAHR -> green, False/FALSCH -> red (centered, gray font)."""
+    """Färbt Bool-Spalten: WAHR/True -> grün, FALSCH/False -> rot; Text grau & zentriert."""
     header_to_col = {cell.value: cell.column for cell in ws[header_row] if cell.value}
 
     fill_green = PatternFill(fill_type="solid", fgColor=BOOL_TRUE_FILL_RGB)
-    fill_red = PatternFill(fill_type="solid", fgColor=BOOL_FALSE_FILL_RGB)
-    font_gray = Font(color=BOOL_FONT_RGB)
-    center = Alignment(horizontal="center", vertical="center")
+    fill_red   = PatternFill(fill_type="solid", fgColor=BOOL_FALSE_FILL_RGB)
+    font_gray  = Font(color=BOOL_FONT_RGB)
+    center     = Alignment(horizontal="center", vertical="center")
 
     for head in headers:
         col = header_to_col.get(head)
@@ -96,9 +154,8 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
             cell = ws.cell(row=row, column=col)
             val = cell.value
             sval = ("" if val is None else str(val)).strip().lower()
-            is_true = sval in ("true", "wahr", "1")
+            is_true  = sval in ("true", "wahr", "1")
             is_false = sval in ("false", "falsch", "0")
-
             cell.font = font_gray
             cell.alignment = center
             if is_true:
@@ -106,61 +163,32 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
             elif is_false:
                 cell.fill = fill_red
 
-def _apply_cf_formula_fill(ws, cell_range: str, formula: str, rgb: str, stop: bool = True) -> None:
-    """Apply a conditional formatting rule (formula -> solid fill) to a range."""
-    fill = PatternFill(fill_type="solid", fgColor=rgb)
-    rule = FormulaRule(formula=[formula], fill=fill, stopIfTrue=stop)
-    ws.conditional_formatting.add(cell_range, rule)
 
+    fill_green = PatternFill(fill_type="solid", fgColor="E6F4EA")  # hellgrün
+    fill_red   = PatternFill(fill_type="solid", fgColor="FDE8E8")  # hellrot
+    font_gray  = Font(color="666666")
+    center     = Alignment(horizontal="center", vertical="center")
 
-def _col_letter_by_header(ws, header: str) -> str | None:
-    header_row = {cell.value: cell.column for cell in ws[1] if cell.value}
-    col_idx = header_row.get(header)
-    return get_column_letter(col_idx) if col_idx else None
-
-
-def apply_debt_eps_conditional_formatting(ws, debt_header: str, eps_header: str, start_row: int = 2) -> None:
-    """Color Debt-to-Equity and EPS Acceleration columns using threshold bands."""
-    debt_col = _col_letter_by_header(ws, debt_header)
-    eps_col = _col_letter_by_header(ws, eps_header)
-
-    if debt_col:
-        rng = f"{debt_col}{start_row}:{debt_col}{ws.max_row}"
-        _apply_cf_formula_fill(ws, rng, f"NOT(ISNUMBER({debt_col}{start_row}))", CF_GRAY_RGB, stop=False)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({debt_col}{start_row}),{debt_col}{start_row}<={DEBT_EQ_THR_LOW})", CF_GREEN_RGB)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({debt_col}{start_row}),{debt_col}{start_row}>{DEBT_EQ_THR_LOW},{debt_col}{start_row}<={DEBT_EQ_THR_MED})", CF_YELLOW_RGB)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({debt_col}{start_row}),{debt_col}{start_row}>{DEBT_EQ_THR_MED},{debt_col}{start_row}<={DEBT_EQ_THR_HIGH})", CF_ORANGE_RGB)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({debt_col}{start_row}),{debt_col}{start_row}>{DEBT_EQ_THR_HIGH})", CF_RED_RGB)
-
-    if eps_col:
-        rng = f"{eps_col}{start_row}:{eps_col}{ws.max_row}"
-        _apply_cf_formula_fill(ws, rng, f"NOT(ISNUMBER({eps_col}{start_row}))", CF_GRAY_RGB, stop=False)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({eps_col}{start_row}),{eps_col}{start_row}>={EPS_ACCEL_THR_STRONG})", CF_GREEN_RGB)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({eps_col}{start_row}),{eps_col}{start_row}>={EPS_ACCEL_THR_MILD},{eps_col}{start_row}<{EPS_ACCEL_THR_STRONG})", CF_LIGHTGREEN_RGB)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({eps_col}{start_row}),{eps_col}{start_row}>-{EPS_ACCEL_THR_FLAT},{eps_col}{start_row}<{EPS_ACCEL_THR_FLAT})", CF_YELLOW_RGB)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({eps_col}{start_row}),{eps_col}{start_row}<=-{EPS_ACCEL_THR_FLAT},{eps_col}{start_row}>-{EPS_ACCEL_THR_STRONG})", CF_ORANGE_RGB)
-        _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({eps_col}{start_row}),{eps_col}{start_row}<=-{EPS_ACCEL_THR_STRONG})", CF_RED_RGB)
-
-
-def apply_industry_percentile_conditional_formatting(ws, metric_header: str, pctl_header: str, start_row: int = 2, hide_pctl: bool = True) -> None:
-    """Color a metric column based on an industry-percentile helper column (0..1)."""
-    m_col = _col_letter_by_header(ws, metric_header)
-    p_col = _col_letter_by_header(ws, pctl_header)
-    if not m_col or not p_col:
-        return
-
-    rng = f"{m_col}{start_row}:{m_col}{ws.max_row}"
-    _apply_cf_formula_fill(ws, rng, f"NOT(ISNUMBER({p_col}{start_row}))", CF_GRAY_RGB, stop=False)
-    _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({p_col}{start_row}),{p_col}{start_row}>={IND_PCTL_THR_TOP})", CF_GREEN_RGB)
-    _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({p_col}{start_row}),{p_col}{start_row}>={IND_PCTL_THR_MID},{p_col}{start_row}<{IND_PCTL_THR_TOP})", CF_LIGHTGREEN_RGB)
-    _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({p_col}{start_row}),{p_col}{start_row}>={IND_PCTL_THR_LOW},{p_col}{start_row}<{IND_PCTL_THR_MID})", CF_YELLOW_RGB)
-    _apply_cf_formula_fill(ws, rng, f"AND(ISNUMBER({p_col}{start_row}),{p_col}{start_row}<{IND_PCTL_THR_LOW})", CF_RED_RGB)
-
-    if hide_pctl:
-        header_row = {cell.value: cell.column for cell in ws[1] if cell.value}
-        p_idx = header_row.get(pctl_header)
-        if p_idx:
-            ws.column_dimensions[get_column_letter(p_idx)].hidden = True
+    for head in headers:
+        col = header_to_col.get(head)
+        if not col:
+            continue
+        for row in range(header_row + 1, ws.max_row + 1):
+            cell = ws.cell(row=row, column=col)
+            # robust: bool, WAHR/FALSCH, TRUE/FALSE, 1/0 …
+            val = cell.value
+            sval = ("" if val is None else str(val)).strip().lower()
+            is_true  = sval in ("true", "wahr", "1")
+            is_false = sval in ("false", "falsch", "0")
+            cell.font = font_gray
+            cell.alignment = center
+            if is_true:
+                cell.fill = fill_green
+            elif is_false:
+                cell.fill = fill_red
+            else:
+                # neutral: z.B. leere Zellen
+                pass
 
 def run():
     # 1) Daten laden
@@ -240,6 +268,12 @@ def run():
         leaders.insert(7, "EPS (Forward/TTM)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_FWD_TTM")))
         leaders.insert(8, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_GROWTH_FWD_TTM")))
         leaders.insert(9, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_GROWTH_TTM_YOY")))
+
+        "ROE (%)",
+        "Operating Margin (%)",
+        "FCF Margin (%)",
+        "Debt to Equity",
+        "EPS Acceleration (pp)",
         leaders.insert(10, "ROE (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("ROE")))
         leaders.insert(11, "Operating Margin (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("Operating_Margin")))
         leaders.insert(12, "FCF Margin (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("FCF_Margin")))
@@ -409,27 +443,28 @@ def run():
     # - Sheet 'Leaders' enthält nur Industry Ranking + Industry RS Score als Industry-Metriken
     # - Sheet 'Industries' enthält alle Industry-Metriken (Ranking + Teilmetriken + Composite)
     leaders_out_excel = leaders_out.copy()
-    # ------------------------------------------------------------
-    # Industry-relative percentiles for selected fundamentals
-    # (used only for Excel coloring; columns will be hidden in Excel)
-    # ------------------------------------------------------------
-    for _metric, _pctl in [
-        ("ROE (%)", "ROE Ind Pctl"),
-        ("Operating Margin (%)", "Operating Margin Ind Pctl"),
-        ("FCF Margin (%)", "FCF Margin Ind Pctl"),
-    ]:
-        if _metric in leaders_out_excel.columns and "Industry" in leaders_out_excel.columns:
-            leaders_out_excel[_pctl] = (
-                leaders_out_excel.groupby("Industry")[_metric]
-                .transform(lambda s: pd.to_numeric(s, errors="coerce").rank(pct=True))
-            )
-
     drop_ind_cols = [
         'Industry Score',
         'Industry Strong Stock Score',
         'Industry Volume Score',
     ]
     leaders_out_excel.drop(columns=[c for c in drop_ind_cols if c in leaders_out_excel.columns], inplace=True, errors='ignore')
+
+    # ------------------------------------------------------------
+    # Industry-relative percentiles for coloring ROE / Margins
+    # (used only for Excel conditional formatting)
+    # ------------------------------------------------------------
+    if "Industry" in leaders_out_excel.columns:
+        for metric, pctl_col in [
+            ("ROE (%)", "ROE Ind Pctl"),
+            ("Operating Margin (%)", "OpMargin Ind Pctl"),
+            ("FCF Margin (%)", "FCFMargin Ind Pctl"),
+        ]:
+            if metric in leaders_out_excel.columns:
+                leaders_out_excel[pctl_col] = (
+                    leaders_out_excel.groupby("Industry")[metric]
+                    .transform(lambda s: pd.to_numeric(s, errors="coerce").rank(pct=True))
+                )
     
     with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
         leaders_out_excel.to_excel(writer, index=False, sheet_name='Leaders')
@@ -456,6 +491,7 @@ def run():
     # Excel laden - neu
     wb = load_workbook(out_path)
     ws = wb['Leaders']
+
     # Spalte "SA" finden
     sa_col_idx = None
     for cell in ws[1]:
@@ -505,14 +541,6 @@ def run():
         "52W High",
         "Dist to 52W High (%)",
         "Volume Score",
-        "ROE (%)",
-        "Operating Margin (%)",
-        "FCF Margin (%)",
-        "Debt to Equity",
-        "EPS Acceleration (pp)",
-        "ROE Ind Pctl",
-        "Operating Margin Ind Pctl",
-        "FCF Margin Ind Pctl",
     ]
     
     # Ganze Zahlen (ohne Nachkommastellen)
@@ -536,13 +564,17 @@ def run():
                 if isinstance(cell.value, (int, float)):
                     cell.number_format = "#,##0"
                     
-    # --- Conditional formatting: Debt/EPS + Industry-relative ROE/Margins ---
-    apply_debt_eps_conditional_formatting(ws, debt_header="Debt to Equity", eps_header="EPS Acceleration (pp)")
-    apply_industry_percentile_conditional_formatting(ws, metric_header="ROE (%)", pctl_header="ROE Ind Pctl")
-    apply_industry_percentile_conditional_formatting(ws, metric_header="Operating Margin (%)", pctl_header="Operating Margin Ind Pctl")
-    apply_industry_percentile_conditional_formatting(ws, metric_header="FCF Margin (%)", pctl_header="FCF Margin Ind Pctl")
+    # 
+    # --- Hintergrundfarben für Fundamentals wie im ursprünglichen Report ---
+    # Debt-to-Equity & EPS Acceleration: banded thresholds
+    apply_debt_eps_conditional_formatting(ws, debt_header="Debt to Equity", eps_header="EPS Acceleration (pp)", start_row=2)
 
-    # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
+    # ROE / Margins: industry-relative percentile coloring (helper columns are hidden)
+    apply_industry_percentile_conditional_formatting(ws, metric_header="ROE (%)", pctl_header="ROE Ind Pctl", start_row=2, hide_pctl=True)
+    apply_industry_percentile_conditional_formatting(ws, metric_header="Operating Margin (%)", pctl_header="OpMargin Ind Pctl", start_row=2, hide_pctl=True)
+    apply_industry_percentile_conditional_formatting(ws, metric_header="FCF Margin (%)", pctl_header="FCFMargin Ind Pctl", start_row=2, hide_pctl=True)
+
+--- Boolesche Spalten (Minervini-Kriterien) einfärben ---
     style_boolean_columns(ws)
 
     # -------------------------------
