@@ -328,7 +328,8 @@ def fetch_quote_data_single(ticker: str) -> dict:
             rev_growth_std_5y = None
             try:
                 rev_s = _extract_revenue_series(ys)
-                rev_neg_yoy_5y, rev_growth_std_5y = _yoy_growth_stats(rev_s, years=5)
+                rev_neg_yoy_5y, rev_growth_std_5y, rev_window = _yoy_growth_stats(rev_s, years=5)
+                eps_neg_yoy_5y, eps_growth_std_5y, eps_window = _yoy_growth_stats(eps_s_y, years=5)
             except Exception:
                 rev_neg_yoy_5y, rev_growth_std_5y = None, None
 
