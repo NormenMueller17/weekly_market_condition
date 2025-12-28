@@ -126,6 +126,45 @@ def _compute_weighted_perf(close: pd.Series) -> float:
     weighted = w3 * r3 + w6 * r6 + w12 * r12
     return float(weighted)
 
+
+def _compute_weighted_perf_weekly(close: pd.Series) -> float:
+    """Weighted performance on weekly closes.
+
+    Approximation of the daily-based Minervini/O'Neil style RS:
+    - 3M  ~ 13 weeks
+    - 6M  ~ 26 weeks
+    - 12M ~ 52 weeks
+
+    Returns NaN if not enough history is available.
+    """
+    close = pd.to_numeric(close, errors="coerce").dropna()
+    if len(close) < 52 + 1:
+        return np.nan
+
+    c_now = close.iloc[-1]
+
+    def _ret(weeks: int) -> float:
+        if len(close) <= weeks:
+            return np.nan
+        c_past = close.iloc[-weeks - 1]
+        if c_past <= 0:
+            return np.nan
+        return c_now / c_past - 1.0
+
+    r3 = _ret(13)
+    r6 = _ret(26)
+    r12 = _ret(52)
+
+    vals = [r for r in (r3, r6, r12) if not np.isnan(r)]
+    if len(vals) == 0:
+        return np.nan
+
+    w3, w6, w12 = 0.1, 0.2, 0.7
+    r3 = 0.0 if np.isnan(r3) else r3
+    r6 = 0.0 if np.isnan(r6) else r6
+    r12 = 0.0 if np.isnan(r12) else r12
+    return float(w3 * r3 + w6 * r6 + w12 * r12)
+
 def _compute_rs_scores(weighted_perfs: dict[str, float]) -> dict[str, float]:
     """
     Wandelt ein dict {ticker: weighted_perf} in O'Neil-ähnliche RS-Scores (1–99) um.
@@ -160,16 +199,37 @@ def _compute_rs_scores(weighted_perfs: dict[str, float]) -> dict[str, float]:
 
     return rs_map
 
-def compute_minervini_template(df: pd.DataFrame) -> dict:
-    """Berechnet die 7 Minervini-Kriterien für ein Kurs-DataFrame mit OHLCV-Daten."""
+def compute_minervini_template(df: pd.DataFrame, *, already_weekly: bool = False) -> dict:
+    """Berechnet die Minervini-Kriterien.
 
-    # Wochenaggregation
-    dfw = df.resample("W-FRI").agg({
-        "Close": "last",
-        "High": "max",
-        "Low": "min",
-        "Volume": "sum"
-    }).dropna()
+    In der ursprünglichen Version wurde für jeden Ticker Daily geladen und auf Wochen resampled.
+    Für die 2-Phasen-Architektur unterstützen wir zusätzlich den günstigen Pfad:
+
+    - already_weekly=False (default): df ist Daily → wird auf Wochen aggregiert
+    - already_weekly=True:  df ist bereits Weekly OHLCV
+    """
+
+    if df is None or df.empty:
+        return {}
+
+    # Wochenaggregation (oder schon weekly)
+    if already_weekly:
+        dfw = df.copy()
+        # ensure required columns exist
+        for col in ("Close", "High", "Low", "Volume"):
+            if col not in dfw.columns:
+                if col in ("High", "Low") and "Close" in dfw.columns:
+                    dfw[col] = dfw["Close"]
+                elif col == "Volume":
+                    dfw[col] = 0
+        dfw = dfw.dropna(subset=["Close"]).copy()
+    else:
+        dfw = df.resample("W-FRI").agg({
+            "Close": "last",
+            "High": "max",
+            "Low": "min",
+            "Volume": "sum"
+        }).dropna()
 
     vcp_result = detect_vcp(dfw, window=60)
     vcp_flag = vcp_result.get("VCP", False)
@@ -449,3 +509,99 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
     ].sort_values("score", ascending=False)
 
     return leaders
+
+
+def screen_universe_minervini_weekly(weekly_history: dict[str, pd.DataFrame], min_score: int = 0) -> pd.DataFrame:
+    """Phase-1 Minervini screener that uses preloaded WEEKLY OHLCV data.
+
+    Why: Avoids per-ticker daily downloads for the entire universe, dramatically
+    reducing yfinance traffic and preventing rate limits.
+
+    Parameters
+    ----------
+    weekly_history:
+        dict[ticker] -> weekly OHLCV DataFrame (Close, High, Low, Volume)
+    min_score:
+        Minimum number of criteria beyond Volume Breakout (same semantics as the
+        original function).
+
+    Returns
+    -------
+    pd.DataFrame
+        Screener output for all tickers with valid weekly data.
+    """
+
+    if not weekly_history:
+        return pd.DataFrame()
+
+    results: dict[str, dict] = {}
+    weighted_perfs: dict[str, float] = {}
+    weekly_data: dict[str, pd.DataFrame] = {}
+
+    for t, dfw in weekly_history.items():
+        try:
+            if dfw is None or dfw.empty:
+                continue
+            # normalize index
+            if not isinstance(dfw.index, pd.DatetimeIndex):
+                dfw = dfw.copy()
+                dfw.index = pd.to_datetime(dfw.index)
+            dfw = dfw.sort_index()
+            if "Close" not in dfw.columns:
+                continue
+
+            close_w = pd.to_numeric(dfw["Close"], errors="coerce").dropna()
+            if close_w.empty:
+                continue
+
+            weighted_perfs[t] = _compute_weighted_perf_weekly(close_w)
+            weekly_data[t] = dfw.copy()
+
+            res = compute_minervini_template(dfw, already_weekly=True)
+            results[t] = res
+        except Exception as e:
+            print(f"[WARN] Phase1 weekly screener failed for {t}: {e}")
+            continue
+
+    if not results:
+        return pd.DataFrame()
+
+    df_results = pd.DataFrame(results).T
+    if "score" not in df_results.columns:
+        return pd.DataFrame()
+
+    # RS now
+    rs_map = _compute_rs_scores(weighted_perfs)
+    df_results["RS (O'Neil)"] = df_results.index.map(lambda t: rs_map.get(t, np.nan))
+
+    # RS 4W (cutoff ~4 weeks)
+    weighted_perfs_4w: dict[str, float] = {}
+    for t, df in weekly_data.items():
+        try:
+            last_dt = df.index.max()
+            cutoff = last_dt - pd.Timedelta(weeks=4)
+            df_cut = df.loc[:cutoff]
+            if df_cut is None or df_cut.empty or "Close" not in df_cut.columns:
+                weighted_perfs_4w[t] = np.nan
+                continue
+            close_cut = pd.to_numeric(df_cut["Close"], errors="coerce").dropna()
+            weighted_perfs_4w[t] = _compute_weighted_perf_weekly(close_cut)
+        except Exception:
+            weighted_perfs_4w[t] = np.nan
+
+    rs_map_4w = _compute_rs_scores(weighted_perfs_4w)
+
+    def safe_get(mapping, key):
+        v = mapping.get(key, np.nan)
+        return np.nan if v is None else v
+
+    df_results["RS_now"] = df_results.index.map(lambda t: safe_get(rs_map, t))
+    df_results["RS_4w"] = df_results.index.map(lambda t: safe_get(rs_map_4w, t))
+    df_results["RS_delta_4w"] = df_results["RS_now"] - df_results["RS_4w"]
+
+    # Keep same "leaders" filtering semantics as original, but do NOT treat this
+    # as the final Leader universe. The final Leader gate should be applied in main.py.
+    filtered = df_results[
+        ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
+    ].sort_values("score", ascending=False)
+    return filtered

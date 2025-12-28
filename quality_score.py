@@ -53,16 +53,13 @@ def _discrete_neg_years_score(neg_years: pd.Series) -> pd.Series:
     return out
 
 
-def compute_quality_score(
-    df: pd.DataFrame,
-    *,
-    industry_col: str = "Industry",
-    rounding: str = "round",
-) -> pd.Series:
-    """Compute Quality Score for each row of df.
+
+def _build_components_and_weights(df: pd.DataFrame, industry_col: str) -> tuple[pd.DataFrame, pd.Series]:
+    """Build component score table (0..100) and weight vector.
 
     Returns:
-        pd.Series of dtype Int64 (nullable integer), range 0..100.
+        comps: DataFrame with columns matching weights keys, scaled 0..100 (NaN if unavailable)
+        w:     Series of weights (float), sums to 100
     """
     required = [
         industry_col,
@@ -139,6 +136,20 @@ def compute_quality_score(
     }
 
     w = pd.Series(weights)
+    return comps, w
+
+def compute_quality_score(
+    df: pd.DataFrame,
+    *,
+    industry_col: str = "Industry",
+    rounding: str = "round",
+) -> pd.Series:
+    """Compute Quality Score for each row of df.
+
+    Returns:
+        pd.Series of dtype Int64 (nullable integer), range 0..100.
+    """
+    comps, w = _build_components_and_weights(df, industry_col)
 
     # Row-wise weight renormalization (ignore NaN components)
     valid_mask = comps.notna()
@@ -162,3 +173,29 @@ def compute_quality_score(
         score_int = np.round(score)
 
     return pd.Series(score_int, index=df.index).astype("Int64")
+
+def compute_quality_data_coverage(
+    df: pd.DataFrame,
+    *,
+    industry_col: str = "Industry",
+) -> pd.Series:
+    """Quality Data Coverage in percent (0..100).
+
+    Coverage is the sum of weights of all non-missing score components for each row.
+    Since the score weights sum to 100, coverage is directly a percentage.
+
+    Returns:
+        pd.Series of dtype Int64 (nullable integer), range 0..100.
+    """
+    comps, w = _build_components_and_weights(df, industry_col)
+
+    valid_mask = comps.notna()
+    denom = (valid_mask * w).sum(axis=1)
+
+    # If denom is 0 (all missing) -> NaN
+    denom = denom.where(denom > 0)
+
+    # denom already represents percent coverage (weights sum to 100)
+    cov_int = np.round(denom).clip(lower=0.0, upper=100.0)
+
+    return pd.Series(cov_int, index=df.index).astype("Int64")

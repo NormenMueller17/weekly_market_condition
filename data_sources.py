@@ -14,9 +14,9 @@ from config import SETTINGS
 
 TICKER_META: dict[str, dict] = {}
 #_CSV_FILE = "SP_micro_3.csv"
-_CSV_FILE = "202511_most_capitalized_500M_3.csv"
+#_CSV_FILE = "202511_most_capitalized_500M_3.csv"
 #_CSV_FILE = "2025_11_Most_Capitalized_DE.csv"
-#_CSV_FILE = "202511_test_3.csv"
+_CSV_FILE = "202511_test_3.csv"
 
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
@@ -215,10 +215,17 @@ def _slice_ticker_from_downloaded(df: pd.DataFrame, ticker: str) -> pd.DataFrame
 
 
 def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.DataFrame]:
-    """
-    Lädt Weekly-Serien (Close) für alle Ticker im Universe.
-    Robust gegen yfinance-MultiIndex-Varianten, lädt in Chunks, säubert NaNs.
-    Gibt dict[ticker] -> DataFrame({'Close': Series}) zurück.
+    """Load weekly OHLCV history for the universe.
+
+    Why: Phase-1 screening should run on **cheap bulk weekly downloads** and must not
+    call expensive per-ticker endpoints (like `Ticker.info`).
+
+    Robust against yfinance MultiIndex variants. Downloads in chunks, cleans NaNs.
+
+    Returns
+    -------
+    Dict[ticker, DataFrame]
+        Weekly OHLCV data with columns at least: Close, High, Low, Volume.
     """
     out: Dict[str, pd.DataFrame] = {}
 
@@ -254,19 +261,33 @@ def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.D
 
         for t in chunk:
             sub = _slice_ticker_from_downloaded(raw, t)
-            if sub is None or "Close" not in sub.columns:
+            if sub is None or sub.empty:
                 continue
 
-            s = pd.to_numeric(sub["Close"], errors="coerce").dropna()
-            if s.empty:
+            # Ensure required columns exist (yfinance sometimes omits Volume for some assets)
+            cols = set(sub.columns)
+            if "Close" not in cols:
+                continue
+            if "High" not in cols:
+                sub["High"] = sub["Close"]
+            if "Low" not in cols:
+                sub["Low"] = sub["Close"]
+            if "Volume" not in cols:
+                sub["Volume"] = 0
+
+            # Coerce numeric + drop empty
+            for c in ("Close", "High", "Low", "Volume"):
+                sub[c] = pd.to_numeric(sub[c], errors="coerce")
+            sub = sub.dropna(subset=["Close"]).copy()
+            if sub.empty:
                 continue
 
-            # Tail auf benötigte Anzahl Wochen
-            s = s.tail(weeks)
-            if s.empty:
+            # Tail to required number of weeks
+            sub = sub.tail(weeks)
+            if sub.empty:
                 continue
 
-            out[t] = pd.DataFrame({"Close": s})
+            out[t] = sub[[c for c in ["Open", "High", "Low", "Close", "Volume"] if c in sub.columns]].copy()
 
         # leichte Pause, um Rate Limits zu meiden
         time.sleep(0.2)
