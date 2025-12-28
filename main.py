@@ -8,6 +8,7 @@ from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as
 from emailer import send_email
 from screener import screen_universe_minervini
 from fetch_quote_data import batch_fetch_quote_data, fetch_quote_data_single
+from quality_score import compute_quality_score
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
@@ -280,6 +281,31 @@ def run():
         leaders.insert(13, "Debt to Equity", leaders.index.map(lambda t: quote_map.get(t, {}).get("Debt_to_Equity")))
         leaders.insert(14, "EPS Acceleration (pp)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Acceleration")))
 
+        # ------------------------------------------------------------
+        # Quality Score (Quality-Compounder) – integer 0..100
+        # Compute on a small helper frame to avoid polluting the Leaders sheet
+        # with all underlying raw metrics.
+        # ------------------------------------------------------------
+        try:
+            qdf = pd.DataFrame(index=leaders.index)
+            qdf["Industry"] = leaders["Industry"]
+            qdf["ROIC (%)"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("ROIC"))
+            qdf["Cash Conversion"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("Cash_Conversion"))
+            # FCF/Net Income is identical to Cash Conversion in this dataset
+            qdf["FCF / Net Income"] = qdf["Cash Conversion"]
+            qdf["Operating Margin (%)"] = leaders.get("Operating Margin (%)")
+            qdf["Op_Margin_Stability_5y"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("Op_Margin_Stability_5y"))
+            qdf["REV_Neg_YoY_Count_5y"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_Neg_YoY_Count_5y"))
+            qdf["EPS_Neg_YoY_Count_5y"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Neg_YoY_Count_5y"))
+            qdf["ATR / Price (%)"] = leaders.get("ATR / Price (%)")
+            qdf["Max Drawdown 5Y (%)"] = leaders.get("Max Drawdown 5Y (%)")
+            qdf["Max Drawdown 10Y (%)"] = leaders.get("Max Drawdown 10Y (%)")
+
+            leaders["Quality Score"] = compute_quality_score(qdf)
+        except Exception as e:
+            print(f"[WARN] Quality scoring failed: {e}")
+            leaders["Quality Score"] = pd.NA
+
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
             leaders["52W High"] = pd.NA
@@ -343,6 +369,7 @@ def run():
         "Industry RS Score",
         "Industry Strong Stock Score",
         "Industry Volume Score",
+        "Quality Score",
         "MarketCap (Mio USD)",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
@@ -423,6 +450,7 @@ def run():
     for col in [
         "MarketCap (Mio USD)",
         "Ø-Volume 20T",
+        "Quality Score",
     ]:
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_int)
@@ -454,6 +482,20 @@ def run():
     leaders_out_excel.drop(columns=[c for c in drop_ind_cols if c in leaders_out_excel.columns], inplace=True, errors='ignore')
 
     # ------------------------------------------------------------
+    # Top 30 Quality – separate sheet
+    # ------------------------------------------------------------
+    if "Quality Score" in leaders_out_excel.columns:
+        top_quality_out = (
+            leaders_out_excel
+            .sort_values("Quality Score", ascending=False, kind="mergesort")
+            .head(30)
+            .loc[:, [c for c in ["Ticker", "Company", "Industry", "Quality Score"] if c in leaders_out_excel.columns]]
+            .copy()
+        )
+    else:
+        top_quality_out = pd.DataFrame(columns=["Ticker", "Company", "Industry", "Quality Score"])
+
+    # ------------------------------------------------------------
     # Industry-relative percentiles for coloring ROE / Margins
     # (used only for Excel conditional formatting)
     # ------------------------------------------------------------
@@ -471,6 +513,7 @@ def run():
     
     with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
         leaders_out_excel.to_excel(writer, index=False, sheet_name='Leaders')
+        top_quality_out.to_excel(writer, index=False, sheet_name='TopQuality')
         # Industries sheet (may be empty if scoring failed)
         if industry_table is not None and not industry_table.empty:
             # Sort industries by ranking (ascending: 1 is best)
@@ -561,6 +604,7 @@ def run():
     zero_dec_cols = [
         "MarketCap (Mio USD)",
         "Ø-Volume 20T",
+        "Quality Score",
     ]
     
     # --- Anwenden der Formate ---
@@ -590,6 +634,28 @@ def run():
 
     # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
     style_boolean_columns(ws)
+
+    # -------------------------------
+    # Format TopQuality sheet
+    # -------------------------------
+    if 'TopQuality' in wb.sheetnames:
+        ws_q = wb['TopQuality']
+
+        # Auto-width
+        for col_idx, col_cells in enumerate(ws_q.columns, start=1):
+            max_len = 0
+            for cell in col_cells:
+                val = "" if cell.value is None else str(cell.value)
+                max_len = max(max_len, len(val))
+            ws_q.column_dimensions[get_column_letter(col_idx)].width = max(10, max_len + 2)
+
+        # Integer formatting for Quality Score
+        header_q = {cell.value: cell.column for cell in ws_q[1] if cell.value}
+        if "Quality Score" in header_q:
+            col_letter = get_column_letter(header_q["Quality Score"])
+            for cell in ws_q[col_letter][1:]:
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = "0"
 
     # -------------------------------
     # Format Industries sheet
