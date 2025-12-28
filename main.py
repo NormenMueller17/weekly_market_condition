@@ -412,6 +412,9 @@ def run():
         "ΔRS 4W",
         "VCP Entry",
         "VCP Breakout Level",
+        "ATR / Price (%)",
+        "Max Drawdown 5Y (%)",
+        "Max Drawdown 10Y (%)",
     ]:
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_2dec)
@@ -546,6 +549,12 @@ def run():
         "52W High",
         "Dist to 52W High (%)",
         "Volume Score",
+        "ATR / Price (%)",
+        "Max Drawdown 5Y (%)",
+        "Max Drawdown 10Y (%)",
+        "ATR / Price (%)",
+        "Max Drawdown 5Y (%)",
+        "Max Drawdown 10Y (%)",
     ]
     
     # Ganze Zahlen (ohne Nachkommastellen)
