@@ -6,9 +6,8 @@ from config import SETTINGS
 from data_sources import get_universe, get_company_info_map_from_csv, load_weekly_history, load_index_series
 from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
 from emailer import send_email
-from screener import screen_universe_minervini_weekly
+from screener import screen_universe_minervini
 from fetch_quote_data import batch_fetch_quote_data, fetch_quote_data_single
-from quality_score import compute_quality_score, compute_quality_data_coverage
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment
@@ -192,11 +191,6 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
                 pass
 
 def run():
-    # Variables that are computed only in the "leaders" branch must be
-    # initialized here, otherwise an empty leader subset can raise
-    # UnboundLocalError further down.
-    industry_table = None
-
     # 1) Daten laden
     universe = get_universe()
     weekly = load_weekly_history(universe, weeks=SETTINGS.lookback_weeks)
@@ -239,65 +233,34 @@ def run():
         for name, delta in zip(risk_df.index, risk_df["Δ"])
     ]
     
-    # 4) Phase 1: Minervini features aus BULK weekly OHLCV (cheap)
-    #    Kein `Ticker.info`, keine Fundamentaldaten.
-    phase1 = screen_universe_minervini_weekly(weekly, min_score=0)
+    # 4) Marktführer nach Minervini screenen
+    leaders = screen_universe_minervini(universe, min_score=0)
     info_map = get_company_info_map_from_csv()
-
-    if phase1 is None or phase1.empty:
-        print("[WARN] Phase1 screener returned empty output")
-        leaders = pd.DataFrame()
-    else:
-        # --- Enrich phase1 with Company/Industry (CSV map) ---
-        phase1 = phase1.copy()
-
-        def _make_sa_url(ticker: str) -> str:
-            base = ticker.split(".")[0]
-            if ticker.upper().endswith(".DE"):
-                return f"https://stockanalysis.com/quote/etr/{base}"
-            return f"https://stockanalysis.com/stocks/{base}"
-
-        phase1.insert(0, "Company", phase1.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a")))
-        phase1.insert(1, "SA", phase1.index.map(_make_sa_url))
-        phase1.insert(2, "Industry", phase1.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
-
-        # --- Leader Gate (Phase 1 -> Phase 2) ---
-        # Keep expensive fundamentals requests SMALL to avoid rate limits.
-        def _bool_col(name: str) -> pd.Series:
-            if name not in phase1.columns:
-                return pd.Series(False, index=phase1.index)
-            s = phase1[name]
-            # values can be bool, 0/1, 'WAHR', 'TRUE', ...
-            if s.dtype == bool:
-                return s
-            # Pandas warns about silent downcasting for object dtype when using fillna.
-            # First try to infer the best dtype, then fill/convert.
-            if hasattr(s, "infer_objects"):
-                s = s.infer_objects(copy=False)
-            return s.fillna(False).astype(bool)
-
-        leader_mask = (
-            (pd.to_numeric(phase1.get("score"), errors="coerce") >= SETTINGS.leader_min_total_score)
-            & (pd.to_numeric(phase1.get("RS (O'Neil)"), errors="coerce") >= SETTINGS.leader_min_rs)
-            & _bool_col("MA-Ordnung 10>30>40")
-            & _bool_col("SMA30W steigend")
-            & _bool_col("RS-Trend ↑")
-            & _bool_col("52W Range OK")
-        )
-        if SETTINGS.leader_require_vol_breakout and "Vol-Breakout" in phase1.columns:
-            leader_mask = leader_mask & _bool_col("Vol-Breakout")
-
-        phase1["Leader_Technical"] = leader_mask
-        leaders = phase1[phase1["Leader_Technical"]].sort_values("score", ascending=False)
-
-        print(f"[INFO] Phase1 universe: {len(phase1)} | Leaders (Phase2 subset): {len(leaders)}")
      
     if not leaders.empty:
         # --- Sicherheitskopie (sehr wichtig für HTML-Formatierung später) ---
         leaders = leaders.copy()
+    
+        # Hilfsfunktion zum Entfernen von .DE
+        def _make_sa_url(ticker: str) -> str:
+            """
+            Für US-Aktien:
+                https://stockanalysis.com/stocks/TICKER
+            Für deutsche (.DE):
+                https://stockanalysis.com/quote/etr/TICKER (ohne .DE)
+            """
+            base = ticker.split(".")[0]
+            if ticker.upper().endswith(".DE"):
+                return f"https://stockanalysis.com/quote/etr/{base}"
+            else:
+                return f"https://stockanalysis.com/stocks/{base}"
+                
+        # Company & Industry (bereits geladen über info_map)
+        leaders.insert(1, "Company", leaders.index.map(lambda t: info_map.get(t, {}).get("Company", "n/a")))
+        leaders.insert(2, "SA", leaders.index.map(_make_sa_url))      
+        leaders.insert(3, "Industry", leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
 
-        # 5) Phase 2: Expensive fundamentals ONLY for Leaders
-        #    This is the critical change to avoid yfinance rate limits.
+        # --- NEU: Fundamentaldaten für ALLE Leaders in einem Rutsch laden ---
         quote_map = batch_fetch_quote_data(leaders.index.tolist())
         leaders.insert(4, "Sektor", leaders.index.map(lambda t: quote_map.get(t, {}).get("Sector", "n/a")))
         leaders.insert(5, "Close", leaders.index.map(lambda t: quote_map.get(t, {}).get("Close")))
@@ -316,33 +279,6 @@ def run():
         leaders.insert(12, "FCF Margin (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("FCF_Margin")))
         leaders.insert(13, "Debt to Equity", leaders.index.map(lambda t: quote_map.get(t, {}).get("Debt_to_Equity")))
         leaders.insert(14, "EPS Acceleration (pp)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Acceleration")))
-
-        # ------------------------------------------------------------
-        # Quality Score (Quality-Compounder) – integer 0..100
-        # Compute on a small helper frame to avoid polluting the Leaders sheet
-        # with all underlying raw metrics.
-        # ------------------------------------------------------------
-        try:
-            qdf = pd.DataFrame(index=leaders.index)
-            qdf["Industry"] = leaders["Industry"]
-            qdf["ROIC (%)"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("ROIC"))
-            qdf["Cash Conversion"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("Cash_Conversion"))
-            # FCF/Net Income is identical to Cash Conversion in this dataset
-            qdf["FCF / Net Income"] = qdf["Cash Conversion"]
-            qdf["Operating Margin (%)"] = leaders.get("Operating Margin (%)")
-            qdf["Op_Margin_Stability_5y"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("Op_Margin_Stability_5y"))
-            qdf["REV_Neg_YoY_Count_5y"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_Neg_YoY_Count_5y"))
-            qdf["EPS_Neg_YoY_Count_5y"] = leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_Neg_YoY_Count_5y"))
-            qdf["ATR / Price (%)"] = leaders.get("ATR / Price (%)")
-            qdf["Max Drawdown 5Y (%)"] = leaders.get("Max Drawdown 5Y (%)")
-            qdf["Max Drawdown 10Y (%)"] = leaders.get("Max Drawdown 10Y (%)")
-
-            leaders["Quality Score"] = compute_quality_score(qdf)
-            leaders["Quality Data Coverage %"] = compute_quality_data_coverage(qdf)
-        except Exception as e:
-            print(f"[WARN] Quality scoring failed: {e}")
-            leaders["Quality Score"] = pd.NA
-            leaders["Quality Data Coverage %"] = pd.NA
 
       # Falls Screener noch keine 52W-Spalten liefert, zur Sicherheit anlegen
         if "52W High" not in leaders.columns:
@@ -407,8 +343,6 @@ def run():
         "Industry RS Score",
         "Industry Strong Stock Score",
         "Industry Volume Score",
-        "Quality Score",
-        "Quality Data Coverage %",
         "MarketCap (Mio USD)",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
@@ -489,8 +423,6 @@ def run():
     for col in [
         "MarketCap (Mio USD)",
         "Ø-Volume 20T",
-        "Quality Score",
-        "Quality Data Coverage %",
     ]:
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_int)
@@ -501,8 +433,7 @@ def run():
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
 
-    # Phase-1 (All) und Phase-2 (Leaders) Outputs
-    phase1_out = (phase1.copy() if isinstance(phase1, pd.DataFrame) else pd.DataFrame()).reset_index().rename(columns={"index": "Ticker"})
+    # leaders ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
     leaders_out = leaders.reset_index().rename(columns={"index": "Ticker"})
     
     # 1) Zielpfad sicherstellen (eigener Output-Ordner ist sauberer)
@@ -523,21 +454,6 @@ def run():
     leaders_out_excel.drop(columns=[c for c in drop_ind_cols if c in leaders_out_excel.columns], inplace=True, errors='ignore')
 
     # ------------------------------------------------------------
-    # Top 30 Quality – separate sheet
-    # ------------------------------------------------------------
-    if "Quality Score" in leaders_out_excel.columns:
-        sort_cols = [c for c in ["Quality Score", "Quality Data Coverage %"] if c in leaders_out_excel.columns]
-        top_quality_out = (
-            leaders_out_excel
-            .sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
-            .head(30)
-            .loc[:, [c for c in ["Ticker", "Company", "Industry", "Quality Score", "Quality Data Coverage %"] if c in leaders_out_excel.columns]]
-            .copy()
-        )
-    else:
-        top_quality_out = pd.DataFrame(columns=["Ticker", "Company", "Industry", "Quality Score", "Quality Data Coverage %"])
-
-    # ------------------------------------------------------------
     # Industry-relative percentiles for coloring ROE / Margins
     # (used only for Excel conditional formatting)
     # ------------------------------------------------------------
@@ -554,11 +470,7 @@ def run():
                 )
     
     with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
-        # Phase 1: full universe technical view
-        phase1_out.to_excel(writer, index=False, sheet_name='All')
-        # Phase 2: fundamentals + scoring only for Leader subset
         leaders_out_excel.to_excel(writer, index=False, sheet_name='Leaders')
-        top_quality_out.to_excel(writer, index=False, sheet_name='TopQuality')
         # Industries sheet (may be empty if scoring failed)
         if industry_table is not None and not industry_table.empty:
             # Sort industries by ranking (ascending: 1 is best)
@@ -649,8 +561,6 @@ def run():
     zero_dec_cols = [
         "MarketCap (Mio USD)",
         "Ø-Volume 20T",
-        "Quality Score",
-        "Quality Data Coverage %",
     ]
     
     # --- Anwenden der Formate ---
@@ -680,35 +590,6 @@ def run():
 
     # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
     style_boolean_columns(ws)
-
-    # -------------------------------
-    # Format TopQuality sheet
-    # -------------------------------
-    if 'TopQuality' in wb.sheetnames:
-        ws_q = wb['TopQuality']
-
-        # Auto-width
-        for col_idx, col_cells in enumerate(ws_q.columns, start=1):
-            max_len = 0
-            for cell in col_cells:
-                val = "" if cell.value is None else str(cell.value)
-                max_len = max(max_len, len(val))
-            ws_q.column_dimensions[get_column_letter(col_idx)].width = max(10, max_len + 2)
-
-        # Integer formatting for Quality Score
-        header_q = {cell.value: cell.column for cell in ws_q[1] if cell.value}
-        if "Quality Score" in header_q:
-            col_letter = get_column_letter(header_q["Quality Score"])
-            for cell in ws_q[col_letter][1:]:
-                if isinstance(cell.value, (int, float)):
-                    cell.number_format = "0"
-
-        # Integer formatting for Quality Data Coverage %
-        if "Quality Data Coverage %" in header_q:
-            col_letter = get_column_letter(header_q["Quality Data Coverage %"])
-            for cell in ws_q[col_letter][1:]:
-                if isinstance(cell.value, (int, float)):
-                    cell.number_format = "0"
 
     # -------------------------------
     # Format Industries sheet
