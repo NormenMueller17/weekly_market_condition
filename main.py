@@ -192,6 +192,11 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
                 pass
 
 def run():
+    # Variables that are computed only in the "leaders" branch must be
+    # initialized here, otherwise an empty leader subset can raise
+    # UnboundLocalError further down.
+    industry_table = None
+
     # 1) Daten laden
     universe = get_universe()
     weekly = load_weekly_history(universe, weeks=SETTINGS.lookback_weeks)
@@ -265,6 +270,10 @@ def run():
             # values can be bool, 0/1, 'WAHR', 'TRUE', ...
             if s.dtype == bool:
                 return s
+            # Pandas warns about silent downcasting for object dtype when using fillna.
+            # First try to infer the best dtype, then fill/convert.
+            if hasattr(s, "infer_objects"):
+                s = s.infer_objects(copy=False)
             return s.fillna(False).astype(bool)
 
         leader_mask = (
