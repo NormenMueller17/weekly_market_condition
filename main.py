@@ -546,6 +546,7 @@ def run():
         "Veränderung in %",
         "52W High",
         "Dist to 52W High (%)",
+        "VCP Breakout Level",
         "Volume Score",
         "ATR / Price (%)",
     ]
