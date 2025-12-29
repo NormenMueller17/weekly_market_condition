@@ -8,12 +8,26 @@ from rate_limit import RateLimiter
 
 GLOBAL_LIMITER = RateLimiter(max_calls=6, period_seconds=1.0)
 
-# Optional but highly recommended: reuse a single HTTP session for all yfinance calls
-# to reduce overhead and lower the chance of triggering captchas / throttling.
+# Optional but recommended: reuse a single HTTP session inside yfinance.
+# IMPORTANT: If a CachedSession (requests-cache) is already installed (e.g. by main.py),
+# we must NOT overwrite it, otherwise caching stops working.
 try:
-    yf.shared._requests = requests.Session()
+    import requests
+
+    cached_session_type = None
+    try:
+        from requests_cache import CachedSession  # type: ignore
+        cached_session_type = CachedSession
+    except Exception:
+        cached_session_type = None
+
+    current = getattr(getattr(yf, "shared", None), "_requests", None)
+    if cached_session_type is not None and isinstance(current, cached_session_type):
+        # Keep the cached session.
+        pass
+    else:
+        yf.shared._requests = requests.Session()  # type: ignore[attr-defined]
 except Exception:
-    # If yfinance internals change, we still want the module to work.
     pass
 
 def batch_fetch_quote_data(tickers) -> dict:
