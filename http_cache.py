@@ -1,0 +1,41 @@
+"""Persistent HTTP cache for yfinance (requests-cache).
+
+- Uses SQLite-backed CachedSession (e.g. `.http_cache.sqlite`)
+- Plugs the session into yfinance via `yf.shared._requests = session`
+"""
+
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass(frozen=True)
+class CacheConfig:
+    cache_name: str = ".http_cache"              # creates .http_cache.sqlite
+    backend: str = "sqlite"
+    expire_after_seconds: int = 24 * 60 * 60     # default TTL: 24h
+    stale_if_error: bool = True                  # serve stale cache on 429/500
+
+def create_cached_session(cfg: CacheConfig):
+    from requests_cache import CachedSession  # requires requests-cache installed
+    return CachedSession(
+        cache_name=cfg.cache_name,
+        backend=cfg.backend,
+        expire_after=cfg.expire_after_seconds,
+        stale_if_error=cfg.stale_if_error,
+    )
+
+def try_enable_yfinance_cache(cfg: Optional[CacheConfig] = None) -> bool:
+    if cfg is None:
+        cfg = CacheConfig()
+    try:
+        session = create_cached_session(cfg)
+    except Exception:
+        return False
+
+    try:
+        import yfinance as yf
+        yf.shared._requests = session  # type: ignore[attr-defined]
+    except Exception:
+        return False
+
+    return True
