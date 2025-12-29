@@ -1,7 +1,19 @@
 import time
+import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 import pandas as pd
+
+# Optional but recommended: reuse a single requests.Session inside yfinance to reduce
+# TCP overhead and the likelihood of triggering anti-bot/rate-limit defenses.
+try:
+    import requests
+
+    # yfinance uses a module-level session that can be overridden.
+    yf.shared._requests = requests.Session()  # type: ignore[attr-defined]
+except Exception:
+    # If requests isn't available for some reason, we simply skip session reuse.
+    pass
 
 def batch_fetch_quote_data(tickers) -> dict:
     """
@@ -11,8 +23,9 @@ def batch_fetch_quote_data(tickers) -> dict:
     results = {}
     tickers = list(dict.fromkeys(tickers))  # Duplikate raus
 
-    # Anzahl Threads begrenzen – 8-16 ist ein guter Startwert
-    max_workers = min(16, max(4, len(tickers) // 20))  # z.B. 4–16 Threads
+    # Yahoo Finance rate-limits aggressively. Keep concurrency low.
+    MAX_WORKERS = 4
+    max_workers = min(MAX_WORKERS, max(1, len(tickers)))
 
     print(f"[INFO] Starte batch_fetch_quote_data für {len(tickers)} Ticker "
           f"mit {max_workers} Threads ...")
@@ -29,7 +42,7 @@ def batch_fetch_quote_data(tickers) -> dict:
                 data = {
                     "Close": None,
                     "MarketCap_Mio": None,
-        "Sector": None,
+                    "Sector": None,
                     "EPS_FWD_TTM": None,
                     "EPS_GROWTH_FWD_TTM": None,
                     "REV_GROWTH_TTM_YOY": None,
@@ -46,36 +59,39 @@ def fetch_quote_data_single(ticker: str) -> dict:
     Holt Close, MarketCap (Mio), EPS (Forward/TTM) und Revenue Growth (TTM YoY)
     für EINEN Ticker. Mit kleinem Retry-Mechanismus.
     """
+    # Keep retries modest but de-synchronized (jitter) and increasing (backoff)
     MAX_RETRIES = 3
-    SLEEP_SECONDS = 0.75
+    BASE_SLEEP_SECONDS = 0.5
 
     for attempt in range(MAX_RETRIES):
         try:
-            info = yf.Ticker(ticker)
-            fast = getattr(info, "fast_info", {}) or {}
+            tkr = yf.Ticker(ticker)
+            # yfinance may return None for .info (or partially populated dict)
+            info_dict = (getattr(tkr, "info", None) or {})
+            fast = getattr(tkr, "fast_info", {}) or {}
 
             # Close
             close = (
                 fast.get("lastPrice")
                 or fast.get("last_price")
-                or info.info.get("regularMarketPrice")
+                or info_dict.get("regularMarketPrice")
             )
 
             # MarketCap
-            market_cap = fast.get("marketCap") or info.info.get("marketCap")
+            market_cap = fast.get("marketCap") or info_dict.get("marketCap")
             market_cap_mio = market_cap / 1_000_000 if market_cap else None
 
             # Sector
-            sector = info.info.get("sector")
+            sector = info_dict.get("sector")
 
             # EPS: Forward + TTM
             eps_forward = (
                 fast.get("epsForward")
-                or info.info.get("forwardEps")
+                or info_dict.get("forwardEps")
             )
             eps_trailing = (
                 fast.get("epsTrailingTwelveMonths")
-                or info.info.get("trailingEps")
+                or info_dict.get("trailingEps")
             )
             eps_fwd_ttm = eps_forward if eps_forward is not None else eps_trailing
 
@@ -90,7 +106,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
             # Revenue Growth (TTM YoY)
             rev_growth_pct = None
             try:
-                rg = info.info.get("revenueGrowth")
+                rg = info_dict.get("revenueGrowth")
                 if rg is not None:
                     rev_growth_pct = float(rg) * 100.0
             except Exception:
@@ -151,16 +167,16 @@ def fetch_quote_data_single(ticker: str) -> dict:
                 except Exception:
                     return None
 
-            net_income = _sf(info.info.get("netIncomeToCommon") or info.info.get("netIncome"))
-            equity = _sf(info.info.get("totalStockholderEquity"))
-            operating_income = _sf(info.info.get("operatingIncome"))
-            revenue = _sf(info.info.get("totalRevenue"))
-            free_cash_flow = _sf(info.info.get("freeCashflow"))
-            total_debt = _sf(info.info.get("totalDebt"))
+            net_income = _sf(info_dict.get("netIncomeToCommon") or info_dict.get("netIncome"))
+            equity = _sf(info_dict.get("totalStockholderEquity"))
+            operating_income = _sf(info_dict.get("operatingIncome"))
+            revenue = _sf(info_dict.get("totalRevenue"))
+            free_cash_flow = _sf(info_dict.get("freeCashflow"))
+            total_debt = _sf(info_dict.get("totalDebt"))
 
             # ROE (%)
             roe = None
-            roe_info = _sf(info.info.get("returnOnEquity"))
+            roe_info = _sf(info_dict.get("returnOnEquity"))
             if roe_info is not None:
                 roe = roe_info * 100.0
             elif net_income is not None and equity not in (None, 0):
@@ -171,7 +187,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
             if operating_income is not None and revenue not in (None, 0):
                 op_margin = (operating_income / revenue) * 100.0
             else:
-                om = _sf(info.info.get("operatingMargins"))
+                om = _sf(info_dict.get("operatingMargins"))
                 if om is not None:
                     op_margin = om * 100.0
 
@@ -185,7 +201,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
             if total_debt is not None and equity not in (None, 0):
                 debt_to_equity = total_debt / equity
             else:
-                d2e = _sf(info.info.get("debtToEquity"))
+                d2e = _sf(info_dict.get("debtToEquity"))
                 if d2e is not None:
                     # Yahoo sometimes returns debtToEquity as percentage (e.g., 45.3). Convert if it looks like percent.
                     debt_to_equity = d2e / 100.0 if d2e > 10 else d2e
@@ -257,9 +273,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
                     except Exception:
                         return None, None, 0
 # --- Quarterly EPS Acceleration ---
-                qs = getattr(info, "quarterly_income_stmt", None)
+                qs = getattr(tkr, "quarterly_income_stmt", None)
                 if qs is None or getattr(qs, "empty", True):
-                    get_stmt = getattr(info, "get_income_stmt", None)
+                    get_stmt = getattr(tkr, "get_income_stmt", None)
                     if callable(get_stmt):
                         qs = get_stmt(freq="quarterly")
 
@@ -277,9 +293,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
 
                 # --- Yearly fallback ---
                 if eps_acceleration is None:
-                    ys = getattr(info, "income_stmt", None)
+                    ys = getattr(tkr, "income_stmt", None)
                     if ys is None or getattr(ys, "empty", True):
-                        get_stmt = getattr(info, "get_income_stmt", None)
+                        get_stmt = getattr(tkr, "get_income_stmt", None)
                         if callable(get_stmt):
                             ys = get_stmt(freq="yearly")
 
@@ -403,9 +419,22 @@ def fetch_quote_data_single(ticker: str) -> dict:
 
         except Exception as e:
             if attempt < MAX_RETRIES - 1:
-                print(f"[WARN] fetch_quote_data_single({ticker}) Versuch {attempt+1} fehlgeschlagen ({e}). "
-                      f"Retry in {SLEEP_SECONDS}s ...")
-                time.sleep(SLEEP_SECONDS)
+                # Exponential backoff + jitter to avoid synchronized retry storms.
+                # Example: 0.5s, 1.0s, 2.0s ... + random(0.5..1.5)
+                backoff = BASE_SLEEP_SECONDS * (2 ** attempt)
+                jitter = random.uniform(0.5, 1.5)
+                sleep_s = min(30.0, backoff + jitter)
+
+                msg = str(e)
+                # If we get explicitly rate-limited, be more conservative.
+                if "Too Many Requests" in msg or "Rate limited" in msg or "429" in msg:
+                    sleep_s = max(sleep_s, 5.0 + random.uniform(0.0, 3.0))
+
+                print(
+                    f"[WARN] fetch_quote_data_single({ticker}) Versuch {attempt+1} fehlgeschlagen ({e}). "
+                    f"Retry in {sleep_s:.2f}s ..."
+                )
+                time.sleep(sleep_s)
                 continue
             else:
                 print(f"[ERROR] fetch_quote_data_single({ticker}) dauerhaft fehlgeschlagen ({e}).")
