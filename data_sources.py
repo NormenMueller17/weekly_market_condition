@@ -22,48 +22,87 @@ _CSV_FILE = "202511_most_capitalized_500M_3_mini.csv"
 GLOBAL_LIMITER = RateLimiter(max_calls=6, period_seconds=1.0)
 
 def download_ohlcv_batched(
-    tickers: list[str],
+    tickers: List[str],
     *,
     period: str,
     interval: str,
-    chunk_size: int = 100,
+    chunk_size: int = 40,
     auto_adjust: bool = False,
     threads: bool = False,
-    ) -> dict[str, pd.DataFrame]:
-    """
-    Returns dict[ticker] -> OHLCV DataFrame.
-    Uses yf.download in chunks to reduce request count.
-    """
-    out: dict[str, pd.DataFrame] = {}
+    tries: int = 2,
+    retry_sleep_s: float = 0.8,
+    inter_chunk_sleep_s: float = 0.2,
+    ) -> Dict[str, pd.DataFrame]:
 
-    for i in range(0, len(tickers), chunk_size):
-        batch = tickers[i:i + chunk_size]
+    out: Dict[str, pd.DataFrame] = {}
 
-        # global limiter before calling Yahoo
-        GLOBAL_LIMITER.acquire()
-        df = yf.download(
-            tickers=batch,
-            period=period,
-            interval=interval,
-            group_by="ticker",
-            auto_adjust=auto_adjust,
-            threads=threads,
-            progress=False,
-        )
+    # Defensive normalization: keep stable order, remove empties
+    clean = list(dict.fromkeys([t.strip() for t in tickers if isinstance(t, str) and t.strip()]))
+    if not clean:
+        return out
 
-        # normalize output: if single ticker, columns not multiindex
-        if isinstance(df.columns, pd.MultiIndex):
-            for t in batch:
-                if t in df.columns.get_level_values(0):
-                    tdf = df[t].dropna(how="all")
-                    if not tdf.empty:
-                        out[t] = tdf
+    CHUNK = max(1, int(chunk_size))
+    total_chunks = (len(clean) + CHUNK - 1) // CHUNK
+
+    for i in range(0, len(clean), CHUNK):
+        chunk_idx = (i // CHUNK) + 1
+        chunk = clean[i:i + CHUNK]
+
+        raw: Optional[pd.DataFrame] = None
+
+        for attempt in range(tries):
+            try:
+                raw = yf.download(
+                    tickers=chunk,
+                    period=period,
+                    interval=interval,
+                    group_by="ticker",
+                    auto_adjust=auto_adjust,
+                    progress=False,
+                    threads=threads,
+                )
+                break
+            except Exception as e:
+                # Match your previous logging style closely
+                print(f"[WARN] yfinance chunk {chunk_idx}/{total_chunks} attempt {attempt+1} failed: {e}")
+                time.sleep(retry_sleep_s)
+
+        if raw is None or raw.empty:
+            # could not download anything for this chunk
+            continue
+
+        # ---- Parse the returned DataFrame into per-ticker subframes ----
+        # yfinance returns either:
+        #   A) MultiIndex columns: (Ticker, Field) for multi ticker calls
+        #   B) Single-index columns: Field only, if only one ticker
+        # We handle both.
+
+        if isinstance(raw.columns, pd.MultiIndex):
+            # Multi-ticker case
+            level0 = raw.columns.get_level_values(0)
+
+            for t in chunk:
+                # Some tickers might not be present in the result if Yahoo had no data
+                if t not in level0:
+                    continue
+
+                sub = raw[t].copy()
+                # Drop rows where all OHLCV are NaN
+                sub = sub.dropna(how="all")
+                if sub.empty:
+                    continue
+
+                out[t] = sub
+
         else:
-            # single ticker batch
-            t = batch[0]
-            tdf = df.dropna(how="all")
-            if not tdf.empty:
-                out[t] = tdf
+            # Single ticker case: raw is already OHLCV for that ticker
+            t = chunk[0]
+            sub = raw.copy().dropna(how="all")
+            if not sub.empty:
+                out[t] = sub
+
+        # Small pause between chunks to be nicer to Yahoo
+        time.sleep(inter_chunk_sleep_s)
 
     return out
 
