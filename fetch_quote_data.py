@@ -4,6 +4,9 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 import pandas as pd
+from rate_limit import RateLimiter
+
+GLOBAL_LIMITER = RateLimiter(max_calls=6, period_seconds=1.0)
 
 # Optional but highly recommended: reuse a single HTTP session for all yfinance calls
 # to reduce overhead and lower the chance of triggering captchas / throttling.
@@ -73,8 +76,10 @@ def fetch_quote_data_single(ticker: str) -> dict:
 
     for attempt in range(MAX_RETRIES):
         try:
+            GLOBAL_LIMITER.acquire()
             tkr = yf.Ticker(ticker)
             # IMPORTANT: `.info` can be None; always normalize to dict.
+            GLOBAL_LIMITER.acquire()
             info = (tkr.info or {})
             fast = getattr(tkr, "fast_info", {}) or {}
 
@@ -280,7 +285,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
                         return neg_count, std_growth, window_used
                     except Exception:
                         return None, None, 0
-# --- Quarterly EPS Acceleration ---
+                
+                # --- Quarterly EPS Acceleration ---
+                GLOBAL_LIMITER.acquire()
                 qs = getattr(tkr, "quarterly_income_stmt", None)
                 if qs is None or getattr(qs, "empty", True):
                     get_stmt = getattr(tkr, "get_income_stmt", None)
