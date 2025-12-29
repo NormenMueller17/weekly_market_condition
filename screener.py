@@ -387,9 +387,9 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
             res = compute_minervini_template(df)
 
             # ---- Phase 2 (Risk): Max Drawdown 5y / 10y (weekly data) ----
-            mdd_5y, mdd_10y = _compute_mdd_5y_10y_from_daily_df(df)
-            res["Max Drawdown 5Y (%)"] = mdd_5y
-            res["Max Drawdown 10Y (%)"] = mdd_10y
+            #mdd_5y, mdd_10y = _compute_mdd_5y_10y_from_daily_df(df)
+            #res["Max Drawdown 5Y (%)"] = mdd_5y
+            #res["Max Drawdown 10Y (%)"] = mdd_10y
 
             results[t] = res
 
