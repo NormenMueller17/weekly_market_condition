@@ -11,12 +11,61 @@ from typing import List, Dict
 from datetime import datetime, timedelta
 
 from config import SETTINGS
+from rate_limit import RateLimiter
 
 TICKER_META: dict[str, dict] = {}
 #_CSV_FILE = "202511_most_capitalized_500M_3.csv"
 #_CSV_FILE = "2025_11_Most_Capitalized_DE.csv"
 #_CSV_FILE = "202511_most_capitalized_500M_3_mini.csv"
 _CSV_FILE = "202511_test_3.csv"
+
+GLOBAL_LIMITER = RateLimiter(max_calls=6, period_seconds=1.0)
+
+def download_ohlcv_batched(
+    tickers: list[str],
+    *,
+    period: str,
+    interval: str,
+    chunk_size: int = 100,
+    auto_adjust: bool = False,
+    threads: bool = False,
+    ) -> dict[str, pd.DataFrame]:
+    """
+    Returns dict[ticker] -> OHLCV DataFrame.
+    Uses yf.download in chunks to reduce request count.
+    """
+    out: dict[str, pd.DataFrame] = {}
+
+    for i in range(0, len(tickers), chunk_size):
+        batch = tickers[i:i + chunk_size]
+
+        # global limiter before calling Yahoo
+        GLOBAL_LIMITER.acquire()
+        df = yf.download(
+            tickers=batch,
+            period=period,
+            interval=interval,
+            group_by="ticker",
+            auto_adjust=auto_adjust,
+            threads=threads,
+            progress=False,
+        )
+
+        # normalize output: if single ticker, columns not multiindex
+        if isinstance(df.columns, pd.MultiIndex):
+            for t in batch:
+                if t in df.columns.get_level_values(0):
+                    tdf = df[t].dropna(how="all")
+                    if not tdf.empty:
+                        out[t] = tdf
+        else:
+            # single ticker batch
+            t = batch[0]
+            tdf = df.dropna(how="all")
+            if not tdf.empty:
+                out[t] = tdf
+
+    return out
 
 def _ensure_cache_dir():
     Path(SETTINGS.cache_dir).mkdir(parents=True, exist_ok=True)
@@ -214,13 +263,13 @@ def _slice_ticker_from_downloaded(df: pd.DataFrame, ticker: str) -> pd.DataFrame
     return sub[cols] if cols else None
 
 
+
+
 def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.DataFrame]:
-    """Load weekly OHLCV history for the universe.
+    """Load weekly OHLCV history for the universe using batched downloads.
 
-    Why: Phase-1 screening should run on **cheap bulk weekly downloads** and must not
+    Phase-1 screening should run on cheap bulk weekly downloads and must not
     call expensive per-ticker endpoints (like `Ticker.info`).
-
-    Robust against yfinance MultiIndex variants. Downloads in chunks, cleans NaNs.
 
     Returns
     -------
@@ -234,66 +283,56 @@ def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.D
         print("[WARN] load_weekly_history: empty tickers list")
         return out
 
-    CHUNK = 40
-    for i in range(0, len(tickers), CHUNK):
-        chunk = tickers[i:i+CHUNK]
-        tries = 2
-        raw = None
+    # Use batched OHLCV downloads.
+    # Keep period long enough so `weeks` is always available (weeks=104 -> ~2y).
+    # Using 3y gives buffer for missing weeks / holidays / sparse assets.
+    batched = download_ohlcv_batched(
+        tickers=tickers,
+        period="3y",
+        interval="1wk",
+        chunk_size=40,        # keep your previous CHUNK=40 behavior
+        auto_adjust=False,
+        threads=False,
+    )
 
-        for attempt in range(tries):
-            try:
-                raw = yf.download(
-                    tickers=chunk,
-                    period="3y",           # 2–3 Jahre, damit 104 Wochen sicher drin sind
-                    interval="1wk",
-                    group_by="ticker",
-                    auto_adjust=False,
-                    progress=False,
-                    threads=False,
-                )
-                break
-            except Exception as e:
-                print(f"[WARN] yfinance chunk {i//CHUNK+1} attempt {attempt+1} failed: {e}")
-                time.sleep(0.8)
+    if not batched:
+        print(f"[DEBUG] load_weekly_history: built 0 series (of {len(tickers)})")
+        return out
 
-        if raw is None or raw.empty:
+    for t, sub in batched.items():
+        if sub is None or sub.empty:
             continue
 
-        for t in chunk:
-            sub = _slice_ticker_from_downloaded(raw, t)
-            if sub is None or sub.empty:
-                continue
+        # Ensure required columns exist (yfinance sometimes omits Volume for some assets)
+        cols = set(sub.columns)
+        if "Close" not in cols:
+            continue
+        if "High" not in cols:
+            sub["High"] = sub["Close"]
+        if "Low" not in cols:
+            sub["Low"] = sub["Close"]
+        if "Volume" not in cols:
+            sub["Volume"] = 0
 
-            # Ensure required columns exist (yfinance sometimes omits Volume for some assets)
-            cols = set(sub.columns)
-            if "Close" not in cols:
-                continue
-            if "High" not in cols:
-                sub["High"] = sub["Close"]
-            if "Low" not in cols:
-                sub["Low"] = sub["Close"]
-            if "Volume" not in cols:
-                sub["Volume"] = 0
+        # Coerce numeric + drop empty
+        for c in ("Close", "High", "Low", "Volume"):
+            sub[c] = pd.to_numeric(sub[c], errors="coerce")
+        sub = sub.dropna(subset=["Close"]).copy()
+        if sub.empty:
+            continue
 
-            # Coerce numeric + drop empty
-            for c in ("Close", "High", "Low", "Volume"):
-                sub[c] = pd.to_numeric(sub[c], errors="coerce")
-            sub = sub.dropna(subset=["Close"]).copy()
-            if sub.empty:
-                continue
+        # Tail to required number of weeks
+        sub = sub.tail(weeks)
+        if sub.empty:
+            continue
 
-            # Tail to required number of weeks
-            sub = sub.tail(weeks)
-            if sub.empty:
-                continue
-
-            out[t] = sub[[c for c in ["Open", "High", "Low", "Close", "Volume"] if c in sub.columns]].copy()
-
-        # leichte Pause, um Rate Limits zu meiden
-        time.sleep(0.2)
+        # Keep same output column selection behavior as before
+        out[t] = sub[[c for c in ["Open", "High", "Low", "Close", "Volume"] if c in sub.columns]].copy()
 
     print(f"[DEBUG] load_weekly_history: built {len(out)} series (of {len(tickers)})")
     return out
+
+
 
 def load_index_series():
     """
