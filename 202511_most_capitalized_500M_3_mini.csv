@@ -1,0 +1,501 @@
+Symbol;Company;Industry
+NVDA;NVIDIA Corporation;Semiconductors
+AAPL;Apple Inc.;Telecommunications equipment
+GOOG;Alphabet Inc.;Internet software/Services
+MSFT;Microsoft Corporation;Packaged software
+AMZN;Amazon.com, Inc.;Internet retail
+AVGO;Broadcom Inc.;Semiconductors
+META;Meta Platforms, Inc.;Internet software/Services
+TSLA;Tesla, Inc.;Motor vehicles
+BRK.A;Berkshire Hathaway Inc.;Property/Casualty insurance
+LLY;Eli Lilly and Company;Pharmaceuticals: major
+WMT;Walmart Inc.;Specialty stores
+JPM;JP Morgan Chase & Co.;Major banks
+V;Visa Inc.;Finance/Rental/Leasing
+ORCL;Oracle Corporation;Packaged software
+XOM;Exxon Mobil Corporation;Integrated oil
+JNJ;Johnson & Johnson;Pharmaceuticals: major
+MA;Mastercard Incorporated;Finance/Rental/Leasing
+NFLX;Netflix, Inc.;Internet software/Services
+ABBV;AbbVie Inc.;Pharmaceuticals: major
+COST;Costco Wholesale Corporation;Specialty stores
+BAC;Bank of America Corporation;Major banks
+PLTR;Palantir Technologies Inc.;Packaged software
+BABA;Alibaba Group Holding Limited Sponsored ADR;Internet retail
+PG;Procter & Gamble Company (The);Household/Personal care
+HD;Home Depot, Inc. (The);Home improvement chains
+AMD;Advanced Micro Devices, Inc.;Semiconductors
+KO;Coca-Cola Company (The);Beverages: non-alcoholic
+GE;GE Aerospace;Aerospace & defense
+CVX;Chevron Corporation;Integrated oil
+CSCO;Cisco Systems, Inc.;Telecommunications equipment
+UNH;UnitedHealth Group Incorporated;Managed health care
+IBM;International Business Machines Corporation;Information technology services
+WFC;Wells Fargo & Company;Major banks
+CAT;Caterpillar, Inc.;Trucks/Construction/Farm machinery
+MS;Morgan Stanley;Investment managers
+AXP;American Express Company;Finance/Rental/Leasing
+MRK;Merck & Company, Inc.;Pharmaceuticals: major
+PM;Philip Morris International Inc;Tobacco
+TMUS;T-Mobile US, Inc.;Wireless telecommunications
+MU;Micron Technology, Inc.;Semiconductors
+GS;Goldman Sachs Group, Inc. (The);Investment banks/Brokers
+RTX;RTX Corporation;Aerospace & defense
+ABT;Abbott Laboratories;Medical specialties
+TMO;Thermo Fisher Scientific Inc;Medical specialties
+MCD;McDonald's Corporation;Restaurants
+CRM;Salesforce, Inc.;Packaged software
+PEP;PepsiCo, Inc.;Food: specialty/candy
+ISRG;Intuitive Surgical, Inc.;Medical specialties
+LIN;Linde plc;Chemicals: specialty
+SHOP;Shopify Inc.;Miscellaneous commercial services
+DIS;Walt Disney Company (The);Movies/Entertainment
+INTU;Intuit Inc.;Packaged software
+T;AT&T Inc.;Wireless telecommunications
+AMGN;Amgen Inc.;Biotechnology
+LRCX;Lam Research Corporation;Industrial machinery
+AMAT;Applied Materials, Inc.;Industrial machinery
+C;Citigroup, Inc.;Major banks
+APP;Applovin Corporation;Packaged software
+QCOM;QUALCOMM Incorporated;Semiconductors
+UBER;Uber Technologies, Inc.;Other transportation
+BX;Blackstone Inc.;Investment managers
+NEE;NextEra Energy, Inc.;Electric utilities
+VZ;Verizon Communications Inc.;Wireless telecommunications
+NOW;ServiceNow, Inc.;Packaged software
+TJX;TJX Companies, Inc. (The);Apparel/Footwear retail
+BLK;BlackRock, Inc.;Investment managers
+INTC;Intel Corporation;Semiconductors
+APH;Amphenol Corporation;Electronic components
+SCHW;Charles Schwab Corporation (The);Investment banks/Brokers
+DHR;Danaher Corporation;Medical specialties
+PDD;PDD Holdings Inc. Sponsored ADR Class A;Department stores
+GILD;Gilead Sciences, Inc.;Biotechnology
+ACN;Accenture plc;Information technology services
+BKNG;Booking Holdings Inc. Common Stock;Other consumer services
+GEV;GE Vernova Inc.;Electrical products
+SPGI;S&P Global Inc.;Financial publishing/Services
+ANET;Arista Networks, Inc.;Computer peripherals
+TXN;Texas Instruments Incorporated;Semiconductors
+KLAC;KLA Corporation;Semiconductors
+BSX;Boston Scientific Corporation;Medical specialties
+PFE;Pfizer, Inc.;Pharmaceuticals: major
+SYK;Stryker Corporation;Medical specialties
+ARM;ARM Holdings PLC Sponsored ADR;Semiconductors
+WELL;Welltower Inc.;Real estate investment trusts
+BA;Boeing Company (The);Aerospace & defense
+ADBE;Adobe Inc.;Packaged software
+UNP;Union Pacific Corporation;Railroads
+PGR;Progressive Corporation (The);Multi-line insurance
+COF;Capital One Financial Corporation;Major banks
+DE;Deere & Company;Trucks/Construction/Farm machinery
+LOW;Lowe's Companies, Inc.;Home improvement chains
+MDT;Medtronic plc.;Medical specialties
+ETN;Eaton Corporation, PLC;Electrical products
+PANW;Palo Alto Networks, Inc.;Packaged software
+CRWD;CrowdStrike Holdings, Inc.;Packaged software
+HON;Honeywell International Inc.;Aerospace & defense
+PLD;Prologis, Inc.;Real estate investment trusts
+SPOT;Spotify Technology S.A.;Internet software/Services
+CB;Chubb Limited;Property/Casualty insurance
+ADI;Analog Devices, Inc.;Semiconductors
+HCA;HCA Healthcare, Inc.;Hospital/Nursing management
+BN;Brookfield Corporation;Investment managers
+VRTX;Vertex Pharmaceuticals Incorporated;Pharmaceuticals: major
+COP;ConocoPhillips;Oil & gas production
+MCK;McKesson Corporation;Medical distributors
+LMT;Lockheed Martin Corporation;Aerospace & defense
+PH;Parker-Hannifin Corporation;Industrial machinery
+KKR;KKR & Co. Inc.;Investment managers
+CEG;Constellation Energy Corporation;Electric utilities
+IBKR;Interactive Brokers Group, Inc.;Investment banks/Brokers
+ADP;Automatic Data Processing, Inc.;Packaged software
+SCCO;Southern Copper Corporation;Other metals/Minerals
+CCZ;Comcast Holdings ZONES;Cable/Satellite TV
+CMCSA;Comcast Corporation;Cable/Satellite TV
+CVS;CVS Health Corporation;Drugstore chains
+MELI;MercadoLibre, Inc.;Internet retail
+CME;CME Group Inc.;Investment banks/Brokers
+SO;Southern Company (The);Electric utilities
+MO;Altria Group, Inc.;Tobacco
+SBUX;Starbucks Corporation;Restaurants
+HOOD;Robinhood Markets, Inc.;Investment banks/Brokers
+DUK;Duke Energy Corporation (Holding Company);Electric utilities
+BMY;Bristol-Myers Squibb Company;Pharmaceuticals: major
+NKE;Nike, Inc.;Apparel/Footwear
+GD;General Dynamics Corporation;Aerospace & defense
+NEM;Newmont Corporation;Precious metals
+TT;Trane Technologies plc;Industrial machinery
+MMM;3M Company;Industrial conglomerates
+MMC;Marsh & McLennan Companies, Inc.;Insurance brokers/Services
+ICE;Intercontinental Exchange Inc.;Investment banks/Brokers
+WM;Waste Management, Inc.;Environmental services
+MCO;Moody's Corporation;Financial publishing/Services
+ORLY;O'Reilly Automotive, Inc.;Specialty stores
+AMT;American Tower Corporation;Real estate investment trusts
+SHW;Sherwin-Williams Company (The);Industrial specialties
+DELL;Dell Technologies Inc.;Computer processing hardware
+CDNS;Cadence Design Systems, Inc.;Packaged software
+DASH;DoorDash, Inc.;Air freight/Couriers
+BAM;Brookfield Asset Management Inc;Investment managers
+NOC;Northrop Grumman Corporation;Aerospace & defense
+NTES;Netease Inc Sponsored ADR;Packaged software
+UPS;United Parcel Service, Inc.;Air freight/Couriers
+REGN;Regeneron Pharmaceuticals, Inc.;Pharmaceuticals: major
+MAR;Marriott International;Hotels/Resorts/Cruise lines
+HWM;Howmet Aerospace Inc.;Aerospace & defense
+SNOW;Snowflake Inc.;Packaged software
+NU;Nu Holdings Ltd.;Regional banks
+TDG;Transdigm Group Inc.;Aerospace & defense
+ECL;Ecolab Inc.;Chemicals: specialty
+APO;Apollo Global Management, Inc. (New);Investment managers
+CTAS;Cintas Corporation;Other consumer services
+AON;Aon plc;Insurance brokers/Services
+CI;The Cigna Group;Managed health care
+USB;U.S. Bancorp;Regional banks
+BK;The Bank of New York Mellon Corporation;Investment banks/Brokers
+EQIX;Equinix, Inc.;Real estate investment trusts
+CRH;CRH PLC;Construction materials
+MDLZ;Mondelez International, Inc.;Food: specialty/candy
+PNC;PNC Financial Services Group, Inc. (The);Major banks
+WMB;Williams Companies, Inc. (The);Oil & gas pipelines
+SNPS;Synopsys, Inc.;Packaged software
+EMR;Emerson Electric Company;Electronic equipment/Instruments
+RCL;Royal Caribbean Cruises Ltd.;Hotels/Resorts/Cruise lines
+ITW;Illinois Tool Works Inc.;Auto parts: OEM
+ELV;Elevance Health, Inc.;Managed health care
+COR;Cencora, Inc.;Medical distributors
+MNST;Monster Beverage Corporation;Beverages: non-alcoholic
+ABNB;Airbnb, Inc.;Hotels/Resorts/Cruise lines
+EPD;Enterprise Products Partners L.P.;Oil & gas pipelines
+NSC;Norfolk Southern Corporation;Railroads
+JCI;Johnson Controls International plc;Industrial machinery
+GLW;Corning Incorporated;Electronic components
+RSG;Republic Services, Inc.;Environmental services
+CVNA;Carvana Co.;Specialty stores
+MRVL;Marvell Technology, Inc.;Semiconductors
+GM;General Motors Company;Motor vehicles
+NET;Cloudflare, Inc.;Information technology services
+CL;Colgate-Palmolive Company;Household/Personal care
+CMI;Cummins Inc.;Auto parts: OEM
+AZO;AutoZone, Inc.;Specialty stores
+COIN;Coinbase Global, Inc.;Investment banks/Brokers
+TRV;The Travelers Companies, Inc.;Property/Casualty insurance
+AEP;American Electric Power Company, Inc.;Electric utilities
+AJG;Arthur J. Gallagher & Co.;Insurance brokers/Services
+TEL;TE Connectivity plc;Semiconductors
+PWR;Quanta Services, Inc.;Engineering & construction
+CSX;CSX Corporation;Railroads
+HLT;Hilton Worldwide Holdings Inc.;Hotels/Resorts/Cruise lines
+FDX;FedEx Corporation;Air freight/Couriers
+RBLX;Roblox Corporation;Packaged software
+ADSK;Autodesk, Inc.;Packaged software
+MSI;Motorola Solutions, Inc.;Telecommunications equipment
+VRT;Vertiv Holdings, LLC;Electronic production equipment
+SRE;DBA Sempra;Gas distributors
+WDAY;Workday, Inc.;Information technology services
+KMI;Kinder Morgan, Inc.;Oil & gas pipelines
+SPG;Simon Property Group, Inc.;Real estate investment trusts
+FTNT;Fortinet, Inc.;Information technology services
+TFC;Truist Financial Corporation;Regional banks
+AFL;AFLAC Incorporated;Multi-line insurance
+EOG;EOG Resources, Inc.;Integrated oil
+IDXX;IDEXX Laboratories, Inc.;Medical specialties
+ALNY;Alnylam Pharmaceuticals, Inc.;Pharmaceuticals: major
+WBD;Warner Bros. Discovery, Inc. - Series A;Cable/Satellite TV
+MPC;Marathon Petroleum Corporation;Oil refining/Marketing
+APD;Air Products and Chemicals, Inc.;Chemicals: specialty
+FCX;Freeport-McMoRan, Inc.;Other metals/Minerals
+VST;Vistra Corp.;Electric utilities
+ET;Energy Transfer LP;Oil & gas pipelines
+PYPL;PayPal Holdings, Inc.;Miscellaneous commercial services
+ROST;Ross Stores, Inc.;Apparel/Footwear retail
+ALL;Allstate Corporation (The);Multi-line insurance
+DDOG;Datadog, Inc.;Packaged software
+BDX;Becton, Dickinson and Company;Medical specialties
+MPLX;MPLX LP;Oil & gas pipelines
+PCAR;PACCAR Inc.;Trucks/Construction/Farm machinery
+SLB;SLB Limited;Contract drilling
+DLR;Digital Realty Trust, Inc.;Real estate investment trusts
+PSX;Phillips 66;Oil refining/Marketing
+ZTS;Zoetis Inc.;Pharmaceuticals: major
+VLO;Valero Energy Corporation;Oil refining/Marketing
+CHTR;Charter Communications, Inc.;Cable/Satellite TV
+D;Dominion Energy, Inc.;Electric utilities
+O;Realty Income Corporation;Real estate investment trusts
+LHX;L3Harris Technologies, Inc.;Aerospace & defense
+F;Ford Motor Company;Motor vehicles
+URI;United Rentals, Inc.;Finance/Rental/Leasing
+STX;Seagate Technology Holdings PLC;Computer peripherals
+NDAQ;Nasdaq, Inc.;Investment banks/Brokers
+EA;Electronic Arts Inc.;Packaged software
+CAH;Cardinal Health, Inc.;Medical distributors
+MET;MetLife, Inc.;Multi-line insurance
+EW;Edwards Lifesciences Corporation;Medical specialties
+RKT;Rocket Companies, Inc.;Finance/Rental/Leasing
+MSTR;Strategy Inc;Internet software/Services
+CPNG;Coupang, Inc.;Internet retail
+BKR;Baker Hughes Company;Contract drilling
+NXPI;NXP Semiconductors N.V.;Semiconductors
+ROP;Roper Technologies, Inc.;Packaged software
+WDC;Western Digital Corporation;Computer peripherals
+PSA;Public Storage;Real estate investment trusts
+XEL;Xcel Energy Inc.;Electric utilities
+CBRE;CBRE Group Inc;Real estate development
+FERG;Ferguson Enterprises Inc.;Wholesale distributors
+EXC;Exelon Corporation;Electric utilities
+FAST;Fastenal Company;Wholesale distributors
+GWW;W.W. Grainger, Inc.;Wholesale distributors
+AME;AMETEK, Inc.;Electrical products
+OKE;ONEOK, Inc.;Oil & gas pipelines
+CTVA;Corteva, Inc.;Agricultural commodities/Milling
+LNG;Cheniere Energy, Inc.;Oil & gas pipelines
+CARR;Carrier Global Corporation;Industrial machinery
+KR;Kroger Company (The);Food retail
+ZS;Zscaler, Inc.;Packaged software
+TTWO;Take-Two Interactive Software, Inc.;Packaged software
+LVS;Las Vegas Sands Corp.;Casinos/Gaming
+A;Agilent Technologies, Inc.;Medical specialties
+DHI;D.R. Horton, Inc.;Homebuilding
+ROK;Rockwell Automation, Inc.;Electrical products
+YUM;Yum! Brands, Inc.;Restaurants
+FICO;Fair Isaac Corporation;Financial publishing/Services
+INSM;Insmed Incorporated;Pharmaceuticals: major
+MSCI;MSCI Inc.;Data processing services
+FANG;Diamondback Energy, Inc.;Oil & gas production
+CCEP;Coca-Cola Europacific Partners plc;Beverages: non-alcoholic
+ETR;Entergy Corporation;Electric utilities
+CMG;Chipotle Mexican Grill, Inc.;Restaurants
+MPWR;Monolithic Power Systems, Inc.;Semiconductors
+AMP;Ameriprise Financial, Inc.;Investment banks/Brokers
+AXON;Axon Enterprise, Inc.;Aerospace & defense
+AIG;American International Group, Inc. New;Multi-line insurance
+JD;JD.com, Inc. Sponsored ADR Class A;Internet retail
+OXY;Occidental Petroleum Corporation;Integrated oil
+PEG;Public Service Enterprise Group Incorporated;Electric utilities
+AU;Anglogold Ashanti PLC;Precious metals
+PAYX;Paychex, Inc.;Data processing services
+VEEV;Veeva Systems Inc.;Packaged software
+TGT;Target Corporation;Specialty stores
+CPRT;Copart, Inc.;Specialty stores
+CCI;Crown Castle Inc.;Real estate investment trusts
+TEAM;Atlassian Corporation;Packaged software
+IQV;IQVIA Holdings, Inc.;Biotechnology
+DAL;Delta Air Lines, Inc.;Airlines
+VTR;Ventas, Inc.;Real estate investment trusts
+VMC;Vulcan Materials Company (Holding Company);Construction materials
+HIG;The Hartford Insurance Group, Inc.;Property/Casualty insurance
+BIDU;Baidu, Inc. Sponsored ADR Class A;Internet software/Services
+HSY;The Hershey Company;Food: specialty/candy
+KDP;Keurig Dr Pepper Inc.;Beverages: non-alcoholic
+XYZ;Block, Inc.;Miscellaneous commercial services
+PRU;Prudential Financial, Inc.;Life/Health insurance
+GRMN;Garmin Ltd.;Telecommunications equipment
+SYY;Sysco Corporation;Food distributors
+HEI;Heico Corporation;Aerospace & defense
+CTSH;Cognizant Technology Solutions Corporation;Information technology services
+TRGP;Targa Resources, Inc.;Gas distributors
+RMD;ResMed Inc.;Medical specialties
+EBAY;eBay Inc.;Internet retail
+MLM;Martin Marietta Materials, Inc.;Construction materials
+WEC;WEC Energy Group, Inc.;Electric utilities
+ED;Consolidated Edison, Inc.;Electric utilities
+CRWV;CoreWeave, Inc.;Packaged software
+EQT;EQT Corporation;Integrated oil
+KMB;Kimberly-Clark Corporation;Household/Personal care
+NUE;Nucor Corporation;Steel
+GEHC;GE HealthCare Technologies Inc.;Medical specialties
+RDDT;Reddit, Inc.;Internet software/Services
+TKO;TKO Group Holdings, Inc.;Movies/Entertainment
+CCJ;Cameco Corporation;Other metals/Minerals
+CCL;Carnival Corporation;Hotels/Resorts/Cruise lines
+PCG;Pacific Gas & Electric Co.;Electric utilities
+OTIS;Otis Worldwide Corporation;Engineering & construction
+WAB;Westinghouse Air Brake Technologies Corporation;Trucks/Construction/Farm machinery
+XYL;Xylem Inc.;Industrial machinery
+FLUT;Flutter Entertainment plc;Casinos/Gaming
+NTDTY;NTT DATA GROUP CORPORATION;Information technology services
+ACGL;Arch Capital Group Ltd.;Multi-line insurance
+FIS;Fidelity National Information Services, Inc.;Packaged software
+FISV;Fiserv, Inc.;Miscellaneous commercial services
+EL;Estee Lauder Companies, Inc. (The);Household/Personal care
+UI;Ubiquiti Inc.;Telecommunications equipment
+QSR;Restaurant Brands International Inc.;Restaurants
+ARES;Ares Management Corporation;Investment managers
+STT;State Street Corporation;Investment banks/Brokers
+KVUE;Kenvue Inc.;Household/Personal care
+NTRA;Natera, Inc.;Biotechnology
+SYM;Symbotic Inc.;Industrial machinery
+FIX;Comfort Systems USA, Inc.;Engineering & construction
+LEN;Lennar Corporation;Homebuilding
+VRSK;Verisk Analytics, Inc.;Data processing services
+IR;Ingersoll Rand Inc.;Industrial machinery
+VICI;VICI Properties Inc;Real estate investment trusts
+NRG;NRG Energy, Inc.;Electric utilities
+FWONA;Liberty Media Corporation - Series A Liberty Formula One;Internet software/Services
+RJF;Raymond James Financial, Inc.;Investment managers
+SOFI;SoFi Technologies, Inc.;Finance/Rental/Leasing
+LYV;Live Nation Entertainment, Inc.;Movies/Entertainment
+EXPE;Expedia Group, Inc.;Other consumer services
+WTW;Willis Towers Watson Public Limited Company;Insurance brokers/Services
+KHC;The Kraft Heinz Company;Food: major diversified
+UAL;United Airlines Holdings, Inc.;Airlines
+KEYS;Keysight Technologies Inc.;Electronic equipment/Instruments
+WRB;W.R. Berkley Corporation;Multi-line insurance
+MTD;Mettler-Toledo International, Inc.;Medical specialties
+SNDK;Sandisk Corporation;Computer peripherals
+ROL;Rollins, Inc.;Miscellaneous commercial services
+K;Kellanova;Food: specialty/candy
+MTB;M&T Bank Corporation;Regional banks
+CSGP;CoStar Group, Inc.;Internet software/Services
+ATO;Atmos Energy Corporation;Gas distributors
+VIK;Viking Holdings Ltd;Hotels/Resorts/Cruise lines
+AEE;Ameren Corporation;Electric utilities
+DTE;DTE Energy Company;Electric utilities
+ADM;Archer-Daniels-Midland Company;Agricultural commodities/Milling
+ODFL;Old Dominion Freight Line, Inc.;Trucking
+FITB;Fifth Third Bancorp;Regional banks
+TSCO;Tractor Supply Company;Specialty stores
+EXR;Extra Space Storage Inc.;Real estate investment trusts
+FOX;Fox Corporation;Broadcasting
+LPLA;LPL Financial Holdings Inc.;Investment banks/Brokers
+MCHP;Microchip Technology Incorporated;Semiconductors
+BRO;Brown & Brown, Inc.;Insurance brokers/Services
+EXE;Expand Energy Corporation;Integrated oil
+HUM;Humana Inc.;Managed health care
+FE;FirstEnergy Corp.;Electric utilities
+HPE;Hewlett Packard Enterprise Company;Computer processing hardware
+SYF;Synchrony Financial;Finance/Rental/Leasing
+FSLR;First Solar, Inc.;Semiconductors
+PPL;PPL Corporation;Electric utilities
+BR;Broadridge Financial Solutions, Inc.;Information technology services
+CBOE;Cboe Global Markets, Inc.;Investment banks/Brokers
+EFX;Equifax, Inc.;Financial publishing/Services
+MDB;MongoDB, Inc.;Packaged software
+EME;EMCOR Group, Inc.;Engineering & construction
+CINF;Cincinnati Financial Corporation;Multi-line insurance
+AWK;American Water Works Company, Inc.;Water utilities
+STE;STERIS plc (Ireland);Medical specialties
+CNP;CenterPoint Energy, Inc (Holding Co);Electric utilities
+GIS;General Mills, Inc.;Food: major diversified
+PSTG;Pure Storage, Inc.;Computer peripherals
+BIIB;Biogen Inc.;Pharmaceuticals: major
+MKL;Markel Group Inc.;Property/Casualty insurance
+AVB;AvalonBay Communities, Inc.;Real estate investment trusts
+CQP;Cheniere Energy Partners, LP;Gas distributors
+DOV;Dover Corporation;Industrial machinery
+TW;Tradeweb Markets Inc.;Investment banks/Brokers
+CIEN;Ciena Corporation;Telecommunications equipment
+IRM;Iron Mountain, Inc.;Real estate investment trusts
+HBAN;Huntington Bancshares Incorporated;Major banks
+TER;Teradyne, Inc.;Electronic production equipment
+VLTO;Veralto Corp;Industrial machinery
+DIDIY;DiDi Global Inc.;Other transportation
+ES;Eversource Energy (D/B/A);Electric utilities
+NTRS;Northern Trust Corporation;Investment managers
+ALAB;Astera Labs, Inc.;Semiconductors
+LDOS;Leidos Holdings, Inc.;Packaged software
+ZM;Zoom Communications, Inc.;Packaged software
+DXCM;DexCom, Inc.;Medical specialties
+WAT;Waters Corporation;Medical specialties
+PHM;PulteGroup, Inc.;Homebuilding
+VRSN;VeriSign, Inc.;Internet software/Services
+PODD;Insulet Corporation;Medical specialties
+STZ;Constellation Brands, Inc.;Beverages: alcoholic
+AER;AerCap Holdings N.V.;Finance/Rental/Leasing
+TDY;Teledyne Technologies Incorporated;Aerospace & defense
+ULTA;Ulta Beauty, Inc.;Specialty stores
+STLD;Steel Dynamics, Inc.;Steel
+CRDO;Credo Technology Group Holding Ltd;Information technology services
+EQR;Equity Residential;Real estate investment trusts
+FCNCA;First Citizens BancShares, Inc.;Regional banks
+BNTX;BioNTech SE Sponsored ADR;Biotechnology
+EIX;Edison International;Electric utilities
+CMS;CMS Energy Corporation;Electric utilities
+FUTU;Futu Holdings Ltd. Sponsored ADR Class A;Investment banks/Brokers
+RPRX;Royalty Pharma plc;Financial conglomerates
+CFG;Citizens Financial Group, Inc.;Major banks
+HUBB;Hubbell Inc;Electrical products
+HPQ;HP Inc.;Information technology services
+DG;Dollar General Corporation;Discount stores
+DVN;Devon Energy Corporation;Integrated oil
+CYBR;CyberArk Software Ltd.;Packaged software
+PPG;PPG Industries, Inc.;Industrial specialties
+LH;Labcorp Holdings Inc.;Medical/Nursing services
+L;Loews Corporation;Property/Casualty insurance
+COHR;Coherent Corp.;Semiconductors
+TROW;T. Rowe Price Group, Inc.;Investment managers
+OWL;Blue Owl Capital Inc.;Investment managers
+RF;Regions Financial Corporation;Major banks
+HAL;Halliburton Company;Oilfield services/Equipment
+WSM;Williams-Sonoma, Inc.;Specialty stores
+TPR;Tapestry, Inc.;Apparel/Footwear retail
+RKLB;Rocket Lab Corporation;Aerospace & defense
+NTAP;NetApp, Inc.;Computer peripherals
+BE;Bloom Energy Corporation;Electronic production equipment
+DGX;Quest Diagnostics Incorporated;Services to the health industry
+AFRM;Affirm Holdings, Inc.;Finance/Rental/Leasing
+TPG;TPG Inc.;Investment managers
+IOT;Samsara Inc.;Packaged software
+JBL;Jabil Inc.;Industrial machinery
+NVR;NVR, Inc.;Homebuilding
+CASY;Caseys General Stores, Inc.;Specialty stores
+LULU;lululemon athletica inc.;Apparel/Footwear
+SBAC;SBA Communications Corp. Class A;Real estate investment trusts
+DLTR;Dollar Tree, Inc.;Discount stores
+NBIS;Nebius Group N.V.;Packaged software
+PTC;PTC Inc.;Packaged software
+RL;Ralph Lauren Corporation;Apparel/Footwear
+TPL;Texas Pacific Land Corporation;Investment trusts/Mutual funds
+SSNC;SS&C Technologies Holdings, Inc.;Information technology services
+FLEX;Flex Ltd.;Electronic production equipment
+UTHR;United Therapeutics Corporation;Biotechnology
+NI;NiSource Inc;Gas distributors
+TYL;Tyler Technologies, Inc.;Data processing services
+DRI;Darden Restaurants, Inc.;Restaurants
+CHKP;Check Point Software Technologies Ltd.;Internet software/Services
+CPAY;Corpay, Inc.;Miscellaneous commercial services
+CHD;Church & Dwight Company, Inc.;Household/Personal care
+INCY;Incyte Corporation;Pharmaceuticals: major
+GRAB;Grab Holdings Limited;Air freight/Couriers
+TOST;Toast, Inc.;Packaged software
+IP;International Paper Company;Pulp & paper
+CW;Curtiss-Wright Corporation;Aerospace & defense
+SATS;EchoStar Corporation;Specialty telecommunications
+BAP;Credicorp Ltd.;Major banks
+CTRA;Coterra Energy Inc.;Integrated oil
+AMCR;Amcor plc;Containers/Packaging
+WST;West Pharmaceutical Services, Inc.;Medical specialties
+KEY;KeyCorp;Major banks
+TECK;Teck Resources Ltd;Other metals/Minerals
+SMCI;Super Micro Computer, Inc.;Computer processing hardware
+EXPD;Expeditors International of Washington, Inc.;Air freight/Couriers
+TTD;The Trade Desk, Inc.;Packaged software
+EXAS;Exact Sciences Corporation;Medical specialties
+ILMN;Illumina, Inc.;Medical specialties
+AS;Amer Sports, Inc.;Recreational products
+ASTS;AST SpaceMobile, Inc.;Specialty telecommunications
+GFS;GlobalFoundries Inc.;Semiconductors
+ON;ON Semiconductor Corporation;Semiconductors
+DKS;Dick's Sporting Goods Inc;Specialty stores
+BURL;Burlington Stores, Inc.;Apparel/Footwear retail
+CG;The Carlyle Group Inc.;Investment managers
+HUBS;HubSpot, Inc.;Packaged software
+TSN;Tyson Foods, Inc.;Food: meat/fish/dairy
+PFG;Principal Financial Group Inc;Investment managers
+SGI;Somnigroup International Inc.;Home furnishings
+TRMB;Trimble Inc.;Packaged software
+MKC;McCormick & Company, Incorporated;Food: specialty/candy
+BG;Bunge Limited;Agricultural commodities/Milling
+TWLO;Twilio Inc.;Packaged software
+ZBH;Zimmer Biomet Holdings, Inc.;Medical specialties
+CDW;CDW Corporation;Information technology services
+RIVN;Rivian Automotive, Inc.;Motor vehicles
+LITE;Lumentum Holdings Inc.;Electrical products
+GWRE;Guidewire Software, Inc.;Information technology services
+CNC;Centene Corporation;Managed health care
+CHRW;C.H. Robinson Worldwide, Inc.;Air freight/Couriers
+GPC;Genuine Parts Company;Wholesale distributors
+FTI;TechnipFMC plc;Oilfield services/Equipment
+PKG;Packaging Corporation of America;Containers/Packaging
+VG;Venture Global, Inc.;Oil & gas pipelines
