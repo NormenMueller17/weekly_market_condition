@@ -15,6 +15,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 import warnings
+from http_cache import try_enable_yfinance_cache, CacheConfig
 
 # Silence noisy third-party warnings (optional)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"yfinance\.scrapers\.fundamentals")
@@ -191,6 +192,17 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
                 pass
 
 def run():
+    cache_enabled = try_enable_yfinance_cache(
+    CacheConfig(
+        cache_name=".http_cache",
+        expire_after_seconds=24 * 60 * 60,  # 24h TTL
+        stale_if_error=True,
+        )
+    )
+    if cache_enabled:
+        print("[INFO] HTTP cache enabled for yfinance (.http_cache.sqlite)")
+
+    
     # 1) Daten laden
     universe = get_universe()
     weekly = load_weekly_history(universe, weeks=SETTINGS.lookback_weeks)
