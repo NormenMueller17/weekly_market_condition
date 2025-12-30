@@ -423,6 +423,14 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
 
             # ---- Minervini-Kriterien ----
             res = compute_minervini_template(df)
+            wdf = (
+                df[["Close"]]
+                .copy()
+                .resample("W-FRI")
+                .last()
+                .dropna()
+            )
+            res["MACD Bullish Cross (W)"] = _macd_bullish_cross_weekly(wdf)
 
             # ---- Phase 2 (Risk): Max Drawdown 5y / 10y (weekly data) ----
             #mdd_5y, mdd_10y = _compute_mdd_5y_10y_from_daily_df(df)
