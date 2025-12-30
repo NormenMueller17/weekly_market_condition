@@ -6,6 +6,44 @@ from detect_vcp import detect_vcp
 
 _VOLUME_BREAKOUT_SCORE = 1.3
 
+def _macd_bullish_cross_weekly(df: pd.DataFrame, price_col: str = "Close",
+                              fast: int = 12, slow: int = 26, signal: int = 9) -> bool:
+    """
+    Weekly MACD bullish cross:
+      - MACD crosses above Signal (prev <=, current >)
+      - only count if current MACD < 0 (early trend shift)
+    Uses EMA12/EMA26 and Signal = EMA(MACD, 9).
+    """
+    if df is None or df.empty or price_col not in df.columns:
+        return False
+
+    s = pd.to_numeric(df[price_col], errors="coerce").dropna()
+    if len(s) < (slow + signal + 2):  # conservative minimum
+        return False
+
+    ema_fast = s.ewm(span=fast, adjust=False).mean()
+    ema_slow = s.ewm(span=slow, adjust=False).mean()
+    macd = ema_fast - ema_slow
+    sig = macd.ewm(span=signal, adjust=False).mean()
+
+    # Need last two valid points
+    macd = macd.dropna()
+    sig = sig.dropna()
+    if len(macd) < 2 or len(sig) < 2:
+        return False
+
+    # Align indices just in case
+    aligned = pd.concat([macd.rename("macd"), sig.rename("sig")], axis=1).dropna()
+    if len(aligned) < 2:
+        return False
+
+    prev = aligned.iloc[-2]
+    cur = aligned.iloc[-1]
+
+    cross = (prev["macd"] <= prev["sig"]) and (cur["macd"] > cur["sig"])
+    early = (cur["macd"] < 0)
+
+    return bool(cross and early)
 
 def _max_drawdown_pct(close: pd.Series) -> float:
     """Return max drawdown in percent (negative number)."""
