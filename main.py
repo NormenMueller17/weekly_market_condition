@@ -382,6 +382,7 @@ def run():
         "RS-Trend ↑",
         "Vol-Breakout",
         "Close > Vorwoche",
+        "MACD Bullish Cross (W)",
         "VCP",
         "VCP Waves",
         "VCP Entry",
