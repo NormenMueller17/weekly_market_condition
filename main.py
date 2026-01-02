@@ -42,7 +42,6 @@ BOOLEAN_HEADERS = [
     "Close > Vorwoche",
         ]
 
-
 # -------------------------------------------------------------------
 # Excel fill colors (central, easy to adjust)
 # (These match typical Excel Conditional Formatting "Good/Neutral/Bad")
@@ -248,6 +247,17 @@ def run():
     # 4) Marktführer nach Minervini screenen
     leaders = screen_universe_minervini(universe, min_score=0)
     info_map = get_company_info_map_from_csv()
+    # NEU: Launchpad Quality Filter
+    # Strenger Filter: Score ≥90 UND Range <8%
+    if "Launchpad" in leaders.columns and "Launchpad Score" in leaders.columns:
+        leaders.loc[
+            (leaders["Launchpad"] == True) & 
+            ((leaders["Launchpad Score"] < 90) | (leaders.get("Launchpad Range (%)", 100) >= 8)),
+            "Launchpad"
+        ] = False
+        
+        launchpad_count = len(leaders[leaders["Launchpad"] == True])
+        print(f"[INFO] High-Quality Launchpads (Score >=80): {launchpad_count}")
      
     if not leaders.empty:
         # --- Sicherheitskopie (sehr wichtig für HTML-Formatierung später) ---
@@ -387,6 +397,11 @@ def run():
         "VCP Waves",
         "VCP Entry",
         "VCP Breakout Level",
+        "Launchpad",
+        "Launchpad Score",
+        "Launchpad Weeks",
+        "Launchpad Range (%)",
+        "Launchpad Pivot",
     ]
 
     existing_pref = [c for c in preferred_order if c in leaders.columns]
@@ -411,11 +426,11 @@ def run():
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
         "Revenue Wachstum TTM YoY (%)",
-        "ROE",
-        "Operating_Margin",
-        "FCF_Margin",
-        "Debt_to_Equity",
-        "EPS_Acceleration",
+        "ROE (%)",
+        "Operating Margin (%)",
+        "FCF Margin (%)",
+        "Debt to Equity",
+        "EPS Acceleration (pp)",
         "Close",
         "Close Vorwoche",
         "Veränderung in %",
@@ -426,6 +441,8 @@ def run():
         "VCP Entry",
         "VCP Breakout Level",
         "ATR / Price (%)",
+        "Launchpad Range (%)",
+        "Launchpad Pivot",
     ]:
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_2dec)
@@ -562,6 +579,8 @@ def run():
         "VCP Breakout Level",
         "Volume Score",
         "ATR / Price (%)",
+        "Launchpad Range (%)",
+        "Launchpad Pivot",
     ]
     
     # Ganze Zahlen (ohne Nachkommastellen)
@@ -597,6 +616,134 @@ def run():
 
     # --- Boolesche Spalten (Minervini-Kriterien) einfärben ---
     style_boolean_columns(ws)
+
+    # -------------------------------------------------------------------------
+    # LAUNCHPAD SCORE - Gradient Conditional Formatting (90+ = Excellent)
+    # -------------------------------------------------------------------------
+    # Verwendet _apply_cf_formula_fill analog zu Debt/EPS
+    
+    lp_score_col = _col_letter_by_header(ws, "Launchpad Score")
+    
+    if lp_score_col:
+        rng = f"{lp_score_col}2:{lp_score_col}{ws.max_row}"
+        c = lp_score_col
+        r = 2
+        
+        # NaN/Empty: Grau
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"NOT(ISNUMBER(${c}{r}))", 
+            CF_GRAY_RGB, 
+            stop=False
+        )
+        
+        # Score >= 90: Dunkelgrün (Excellent)
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"AND(ISNUMBER(${c}{r}),${c}{r}>=90)", 
+            "00B050",  # Dark Green
+            stop=True
+        )
+        
+        # Score 80-89: Hellgrün (Very Good)
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"AND(ISNUMBER(${c}{r}),${c}{r}>=80,${c}{r}<90)", 
+            CF_GREEN_RGB,
+            stop=True
+        )
+        
+        # Score 70-79: Gelb (OK)
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"AND(ISNUMBER(${c}{r}),${c}{r}>=70,${c}{r}<80)", 
+            CF_YELLOW_RGB,
+            stop=True
+        )
+        
+        # Score < 70: Grau (Weak)
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"AND(ISNUMBER(${c}{r}),${c}{r}<70)", 
+            CF_GRAY_RGB,
+            stop=True
+        )
+
+    # -------------------------------------------------------------------------
+    # LAUNCHPAD RANGE % - Tighter = Better (< 8% = Green)
+    # -------------------------------------------------------------------------
+    
+    lp_range_col = _col_letter_by_header(ws, "Launchpad Range (%)")
+    
+    if lp_range_col:
+        rng = f"{lp_range_col}2:{lp_range_col}{ws.max_row}"
+        c = lp_range_col
+        r = 2
+        
+        # NaN/Empty: Grau
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"NOT(ISNUMBER(${c}{r}))", 
+            CF_GRAY_RGB, 
+            stop=False
+        )
+        
+        # Range < 8%: Grün (Sehr tight)
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"AND(ISNUMBER(${c}{r}),${c}{r}<8)", 
+            CF_GREEN_RGB,
+            stop=True
+        )
+        
+        # Range 8-10%: Gelb (OK)
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"AND(ISNUMBER(${c}{r}),${c}{r}>=8,${c}{r}<10)", 
+            CF_YELLOW_RGB,
+            stop=True
+        )
+        
+        # Range >= 10%: Orange (Zu breit)
+        _apply_cf_formula_fill(
+            ws, rng, 
+            f"AND(ISNUMBER(${c}{r}),${c}{r}>=10)", 
+            CF_ORANGE_RGB,
+            stop=True
+        )
+
+    # -------------------------------------------------------------------------
+    # BONUS: GOLD BORDER für Stocks mit BEIDEN Patterns (VCP + Launchpad)
+    # -------------------------------------------------------------------------
+    # Highlightet Zeilen wo sowohl VCP=True als auch Launchpad=True
+    
+    vcp_col_idx = header_row.get("VCP")
+    lp_col_idx = header_row.get("Launchpad")
+    
+    if vcp_col_idx and lp_col_idx:
+        from openpyxl.styles import Border, Side
+        
+        gold_border = Border(
+            top=Side(style='thick', color='FF6600'),
+            bottom=Side(style='thick', color='FF6600')
+        )
+        
+        for row in range(2, ws.max_row + 1):
+            vcp_val = ws.cell(row=row, column=vcp_col_idx).value
+            lp_val = ws.cell(row=row, column=lp_col_idx).value
+            
+            # Beide Patterns erkannt
+            if vcp_val in (True, "True", "TRUE", 1) and lp_val in (True, "True", "TRUE", 1):
+                # Dickeren Border für die gesamte Zeile
+                for col in range(1, ws.max_column + 1):
+                    cell = ws.cell(row=row, column=col)
+                    cell.border = gold_border
+
+    # -------------------------------------------------------------------------
+    # END OF LAUNCHPAD FORMATTING
+    # -------------------------------------------------------------------------
+
+    
 
     # -------------------------------
     # Format Industries sheet

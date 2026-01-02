@@ -6,16 +6,39 @@ import math
 
 def detect_vcp(
     df: pd.DataFrame,
-    window: int = 180,
+    window: int = 60,
     n_segments: int = 4,
-    max_close_to_resistance: float = 0.05,   # war 0.03
-    min_contraction: float = 0.70,           # war 0.55
-    max_pullback: float = 0.30,              # war 0.15
+    max_close_to_resistance: float = 0.04,   # war 0.03
+    min_contraction: float = 0.65,           # war 0.55
+    max_pullback: float = 0.20,              # war 0.15
     ) -> dict:
     """
     Verbesserte VCP-Detektion (Variante B) nach Minervini.
-
     Rückgabe ist IMMER ein Dictionary, damit screener.py stabil bleibt.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        OHLCV-Daten (Close, High, Low, Volume)
+    window : int
+        Anzahl der Bars für die VCP-Base-Analyse
+    n_segments : int
+        Anzahl der Segmente für Pullback-/Kontraktions-Analyse
+    max_close_to_resistance : float
+        Max. Abstand des aktuellen Kurses zum Widerstand (5% = 0.05)
+    min_contraction : float
+        Min. Volatilitätskontraktion (70% = 0.70 bedeutet: letzte Spread max. 70% der ersten)
+    max_pullback : float
+        Max. erlaubter Pullback pro Segment (30% = 0.30)
+        
+    Returns
+    -------
+    dict
+        {
+            "VCP": bool,
+            "Waves": int,
+            "Entry_Signal": bool,
+            "Breakout_Level": float | None
     """
 
     # --- Standard-Result falls etwas schief geht ---
@@ -158,4 +181,5 @@ def detect_vcp(
     }
 
     return result
+
 

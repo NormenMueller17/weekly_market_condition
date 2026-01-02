@@ -39,3 +39,7 @@ jobs:
       - name: Run report
         run: |
           python main.py
+      - name: Run Launchpad Diagnostic
+        run: |
+          python launchpad_diagnostic.py
+        continue-on-error: true
