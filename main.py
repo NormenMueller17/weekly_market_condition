@@ -42,7 +42,6 @@ BOOLEAN_HEADERS = [
     "Close > Vorwoche",
         ]
 
-
 # -------------------------------------------------------------------
 # Excel fill colors (central, easy to adjust)
 # (These match typical Excel Conditional Formatting "Good/Neutral/Bad")
