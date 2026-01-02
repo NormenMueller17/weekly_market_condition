@@ -11,8 +11,6 @@ Usage:
 import pandas as pd
 import numpy as np
 from pathlib import Path
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def analyze_launchpad_results(excel_path: str = None):
@@ -242,53 +240,6 @@ def analyze_launchpad_results(excel_path: str = None):
     print("="*70)
 
 
-def export_launchpad_samples(excel_path: str = None, n_samples: int = 20):
-    """
-    Exportiert Sample-Charts für manuelle Review.
-    """
-    import yfinance as yf
-    
-    if excel_path is None:
-        artifacts_dir = Path("artifacts")
-        excel_files = list(artifacts_dir.glob("market_leaders_*.xlsx"))
-        if not excel_files:
-            print("❌ Keine Excel-Reports gefunden!")
-            return
-        excel_path = max(excel_files, key=lambda p: p.stat().st_mtime)
-    
-    df = pd.read_excel(excel_path, sheet_name="Leaders")
-    launchpad_stocks = df[df["Launchpad"] == True]
-    
-    if len(launchpad_stocks) == 0:
-        print("❌ Keine Launchpad-Stocks gefunden!")
-        return
-    
-    # Sample: Top Score + Random Mix
-    top_stocks = launchpad_stocks.nlargest(n_samples // 2, "Launchpad Score")
-    random_stocks = launchpad_stocks.sample(n=min(n_samples // 2, len(launchpad_stocks)))
-    samples = pd.concat([top_stocks, random_stocks]).drop_duplicates()
-    
-    print(f"\n📊 Exportiere {len(samples)} Sample-Charts...")
-    print("Ticker | Score | Weeks | Range %")
-    print("-" * 40)
-    
-    for idx, row in samples.iterrows():
-        ticker = row.get("Ticker", idx)
-        score = row.get("Launchpad Score", 0)
-        weeks = row.get("Launchpad Weeks", 0)
-        range_pct = row.get("Launchpad Range (%)", 0)
-        
-        print(f"{ticker:6s} | {score:5.1f} | {int(weeks):2d}W  | {range_pct:6.2f}%")
-    
-    print("\n💡 Manuelle Review:")
-    print("   1. Öffne TradingView / Chart-Software")
-    print("   2. Prüfe jeden Ticker visuell")
-    print("   3. Identifiziere Patterns die NICHT tight sind")
-    print("   4. Notiere False Positives")
-
-
 if __name__ == "__main__":
     print("\n🔍 LAUNCHPAD DIAGNOSTIC TOOL\n")
-    
-    # Option 1: Analyse
     analyze_launchpad_results()
