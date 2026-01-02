@@ -430,6 +430,8 @@ def run():
         "VCP Entry",
         "VCP Breakout Level",
         "ATR / Price (%)",
+        "Launchpad Range (%)",
+        "Launchpad Pivot",
     ]:
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_2dec)
@@ -566,6 +568,8 @@ def run():
         "VCP Breakout Level",
         "Volume Score",
         "ATR / Price (%)",
+        "Launchpad Range (%)",
+        "Launchpad Pivot",
     ]
     
     # Ganze Zahlen (ohne Nachkommastellen)
