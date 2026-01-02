@@ -6,6 +6,7 @@ from detect_vcp import detect_vcp
 
 _VOLUME_BREAKOUT_SCORE = 1.3
 
+
 def _macd_bullish_cross_weekly(df: pd.DataFrame, price_col: str = "Close",
                               fast: int = 12, slow: int = 26, signal: int = 9) -> bool:
     """
@@ -45,162 +46,81 @@ def _macd_bullish_cross_weekly(df: pd.DataFrame, price_col: str = "Close",
 
     return bool(cross and early)
 
-def _max_drawdown_pct(close: pd.Series) -> float:
-    """Return max drawdown in percent (negative number)."""
-    if close is None or len(close) < 5:
-        return float("nan")
-    c = pd.to_numeric(close, errors="coerce").dropna()
-    if c.empty:
-        return float("nan")
-    running_max = c.cummax()
-    dd = (c / running_max) - 1.0
-    mdd = dd.min()
-    return float(mdd * 100.0)
-
-def _max_drawdown_pct_from_close(close: pd.Series) -> float:
-    """Return max drawdown in percent (negative number)."""
-    if close is None:
-        return float("nan")
-    c = pd.to_numeric(close, errors="coerce").dropna()
-    if len(c) < 20:
-        return float("nan")
-    running_max = c.cummax()
-    dd = (c / running_max) - 1.0
-    return float(dd.min() * 100.0)
-
-def _compute_mdd_5y_10y_from_daily_df(df: pd.DataFrame) -> tuple[float, float]:
-    """
-    Compute max drawdown over last 5y and 10y based on daily closes already loaded.
-    Uses calendar time slicing.
-    """
-    if df is None or df.empty or "Close" not in df.columns:
-        return float("nan"), float("nan")
-
-    s = pd.to_numeric(df["Close"], errors="coerce").dropna()
-    if s.empty:
-        return float("nan"), float("nan")
-
-    if not isinstance(s.index, pd.DatetimeIndex):
-        s.index = pd.to_datetime(s.index)
-
-    last_dt = s.index.max()
-    s5 = s.loc[s.index >= (last_dt - pd.Timedelta(days=365 * 5))]
-    s10 = s.loc[s.index >= (last_dt - pd.Timedelta(days=365 * 10))]
-
-    mdd5 = _max_drawdown_pct_from_close(s5)
-    mdd10 = _max_drawdown_pct_from_close(s10)
-    return mdd5, mdd10
-    
-def _fetch_weekly_close_for_drawdown(ticker: str) -> pd.Series | None:
-    """Fetch weekly close series for drawdown metrics (lightweight vs daily)."""
-    try:
-        dfw = yf.download(
-            ticker,
-            period="10y",
-            interval="1wk",
-            auto_adjust=False,
-            actions=False,
-            repair=True,
-            progress=False,
-            threads=False,
-        )
-        if dfw is None or dfw.empty or "Close" not in dfw.columns:
-            return None
-        s = dfw["Close"].dropna()
-        if not isinstance(s.index, pd.DatetimeIndex):
-            s.index = pd.to_datetime(s.index)
-        return s.sort_index()
-    except Exception:
-        return None
-
-
-def _compute_mdd_5y_10y(ticker: str) -> tuple[float, float]:
-    """Compute max drawdown over last 5y and 10y from weekly closes."""
-    s = _fetch_weekly_close_for_drawdown(ticker)
-    if s is None or s.empty:
-        return float("nan"), float("nan")
-    # Weekly bars: ~52 per year
-    s10 = s.tail(52 * 10 + 5)
-    s5 = s.tail(52 * 5 + 5)
-    return _max_drawdown_pct(s5), _max_drawdown_pct(s10)
-
 
 def _compute_weighted_perf(close: pd.Series) -> float:
     """
     Berechnet eine gewichtete Performance aus 3M, 6M, 12M
     (ca. 63 / 126 / 252 Handelstage).
     Gibt np.nan zurück, falls zu wenig Historie vorhanden ist.
+    
+    Gewichtung: 12M=50%, 6M=30%, 3M=20%
     """
-    close = pd.to_numeric(close, errors="coerce").dropna()
-    if len(close) < 252 + 1:
-        return np.nan
+    if close is None or len(close) < 63:
+        return float("nan")
+    
+    c = pd.to_numeric(close, errors="coerce").dropna()
+    if len(c) < 63:
+        return float("nan")
+    
+    # Performance berechnen (Return in %)
+    def calc_return(periods):
+        if len(c) < periods + 1:
+            return None
+        return (c.iloc[-1] / c.iloc[-periods - 1] - 1.0) * 100.0
+    
+    perf_3m = calc_return(63)    # ~3 Monate
+    perf_6m = calc_return(126)   # ~6 Monate
+    perf_12m = calc_return(252)  # ~12 Monate
+    
+    # Gewichtete Performance
+    weights = []
+    perfs = []
+    
+    if perf_12m is not None:
+        weights.append(0.5)
+        perfs.append(perf_12m)
+    if perf_6m is not None:
+        weights.append(0.3)
+        perfs.append(perf_6m)
+    if perf_3m is not None:
+        weights.append(0.2)
+        perfs.append(perf_3m)
+    
+    if not weights:
+        return float("nan")
+    
+    # Normalisieren falls nicht alle Perioden verfügbar
+    total_weight = sum(weights)
+    weighted_perf = sum(p * w for p, w in zip(perfs, weights)) / total_weight
+    
+    return float(weighted_perf)
 
-    c_now = close.iloc[-1]
-
-    def _ret(days: int) -> float:
-        if len(close) <= days:
-            return np.nan
-        c_past = close.iloc[-days - 1]
-        if c_past <= 0:
-            return np.nan
-        return c_now / c_past - 1.0
-
-    r3  = _ret(63)   # ~ 3 Monate
-    r6  = _ret(126)  # ~ 6 Monate
-    r12 = _ret(252)  # ~ 12 Monate
-
-    # Falls zu viele NaN → keine sinnvolle Kennzahl
-    vals = [r for r in (r3, r6, r12) if not np.isnan(r)]
-    if len(vals) == 0:
-        return np.nan
-
-    # Gewichte wie oft in der Literatur zu O'Neil-Nachbauten verwendet
-    w3, w6, w12 = 0.1, 0.2, 0.7
-    # fehlende Zeiträume werden einfach mit 0 gewichtet, wenn NaN
-    r3  = 0.0 if np.isnan(r3)  else r3
-    r6  = 0.0 if np.isnan(r6)  else r6
-    r12 = 0.0 if np.isnan(r12) else r12
-
-    weighted = w3 * r3 + w6 * r6 + w12 * r12
-    return float(weighted)
 
 def _compute_rs_scores(weighted_perfs: dict[str, float]) -> dict[str, float]:
     """
-    Wandelt ein dict {ticker: weighted_perf} in O'Neil-ähnliche RS-Scores (1–99) um.
-    RS = Prozentrang der gewichteten Performance im Universum.
+    Compute O'Neil-style Relative Strength scores (1-99) from weighted performances.
+    
+    Args:
+        weighted_perfs: Dict mapping ticker -> weighted performance
+        
+    Returns:
+        Dict mapping ticker -> RS score (1-99)
     """
-    # Nur gültige Werte verwenden
-    items = [(t, p) for t, p in weighted_perfs.items() if p is not None and not np.isnan(p)]
-    if not items:
-        return {t: np.nan for t in weighted_perfs.keys()}
+    valid = {t: p for t, p in weighted_perfs.items() if not pd.isna(p)}
+    if not valid:
+        return {}
+    
+    s = pd.Series(valid)
+    ranked = s.rank(pct=True, method="average") * 98.0 + 1.0  # Scale to 1-99
+    
+    return ranked.to_dict()
 
-    # Nach Performance sortieren (schlechteste zuerst)
-    items_sorted = sorted(items, key=lambda x: x[1])
-    n = len(items_sorted)
-
-    rs_map: dict[str, float] = {}
-    for rank_idx, (ticker, perf) in enumerate(items_sorted):
-        # Prozentrang 0..100
-        if n == 1:
-            pct = 100.0
-        else:
-            pct = rank_idx / (n - 1) * 100.0
-        # O'Neil skaliert auf 1–99; wir nehmen gerundet
-        rs_val = round(pct)
-        # clamp auf 1..99
-        rs_val = max(1, min(99, rs_val))
-        rs_map[ticker] = float(rs_val)
-
-    # Ticker ohne gültige Performance bekommen NaN
-    for t in weighted_perfs.keys():
-        if t not in rs_map:
-            rs_map[t] = np.nan
-
-    return rs_map
 
 def compute_minervini_template(df: pd.DataFrame) -> dict:
-    """Berechnet die 7 Minervini-Kriterien für ein Kurs-DataFrame mit OHLCV-Daten."""
-
+    """
+    Prüft ein Ticker-DataFrame gegen die Minervini-Kriterien (wöchentlich).
+    Gibt ein Dictionary mit allen Metriken zurück.
+    """
     # Wochenaggregation
     dfw = df.resample("W-FRI").agg({
         "Close": "last",
@@ -221,7 +141,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     low = dfw["Low"]
     volume = dfw["Volume"]
 
-    # --- Neuer Block: Close aktuell / Vorwoche / Veränderung in % ---
+    # --- Close aktuell / Vorwoche / Veränderung in % ---
     if len(close_w) >= 2:
         close_weekly_now = float(close_w.iloc[-1])
         close_weekly_prev = float(close_w.iloc[-2])
@@ -236,7 +156,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     else:
         close_weekly_now = float("nan")
         close_weekly_prev = float("nan")
-        close_weekly_change_pct = float("nan")    
+        close_weekly_change_pct = float("nan")
 
     # Gleitende Durchschnitte
     sma10 = close.rolling(10).mean()
@@ -272,12 +192,6 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     sma13 = close.rolling(13).mean()
     rs_trend = len(sma13.dropna()) > 0 and close.iloc[-1] > sma13.iloc[-1]
 
-    # Volumen-Breakout (handelstagsbereinigt)
-    # Idee: Vergleiche das durchschnittliche Tagesvolumen der letzten Handelswoche
-    #       mit dem 20-Tage-Durchschnitt (ebenfalls Tagesdurchschnitt).
-    #
-    # Dadurch sind Wochen mit 3/4 Handelstagen (Feiertage) fair vergleichbar
-    # mit normalen 5-Tage-Wochen.
     # --- Volume (holiday-aware): compare avg DAILY volume of last trading week vs MA20 of DAILY volume ---
     daily_vol = pd.to_numeric(df["Volume"], errors="coerce").dropna() if "Volume" in df.columns else pd.Series(dtype=float)
     if len(daily_vol) >= 20:
@@ -298,9 +212,8 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         vol_breakout = False
         vol20_val = float("nan")
         vol_score = float("nan")
-    
+
     # --- ATR / Price (14) on DAILY data ---
-    # ATR is computed on daily bars and normalized by last close to get a comparable volatility metric.
     atr_pct = float("nan")
     try:
         dfd = df[["High", "Low", "Close"]].copy()
@@ -322,7 +235,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     except Exception:
         atr_pct = float("nan")
 
-# NEU: Wochenvergleich Close
+    # Wochenvergleich Close
     if len(close) >= 2:
         weekly_momentum = close.iloc[-1] > close.iloc[-2]
     else:
@@ -369,8 +282,8 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
     tickers = list(universe) if universe is not None else list(get_universe())
 
     results = {}
-    weighted_perfs: dict[str, float] = {}   # <-- NEU: für RS-Berechnung (aktuell)
-    daily_data: dict[str, pd.DataFrame] = {}  # speichert die Daily-DFs fürs 4W-Backtest
+    weighted_perfs: dict[str, float] = {}
+    daily_data: dict[str, pd.DataFrame] = {}
 
     for t in tickers:
         try:
@@ -410,18 +323,17 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
                 if "Volume" not in have:
                     df["Volume"] = 0
 
-            # ---- NEU: RS-Performance vorbereiten ----
+            # RS-Performance vorbereiten
             close_daily = pd.to_numeric(df["Close"], errors="coerce").dropna()
             weighted_perf = _compute_weighted_perf(close_daily)
             weighted_perfs[t] = weighted_perf
 
-            # store df for later 4-week snapshot calculation
-            # ensure datetimeindex
+            # Store df for later 4-week snapshot calculation
             if not isinstance(df.index, pd.DatetimeIndex):
                 df.index = pd.to_datetime(df.index)
             daily_data[t] = df.copy()
 
-            # ---- Minervini-Kriterien ----
+            # Minervini-Kriterien
             res = compute_minervini_template(df)
             wdf = (
                 df[["Close"]]
@@ -431,11 +343,6 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
                 .dropna()
             )
             res["MACD Bullish Cross (W)"] = _macd_bullish_cross_weekly(wdf)
-
-            # ---- Phase 2 (Risk): Max Drawdown 5y / 10y (weekly data) ----
-            #mdd_5y, mdd_10y = _compute_mdd_5y_10y_from_daily_df(df)
-            #res["Max Drawdown 5Y (%)"] = mdd_5y
-            #res["Max Drawdown 10Y (%)"] = mdd_10y
 
             results[t] = res
 
@@ -452,19 +359,17 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
     if "score" not in df_results.columns:
         return pd.DataFrame()
 
-    # ---- NEU: RS-Werte berechnen (aktuell) ----
+    # RS-Werte berechnen (aktuell)
     rs_map = _compute_rs_scores(weighted_perfs)
     df_results["RS (O'Neil)"] = df_results.index.map(lambda t: rs_map.get(t, np.nan))
 
-    # ---- NEU: weighted_perfs_4w berechnen (cut-off 4 Wochen vorher) ----
+    # Weighted_perfs_4w berechnen (cut-off 4 Wochen vorher)
     weighted_perfs_4w: dict[str, float] = {}
     for t, df in daily_data.items():
         try:
-            # letzter verfügbarer Tag
             last_dt = df.index.max()
             cutoff = last_dt - pd.Timedelta(weeks=4)
 
-            # slice up to cutoff (inclusive)
             df_cut = df.loc[:cutoff]
             if df_cut is None or df_cut.empty:
                 weighted_perfs_4w[t] = np.nan
@@ -476,20 +381,19 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
         except Exception:
             weighted_perfs_4w[t] = np.nan
 
-    # ---- RS-Scores für 4W ----
+    # RS-Scores für 4W
     rs_map_4w = _compute_rs_scores(weighted_perfs_4w)
 
-    # ---- ΔRS_4w berechnen und in df_results mappen ----
+    # ΔRS_4w berechnen und in df_results mappen
     def safe_get(mapping, key):
         v = mapping.get(key, np.nan)
         return np.nan if v is None else v
 
     df_results["RS_now"] = df_results.index.map(lambda t: safe_get(rs_map, t))
     df_results["RS_4w"] = df_results.index.map(lambda t: safe_get(rs_map_4w, t))
-    # delta: now - 4w
     df_results["RS_delta_4w"] = df_results["RS_now"] - df_results["RS_4w"]
 
-    # ---- Minervini Leader filtern ----
+    # Minervini Leader filtern
     leaders = df_results[
         ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
     ].sort_values("score", ascending=False)
