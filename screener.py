@@ -3,6 +3,7 @@ import yfinance as yf
 import numpy as np
 from data_sources import get_universe
 from detect_vcp import detect_vcp
+from launchpad_detection import detect_launchpad, compute_launchpad_score
 
 _VOLUME_BREAKOUT_SCORE = 1.3
 
@@ -134,13 +135,16 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     vcp_waves = vcp_result.get("Waves", 0)
     vcp_entry = vcp_result.get("Entry_Signal", False)
     vcp_breakout = vcp_result.get("Breakout_Level", None)
+  
+    launchpad_result = detect_launchpad(dfw)
+    launchpad_score = compute_launchpad_score(launchpad_result)
 
     close_w = dfw["Close"].dropna()
     close = dfw["Close"]
     high = dfw["High"]
     low = dfw["Low"]
     volume = dfw["Volume"]
-
+  
     # --- Close aktuell / Vorwoche / Veränderung in % ---
     if len(close_w) >= 2:
         close_weekly_now = float(close_w.iloc[-1])
@@ -270,6 +274,11 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "VCP Entry": vcp_entry,
         "VCP Breakout Level": vcp_breakout,
         "ATR / Price (%)": atr_pct,
+        "Launchpad": launchpad_result.get("Launchpad", False),
+        "Launchpad Score": launchpad_score,
+        "Launchpad Weeks": launchpad_result.get("Base_Weeks", 0),
+        "Launchpad Range (%)": launchpad_result.get("Range_Pct", float("nan")),
+        "Launchpad Pivot": launchpad_result.get("Pivot_Level", None),
     }
 
 
@@ -397,5 +406,6 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
     leaders = df_results[
         ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
     ].sort_values("score", ascending=False)
+
 
     return leaders
