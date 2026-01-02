@@ -248,10 +248,11 @@ def run():
     leaders = screen_universe_minervini(universe, min_score=0)
     info_map = get_company_info_map_from_csv()
     # NEU: Launchpad Quality Filter
+    # Strenger Filter: Score ≥90 UND Range <8%
     if "Launchpad" in leaders.columns and "Launchpad Score" in leaders.columns:
-        # Nur High-Quality Launchpads behalten (Score >= 80)
         leaders.loc[
-            (leaders["Launchpad"] == True) & (leaders["Launchpad Score"] < 80),
+            (leaders["Launchpad"] == True) & 
+            ((leaders["Launchpad Score"] < 90) | (leaders.get("Launchpad Range (%)", 100) >= 8)),
             "Launchpad"
         ] = False
         
