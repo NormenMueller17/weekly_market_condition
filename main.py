@@ -247,6 +247,16 @@ def run():
     # 4) Marktführer nach Minervini screenen
     leaders = screen_universe_minervini(universe, min_score=0)
     info_map = get_company_info_map_from_csv()
+    # NEU: Launchpad Quality Filter
+    if "Launchpad" in leaders.columns and "Launchpad Score" in leaders.columns:
+        # Nur High-Quality Launchpads behalten (Score >= 80)
+        leaders.loc[
+            (leaders["Launchpad"] == True) & (leaders["Launchpad Score"] < 80),
+            "Launchpad"
+        ] = False
+        
+        launchpad_count = len(leaders[leaders["Launchpad"] == True])
+        print(f"[INFO] High-Quality Launchpads (Score >=80): {launchpad_count}")
      
     if not leaders.empty:
         # --- Sicherheitskopie (sehr wichtig für HTML-Formatierung später) ---
