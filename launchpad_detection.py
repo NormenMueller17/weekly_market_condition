@@ -19,9 +19,9 @@ import math
 def detect_launchpad(
     df: pd.DataFrame,
     base_weeks_min: int = 3,
-    base_weeks_max: int = 7,
-    max_range_pct: float = 0.12,      # 12% max Range während Base
-    min_volume_contraction: float = 0.70,
+    base_weeks_max: int = 5,
+    max_range_pct: float = 0.10,      # 12% max Range während Base
+    min_volume_contraction: float = 0.60,
     require_above_ma50: bool = True,
 ) -> dict:
     """
