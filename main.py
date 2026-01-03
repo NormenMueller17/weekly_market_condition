@@ -191,15 +191,22 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
                 pass
 
 def run():
-    cache_enabled = try_enable_yfinance_cache(
-    CacheConfig(
-        cache_name=".http_cache",
-        expire_after_seconds=24 * 60 * 60,  # 24h TTL
-        stale_if_error=True,
-        )
-    )
+    #cache_enabled = try_enable_yfinance_cache(
+    #CacheConfig(
+    #    cache_name=".http_cache",
+    #    expire_after_seconds=24 * 60 * 60,  # 24h TTL
+    #    stale_if_error=True,
+    #    )
+    #)
+    #if cache_enabled:
+    #    print("[INFO] HTTP cache enabled for yfinance (.http_cache.sqlite)")
+
+    report_date = datetime.now().strftime("%Y-%m-%d")
+    # Cache aktivieren
+    cache_config = CacheConfig(cache_name=".yfinance_cache", expire_after_seconds=24*60*60)
+    cache_enabled = try_enable_yfinance_cache(cache_config)
     if cache_enabled:
-        print("[INFO] HTTP cache enabled for yfinance (.http_cache.sqlite)")
+        print("[CACHE] ✅ HTTP caching enabled (24h TTL)")
 
     
     # 1) Daten laden
