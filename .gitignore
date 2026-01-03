@@ -1,0 +1,26 @@
+ # YFinance HTTP Cache
+ .yfinance_cache.sqlite
+ .yfinance_cache.sqlite-shm
+ .yfinance_cache.sqlite-wal
+ 
+ # Python
+ __pycache__/
+ *.pyc
+ *.pyo
+ *.pyd
+ .Python
+ 
+ # Virtual Environment
+ venv/
+ env/
+ 
+ # IDE
+ .vscode/
+ .idea/
+ 
+ # OS
+ .DS_Store
+ 
+ # Project
+ artifacts/
+ .cache/
