@@ -40,7 +40,7 @@ def batch_fetch_quote_data(tickers) -> dict:
 
     # Yahoo Finance is very sensitive to parallel requests.
     # Keep concurrency low to avoid hard rate limiting.
-    MAX_WORKERS = 4
+    MAX_WORKERS = 5
     max_workers = min(MAX_WORKERS, max(1, len(tickers)))
 
     print(f"[INFO] Starte batch_fetch_quote_data für {len(tickers)} Ticker "
