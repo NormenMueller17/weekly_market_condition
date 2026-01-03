@@ -13,6 +13,10 @@ from datetime import datetime, timedelta
 from config import SETTINGS
 from rate_limit import RateLimiter
 
+TICKER_BLACKLIST = {
+    "BFHIV",  # Delisted - no price data
+    "C/PN",   # Invalid ticker format (slash not allowed)
+}
 TICKER_META: dict[str, dict] = {}
 _CSV_FILE = "202511_most_capitalized_500M_3.csv"
 #_CSV_FILE = "2025_11_Most_Capitalized_DE.csv"
@@ -252,9 +256,19 @@ def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
                 "industry": row.get("Industry"),
             }
 
-    #tickers = df["Symbol"].tolist()
     tickers = df["Symbol"].apply(_normalize_symbol)
+    
+    # Filter out invalid tickers and blacklisted symbols
     tickers = [t for t in dict.fromkeys(tickers) if t and t != "NAN"]
+    
+    # Apply blacklist
+    tickers_before = len(tickers)
+    tickers = [t for t in tickers if t not in TICKER_BLACKLIST]
+    filtered_count = tickers_before - len(tickers)
+    
+    if filtered_count > 0:
+        print(f"[UNIVERSE] Filtered out {filtered_count} blacklisted ticker(s): {TICKER_BLACKLIST}")
+    
     print(f"[UNIVERSE] {len(tickers)} Symbole aus {os.path.basename(path)} geladen.")
     return tickers
 
