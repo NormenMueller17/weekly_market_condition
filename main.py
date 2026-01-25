@@ -265,7 +265,9 @@ def run():
         
         launchpad_count = len(leaders[leaders["Launchpad"] == True])
         print(f"[INFO] High-Quality Launchpads (Score >=80): {launchpad_count}")
-     
+
+    industry_table = pd.DataFrame()
+    
     if not leaders.empty:
         # --- Sicherheitskopie (sehr wichtig für HTML-Formatierung später) ---
         leaders = leaders.copy()
@@ -353,7 +355,6 @@ def run():
         #       Industry Volume Score (Activity*Direction, Variant 2),
         #       and the composite Industry Score.
         # ------------------------------------------------------------
-        industry_table = pd.DataFrame()  # will be populated by compute_industry_scores
         try:
             leaders, industry_table = compute_industry_scores(leaders)
             if industry_table is not None and not industry_table.empty:
