@@ -13,11 +13,15 @@ from datetime import datetime, timedelta
 from config import SETTINGS
 from rate_limit import RateLimiter
 
+# --- Delisted / Invalid Ticker Blacklist ---
 TICKER_BLACKLIST = {
-    "BFHIV",  # Delisted - no price data
-    "C/PN",   # Invalid ticker format (slash not allowed)
+    "BFHIV",  "C/PN",   "VMEO",  "K",
+    "IPG",    "AKRO",   "SPR",   "HBI",
+    "SCS",    "GHLD",   "HSII",  "PRO",
+    "ODP",    "AMRK",   "BFHIV",  "C/PN", 
 }
 TICKER_META: dict[str, dict] = {}
+
 _CSV_FILE = "202511_most_capitalized_500M_3.csv"
 #_CSV_FILE = "2025_11_Most_Capitalized_DE.csv"
 #_CSV_FILE = "202511_most_capitalized_500M_3_mini.csv"
