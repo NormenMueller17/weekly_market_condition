@@ -265,13 +265,12 @@ def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
     # Filter out invalid tickers and blacklisted symbols
     tickers = [t for t in dict.fromkeys(tickers) if t and t != "NAN"]
     
-    # Apply blacklist
-    tickers_before = len(tickers)
+    # Blacklisted Ticker entfernen
+    before = len(tickers)
     tickers = [t for t in tickers if t not in TICKER_BLACKLIST]
-    filtered_count = tickers_before - len(tickers)
-    
-    if filtered_count > 0:
-        print(f"[UNIVERSE] Filtered out {filtered_count} blacklisted ticker(s): {TICKER_BLACKLIST}")
+    removed = before - len(tickers)
+    if removed > 0:
+        print(f"[UNIVERSE] {removed} blacklisted Ticker entfernt.")
     
     print(f"[UNIVERSE] {len(tickers)} Symbole aus {os.path.basename(path)} geladen.")
     return tickers
