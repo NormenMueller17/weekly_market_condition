@@ -69,6 +69,8 @@ def download_ohlcv_batched(
                     progress=False,
                     threads=threads,
                 )
+                if raw is not None and not raw.empty:
+                    raw = raw.copy()
                 break
             except Exception as e:
                 # Match your previous logging style closely
