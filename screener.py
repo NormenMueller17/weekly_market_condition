@@ -305,8 +305,10 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
                 repair=True,
                 progress=False,
                 threads=False,
-            )
-
+            )                        
+            if df is not None and not df.empty:
+                df = df.copy()
+              
             if df.empty:
                 print(f"{t}: keine Daten")
                 continue
@@ -409,3 +411,4 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
 
 
     return leaders
+
