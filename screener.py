@@ -302,7 +302,7 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
                 interval="1d",
                 auto_adjust=False,
                 actions=False,
-                repair=True,
+                repair=False,
                 progress=False,
                 threads=False,
             )                        
@@ -411,4 +411,5 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
 
 
     return leaders
+
 
