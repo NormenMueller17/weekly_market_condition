@@ -1,7 +1,7 @@
 yfinance>=0.2.54
 pandas>=2.0
 openpyxl>=3.1.2
-numpy
+numpy<2.0
 python-dotenv
 Jinja2
 matplotlib
