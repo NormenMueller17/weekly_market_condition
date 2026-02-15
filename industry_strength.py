@@ -51,7 +51,7 @@ def _download_recent_daily(ticker: str, period: str = "3mo") -> pd.DataFrame:
         interval="1d",
         auto_adjust=False,
         actions=False,
-        repair=True,
+        repair=False,
         progress=False,
         threads=False,
     )
