@@ -1,0 +1,49 @@
+{
+  "_comment": "Blueprint-Regelwerk für den Trade Signal Generator (signal_generator.py).",
+  "_doc": {
+    "min_score":          "Mindest-Minervini-Score (0-8). 8 = alle Kriterien erfüllt.",
+    "require_pattern":    "true = VCP Entry ODER Launchpad muss erkannt sein.",
+    "max_atr_pct":        "Max. ATR/Price in % (NATR-Filter). Blueprint-Empfehlung: < 8.",
+    "min_roe":            "Mindest-ROE in %. Blueprint: zweistellig.",
+    "min_op_margin":      "Mindest-Operating-Margin in %.",
+    "min_rev_growth":     "Mindest-Umsatzwachstum TTM YoY in %. 0 = positives Wachstum.",
+    "max_industry_rank":  "Nur Industrien mit Ranking <= diesem Wert. 0 = Filter deaktiviert.",
+    "max_stop_pct":       "Maximaler Stop-Loss in % vom Entry. Blueprint-Cap: 20.",
+    "max_positions":      "Anzahl Top-Picks (Gold-Badge in der Email).",
+    "account_equity":     "Kontogröße in EUR/USD für die Positionsgröße.",
+    "win_rate":           "Historische Trefferquote (0-1). Blueprint: 0.59.",
+    "win_loss_ratio":     "Gewinn/Verlust-Verhältnis. Blueprint: 4.04.",
+    "kelly_fraction":     "Fractional-Kelly-Faktor. 1/3 = konservativ. Blueprint: 0.33."
+  },
+
+  "filters": {
+    "min_score":          8,
+    "require_pattern":    true,
+    "max_atr_pct":        8.0,
+    "min_roe":            10.0,
+    "min_op_margin":      5.0,
+    "min_rev_growth":     0.0,
+    "max_industry_rank":  50,
+    "max_stop_pct":       20.0
+  },
+
+  "portfolio": {
+    "max_positions":      2,
+    "account_equity":     100000.0
+  },
+
+  "sizing": {
+    "win_rate":           0.59,
+    "win_loss_ratio":     4.04,
+    "kelly_fraction":     0.33
+  },
+
+  "ranking_weights": {
+    "_comment": "Müssen sich zu 1.0 addieren.",
+    "rs_score":           0.35,
+    "rs_delta":           0.20,
+    "pattern":            0.20,
+    "tightness":          0.15,
+    "industry":           0.10
+  }
+}

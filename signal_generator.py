@@ -31,28 +31,52 @@ from typing import Optional
 import pandas as pd
 
 
-# ── Default buy-rule thresholds ───────────────────────────────────────────────
-# All values can be overridden at call-time via the `rules` dict.
+# ── Load rules.json (next to this file) ──────────────────────────────────────
+# rules.json is the single source of truth for all thresholds and weights.
+# If the file is missing, hardcoded fallbacks below are used automatically.
 
+_RULES_PATH = Path(__file__).parent / "rules.json"
+
+def _load_rules_json() -> dict:
+    """Load and parse rules.json; return empty dict on any error."""
+    try:
+        return json.loads(_RULES_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+_RULES_JSON = _load_rules_json()
+
+# ── Default buy-rule thresholds (fallback if rules.json is missing) ───────────
+_f = _RULES_JSON.get("filters", {})
 DEFAULT_RULES: dict = {
-    "min_score":          8,     # all 8 Minervini criteria
-    "require_pattern":    True,  # VCP Entry OR Launchpad
-    "max_atr_pct":        8.0,   # NATR < 8  (Blueprint)
-    "min_roe":            10.0,  # double-digit ROE
-    "min_op_margin":      5.0,   # meaningful operating margin
-    "min_rev_growth":     0.0,   # any positive revenue growth
-    "max_industry_rank":  50,    # only top-50 ranked industries
-                                 # (lower rank number = stronger industry)
+    "min_score":          _f.get("min_score",         8),
+    "require_pattern":    _f.get("require_pattern",   True),
+    "max_atr_pct":        _f.get("max_atr_pct",       8.0),
+    "min_roe":            _f.get("min_roe",            10.0),
+    "min_op_margin":      _f.get("min_op_margin",      5.0),
+    "min_rev_growth":     _f.get("min_rev_growth",     0.0),
+    "max_industry_rank":  _f.get("max_industry_rank",  50),
+    "max_stop_pct":       _f.get("max_stop_pct",       20.0),
 }
 
-# ── Ranking weights (must sum to 1.0) ────────────────────────────────────────
+# ── Ranking weights (must sum to 1.0) ─────────────────────────────────────────
+_w = _RULES_JSON.get("ranking_weights", {})
 RANK_WEIGHTS = {
-    "rs_score":      0.35,   # relative strength vs. universe (most important)
-    "rs_delta":      0.20,   # RS acceleration over last 4 weeks
-    "pattern":       0.20,   # setup quality: VCP+Launchpad > Launchpad > VCP
-    "tightness":     0.15,   # tighter stop = better risk/reward
-    "industry":      0.10,   # industry tailwind (composite score)
+    "rs_score":  _w.get("rs_score",  0.35),
+    "rs_delta":  _w.get("rs_delta",  0.20),
+    "pattern":   _w.get("pattern",   0.20),
+    "tightness": _w.get("tightness", 0.15),
+    "industry":  _w.get("industry",  0.10),
 }
+
+# ── Portfolio / sizing defaults from rules.json ───────────────────────────────
+_p = _RULES_JSON.get("portfolio", {})
+_s = _RULES_JSON.get("sizing", {})
+_DEFAULT_MAX_POSITIONS  = _p.get("max_positions",   2)
+_DEFAULT_ACCOUNT_EQUITY = _p.get("account_equity",  100_000.0)
+_DEFAULT_WIN_RATE       = _s.get("win_rate",         0.59)
+_DEFAULT_WIN_LOSS_RATIO = _s.get("win_loss_ratio",   4.04)
+_DEFAULT_KELLY_FRACTION = _s.get("kelly_fraction",   0.33)
 
 
 # ── Market filter ─────────────────────────────────────────────────────────────
@@ -250,11 +274,11 @@ class TradeSignal:
 def generate_signals(
     leaders:         pd.DataFrame,
     market_bullish:  bool  = True,
-    account_equity:  float = 100_000.0,
-    win_rate:        float = 0.59,
-    win_loss_ratio:  float = 4.04,
-    kelly_fraction:  float = 0.33,
-    max_positions:   int   = 5,
+    account_equity:  float = _DEFAULT_ACCOUNT_EQUITY,
+    win_rate:        float = _DEFAULT_WIN_RATE,
+    win_loss_ratio:  float = _DEFAULT_WIN_LOSS_RATIO,
+    kelly_fraction:  float = _DEFAULT_KELLY_FRACTION,
+    max_positions:   int   = _DEFAULT_MAX_POSITIONS,
     rules:           dict  | None = None,
 ) -> tuple[list[TradeSignal], pd.DataFrame]:
     """Apply Blueprint buy rules to the leaders DataFrame.
