@@ -424,11 +424,13 @@ def run():
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
     signals, _signal_candidates = generate_signals(
         leaders,
-        market_bullish = market_bullish,
-        account_equity = SETTINGS.account_equity,
-        win_rate       = SETTINGS.win_rate,
-        win_loss_ratio = SETTINGS.win_loss_ratio,
-        kelly_fraction = SETTINGS.kelly_fraction,
+        market_bullish  = market_bullish,
+        account_equity  = SETTINGS.account_equity,
+        win_rate        = SETTINGS.win_rate,
+        win_loss_ratio  = SETTINGS.win_loss_ratio,
+        kelly_fraction  = SETTINGS.kelly_fraction,
+        max_positions   = SETTINGS.max_positions,
+        rules           = {"max_industry_rank": SETTINGS.max_industry_rank},
     )
     print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
 

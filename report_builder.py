@@ -130,7 +130,7 @@ HTML_TMPL = """
         {% if not market_bullish %}
         <strong>Marktfilter aktiv</strong>: S&amp;P 500 10W EMA &lt; 20W EMA.
         {% else %}
-        Kriterien (Score 8/8 + Muster + Fundamentals) nicht erfüllt.
+        Kriterien (Score 8/8 + Muster + Fundamentals + Industry Rank) nicht erfüllt.
         {% endif %}
     </p>
     {% else %}
@@ -138,10 +138,13 @@ HTML_TMPL = """
         <strong>Marktfilter:</strong> S&amp;P 500 10W EMA &gt; 20W EMA ✅ &nbsp;|&nbsp;
         <strong>Position:</strong> {{ (signals[0].position_size_pct * 100) | round(1) }}% des Kapitals
         ({{ "{:,.0f}".format(signals[0].position_value) }} €/$) &nbsp;|&nbsp;
-        <strong>Kelly-Fraction:</strong> 1/3
+        <strong>Kelly-Fraction:</strong> 1/3 &nbsp;|&nbsp;
+        <strong>Top Picks:</strong> Rang 1–{{ signals | selectattr("is_top_pick") | list | length }}
+        (gold hervorgehoben)
     </p>
     <table>
       <tr>
+        <th>Rang</th>
         <th class="left">Ticker</th>
         <th class="left">Unternehmen</th>
         <th class="left">Sektor / Branche</th>
@@ -153,6 +156,7 @@ HTML_TMPL = """
         <th>Dist 52W H</th>
         <th>RS</th>
         <th>ΔRS 4W</th>
+        <th>Industry<br>Rank</th>
         <th>ROE %</th>
         <th>Op.Margin</th>
         <th>Rev. Growth</th>
@@ -160,12 +164,25 @@ HTML_TMPL = """
         <th>Risiko / Equity</th>
       </tr>
       {% for s in signals %}
-      {% set stop_pct_display = (s.stop_loss_pct * 100) | round(1) %}
-      {% set risk_pct_display = (s.risk_on_equity_pct * 100) | round(2) %}
-      {% set risk_high = s.risk_on_equity_pct > 0.018 %}
-      <tr>
+      {% set stop_pct_display  = (s.stop_loss_pct * 100)      | round(1) %}
+      {% set risk_pct_display  = (s.risk_on_equity_pct * 100) | round(2) %}
+      {% set risk_high         = s.risk_on_equity_pct > 0.018 %}
+      {% set row_bg = "#fffbea" if s.is_top_pick else "transparent" %}
+      <tr style="background-color:{{ row_bg }}">
+        <td style="text-align:center;font-weight:bold">
+          {% if s.is_top_pick %}
+            <span style="background:#f5a623;color:white;padding:2px 7px;border-radius:10px;font-size:0.85em">
+              🏆 {{ s.rank }}
+            </span>
+          {% else %}
+            <span style="color:#aaa">{{ s.rank }}</span>
+          {% endif %}
+        </td>
         <td class="left">
-          <a href="{{ s.sa_link }}" target="_blank" style="font-weight:bold;color:#003d99">{{ s.ticker }}</a>
+          <a href="{{ s.sa_link }}" target="_blank"
+             style="font-weight:bold;color:{% if s.is_top_pick %}#b35900{% else %}#003d99{% endif %}">
+            {{ s.ticker }}
+          </a>
         </td>
         <td class="left">{{ s.company }}</td>
         <td class="left" style="font-size:0.85em;color:#555">{{ s.sector }}<br>{{ s.industry }}</td>
@@ -185,6 +202,9 @@ HTML_TMPL = """
           {%- else %}transparent{% endif %}">
           {{ '%.1f' % s.rs_delta_4w if s.rs_delta_4w is not none else '–' }}
         </td>
+        <td style="text-align:center">
+          {{ s.industry_ranking if s.industry_ranking is not none else '–' }}
+        </td>
         <td>{{ '%.1f' % s.roe if s.roe is not none else '–' }}%</td>
         <td>{{ '%.1f' % s.op_margin if s.op_margin is not none else '–' }}%</td>
         <td>{{ '%.1f' % s.revenue_growth if s.revenue_growth is not none else '–' }}%</td>
@@ -195,6 +215,12 @@ HTML_TMPL = """
       </tr>
       {% endfor %}
     </table>
+
+    <p style="font-size:0.82em;color:#777;margin-top:0.3em">
+      Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%).
+      🏆 = Top-{{ signals | selectattr("is_top_pick") | list | length }} Kaufkandidaten.
+      Rot = Risiko/Equity &gt; 1.8%.
+    </p>
     {% endif %}
 
     <h2>6) Marktführer nach Minervini (Score 8/8)</h2>
