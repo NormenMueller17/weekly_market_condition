@@ -30,6 +30,7 @@ from report_builder import (
     build_risk_rows,
     heuristic_verdict,
 )
+from signal_generator import generate_signals, is_market_bullish, save_signals_json
 
 BOOLEAN_HEADERS = [
     "SMA10W steigend",
@@ -220,8 +221,12 @@ def run():
 
     # 2) Kennzahlen berechnen
     breadth_df = compute_breadth(weekly)
-    idx_rows = build_index_rows(idx_data)
-    risk_rows = build_risk_rows(idx_data)
+    idx_rows   = build_index_rows(idx_data)
+    risk_rows  = build_risk_rows(idx_data)
+
+    # Market filter (Blueprint: S&P 500 10W EMA > 20W EMA)
+    market_bullish = is_market_bullish(idx_data.get("SPY"))
+    print(f"[SIGNALS] Marktfilter 10EMA>20EMA: {'✅ BULLISH' if market_bullish else '❌ BÄRISCH – keine Kaufsignale'}")
 
     # 3) Report erzeugen
     summary = heuristic_verdict(breadth_df, idx_rows)
@@ -413,8 +418,19 @@ def run():
     ]
 
     existing_pref = [c for c in preferred_order if c in leaders.columns]
-    remaining = [c for c in leaders.columns if c not in existing_pref]
-    leaders = leaders[existing_pref + remaining]
+    remaining     = [c for c in leaders.columns if c not in existing_pref]
+    leaders       = leaders[existing_pref + remaining]
+
+    # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
+    signals, _signal_candidates = generate_signals(
+        leaders,
+        market_bullish = market_bullish,
+        account_equity = SETTINGS.account_equity,
+        win_rate       = SETTINGS.win_rate,
+        win_loss_ratio = SETTINGS.win_loss_ratio,
+        kelly_fraction = SETTINGS.kelly_fraction,
+    )
+    print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
 
     # --- Formatierte Kopie NUR für HTML-Report ---
     leaders_html = leaders.copy()
@@ -463,18 +479,31 @@ def run():
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_int)
 
-    # HTML-Report bekommt die formatierte Kopie
-    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders_html)    
-    
+    # HTML-Report bekommt die formatierte Kopie + Signale
+    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders_html, signals=signals)
+
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
 
-    # leaders ist das Ergebnis deines screeners, inkl. Company/Industry-Spalten
-    leaders_out = leaders.reset_index().rename(columns={"index": "Ticker"})
-    
-    # 1) Zielpfad sicherstellen (eigener Output-Ordner ist sauberer)
+    # Ausgabe-Verzeichnis (immer anlegen – wird für JSON + ggf. Excel gebraucht)
     out_dir = Path("artifacts")
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Signale immer als JSON speichern (maschinenlesbar für Trade-Executor)
+    signals_json = save_signals_json(signals, out_dir / f"signals_{report_date}.json")
+    print(f"[SIGNALS] Signale gespeichert → {signals_json}")
+
+    # E-Mail Betreff zeigt Signalanzahl für schnellen Montags-Check
+    signal_count = len(signals)
+    email_subject = f"Weekly US Market Report — {signal_count} Kaufsignal{'e' if signal_count != 1 else ''}"
+
+    # ── Früher Rücksprung wenn Excel-Export deaktiviert (Standard) ────────────
+    if not SETTINGS.export_excel:
+        send_email(html, subject_suffix=email_subject, attachments=None)
+        return
+
+    # ── Ab hier: Excel-Export (nur wenn EXPORT_EXCEL=true) ───────────────────
+    leaders_out = leaders.reset_index().rename(columns={"index": "Ticker"})
     out_path = out_dir / f"market_leaders_{report_date}.xlsx"
     
     # 2) Immer schreiben – auch wenn leer (dann gibt's wenigstens Header)
@@ -791,7 +820,7 @@ def run():
     wb.save(out_path)
     
     # 4) Beim Mailversand denselben Pfad anhängen
-    send_email(html, subject_suffix="Weekly US Market Report", attachments=[str(out_path)])
+    send_email(html, subject_suffix=email_subject, attachments=[str(out_path)])
 
 if __name__ == "__main__":
     run()

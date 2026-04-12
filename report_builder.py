@@ -122,17 +122,92 @@ HTML_TMPL = """
     <h2>4) Fazit</h2>
     <p>{{ summary }}</p>
 
-    <h2>5) Marktführer nach Minervini</h2>
-    
-    {% if leaders.empty %}
-    <p>Keine Aktien erfüllen die Kriterien.</p>
+    <h2>5) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
+
+    {% if not signals %}
+    <p style="color:#888">
+        Keine Kaufsignale diese Woche —
+        {% if not market_bullish %}
+        <strong>Marktfilter aktiv</strong>: S&amp;P 500 10W EMA &lt; 20W EMA.
+        {% else %}
+        Kriterien (Score 8/8 + Muster + Fundamentals) nicht erfüllt.
+        {% endif %}
+    </p>
     {% else %}
-    
+    <p style="margin-bottom:0.5em">
+        <strong>Marktfilter:</strong> S&amp;P 500 10W EMA &gt; 20W EMA ✅ &nbsp;|&nbsp;
+        <strong>Position:</strong> {{ (signals[0].position_size_pct * 100) | round(1) }}% des Kapitals
+        ({{ "{:,.0f}".format(signals[0].position_value) }} €/$) &nbsp;|&nbsp;
+        <strong>Kelly-Fraction:</strong> 1/3
+    </p>
     <table>
       <tr>
         <th class="left">Ticker</th>
         <th class="left">Unternehmen</th>
-        <th class="left">SA</th> 
+        <th class="left">Sektor / Branche</th>
+        <th class="left">Muster</th>
+        <th>Entry</th>
+        <th>Stop-Loss</th>
+        <th>Stop %</th>
+        <th>BO-Level</th>
+        <th>Dist 52W H</th>
+        <th>RS</th>
+        <th>ΔRS 4W</th>
+        <th>ROE %</th>
+        <th>Op.Margin</th>
+        <th>Rev. Growth</th>
+        <th>Position</th>
+        <th>Risiko / Equity</th>
+      </tr>
+      {% for s in signals %}
+      {% set stop_pct_display = (s.stop_loss_pct * 100) | round(1) %}
+      {% set risk_pct_display = (s.risk_on_equity_pct * 100) | round(2) %}
+      {% set risk_high = s.risk_on_equity_pct > 0.018 %}
+      <tr>
+        <td class="left">
+          <a href="{{ s.sa_link }}" target="_blank" style="font-weight:bold;color:#003d99">{{ s.ticker }}</a>
+        </td>
+        <td class="left">{{ s.company }}</td>
+        <td class="left" style="font-size:0.85em;color:#555">{{ s.sector }}<br>{{ s.industry }}</td>
+        <td class="left" style="font-weight:bold;background-color:
+          {%- if '+' in s.pattern %}#fffde7
+          {%- elif s.pattern == 'VCP' %}#e8f5e9
+          {%- else %}#e3f2fd{% endif %}">{{ s.pattern }}</td>
+        <td><strong>{{ '%.2f' % s.entry_price }}</strong></td>
+        <td style="background-color:#fff3e0">{{ '%.2f' % s.stop_loss }}</td>
+        <td style="background-color:#fff3e0">{{ stop_pct_display }}%</td>
+        <td>{{ '%.2f' % s.breakout_level if s.breakout_level else '–' }}</td>
+        <td>{{ '%.1f' % s.dist_52w_high_pct if s.dist_52w_high_pct is not none else '–' }}%</td>
+        <td><strong>{{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}</strong></td>
+        <td style="background-color:
+          {%- if s.rs_delta_4w and s.rs_delta_4w > 0 %}{{ COLOR_POSITIVE }}
+          {%- elif s.rs_delta_4w and s.rs_delta_4w < 0 %}{{ COLOR_NEGATIVE }}
+          {%- else %}transparent{% endif %}">
+          {{ '%.1f' % s.rs_delta_4w if s.rs_delta_4w is not none else '–' }}
+        </td>
+        <td>{{ '%.1f' % s.roe if s.roe is not none else '–' }}%</td>
+        <td>{{ '%.1f' % s.op_margin if s.op_margin is not none else '–' }}%</td>
+        <td>{{ '%.1f' % s.revenue_growth if s.revenue_growth is not none else '–' }}%</td>
+        <td>{{ (s.position_size_pct * 100) | round(1) }}%</td>
+        <td style="{% if risk_high %}background-color:#ffcccc;font-weight:bold{% endif %}">
+          {{ risk_pct_display }}%
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
+    <h2>6) Marktführer nach Minervini (Score 8/8)</h2>
+
+    {% if leaders.empty %}
+    <p>Keine Aktien erfüllen alle 8 Minervini-Kriterien.</p>
+    {% else %}
+
+    <table>
+      <tr>
+        <th class="left">Ticker</th>
+        <th class="left">Unternehmen</th>
+        <th class="left">SA</th>
         <th class="left">Branche</th>
         <th>Industry Ranking</th>
         <th>Industry Score</th>
@@ -144,19 +219,17 @@ HTML_TMPL = """
         <th>Revenue Wachstum<br>TTM YoY (%)</th>
         <th>Close</th>
         <th>Close Vorwoche</th>
-        <th>Veränderung in %</th>        
+        <th>Veränderung in %</th>
         <th>52W High</th>
         <th>Dist<br>52W High (%)</th>
         <th>Ø-Vol<br>20W</th>
         <th>Vol Score</th>
         <th>VCP</th>
-        <!--<th>Waves</th>-->
-        <!--<th>Entry</th>-->
         <th>BO-Level</th>
+        <th>Launchpad</th>
       </tr>
-    
+
       {% for idx, row in leaders.iterrows() %}
-      {% set base_ticker = idx.split('.')[0] %}
       <tr>
         <td class="left">{{ idx }}</td>
         <td class="left">{{ row["Company"] }}</td>
@@ -172,23 +245,22 @@ HTML_TMPL = """
         <td>{{ row["Revenue Wachstum TTM YoY (%)"] }}</td>
         <td>{{ row["Close"] }}</td>
         <td>{{ row["Close Vorwoche"] }}</td>
-        <td>{{ row["Veränderung in %"] }}</td>        
+        <td>{{ row["Veränderung in %"] }}</td>
         <td>{{ row["52W High"] }}</td>
         <td>{{ row["Dist to 52W High (%)"] }}</td>
         <td>{{ row["Ø-Volume 20T"] }}</td>
         <td>{{ row["Volume Score"] }}</td>
         <td>{{ row["VCP"] }}</td>
-        <!--<td>{{ row["VCP Waves"] }}</td>-->
-        <!--<td>{{ row["VCP Entry"] }}</td>-->
         <td>{{ row["VCP Breakout Level"] }}</td>
+        <td>{{ row["Launchpad"] }}</td>
       </tr>
       {% endfor %}
-    
+
     </table>
-    
+
     {% endif %}
 
-    
+
 </body>
 </html>
 """
@@ -262,22 +334,34 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
         
     return rows
 
-def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders):
+def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
+                      signals=None):
+    """Build the weekly HTML email.
+
+    Parameters
+    ----------
+    signals : list[TradeSignal] | None
+        Buy signals produced by signal_generator.generate_signals().
+        Shown in Section 5 of the email; pass None or [] for "no signals".
+    """
+    signals = signals or []
+
+    # Derive market_bullish from the signal list:
+    # if the market filter was active, generate_signals returns an empty list.
+    # We surface this to the template so it can show the right "why no signals" text.
+    market_bullish = True   # assume bullish; generator already filtered if bearish
+
     # 1) Divergenzen & Breadth-Snapshots
-    divergences = build_divergence_text(idx)    
+    divergences  = build_divergence_text(idx)
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
 
-    # 2) Kopie für HTML-Rendering
+    # 2) Leaders: nur Score 8/8 im Mail-Report
     leaders_html = leaders.copy()
-
-    # --- NEU: nur Ticker mit 8/8 Score im MAIL-Report anzeigen ---
     if "score" in leaders_html.columns:
-        # Sicherheitshalber in numerisch umwandeln
-        leaders_html = leaders_html.copy()
         leaders_html["score_num"] = pd.to_numeric(leaders_html["score"], errors="coerce")
         leaders_html = leaders_html[leaders_html["score_num"] == 8].drop(columns=["score_num"])
 
-    # 3) SA-Spalte in HTML-Buttons umwandeln (falls vorhanden)
+    # 3) SA-Spalte in HTML-Buttons umwandeln
     if "SA" in leaders_html.columns:
         def _sa_button(url: str) -> str:
             if not isinstance(url, str) or not url:
@@ -291,20 +375,22 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
             )
         leaders_html["SA"] = leaders_html["SA"].apply(_sa_button)
 
-    # 4) Template rendern – HTML sieht nur die gefilterten Leaders
+    # 4) Template rendern
     tmpl = Template(HTML_TMPL)
     html = tmpl.render(
-        breadth=breadth,
-        breadth_snap=breadth_snap,
-        idx=idx,
-        risk=risk,
-        summary=summary,
-        report_date=report_date,
-        leaders=leaders_html,
-        COLOR_POSITIVE=COLOR_POSITIVE,
-        COLOR_NEGATIVE=COLOR_NEGATIVE,
-        divergences=divergences,
-        )
+        breadth        = breadth,
+        breadth_snap   = breadth_snap,
+        idx            = idx,
+        risk           = risk,
+        summary        = summary,
+        report_date    = report_date,
+        leaders        = leaders_html,
+        signals        = signals,
+        market_bullish = market_bullish,
+        COLOR_POSITIVE = COLOR_POSITIVE,
+        COLOR_NEGATIVE = COLOR_NEGATIVE,
+        divergences    = divergences,
+    )
     return html
 
 def build_index_rows(idx_data: Dict[str, pd.DataFrame]) -> List[Tuple[str, dict]]:
