@@ -24,3 +24,6 @@
  # Project
  artifacts/
  .cache/
+
+ # Secrets — never commit the real .env
+ .env
