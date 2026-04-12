@@ -1,4 +1,5 @@
 # data_sources.py
+import io
 import os
 import time
 import json
@@ -12,6 +13,24 @@ from datetime import datetime, timedelta
 
 from config import SETTINGS
 from rate_limit import RateLimiter
+
+# ── iShares ETF holdings (universe source) ────────────────────────────────────
+# BlackRock publishes daily holdings CSVs — no API key required.
+# IWV = Russell 3000 (largest ~3000 US stocks)
+# IWB = Russell 1000 (largest ~1000 US stocks)
+# IWM = Russell 2000 (small-cap ~2000 US stocks)
+_ISHARES_URLS: dict[str, str] = {
+    "IWV": "https://www.ishares.com/us/products/239714/ishares-russell-3000-etf"
+           "/1467271812596.ajax?fileType=csv&fileName=IWV_holdings&dataType=fund",
+    "IWB": "https://www.ishares.com/us/products/239707/ishares-russell-1000-etf"
+           "/1467271812596.ajax?fileType=csv&fileName=IWB_holdings&dataType=fund",
+    "IWM": "https://www.ishares.com/us/products/239710/ishares-russell-2000-etf"
+           "/1467271812596.ajax?fileType=csv&fileName=IWM_holdings&dataType=fund",
+}
+
+# Russell indices rebalance once a year (June).
+# 30-day cache is safe: avoids unnecessary downloads while staying current.
+_UNIVERSE_CACHE_TTL_DAYS = 30
 
 # --- Delisted / Invalid Ticker Blacklist ---
 TICKER_BLACKLIST = {
@@ -126,11 +145,22 @@ def get_company_info_map_from_csv(path: str = _CSV_FILE) -> dict[str, dict[str, 
 
     Erkennt automatisch, ob die Namensspalte 'Company' oder 'Description' heißt.
     Ticker werden identisch zu get_universe_from_csv normalisiert.
+
+    Gibt ein leeres Dict zurück wenn die Datei nicht existiert (z.B. bei
+    iShares-Modus) — Company/Industry werden dann von yfinance geliefert.
     """
-    # -> robustes Einlesen (unterstützt ',', ';', '\t', '|', on_bad_lines='skip')
-    df = _read_universe_csv_smart(path)
+    try:
+        df = _read_universe_csv_smart(path)
+    except FileNotFoundError:
+        print(f"[INFO MAP] CSV nicht gefunden ({os.path.basename(path)}) — "
+              "Company/Industry werden von yfinance bezogen.")
+        return {}
+    except Exception as exc:
+        print(f"[WARN] get_company_info_map_from_csv: {exc}")
+        return {}
     if df is None or df.empty:
         return {}
+
 
     # Spalten wie im Smart-Loader vereinheitlichen: Symbol, Company?, Industry?
     # Falls keine Company/Industry vorliegen, mit 'n/a' auffüllen.
@@ -277,8 +307,126 @@ def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
     print(f"[UNIVERSE] {len(tickers)} Symbole aus {os.path.basename(path)} geladen.")
     return tickers
 
+def fetch_universe_ishares(
+    etf:       str = "IWV",
+    top_n:     int = 2000,
+    cache_dir: str | None = None,
+) -> list[str]:
+    """Download iShares ETF holdings and return the top-N equity tickers.
+
+    Results are cached locally for 30 days — Russell indices only rebalance
+    once a year, so monthly refresh is more than sufficient.
+    Falls back to the local CSV if the download fails for any reason.
+
+    Parameters
+    ----------
+    etf    : "IWV" (Russell 3000 → largest ~3 000 US stocks, default)
+             "IWB" (Russell 1000 → largest ~1 000 US stocks)
+             "IWM" (Russell 2000 → small-caps)
+    top_n  : keep only the top-N tickers sorted by ETF weight (≈ market-cap rank)
+    """
+    _dir = Path(cache_dir or SETTINGS.cache_dir)
+    _dir.mkdir(parents=True, exist_ok=True)
+    cache_file = _dir / f"universe_{etf.upper()}_{top_n}.json"
+
+    # ── Try cache first ───────────────────────────────────────────────────────
+    if cache_file.exists():
+        try:
+            cached   = json.loads(cache_file.read_text(encoding="utf-8"))
+            age_days = (datetime.utcnow() - datetime.fromisoformat(cached["fetched"])).days
+            if age_days < _UNIVERSE_CACHE_TTL_DAYS:
+                tickers = cached["tickers"]
+                print(f"[UNIVERSE] {len(tickers)} Ticker aus Cache "
+                      f"(iShares {etf}, Alter: {age_days}d / TTL: {_UNIVERSE_CACHE_TTL_DAYS}d).")
+                return tickers
+        except Exception:
+            pass   # corrupt cache → re-download
+
+    # ── Download from BlackRock ───────────────────────────────────────────────
+    url = _ISHARES_URLS.get(etf.upper())
+    if not url:
+        raise ValueError(
+            f"Unbekanntes iShares-ETF: '{etf}'. "
+            f"Verfügbar: {list(_ISHARES_URLS.keys())}"
+        )
+
+    print(f"[UNIVERSE] Lade iShares {etf} Holdings von BlackRock ...")
+    try:
+        resp = requests.get(
+            url, timeout=30,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; market-screener/1.0)"},
+        )
+        resp.raise_for_status()
+
+        # ── Parse the iShares CSV ─────────────────────────────────────────────
+        # The file contains a few metadata rows before the actual table.
+        # We find the real header by looking for a line that has both
+        # "Ticker" and "Name" columns.
+        lines      = resp.text.splitlines()
+        header_idx = next(
+            (i for i, ln in enumerate(lines) if "Ticker" in ln and "Name" in ln),
+            None,
+        )
+        if header_idx is None:
+            raise ValueError("Header-Zeile ('Ticker', 'Name') nicht in iShares CSV gefunden.")
+
+        df = pd.read_csv(io.StringIO("\n".join(lines[header_idx:])), dtype=str)
+        df.columns = df.columns.str.strip()
+
+        # Keep only equity rows with a real ticker symbol
+        df = df[df["Asset Class"].str.strip().str.lower() == "equity"].copy()
+        df["Ticker"] = df["Ticker"].str.strip().str.upper()
+        df = df[df["Ticker"].notna() & (df["Ticker"] != "") & (df["Ticker"] != "-")]
+
+        # Sort by ETF weight (largest weight ≈ largest market cap) → take top_n
+        if "Weight (%)" in df.columns:
+            df["_w"] = pd.to_numeric(
+                df["Weight (%)"].str.replace(",", "", regex=False), errors="coerce"
+            ).fillna(0)
+            df = df.sort_values("_w", ascending=False)
+
+        tickers = [_normalize_symbol(t) for t in df["Ticker"].tolist()]
+        tickers = list(dict.fromkeys(          # deduplicate, preserve order
+            t for t in tickers
+            if t and t not in TICKER_BLACKLIST
+        ))[:top_n]
+
+        # ── Persist cache ─────────────────────────────────────────────────────
+        cache_file.write_text(
+            json.dumps(
+                {"fetched": datetime.utcnow().isoformat(), "etf": etf, "tickers": tickers},
+                indent=2, ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        print(f"[UNIVERSE] {len(tickers)} Ticker von iShares {etf} geladen "
+              f"und für {_UNIVERSE_CACHE_TTL_DAYS} Tage gecacht.")
+        return tickers
+
+    except Exception as exc:
+        print(f"[WARN] iShares-Download fehlgeschlagen ({exc}). "
+              f"Fallback auf CSV: {_CSV_FILE}")
+        return get_universe_from_csv(_CSV_FILE)
+
+
 def get_universe() -> list[str]:
-    """Einheitlicher Einstiegspunkt – aktuell CSV-Modus."""
+    """Unified entry point — routes to iShares or CSV based on SETTINGS.universe.
+
+    UNIVERSE=ishares_iwv   → iShares Russell 3000, top UNIVERSE_TOP_N by weight
+    UNIVERSE=ishares_iwb   → iShares Russell 1000
+    UNIVERSE=ishares_iwm   → iShares Russell 2000
+    UNIVERSE=csv           → local CSV (legacy, default fallback)
+    """
+    src = SETTINGS.universe.lower().strip()
+
+    if src.startswith("ishares_"):
+        etf = src.split("_", 1)[1].upper()          # "ishares_iwv" → "IWV"
+        return fetch_universe_ishares(etf=etf, top_n=SETTINGS.universe_top_n)
+
+    if src in ("iwv", "iwb", "iwm"):                # shorthand without prefix
+        return fetch_universe_ishares(etf=src.upper(), top_n=SETTINGS.universe_top_n)
+
+    # Default: local CSV
     return get_universe_from_csv(_CSV_FILE)
 
 

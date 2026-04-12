@@ -27,8 +27,17 @@ def _get_env_bool(name: str, default: bool) -> bool:
 
 @dataclass
 class Settings:
-    universe: str = _get_env("UNIVERSE", "sp500")
+    # UNIVERSE values:
+    #   "csv"          → local CSV file (legacy default)
+    #   "ishares_iwv"  → iShares Russell 3000 (top UNIVERSE_TOP_N by market cap)
+    #   "ishares_iwb"  → iShares Russell 1000
+    #   "ishares_iwm"  → iShares Russell 2000 (small-caps)
+    universe:      str = _get_env("UNIVERSE", "csv")
     custom_tickers: str = _get_env("CUSTOM_TICKERS", "")
+
+    # How many tickers to use when UNIVERSE=ishares_*
+    # iShares IWV holds ~3000 stocks; top 2000 by ETF weight ≈ top 2000 by market cap
+    universe_top_n: int = _get_env_int("UNIVERSE_TOP_N", 2000)
 
     mail_from: str = _get_env("MAIL_FROM", "report@example.com")
     mail_to: str = _get_env("MAIL_TO", "")
