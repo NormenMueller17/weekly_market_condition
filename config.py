@@ -60,13 +60,14 @@ class Settings:
     account_equity:  float = _get_env_float("ACCOUNT_EQUITY",  100_000.0)
     win_rate:        float = _get_env_float("WIN_RATE",         0.59)
     win_loss_ratio:  float = _get_env_float("WIN_LOSS_RATIO",   4.04)
-    kelly_fraction:  float = _get_env_float("KELLY_FRACTION",   0.33)
+    kelly_fraction:          float = _get_env_float("KELLY_FRACTION",          0.33)
+    bearish_kelly_fraction:  float = _get_env_float("BEARISH_KELLY_FRACTION",  0.5)
 
     # ── Portfolio constraints ──────────────────────────────────────────────────
     # MAX_POSITIONS: how many top-ranked signals to flag as "Top Pick" in the
     # email. All signals still appear in the report and JSON; only the top N
     # are highlighted with a gold badge.
-    max_positions:    int  = _get_env_int("MAX_POSITIONS",    2)
+    max_positions:    int  = _get_env_int("MAX_POSITIONS",    5)
 
     # MAX_INDUSTRY_RANK: only buy stocks in industries ranked this or better.
     # Industry Ranking is computed by weekly_market_condition (1 = best).

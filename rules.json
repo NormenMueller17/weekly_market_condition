@@ -11,7 +11,8 @@
     "min_rev_growth":         "Mindest-Umsatzwachstum TTM YoY in %. 0 = positives Wachstum.",
     "max_industry_rank":      "Nur Industrien mit Ranking <= diesem Wert. 0 = Filter deaktiviert.",
     "max_stop_pct":           "Maximaler Stop-Loss in % vom Entry. Blueprint-Cap: 20.",
-    "max_positions":          "Anzahl Top-Picks (Gold-Badge in der Email).",
+    "max_positions":          "Anzahl Top-Picks (Gold-Badge in der Email). 5 = empfohlen.",
+    "bearish_kelly_fraction": "Kelly-Multiplikator bei bärischem Markt (relativ zu kelly_fraction). 0.5 = halbe Größe.",
     "account_equity":         "Kontogröße in EUR/USD für die Positionsgröße.",
     "win_rate":               "Historische Trefferquote (0-1). Blueprint: 0.59.",
     "win_loss_ratio":         "Gewinn/Verlust-Verhältnis. Blueprint: 4.04.",
@@ -32,14 +33,15 @@
   },
 
   "portfolio": {
-    "max_positions":          2,
+    "max_positions":          5,
     "account_equity":         100000.0
   },
 
   "sizing": {
     "win_rate":               0.59,
     "win_loss_ratio":         4.04,
-    "kelly_fraction":         0.33
+    "kelly_fraction":         0.33,
+    "bearish_kelly_fraction": 0.5
   },
 
   "ranking_weights": {

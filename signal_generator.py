@@ -76,11 +76,12 @@ RANK_WEIGHTS = {
 # ── Portfolio / sizing defaults from rules.json ───────────────────────────────
 _p = _RULES_JSON.get("portfolio", {})
 _s = _RULES_JSON.get("sizing", {})
-_DEFAULT_MAX_POSITIONS  = _p.get("max_positions",   2)
-_DEFAULT_ACCOUNT_EQUITY = _p.get("account_equity",  100_000.0)
-_DEFAULT_WIN_RATE       = _s.get("win_rate",         0.59)
-_DEFAULT_WIN_LOSS_RATIO = _s.get("win_loss_ratio",   4.04)
-_DEFAULT_KELLY_FRACTION = _s.get("kelly_fraction",   0.33)
+_DEFAULT_MAX_POSITIONS          = _p.get("max_positions",          5)
+_DEFAULT_ACCOUNT_EQUITY         = _p.get("account_equity",          100_000.0)
+_DEFAULT_WIN_RATE               = _s.get("win_rate",                0.59)
+_DEFAULT_WIN_LOSS_RATIO         = _s.get("win_loss_ratio",          4.04)
+_DEFAULT_KELLY_FRACTION         = _s.get("kelly_fraction",          0.33)
+_DEFAULT_BEARISH_KELLY_FRACTION = _s.get("bearish_kelly_fraction",  0.5)
 
 
 # ── Market filter ─────────────────────────────────────────────────────────────
@@ -269,6 +270,7 @@ class TradeSignal:
     is_top_pick:        bool            = False
 
     # Meta
+    market_regime:      str  = "bullish"   # "bullish" | "bearish" — regime when signal was generated
     sa_link:            str  = ""
     signal_date:        str  = field(default_factory=lambda: date.today().isoformat())
 
@@ -276,14 +278,15 @@ class TradeSignal:
 # ── Main generator ────────────────────────────────────────────────────────────
 
 def generate_signals(
-    leaders:         pd.DataFrame,
-    market_bullish:  bool  = True,
-    account_equity:  float = _DEFAULT_ACCOUNT_EQUITY,
-    win_rate:        float = _DEFAULT_WIN_RATE,
-    win_loss_ratio:  float = _DEFAULT_WIN_LOSS_RATIO,
-    kelly_fraction:  float = _DEFAULT_KELLY_FRACTION,
-    max_positions:   int   = _DEFAULT_MAX_POSITIONS,
-    rules:           dict  | None = None,
+    leaders:                 pd.DataFrame,
+    market_bullish:          bool  = True,
+    account_equity:          float = _DEFAULT_ACCOUNT_EQUITY,
+    win_rate:                float = _DEFAULT_WIN_RATE,
+    win_loss_ratio:          float = _DEFAULT_WIN_LOSS_RATIO,
+    kelly_fraction:          float = _DEFAULT_KELLY_FRACTION,
+    bearish_kelly_fraction:  float = _DEFAULT_BEARISH_KELLY_FRACTION,
+    max_positions:           int   = _DEFAULT_MAX_POSITIONS,
+    rules:                   dict  | None = None,
 ) -> tuple[list[TradeSignal], pd.DataFrame]:
     """Apply Blueprint buy rules to the leaders DataFrame.
 
@@ -293,12 +296,13 @@ def generate_signals(
                                        (best first; is_top_pick=True for top N)
     candidates : pd.DataFrame        — filtered rows (for email / audit)
     """
-    r            = {**DEFAULT_RULES, **(rules or {})}
-    pos_size_pct = _fractional_kelly(win_rate, win_loss_ratio, kelly_fraction)
+    r             = {**DEFAULT_RULES, **(rules or {})}
+    market_regime = "bullish" if market_bullish else "bearish"
 
-    # Market filter — no signals in a bearish market environment
-    if not market_bullish:
-        return [], pd.DataFrame()
+    # Regime-based Kelly: halve position size in bearish markets instead of blocking entirely.
+    # This keeps us in the game for early-recovery breakouts while cutting risk exposure.
+    effective_kelly = kelly_fraction if market_bullish else kelly_fraction * bearish_kelly_fraction
+    pos_size_pct    = _fractional_kelly(win_rate, win_loss_ratio, effective_kelly)
 
     df = leaders.copy()
 
@@ -421,6 +425,7 @@ def generate_signals(
             risk_on_equity_pct = round(risk_on_equity, 4),
             industry_ranking   = ind_rank,
             industry_score     = round(ind_score, 2) if ind_score is not None else None,
+            market_regime      = market_regime,
             sa_link            = str(row.get("SA", "")),
         ))
 
