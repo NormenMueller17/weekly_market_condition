@@ -2,14 +2,16 @@
 Blueprint-based trade signal generator.
 
 Buy criteria (Financial Wisdom Blueprint by FinancialWisdomTV):
-  1. All 8 Minervini criteria met  (score == 8)
-  2. Pattern detected              (VCP Entry=True  OR  Launchpad=True)
-  3. ATR/Price < 8 %               (NATR threshold, Blueprint requirement)
-  4. ROE  >= min_roe               (double-digit quality)
-  5. Operating Margin >= min_op_margin
-  6. Revenue growth  >= min_rev_growth
-  7. Industry Ranking <= max_industry_rank  (only leading sectors)
-  8. Market filter: S&P 500 10W EMA > 20W EMA
+  1. Minervini score >= 6           (at least 6 of 8 criteria, per actual SEPA practice)
+  2. RS Score >= 70                 (top third — institutional sponsorship)
+  3. Distance to 52W High <= 25 %  (within striking distance of highs)
+  4. ATR/Price < 8 %               (NATR threshold, Blueprint requirement)
+  5. ROE  >= min_roe               (0 = disabled; quality captured by score)
+  6. Operating Margin >= min_op_margin  (0 = disabled)
+  7. Revenue growth  >= min_rev_growth
+  8. Industry Ranking <= max_industry_rank  (only leading sectors)
+  9. Market filter: S&P 500 10W EMA > 20W EMA
+  Pattern (VCP/Launchpad) is a ranking bonus — not a hard requirement.
 
 Per candidate the generator computes:
   - Entry price      (current weekly close)
@@ -49,14 +51,16 @@ _RULES_JSON = _load_rules_json()
 # ── Default buy-rule thresholds (fallback if rules.json is missing) ───────────
 _f = _RULES_JSON.get("filters", {})
 DEFAULT_RULES: dict = {
-    "min_score":          _f.get("min_score",         8),
-    "require_pattern":    _f.get("require_pattern",   True),
-    "max_atr_pct":        _f.get("max_atr_pct",       8.0),
-    "min_roe":            _f.get("min_roe",            10.0),
-    "min_op_margin":      _f.get("min_op_margin",      5.0),
-    "min_rev_growth":     _f.get("min_rev_growth",     0.0),
-    "max_industry_rank":  _f.get("max_industry_rank",  50),
-    "max_stop_pct":       _f.get("max_stop_pct",       20.0),
+    "min_score":              _f.get("min_score",              6),
+    "require_pattern":        _f.get("require_pattern",        False),
+    "max_atr_pct":            _f.get("max_atr_pct",            8.0),
+    "min_rs_score":           _f.get("min_rs_score",           70.0),
+    "max_dist_52w_high_pct":  _f.get("max_dist_52w_high_pct",  25.0),
+    "min_roe":                _f.get("min_roe",                0.0),
+    "min_op_margin":          _f.get("min_op_margin",          0.0),
+    "min_rev_growth":         _f.get("min_rev_growth",         0.0),
+    "max_industry_rank":      _f.get("max_industry_rank",      100),
+    "max_stop_pct":           _f.get("max_stop_pct",           20.0),
 }
 
 # ── Ranking weights (must sum to 1.0) ─────────────────────────────────────────
@@ -316,17 +320,26 @@ def generate_signals(
         launchpad = df.get("Launchpad",  pd.Series(False, index=df.index)).fillna(False).astype(bool)
         mask &= vcp_entry | launchpad
 
-    # 3. ATR / Price below NATR threshold
+    # 3. RS Score — top-third relative strength (institutional sponsorship)
+    if r.get("min_rs_score", 0) > 0:
+        mask &= _num("RS (O'Neil)", 0) >= r["min_rs_score"]
+
+    # 4. Distance to 52W High — must still be in striking range of highs
+    #    Column stores the distance as a positive percentage (e.g. 15.0 = 15 % below high)
+    if r.get("max_dist_52w_high_pct") is not None:
+        mask &= _num("Dist to 52W High (%)", 999) <= r["max_dist_52w_high_pct"]
+
+    # 5. ATR / Price below NATR threshold
     mask &= _num("ATR / Price (%)", 999) < r["max_atr_pct"]
 
-    # 4. Fundamental quality filters
+    # 6. Fundamental quality filters
     if r["min_roe"]        > 0:  mask &= _num("ROE (%)")                       >= r["min_roe"]
     if r["min_op_margin"]  > 0:  mask &= _num("Operating Margin (%)")          >= r["min_op_margin"]
     if r["min_rev_growth"] > 0:  mask &= _num("Revenue Wachstum TTM YoY (%)") >= r["min_rev_growth"]
 
-    # 5. Industry Ranking filter  (lower rank number = stronger industry)
+    # 7. Industry Ranking filter  (lower rank number = stronger industry)
     #    NaN industry rank → excluded (unknown industry = no tailwind)
-    if r["max_industry_rank"] is not None:
+    if r.get("max_industry_rank") is not None and r["max_industry_rank"] > 0:
         ind_rank = _num("Industry Ranking", fill=9999)
         mask &= ind_rank <= r["max_industry_rank"]
 
