@@ -11,6 +11,7 @@
     "min_rev_growth":         "Mindest-Umsatzwachstum TTM YoY in %. 0 = positives Wachstum.",
     "max_industry_rank":      "Nur Industrien mit Ranking <= diesem Wert. 0 = Filter deaktiviert.",
     "max_stop_pct":           "Maximaler Stop-Loss in % vom Entry. Blueprint-Cap: 20.",
+    "volume_breakout_score":  "Mindest-Faktor für Volume-Breakout vs. 20-Tage-Durchschnitt. 1.3 = 30% erhöhtes Volumen.",
     "max_positions":          "Anzahl Top-Picks (Gold-Badge in der Email). 5 = empfohlen.",
     "bearish_kelly_fraction": "Kelly-Multiplikator bei bärischem Markt (relativ zu kelly_fraction). 0.5 = halbe Größe.",
     "account_equity":         "Kontogröße in EUR/USD für die Positionsgröße.",
@@ -29,7 +30,8 @@
     "min_op_margin":          0.0,
     "min_rev_growth":         0.0,
     "max_industry_rank":      100,
-    "max_stop_pct":           20.0
+    "max_stop_pct":           20.0,
+    "volume_breakout_score":  1.3
   },
 
   "portfolio": {

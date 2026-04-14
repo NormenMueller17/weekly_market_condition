@@ -1,11 +1,14 @@
+import json
 import pandas as pd
 import yfinance as yf
 import numpy as np
+from pathlib import Path
 from data_sources import get_universe
 from detect_vcp import detect_vcp
 from launchpad_detection import detect_launchpad, compute_launchpad_score
 
-_VOLUME_BREAKOUT_SCORE = 1.3
+_rules_json = json.loads((Path(__file__).parent / "rules.json").read_text(encoding="utf-8"))
+_VOLUME_BREAKOUT_SCORE: float = _rules_json.get("filters", {}).get("volume_breakout_score", 1.3)
 
 
 def _macd_bullish_cross_weekly(df: pd.DataFrame, price_col: str = "Close",
