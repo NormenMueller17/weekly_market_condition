@@ -15,6 +15,7 @@ HTML_TMPL = """
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body    { font-family: Arial, sans-serif; margin: 2em; }
         table   { border-collapse: collapse; margin-bottom: 2em; }
@@ -32,6 +33,19 @@ HTML_TMPL = """
             text-decoration: none;
         }
         .btn-sa:hover { background-color: #003d99; }
+        /* Leader cards */
+        .leader-grid { width: 100%; border-collapse: collapse; }
+        .leader-cell { width: 50%; padding: 5px; vertical-align: top; }
+        .leader-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            background: #fff;
+        }
+        @media only screen and (max-width: 600px) {
+            body { margin: 0.8em; }
+            .leader-cell { display: block !important; width: 100% !important; box-sizing: border-box; }
+        }
     </style>
 </head>
 <body>
@@ -200,7 +214,7 @@ HTML_TMPL = """
           {%- if s.rs_delta_4w and s.rs_delta_4w > 0 %}{{ COLOR_POSITIVE }}
           {%- elif s.rs_delta_4w and s.rs_delta_4w < 0 %}{{ COLOR_NEGATIVE }}
           {%- else %}transparent{% endif %}">
-          {{ '%.1f' % s.rs_delta_4w if s.rs_delta_4w is not none else '–' }}
+          {% if s.rs_delta_4w is not none %}{% if s.rs_delta_4w > 0 %}+{% endif %}{{ '%.0f' % s.rs_delta_4w }}{% else %}–{% endif %}
         </td>
         <td style="text-align:center">
           {{ s.industry_ranking if s.industry_ranking is not none else '–' }}
@@ -229,59 +243,58 @@ HTML_TMPL = """
     <p>Keine Aktien erfüllen alle 8 Minervini-Kriterien.</p>
     {% else %}
 
-    <table>
-      <tr>
-        <th class="left">Ticker</th>
-        <th class="left">Unternehmen</th>
-        <th class="left">SA</th>
-        <th class="left">Branche</th>
-        <th>Industry Ranking</th>
-        <th>Industry Score</th>
-        <th>Score</th>
-        <th>RS</th>
-        <th>ΔRS 4W</th>
-        <th>EPS (Forward/TTM)</th>
-        <th>EPS Wachstum<br>FWD/TTM (%)</th>
-        <th>Revenue Wachstum<br>TTM YoY (%)</th>
-        <th>Close</th>
-        <th>Close Vorwoche</th>
-        <th>Veränderung in %</th>
-        <th>52W High</th>
-        <th>Dist<br>52W High (%)</th>
-        <th>Ø-Vol<br>20W</th>
-        <th>Vol Score</th>
-        <th>VCP</th>
-        <th>BO-Level</th>
-        <th>Launchpad</th>
-      </tr>
-
-      {% for idx, row in leaders.iterrows() %}
-      <tr>
-        <td class="left">{{ idx }}</td>
-        <td class="left">{{ row["Company"] }}</td>
-        <td class="left">{{ row["SA"] | safe }}</td>
-        <td class="left">{{ row["Industry"] }}</td>
-        <td>{{ row["Industry Ranking"] }}</td>
-        <td>{{ row["Industry Score"] }}</td>
-        <td>{{ row["score"] }}</td>
-        <td>{{ row["RS (O'Neil)"] }}</td>
-        <td>{{ row["ΔRS 4W"] }}</td>
-        <td>{{ row["EPS (Forward/TTM)"] }}</td>
-        <td>{{ row["EPS Wachstum FWD/TTM (%)"] }}</td>
-        <td>{{ row["Revenue Wachstum TTM YoY (%)"] }}</td>
-        <td>{{ row["Close"] }}</td>
-        <td>{{ row["Close Vorwoche"] }}</td>
-        <td>{{ row["Veränderung in %"] }}</td>
-        <td>{{ row["52W High"] }}</td>
-        <td>{{ row["Dist to 52W High (%)"] }}</td>
-        <td>{{ row["Ø-Volume 20T"] }}</td>
-        <td>{{ row["Volume Score"] }}</td>
-        <td>{{ row["VCP"] }}</td>
-        <td>{{ row["VCP Breakout Level"] }}</td>
-        <td>{{ row["Launchpad"] }}</td>
-      </tr>
-      {% endfor %}
-
+    {% set ns = namespace(col=0) %}
+    <table class="leader-grid">
+    {% for idx, row in leaders.iterrows() %}
+      {% if ns.col == 0 %}<tr>{% endif %}
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">{{ idx }}</strong>
+              &nbsp;{{ row["SA"] | safe }}
+            </span>
+            <strong style="font-size:1.05em">{{ row["_card_close"] }}</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">{{ row["Company"] }}</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">{{ row["Industry"] }}</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ {{ row["score"] | int }}/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>{{ row["_card_rs"] }}</strong></span>
+            <span style="font-size:0.87em;color:
+              {%- if row["ΔRS 4W"] is not none and row["ΔRS 4W"] > 0 %}#2e7d32
+              {%- elif row["ΔRS 4W"] is not none and row["ΔRS 4W"] < 0 %}#c62828
+              {%- else %}#555{% endif %}">
+              ΔRS&nbsp;<strong>{{ row["_card_drs"] }}</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;{{ row["_card_rev"] }}&nbsp;&nbsp;EPS:&nbsp;{{ row["_card_eps"] }}
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap">
+            {% if row["VCP"] or row["Launchpad"] %}
+            <span style="background:#fff8e1;padding:1px 6px;border-radius:3px">
+              📐&nbsp;{% if row["VCP"] and row["Launchpad"] %}VCP+Launchpad{% elif row["VCP"] %}VCP{% else %}Launchpad{% endif %}
+            </span>
+            {% endif %}
+            {% if row["_card_dist"] != '–' %}
+            <span>Dist 52W&nbsp;H:&nbsp;{{ row["_card_dist"] }}%</span>
+            {% endif %}
+          </div>
+        </div>
+      </td>
+      {% set ns.col = ns.col + 1 %}
+      {% if ns.col == 2 %}
+        </tr>
+        {% set ns.col = 0 %}
+      {% endif %}
+    {% endfor %}
+    {% if ns.col == 1 %}<td class="leader-cell"></td></tr>{% endif %}
     </table>
 
     {% endif %}
@@ -401,7 +414,31 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
             )
         leaders_html["SA"] = leaders_html["SA"].apply(_sa_button)
 
-    # 4) Template rendern
+    # 4) Vorformatierte Spalten für Card-Layout (NaN-sicher)
+    def _card_fmt(val, fmt, sign=False):
+        try:
+            if pd.isna(val):
+                return '–'
+            f = float(val)
+            s = fmt % f
+            return ('+' if (sign and f > 0) else '') + s
+        except Exception:
+            return '–'
+
+    for _src, _fmt, _sign, _dst in [
+        ("RS (O'Neil)",                  '%.0f', False, '_card_rs'),
+        ('ΔRS 4W',                       '%.0f', True,  '_card_drs'),
+        ('Close',                        '%.2f', False, '_card_close'),
+        ('Revenue Wachstum TTM YoY (%)', '%.0f', True,  '_card_rev'),
+        ('EPS Wachstum FWD/TTM (%)',     '%.0f', True,  '_card_eps'),
+        ('Dist to 52W High (%)',         '%.1f', False, '_card_dist'),
+    ]:
+        leaders_html[_dst] = (
+            leaders_html[_src].apply(lambda v, f=_fmt, s=_sign: _card_fmt(v, f, s))
+            if _src in leaders_html.columns else '–'
+        )
+
+    # 5) Template rendern
     tmpl = Template(HTML_TMPL)
     html = tmpl.render(
         breadth        = breadth,
