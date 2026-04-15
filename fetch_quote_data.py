@@ -30,24 +30,60 @@ try:
 except Exception:
     pass
 
+_EMPTY_QUOTE: dict = {
+    "Close": None, "MarketCap_Mio": None, "Sector": None,
+    "EPS_FWD_TTM": None, "EPS_GROWTH_FWD_TTM": None, "REV_GROWTH_TTM_YOY": None,
+    "ROE": None, "Operating_Margin": None, "FCF_Margin": None,
+    "Debt_to_Equity": None, "EPS_Acceleration": None, "ROIC": None,
+    "Cash_Conversion": None, "Op_Margin_Stability_5y": None,
+    "REV_Neg_YoY_Count_5y": None, "REV_Growth_Std_5y": None,
+    "EPS_Neg_YoY_Count_5y": None, "EPS_Growth_Std_5y": None,
+}
+
 def batch_fetch_quote_data(tickers) -> dict:
     """
     Holt Fundamentaldaten für eine Liste von Tickern parallel.
     Rückgabe: dict[ticker] -> dict mit Feldern wie in fetch_quote_data_single.
+
+    Circuit Breaker: Nach CIRCUIT_BREAKER_THRESHOLD aufeinanderfolgenden
+    Totalausfällen werden alle verbleibenden Ticker übersprungen (z.B. wenn
+    der Runner von Yahoo Finance komplett blockiert wird).
     """
+    import threading
+
+    CIRCUIT_BREAKER_THRESHOLD = 10  # Aufeinanderfolgende Vollausfälle bis Abbruch
+
     results = {}
     tickers = list(dict.fromkeys(tickers))  # Duplikate raus
 
-    # Yahoo Finance is very sensitive to parallel requests.
-    # Keep concurrency low to avoid hard rate limiting.
+    consecutive_failures = [0]   # list for mutability in closure
+    circuit_open        = [False]
+    lock                = threading.Lock()
+
     MAX_WORKERS = 5
     max_workers = min(MAX_WORKERS, max(1, len(tickers)))
 
     print(f"[INFO] Starte batch_fetch_quote_data für {len(tickers)} Ticker "
           f"mit {max_workers} Threads ...")
 
+    def _fetch(ticker: str) -> dict:
+        if circuit_open[0]:
+            return dict(_EMPTY_QUOTE)
+        data = fetch_quote_data_single(ticker)
+        all_none = all(v is None for v in data.values())
+        with lock:
+            if all_none:
+                consecutive_failures[0] += 1
+                if consecutive_failures[0] >= CIRCUIT_BREAKER_THRESHOLD:
+                    circuit_open[0] = True
+                    print(f"[CIRCUIT BREAKER] {CIRCUIT_BREAKER_THRESHOLD} aufeinanderfolgende "
+                          f"Totalausfälle — überspringe verbleibende Ticker.")
+            else:
+                consecutive_failures[0] = 0
+        return data
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_ticker = {executor.submit(fetch_quote_data_single, t): t for t in tickers}
+        future_to_ticker = {executor.submit(_fetch, t): t for t in tickers}
 
         for future in as_completed(future_to_ticker):
             tkr = future_to_ticker[future]
@@ -55,27 +91,7 @@ def batch_fetch_quote_data(tickers) -> dict:
                 data = future.result()
             except Exception as e:
                 print(f"[ERROR] batch_fetch_quote_data: {tkr} -> {e}")
-                # Keep the shape stable so merges into the Excel dataframe don't break.
-                data = {
-                    "Close": None,
-                    "MarketCap_Mio": None,
-                    "Sector": None,
-                    "EPS_FWD_TTM": None,
-                    "EPS_GROWTH_FWD_TTM": None,
-                    "REV_GROWTH_TTM_YOY": None,
-                    "ROE": None,
-                    "Operating_Margin": None,
-                    "FCF_Margin": None,
-                    "Debt_to_Equity": None,
-                    "EPS_Acceleration": None,
-                    "ROIC": None,
-                    "Cash_Conversion": None,
-                    "Op_Margin_Stability_5y": None,
-                    "REV_Neg_YoY_Count_5y": None,
-                    "REV_Growth_Std_5y": None,
-                    "EPS_Neg_YoY_Count_5y": None,
-                    "EPS_Growth_Std_5y": None,
-                }
+                data = dict(_EMPTY_QUOTE)
             results[tkr] = data
     return results
 
@@ -448,7 +464,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
         except Exception as e:
             # Retry with exponential backoff + jitter to avoid synchronized retry storms.
             msg = str(e)
-            if attempt < MAX_RETRIES - 1:
+            is_timeout = any(k in msg for k in ["Operation timed out", "timed out", "ConnectionError", "ReadTimeout"])
+            if attempt < MAX_RETRIES - 1 and not is_timeout:
+                # Timeouts werden nicht wiederholt — bei blockierter IP hilft kein Retry.
                 jitter = random.uniform(0.5, 1.5)
                 sleep_s = (BASE_SLEEP_SECONDS * (2 ** attempt)) + jitter
                 # Be extra conservative on rate limiting / throttling responses.
@@ -461,23 +479,10 @@ def fetch_quote_data_single(ticker: str) -> dict:
                 time.sleep(sleep_s)
                 continue
             else:
-                print(f"[ERROR] fetch_quote_data_single({ticker}) dauerhaft fehlgeschlagen ({e}).")
+                if is_timeout:
+                    print(f"[SKIP] fetch_quote_data_single({ticker}) Timeout — kein Retry ({e}).")
+                else:
+                    print(f"Error:  fetch_quote_data_single({ticker}) dauerhaft fehlgeschlagen ({e}).")
 
     # Fallback: alles None
-    
-    return {
-        "Close": None,
-        "MarketCap_Mio": None,
-        "Sector": None,
-        "EPS_FWD_TTM": None,
-        "EPS_GROWTH_FWD_TTM": None,
-        "REV_GROWTH_TTM_YOY": None,
-        "ROE": None,
-        "Operating_Margin": None,
-        "FCF_Margin": None,
-        "Debt_to_Equity": None,
-        "EPS_Acceleration": None,
-        "ROIC": None,
-        "Cash_Conversion": None,
-        "Op_Margin_Stability_5y": None,
-    }
+    return dict(_EMPTY_QUOTE)
