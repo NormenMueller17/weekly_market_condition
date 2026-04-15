@@ -296,8 +296,17 @@ def run():
         leaders.insert(2, "SA", leaders.index.map(_make_sa_url))      
         leaders.insert(3, "Industry", leaders.index.map(lambda t: info_map.get(t, {}).get("Industry", "n/a")))
 
-        # --- NEU: Fundamentaldaten für ALLE Leaders in einem Rutsch laden ---
-        quote_map = batch_fetch_quote_data(leaders.index.tolist())
+        # --- Fundamentaldaten nur für Leaders mit Score >= 6 laden ---
+        # Score < 6 erscheinen nicht in Kaufsignalen und selten im Mail-Report (nur Score 8/8).
+        # Damit werden 300-400 API-Calls auf ~20-50 reduziert.
+        MIN_SCORE_FOR_FUNDAMENTALS = 6
+        tickers_for_fundamentals = (
+            leaders[pd.to_numeric(leaders["score"], errors="coerce") >= MIN_SCORE_FOR_FUNDAMENTALS]
+            .index.tolist()
+        )
+        print(f"[INFO] Fundamentaldaten werden für {len(tickers_for_fundamentals)} "
+              f"von {len(leaders)} Leaders geholt (Score >= {MIN_SCORE_FOR_FUNDAMENTALS}).")
+        quote_map = batch_fetch_quote_data(tickers_for_fundamentals)
         leaders.insert(4, "Sektor", leaders.index.map(lambda t: quote_map.get(t, {}).get("Sector", "n/a")))
         leaders.insert(5, "Close", leaders.index.map(lambda t: quote_map.get(t, {}).get("Close")))
         leaders.insert(6, "MarketCap (Mio USD)", leaders.index.map(lambda t: quote_map.get(t, {}).get("MarketCap_Mio")))
