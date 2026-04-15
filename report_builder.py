@@ -265,8 +265,8 @@ HTML_TMPL = """
             <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ {{ row["score"] | int }}/8</span>
             <span style="font-size:0.87em">RS&nbsp;<strong>{{ row["_card_rs"] }}</strong></span>
             <span style="font-size:0.87em;color:
-              {%- if row["ΔRS 4W"] is not none and row["ΔRS 4W"] > 0 %}#2e7d32
-              {%- elif row["ΔRS 4W"] is not none and row["ΔRS 4W"] < 0 %}#c62828
+              {%- if row["ΔRS 4W"] is number and row["ΔRS 4W"] > 0 %}#2e7d32
+              {%- elif row["ΔRS 4W"] is number and row["ΔRS 4W"] < 0 %}#c62828
               {%- else %}#555{% endif %}">
               ΔRS&nbsp;<strong>{{ row["_card_drs"] }}</strong>
             </span>
@@ -414,7 +414,11 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
             )
         leaders_html["SA"] = leaders_html["SA"].apply(_sa_button)
 
-    # 4) Vorformatierte Spalten für Card-Layout (NaN-sicher)
+    # 4a) ΔRS 4W sicher auf numerisch konvertieren (verhindert str/int-Vergleich im Template)
+    if 'ΔRS 4W' in leaders_html.columns:
+        leaders_html['ΔRS 4W'] = pd.to_numeric(leaders_html['ΔRS 4W'], errors='coerce')
+
+    # 4b) Vorformatierte Spalten für Card-Layout (NaN-sicher)
     def _card_fmt(val, fmt, sign=False):
         try:
             if pd.isna(val):
