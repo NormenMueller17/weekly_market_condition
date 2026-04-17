@@ -148,14 +148,69 @@ HTML_TMPL = """
         {% endif %}
     </p>
     {% else %}
-    <p style="margin-bottom:0.5em">
+    <p style="margin-bottom:0.8em">
         <strong>Marktfilter:</strong> S&amp;P 500 10W EMA &gt; 20W EMA ✅ &nbsp;|&nbsp;
         <strong>Position:</strong> {{ (signals[0].position_size_pct * 100) | round(1) }}% des Kapitals
         ({{ "{:,.0f}".format(signals[0].position_value) }} €/$) &nbsp;|&nbsp;
         <strong>Kelly-Fraction:</strong> 1/3 &nbsp;|&nbsp;
-        <strong>Top Picks:</strong> Rang 1–{{ signals | selectattr("is_top_pick") | list | length }}
-        (gold hervorgehoben)
+        <strong>Signale gesamt:</strong> {{ signals | length }}
     </p>
+
+    {% if pages_url %}
+    {# ── KOMPAKTE EMAIL-VERSION: nur Top-Picks als Cards ── #}
+    {% set top_picks = signals | selectattr("is_top_pick") | list %}
+    {% set ns = namespace(col=0) %}
+    <table class="leader-grid">
+    {% for s in top_picks %}
+      {% if ns.col == 0 %}<tr>{% endif %}
+      <td class="leader-cell">
+        <div class="leader-card" style="background:{% if s.is_top_pick %}#fffdf5{% else %}#fff{% endif %}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <span style="background:#f5a623;color:white;padding:2px 7px;border-radius:10px;font-size:0.82em;font-weight:bold">🏆 {{ s.rank }}</span>
+              &nbsp;<strong style="font-size:1.05em;color:#003d99">{{ s.ticker }}</strong>
+            </span>
+            <strong style="font-size:1.05em">${{ '%.2f' % s.entry_price }}</strong>
+          </div>
+          <div style="font-size:0.87em;color:#333;margin-bottom:2px">{{ s.company }}</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">{{ s.industry }}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:
+              {%- if '+' in s.pattern %}#fffde7
+              {%- elif s.pattern == 'VCP' %}#e8f5e9
+              {%- else %}#e3f2fd{% endif %};
+              padding:2px 7px;border-radius:4px;font-size:0.82em;font-weight:bold">{{ s.pattern }}</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>{{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}</strong></span>
+            <span style="font-size:0.87em;color:
+              {%- if s.rs_delta_4w is not none and s.rs_delta_4w > 0 %}#2e7d32
+              {%- elif s.rs_delta_4w is not none and s.rs_delta_4w < 0 %}#c62828
+              {%- else %}#555{% endif %}">
+              ΔRS&nbsp;<strong>{% if s.rs_delta_4w is not none %}{% if s.rs_delta_4w > 0 %}+{% endif %}{{ '%.0f' % s.rs_delta_4w }}{% else %}–{% endif %}</strong>
+            </span>
+          </div>
+          <div style="font-size:0.82em;color:#555">
+            Stop:&nbsp;<strong style="color:#e65100">{{ '%.2f' % s.stop_loss }}</strong>
+            &nbsp;({{ (s.stop_loss_pct * 100) | round(1) }}%)
+            &nbsp;&nbsp;Risiko:&nbsp;{{ ((s.risk_on_equity_pct * 100) | round(2)) }}%
+          </div>
+        </div>
+      </td>
+      {% set ns.col = ns.col + 1 %}
+      {% if ns.col == 2 %}</tr>{% set ns.col = 0 %}{% endif %}
+    {% endfor %}
+    {% if ns.col == 1 %}<td class="leader-cell"></td></tr>{% endif %}
+    </table>
+
+    <div style="text-align:center;margin-top:16px">
+      <a href="{{ pages_url }}" target="_blank"
+         style="display:inline-block;padding:10px 24px;background:#003d99;color:white;
+                text-decoration:none;border-radius:6px;font-weight:bold;font-size:0.95em">
+        Alle {{ signals | length }} Signale ansehen →
+      </a>
+    </div>
+
+    {% else %}
+    {# ── VOLLSTÄNDIGE VERSION FÜR GITHUB PAGES ── #}
     <table>
       <tr>
         <th>Rang</th>
@@ -216,9 +271,7 @@ HTML_TMPL = """
           {%- else %}transparent{% endif %}">
           {% if s.rs_delta_4w is not none %}{% if s.rs_delta_4w > 0 %}+{% endif %}{{ '%.0f' % s.rs_delta_4w }}{% else %}–{% endif %}
         </td>
-        <td style="text-align:center">
-          {{ s.industry_ranking if s.industry_ranking is not none else '–' }}
-        </td>
+        <td style="text-align:center">{{ s.industry_ranking if s.industry_ranking is not none else '–' }}</td>
         <td>{{ '%.1f' % s.roe if s.roe is not none else '–' }}%</td>
         <td>{{ '%.1f' % s.op_margin if s.op_margin is not none else '–' }}%</td>
         <td>{{ '%.1f' % s.revenue_growth if s.revenue_growth is not none else '–' }}%</td>
@@ -229,12 +282,13 @@ HTML_TMPL = """
       </tr>
       {% endfor %}
     </table>
-
     <p style="font-size:0.82em;color:#777;margin-top:0.3em">
       Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%).
       🏆 = Top-{{ signals | selectattr("is_top_pick") | list | length }} Kaufkandidaten.
       Rot = Risiko/Equity &gt; 1.8%.
     </p>
+    {% endif %}
+
     {% endif %}
 
     <h2>6) Marktführer nach Minervini (Score 8/8)</h2>
@@ -374,7 +428,7 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
     return rows
 
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
-                      signals=None):
+                      signals=None, pages_url=None):
     """Build the weekly HTML email.
 
     Parameters
@@ -457,6 +511,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         COLOR_POSITIVE = COLOR_POSITIVE,
         COLOR_NEGATIVE = COLOR_NEGATIVE,
         divergences    = divergences,
+        pages_url      = pages_url,
     )
     return html
 
@@ -505,6 +560,58 @@ def heuristic_verdict(breadth: pd.DataFrame, idx_rows: List[Tuple[str, dict]]) -
     if weak_breadth and (spy_rsi < 50 or qqq_rsi < 50):
         return "Distribution/Schutzmodus: Risiko reduzieren, Stops nachziehen, Neuzukäufe selektiv."
     return "Neutral: Selektiv vorgehen, auf Bestätigungen warten."
+
+def build_index_page(reports_dir, base_url: str) -> str:
+    """Erzeugt das Dashboard (docs/index.html) mit einer Liste aller Reports."""
+    from pathlib import Path
+    import datetime
+
+    reports_dir = Path(reports_dir)
+    report_files = sorted(reports_dir.glob("*.html"), reverse=True)
+
+    rows_html = ""
+    for f in report_files:
+        date_str = f.stem          # z.B. "2026-04-19"
+        try:
+            d = datetime.date.fromisoformat(date_str)
+            label = d.strftime("%d. %B %Y")
+        except ValueError:
+            label = date_str
+        url = f"{base_url}/reports/{f.name}"
+        rows_html += (
+            f'<li style="margin-bottom:8px">'
+            f'<a href="{url}" style="color:#003d99;font-weight:bold">{label}</a>'
+            f'</li>\n'
+        )
+
+    latest_url = f"{base_url}/reports/{report_files[0].name}" if report_files else "#"
+
+    return f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Market Report</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; max-width: 700px; margin: 2em auto; padding: 0 1em; color: #333; }}
+    h1   {{ color: #003d99; }}
+    .btn {{ display:inline-block; padding:12px 28px; background:#003d99; color:white;
+             text-decoration:none; border-radius:6px; font-weight:bold; font-size:1em; margin-bottom:2em; }}
+    ul   {{ padding-left: 1.2em; }}
+    li a {{ color: #003d99; }}
+  </style>
+</head>
+<body>
+  <h1>📈 Weekly Market Report</h1>
+  <p>Automatisch generierter wöchentlicher Marktreport nach dem Financial Wisdom Blueprint.</p>
+  <a href="{latest_url}" class="btn">Aktuellen Report öffnen →</a>
+  <h2>Archiv</h2>
+  <ul>
+{rows_html}  </ul>
+</body>
+</html>
+"""
+
 
 def build_divergence_text(idx: pd.DataFrame) -> str:
     messages = []

@@ -490,9 +490,6 @@ def run():
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_int)
 
-    # HTML-Report bekommt die formatierte Kopie + Signale
-    html = build_html_report(breadth_df, idx_df, risk_df, summary, report_date, weekly, leaders_html, signals=signals)
-
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
 
@@ -504,13 +501,42 @@ def run():
     signals_json = save_signals_json(signals, out_dir / f"signals_{report_date}.json")
     print(f"[SIGNALS] Signale gespeichert → {signals_json}")
 
+    # ── GitHub Pages: vollständigen Report speichern ──────────────────────────
+    PAGES_BASE_URL = "https://normenmueller17.github.io/weekly_market_condition"
+    report_url     = f"{PAGES_BASE_URL}/reports/{report_date}.html"
+
+    html_full = build_html_report(
+        breadth_df, idx_df, risk_df, summary, report_date,
+        weekly, leaders_html, signals=signals, pages_url=None,
+    )
+    docs_reports_dir = Path("docs/reports")
+    docs_reports_dir.mkdir(parents=True, exist_ok=True)
+    report_file = docs_reports_dir / f"{report_date}.html"
+    report_file.write_text(html_full, encoding="utf-8")
+    print(f"[PAGES] Report gespeichert → {report_file}")
+
+    # Index-Seite aktualisieren
+    from report_builder import build_index_page
+    index_path = Path("docs/index.html")
+    index_path.write_text(
+        build_index_page(docs_reports_dir, PAGES_BASE_URL),
+        encoding="utf-8",
+    )
+    print(f"[PAGES] Index aktualisiert → {index_path}")
+
+    # ── E-Mail: kompakte Version ohne große Signaltabelle ─────────────────────
+    html_email = build_html_report(
+        breadth_df, idx_df, risk_df, summary, report_date,
+        weekly, leaders_html, signals=signals, pages_url=report_url,
+    )
+
     # E-Mail Betreff zeigt Signalanzahl für schnellen Montags-Check
     signal_count = len(signals)
     email_subject = f"Weekly US Market Report — {signal_count} Kaufsignal{'e' if signal_count != 1 else ''}"
 
     # ── Früher Rücksprung wenn Excel-Export deaktiviert (Standard) ────────────
     if not SETTINGS.export_excel:
-        send_email(html, subject_suffix=email_subject, attachments=None)
+        send_email(html_email, subject_suffix=email_subject, attachments=None)
         return
 
     # ── Ab hier: Excel-Export (nur wenn EXPORT_EXCEL=true) ───────────────────
@@ -831,7 +857,7 @@ def run():
     wb.save(out_path)
     
     # 4) Beim Mailversand denselben Pfad anhängen
-    send_email(html, subject_suffix=email_subject, attachments=[str(out_path)])
+    send_email(html_email, subject_suffix=email_subject, attachments=[str(out_path)])
 
 if __name__ == "__main__":
     run()
