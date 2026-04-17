@@ -502,7 +502,7 @@ def run():
     print(f"[SIGNALS] Signale gespeichert → {signals_json}")
 
     # ── GitHub Pages: vollständigen Report speichern ──────────────────────────
-    PAGES_BASE_URL = "https://normenmueller17.github.io/weekly_market_condition"
+    PAGES_BASE_URL = "https://weekly-growth-stock-screener.pages.dev"
     report_url     = f"{PAGES_BASE_URL}/reports/{report_date}.html"
 
     html_full = build_html_report(
