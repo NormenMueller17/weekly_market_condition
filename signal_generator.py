@@ -61,6 +61,9 @@ DEFAULT_RULES: dict = {
     "min_rev_growth":         _f.get("min_rev_growth",         0.0),
     "max_industry_rank":      _f.get("max_industry_rank",      100),
     "max_stop_pct":           _f.get("max_stop_pct",           20.0),
+    "min_price":              _f.get("min_price",              5.0),
+    "min_market_cap_mio":     _f.get("min_market_cap_mio",    300.0),
+    "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
 }
 
 # ── Ranking weights (must sum to 1.0) ─────────────────────────────────────────
@@ -237,6 +240,7 @@ class TradeSignal:
 
     # Entry & stop
     entry_price:        float
+    buy_stop:           float           # Buy-Stop-Order: max(entry, breakout_level) * (1 + buffer%)
     stop_loss:          float
     stop_loss_pct:      float           # e.g. 0.092  →  9.2 % below entry
 
@@ -353,6 +357,14 @@ def generate_signals(
     vol_breakout_col = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
     mask &= vol_breakout_col
 
+    # 9. Minimum price — no penny stocks
+    if r.get("min_price", 0) > 0:
+        mask &= _num("Close", 0) >= r["min_price"]
+
+    # 10. Minimum market cap — no micro caps
+    if r.get("min_market_cap_mio", 0) > 0:
+        mask &= _num("MarketCap_Mio", 0) >= r["min_market_cap_mio"]
+
     candidates = df[mask].copy()
 
     if candidates.empty:
@@ -421,6 +433,10 @@ def generate_signals(
             stop     = entry * 0.80
             stop_pct = 0.20
 
+        # Buy-Stop: 0.1% über dem höheren von entry und breakout_level
+        buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
+        buy_stop = round(max(entry, bl if bl else 0.0) * buf, 2)
+
         kelly_value = account_equity * pos_size_pct
         if available_cash is not None:
             # Distribute available cash evenly across remaining slots,
@@ -442,6 +458,7 @@ def generate_signals(
             industry           = str(row.get("Industry", "")),
             sector             = str(row.get("Sektor", "")),
             entry_price        = round(entry, 2),
+            buy_stop           = buy_stop,
             stop_loss          = round(stop, 2),
             stop_loss_pct      = round(stop_pct, 4),
             pattern            = pattern,
