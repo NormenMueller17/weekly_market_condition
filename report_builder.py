@@ -1,4 +1,6 @@
 import datetime as dt
+import json
+from pathlib import Path
 from typing import Dict, List, Tuple
 import pandas as pd
 from jinja2 import Template
@@ -324,6 +326,7 @@ HTML_TMPL = """
         <th class="sortable" onclick="sortTable(this)">Vol-BO</th>
         <th class="sortable" onclick="sortTable(this)">MarketCap<br>(Mio $)</th>
         <th class="sortable" onclick="sortTable(this)">SA</th>
+        <th class="left sortable" onclick="sortTable(this)" style="color:#c62828">Scheitert an</th>
       </tr>
       {% for idx, row in all_leaders.iterrows() %}
       {% set rs_val = row.get("RS (O'Neil)", none) %}
@@ -359,6 +362,9 @@ HTML_TMPL = """
         </td>
         <td style="text-align:right">{{ row.get("MarketCap (Mio USD)", "–") }}</td>
         <td style="text-align:center">{{ row.get("SA", "") }}</td>
+        <td class="left" style="font-size:0.82em;{% if row.get('_filter_fails','') == '✅' %}color:#2e7d32;font-weight:bold{% else %}color:#c62828{% endif %}">
+          {{ row.get("_filter_fails", "–") }}
+        </td>
       </tr>
       {% endfor %}
     </table>
@@ -763,6 +769,41 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         leaders_html['ΔRS 4W'] = pd.to_numeric(leaders_html['ΔRS 4W'], errors='coerce')
     if 'ΔRS 4W' in all_leaders_html.columns:
         all_leaders_html['ΔRS 4W'] = pd.to_numeric(all_leaders_html['ΔRS 4W'], errors='coerce')
+
+    # 4b-pre) Filter-Analyse: welche Kaufkriterien hat jeder Leader nicht erfüllt?
+    try:
+        _rules = json.loads((Path(__file__).parent / "rules.json").read_text(encoding="utf-8"))
+    except Exception:
+        _rules = {}
+    _min_rs    = float(_rules.get("filters", {}).get("min_rs_score",           70.0))
+    _max_rank  = float(_rules.get("filters", {}).get("max_industry_rank",      50.0))
+    _max_atr   = float(_rules.get("filters", {}).get("max_atr_pct",             8.0))
+    _min_price = float(_rules.get("filters", {}).get("min_price",               5.0))
+    _min_cap   = float(_rules.get("filters", {}).get("min_market_cap_mio",    300.0))
+
+    def _compute_fails(row) -> str:
+        fails = []
+        def _n(col): return pd.to_numeric(row.get(col, None), errors='coerce')
+        if not bool(row.get("Vol-Breakout", False)):
+            fails.append("Vol-BO fehlt")
+        rs = _n("RS (O'Neil)")
+        if pd.isna(rs) or rs < _min_rs:
+            fails.append(f"RS&nbsp;&lt;&nbsp;{_min_rs:.0f}")
+        rank = _n("Industry Rank")
+        if pd.isna(rank) or rank > _max_rank:
+            fails.append(f"Rank&nbsp;&gt;&nbsp;{_max_rank:.0f}")
+        atr = _n("ATR / Price (%)")
+        if not pd.isna(atr) and atr > _max_atr:
+            fails.append(f"ATR&nbsp;&gt;&nbsp;{_max_atr:.0f}%")
+        price = _n("Close")
+        if not pd.isna(price) and price < _min_price:
+            fails.append(f"Kurs&nbsp;&lt;&nbsp;${_min_price:.0f}")
+        cap = _n("MarketCap (Mio USD)")
+        if not pd.isna(cap) and cap < _min_cap:
+            fails.append(f"MCap&nbsp;&lt;&nbsp;{_min_cap:.0f}M")
+        return " · ".join(fails) if fails else "✅"
+
+    all_leaders_html["_filter_fails"] = all_leaders_html.apply(_compute_fails, axis=1)
 
     # 4b) Vorformatierte Spalten für Card-Layout (NaN-sicher)
     def _card_fmt(val, fmt, sign=False):
