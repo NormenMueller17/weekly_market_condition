@@ -444,15 +444,20 @@ def generate_signals(
         gap_limit = 1.0 + r.get("gap_limit_pct", 5.0) / 100.0
         max_gap_price = round(pivot * gap_limit, 2)
 
-        kelly_value = account_equity * pos_size_pct
+        # Risk-first sizing: position = max_risk / stop_pct, capped at max_position_pct
+        max_risk_pct  = r.get("max_risk_per_trade_pct", 1.5) / 100.0
+        max_pos_pct   = r.get("max_position_pct",       15.0) / 100.0
+        # Bearish regime: halve risk exposure
+        if not market_bullish:
+            max_risk_pct *= r.get("bearish_kelly_fraction", 0.5)
+        risk_based_pct = max_risk_pct / stop_pct if stop_pct > 0 else max_pos_pct
+        pos_size_pct   = min(risk_based_pct, max_pos_pct)
+        risk_value     = account_equity * max_risk_pct  # always exact target risk
+        position_value = account_equity * pos_size_pct
         if available_cash is not None:
-            # Distribute available cash evenly across remaining slots,
-            # but never exceed what Kelly allows per position.
-            cash_per_slot = available_cash / max(1, remaining_slots)
-            position_value = min(kelly_value, cash_per_slot)
-        else:
-            position_value = kelly_value
-        risk_value     = position_value * stop_pct
+            cash_per_slot  = available_cash / max(1, remaining_slots)
+            position_value = min(position_value, cash_per_slot)
+            risk_value     = position_value * stop_pct
         risk_on_equity = risk_value / account_equity
 
         # Industry data (used for ranking)
