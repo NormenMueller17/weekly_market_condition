@@ -405,6 +405,12 @@ def generate_signals(
         if stop is None:
             stop = _stop_default(entry)
 
+        # Floor: stop must be at least 1× ATR below entry (avoids sub-1% stops
+        # on tight Launchpad bases where the formula gives no real room)
+        atr_floor = entry * (1.0 - atr_pct / 100.0)
+        if stop > atr_floor:
+            stop = atr_floor
+
         # Blueprint safety cap: stop never more than 20 % below entry
         stop_pct = (entry - stop) / entry
         if stop_pct > 0.20:
