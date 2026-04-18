@@ -374,6 +374,12 @@ def generate_signals(
             range_pct = _safe_float(row.get("Launchpad Range (%)"))
             if pivot and range_pct is not None:
                 stop = _stop_launchpad(pivot, range_pct)
+            # Stop never above the trigger candle's wick low
+            week_low = _safe_float(row.get("Week Low"))
+            if stop is not None and week_low and week_low < stop:
+                stop = week_low
+            elif stop is None and week_low:
+                stop = week_low
             bl      = pivot
             pattern = "VCP+Launchpad" if has_vcp else "Launchpad"
 

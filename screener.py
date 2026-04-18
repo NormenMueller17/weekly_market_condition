@@ -282,6 +282,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "Launchpad Weeks": launchpad_result.get("Base_Weeks", 0),
         "Launchpad Range (%)": launchpad_result.get("Range_Pct", float("nan")),
         "Launchpad Pivot": launchpad_result.get("Pivot_Level", None),
+        "Week Low": float(low.iloc[-1]) if len(low) > 0 else float("nan"),
     }
 
 
