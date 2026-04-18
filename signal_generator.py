@@ -349,6 +349,10 @@ def generate_signals(
         ind_rank = _num("Industry Ranking", fill=9999)
         mask &= ind_rank <= r["max_industry_rank"]
 
+    # 8. Volume Breakout mandatory — only stocks with confirmed volume surge qualify
+    vol_breakout_col = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+    mask &= vol_breakout_col
+
     candidates = df[mask].copy()
 
     if candidates.empty:

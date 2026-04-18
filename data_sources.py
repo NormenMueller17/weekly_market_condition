@@ -532,6 +532,16 @@ def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.D
         if sub.empty:
             continue
 
+        # Reject delisted / inactive stocks: last traded date must be within 14 calendar days
+        last_date = sub.index[-1]
+        if isinstance(last_date, pd.Timestamp):
+            days_stale = (pd.Timestamp.now(tz=last_date.tzinfo) - last_date).days
+        else:
+            days_stale = (pd.Timestamp.now() - pd.Timestamp(last_date)).days
+        if days_stale > 14:
+            print(f"[SKIP] {t}: letzte Handelsdaten vor {days_stale} Tagen – wahrscheinlich de-listed")
+            continue
+
         # Keep same output column selection behavior as before
         out[t] = sub[[c for c in ["Open", "High", "Low", "Close", "Volume"] if c in sub.columns]].copy()
 

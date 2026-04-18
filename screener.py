@@ -317,6 +317,13 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
                 print(f"{t}: keine Daten")
                 continue
 
+            # Delisting-Check: letzter Handelstag darf nicht älter als 14 Tage sein
+            last_dt = df.index[-1]
+            days_stale = (pd.Timestamp.now(tz=getattr(last_dt, "tzinfo", None)) - pd.Timestamp(last_dt)).days
+            if days_stale > 14:
+                print(f"{t}: de-listed (letzter Handelstag vor {days_stale} Tagen) – übersprungen")
+                continue
+
             # MultiIndex (selten, aber möglich)
             if isinstance(df.columns, pd.MultiIndex):
                 try:
@@ -408,9 +415,9 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
     df_results["RS_4w"] = df_results.index.map(lambda t: safe_get(rs_map_4w, t))
     df_results["RS_delta_4w"] = df_results["RS_now"] - df_results["RS_4w"]
 
-    # Minervini Leader filtern
+    # Minervini Leader filtern — Vol-Breakout ist Pflicht, min_score zählt alle 8 Kriterien
     leaders = df_results[
-        ((df_results["score"] - df_results["Vol-Breakout"].astype(int)) >= min_score)
+        df_results["Vol-Breakout"] & (df_results["score"] >= min_score)
     ].sort_values("score", ascending=False)
 
 
