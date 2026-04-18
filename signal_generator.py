@@ -26,11 +26,50 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import asdict, dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+
+
+def _filter_earnings_blackout(tickers: list[str], window_days: int = 7) -> list[str]:
+    """Return tickers whose next earnings date is more than window_days away (or unknown).
+
+    Stocks with earnings within window_days are excluded to avoid gap risk.
+    Falls back to including the ticker if the earnings date cannot be determined.
+    """
+    import yfinance as yf
+    cutoff = date.today() + timedelta(days=window_days)
+    safe: list[str] = []
+    for ticker in tickers:
+        try:
+            cal = yf.Ticker(ticker).calendar
+            # calendar is a dict with key "Earnings Date" → list of dates, or a DataFrame
+            if isinstance(cal, dict):
+                dates = cal.get("Earnings Date", [])
+                if not dates:
+                    safe.append(ticker)
+                    continue
+                next_earnings = min(
+                    (d.date() if hasattr(d, "date") else d for d in dates),
+                    default=None,
+                )
+            elif hasattr(cal, "empty") and not cal.empty:
+                # older yfinance versions return a DataFrame
+                row = cal.T.get("Earnings Date")
+                next_earnings = row.iloc[0].date() if row is not None and len(row) else None
+            else:
+                safe.append(ticker)
+                continue
+
+            if next_earnings is None or next_earnings > cutoff:
+                safe.append(ticker)
+            else:
+                print(f"[EARNINGS] {ticker}: Earnings {next_earnings} ≤ {window_days}d → ausgeschlossen")
+        except Exception:
+            safe.append(ticker)  # fail-open: lieber zu viele als zu wenige Kandidaten
+    return safe
 
 
 # ── Load rules.json (next to this file) ──────────────────────────────────────
@@ -61,6 +100,7 @@ DEFAULT_RULES: dict = {
     "min_rev_growth":         _f.get("min_rev_growth",         0.0),
     "max_industry_rank":      _f.get("max_industry_rank",      100),
     "max_stop_pct":           _f.get("max_stop_pct",           20.0),
+    "earnings_blackout_days": _f.get("earnings_blackout_days", 7),
     "min_price":              _f.get("min_price",              5.0),
     "min_market_cap_mio":     _f.get("min_market_cap_mio",    300.0),
     "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
@@ -371,6 +411,14 @@ def generate_signals(
 
     if candidates.empty:
         return [], candidates
+
+    # 11. Earnings-Blackout: kein Kauf wenn Earnings ≤ 7 Tage entfernt
+    earnings_window = r.get("earnings_blackout_days", 7)
+    if earnings_window > 0:
+        no_earnings = _filter_earnings_blackout(list(candidates.index), earnings_window)
+        candidates = candidates[candidates.index.isin(no_earnings)]
+        if candidates.empty:
+            return [], candidates
 
     # ── Portfolio-aware filtering ─────────────────────────────────────────────
     held = set(open_positions or [])
