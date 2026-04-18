@@ -303,6 +303,68 @@ HTML_TMPL = """
         Kriterien (Score ≥ 6/8 + Vol-Breakout + RS ≥ 70 + Industry Top 50) nicht erfüllt.
         {% endif %}
     </p>
+
+    {% if not pages_url and not all_leaders.empty %}
+    {# ── CLOUDFLARE PAGES: Fallback-Tabelle aller Screener-Kandidaten ── #}
+    <p style="font-size:0.9em;color:#555;margin-bottom:0.6em">
+        Screener-Kandidaten (Score ≥ 6/8) — sortierbar, kein Handelssignal diese Woche:
+    </p>
+    <div style="overflow-x:auto">
+    <table>
+      <tr>
+        <th class="left sortable" onclick="sortTable(this)">Ticker</th>
+        <th class="sortable" onclick="sortTable(this)">Score</th>
+        <th class="left sortable" onclick="sortTable(this)">Muster</th>
+        <th class="sortable" onclick="sortTable(this)">Close</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">RS</th>
+        <th class="sortable" onclick="sortTable(this)">ΔRS 4W</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">Dist 52W H %</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">Ind. Rank</th>
+        <th class="sortable" onclick="sortTable(this)">ATR %</th>
+        <th class="sortable" onclick="sortTable(this)">Vol-BO</th>
+        <th class="sortable" onclick="sortTable(this)">MarketCap<br>(Mio $)</th>
+        <th class="sortable" onclick="sortTable(this)">SA</th>
+      </tr>
+      {% for idx, row in all_leaders.iterrows() %}
+      {% set rs_val = row.get("RS (O'Neil)", none) %}
+      {% set dist_val = row.get("Dist to 52W High (%)", none) %}
+      {% set ind_val = row.get("Industry Rank", none) %}
+      {% set drs_val = row["ΔRS 4W"] if "ΔRS 4W" in all_leaders.columns else none %}
+      <tr>
+        <td class="left"><strong style="color:#003d99">{{ idx }}</strong></td>
+        <td style="text-align:center">{{ row.get("score", "–") }}</td>
+        <td class="left">
+          {% set pat = row.get("VCP Entry", "") %}
+          {% set lp  = row.get("Launchpad Pivot", "") %}
+          {% if pat and pat != "" %}<span style="background:#e8f5e9;padding:1px 5px;border-radius:3px;font-size:0.82em">VCP</span>{% endif %}
+          {% if lp and lp != "" %}<span style="background:#fffde7;padding:1px 5px;border-radius:3px;font-size:0.82em">LP</span>{% endif %}
+          {% if (not pat or pat == "") and (not lp or lp == "") %}<span style="color:#aaa;font-size:0.82em">–</span>{% endif %}
+        </td>
+        <td style="text-align:right">{{ row.get("Close", "–") }}</td>
+        <td style="text-align:center;background:{% if rs_val != none and rs_val|float >= 70 %}#e8f5e9{% else %}transparent{% endif %}">
+          {{ rs_val if rs_val != none else "–" }}
+        </td>
+        <td style="text-align:center;color:{% if drs_val is not none and drs_val > 0 %}#2e7d32{% elif drs_val is not none and drs_val < 0 %}#c62828{% else %}#555{% endif %}">
+          {% if drs_val is not none %}{% if drs_val > 0 %}+{% endif %}{{ "%.0f"|format(drs_val) }}{% else %}–{% endif %}
+        </td>
+        <td style="text-align:center;background:{% if dist_val != none and dist_val|float <= 25 %}#e8f5e9{% else %}transparent{% endif %}">
+          {{ dist_val if dist_val != none else "–" }}
+        </td>
+        <td style="text-align:center;background:{% if ind_val != none and ind_val|float <= 50 %}#e8f5e9{% else %}transparent{% endif %}">
+          {{ ind_val if ind_val != none else "–" }}
+        </td>
+        <td style="text-align:center">{{ row.get("ATR / Price (%)", "–") }}</td>
+        <td style="text-align:center">
+          {% if row.get("Vol-Breakout", false) %}✅{% else %}❌{% endif %}
+        </td>
+        <td style="text-align:right">{{ row.get("MarketCap (Mio USD)", "–") }}</td>
+        <td style="text-align:center">{{ row.get("SA", "") }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    {% endif %}
+
     {% else %}
     <p style="margin-bottom:0.8em">
         <strong>Marktfilter:</strong> S&amp;P 500 10W EMA &gt; 20W EMA ✅ &nbsp;|&nbsp;
@@ -673,29 +735,34 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     divergences  = build_divergence_text(idx)
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
 
-    # 2) Leaders: nur Score 8/8 im Mail-Report
+    # 2) Leaders: für Cloudflare Pages alle behalten; für Email nur Score 8/8
+    all_leaders_html = leaders.copy()   # ungefilterter Fallback für Cloudflare Pages
     leaders_html = leaders.copy()
     if "score" in leaders_html.columns:
         leaders_html["score_num"] = pd.to_numeric(leaders_html["score"], errors="coerce")
         leaders_html = leaders_html[leaders_html["score_num"] == 8].drop(columns=["score_num"])
 
     # 3) SA-Spalte in HTML-Buttons umwandeln
+    def _sa_button(url: str) -> str:
+        if not isinstance(url, str) or not url:
+            return ""
+        return (
+            f'<a href="{url}" target="_blank" '
+            f'style="display:inline-block;padding:4px 8px;'
+            f'background-color:#007bff;color:white;'
+            f'text-decoration:none;border-radius:4px;'
+            f'font-size:12px;">SA</a>'
+        )
     if "SA" in leaders_html.columns:
-        def _sa_button(url: str) -> str:
-            if not isinstance(url, str) or not url:
-                return ""
-            return (
-                f'<a href="{url}" target="_blank" '
-                f'style="display:inline-block;padding:4px 8px;'
-                f'background-color:#007bff;color:white;'
-                f'text-decoration:none;border-radius:4px;'
-                f'font-size:12px;">SA</a>'
-            )
         leaders_html["SA"] = leaders_html["SA"].apply(_sa_button)
+    if "SA" in all_leaders_html.columns:
+        all_leaders_html["SA"] = all_leaders_html["SA"].apply(_sa_button)
 
     # 4a) ΔRS 4W sicher auf numerisch konvertieren (verhindert str/int-Vergleich im Template)
     if 'ΔRS 4W' in leaders_html.columns:
         leaders_html['ΔRS 4W'] = pd.to_numeric(leaders_html['ΔRS 4W'], errors='coerce')
+    if 'ΔRS 4W' in all_leaders_html.columns:
+        all_leaders_html['ΔRS 4W'] = pd.to_numeric(all_leaders_html['ΔRS 4W'], errors='coerce')
 
     # 4b) Vorformatierte Spalten für Card-Layout (NaN-sicher)
     def _card_fmt(val, fmt, sign=False):
@@ -731,6 +798,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         summary          = summary,
         report_date      = report_date,
         leaders          = leaders_html,
+        all_leaders      = all_leaders_html,
         signals          = signals,
         market_bullish   = market_bullish,
         COLOR_POSITIVE   = COLOR_POSITIVE,
