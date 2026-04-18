@@ -457,6 +457,25 @@ def run():
     )
     print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
 
+    # ── Alpaca: OTO Stop-Limit Orders für Top-Picks platzieren ───────────────
+    if signals and alpaca_portfolio is not None:
+        order_results = alpaca_client.place_signal_orders(signals, dry_run=False)
+        for r in order_results:
+            status = r["status"]
+            ticker = r["ticker"]
+            if status == "placed":
+                print(f"[ORDER] ✅ {ticker}  Buy-Stop ${r['buy_stop']}  "
+                      f"Max-Gap ${r['max_gap']}  Stop ${r['stop_loss']}  "
+                      f"Qty {r['qty']}  → Order-ID {r['order_id']}")
+            elif status.startswith("skip"):
+                print(f"[ORDER] ⏭  {ticker}: {status}")
+            elif status == "dry_run":
+                print(f"[ORDER] 🔍 DRY-RUN {ticker}  qty={r['qty']}")
+            else:
+                print(f"[ORDER] ❌ {ticker}: {status}")
+    else:
+        print("[ORDER] Keine Orders platziert (kein Alpaca-Client oder keine Signale)")
+
     # --- Formatierte Kopie NUR für HTML-Report ---
     leaders_html = leaders.copy()
 

@@ -1,6 +1,11 @@
 """Thin Alpaca Paper-Trading client.
 
-Fetches account summary and open positions for dynamic position sizing and portfolio reporting.
+Fetches account summary and open positions for dynamic position sizing and
+portfolio reporting. Also places OTO stop-limit orders for buy signals.
+
+Order flow per signal (top picks only):
+  Parent : Stop-Limit Buy  @ buy_stop / max_gap_price  (GTC)
+  Child  : Stop-Market Sell @ stop_loss                 (auto-activated on fill)
 
 Requires env vars ALPACA_API_KEY and ALPACA_API_SECRET.
 Falls back gracefully (returns None / []) when keys are missing or
@@ -8,7 +13,10 @@ the API is unreachable, so the screener can run without Alpaca.
 """
 
 import os
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from signal_generator import TradeSignal
 
 _PAPER_BASE_URL = "https://paper-api.alpaca.markets"
 
@@ -81,3 +89,92 @@ def open_position_tickers() -> list[str]:
     if portfolio is None:
         return []
     return [p["symbol"] for p in portfolio["positions"]]
+
+
+def _open_order_symbols(client) -> set[str]:
+    """Return set of ticker symbols that already have an open order."""
+    try:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import QueryOrderStatus
+        orders = client.get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN))
+        return {o.symbol for o in orders}
+    except Exception:
+        return set()
+
+
+def place_signal_orders(signals: list, dry_run: bool = False) -> list[dict]:
+    """Place OTO stop-limit orders for top-pick signals.
+
+    For each top pick:
+      - Parent:  Stop-Limit Buy  @ buy_stop (trigger) / max_gap_price (limit)  GTC
+      - Child:   Stop-Market Sell @ stop_loss  (auto-placed by Alpaca on fill)
+
+    Skips tickers that already have an open order or an existing position.
+    Returns a list of result dicts (one per signal) with keys:
+      ticker, qty, status, order_id (if placed)
+    """
+    client = _get_trading_client()
+    if client is None:
+        return [{"ticker": s.ticker, "qty": 0, "status": "no_client"} for s in signals if s.is_top_pick]
+
+    existing_orders    = _open_order_symbols(client)
+    existing_positions = set(open_position_tickers())
+    skip_tickers       = existing_orders | existing_positions
+
+    results: list[dict] = []
+
+    for sig in [s for s in signals if s.is_top_pick]:
+        qty = int(sig.position_value // sig.buy_stop)
+        base = {"ticker": sig.ticker, "qty": qty,
+                "buy_stop": sig.buy_stop, "max_gap": sig.max_gap_price,
+                "stop_loss": sig.stop_loss}
+
+        if qty < 1:
+            results.append({**base, "status": "skip_qty_too_small"})
+            continue
+
+        if sig.ticker in skip_tickers:
+            results.append({**base, "status": "skip_already_exists"})
+            continue
+
+        if dry_run:
+            results.append({**base, "status": "dry_run"})
+            continue
+
+        try:
+            from alpaca.trading.requests import StopLimitOrderRequest, StopLossRequest
+            from alpaca.trading.enums import OrderSide, TimeInForce, OrderClass
+
+            order = client.submit_order(
+                StopLimitOrderRequest(
+                    symbol         = sig.ticker,
+                    qty            = qty,
+                    side           = OrderSide.BUY,
+                    time_in_force  = TimeInForce.GTC,
+                    stop_price     = round(sig.buy_stop, 2),
+                    limit_price    = round(sig.max_gap_price, 2),
+                    order_class    = OrderClass.OTO,
+                    stop_loss      = StopLossRequest(stop_price=round(sig.stop_loss, 2)),
+                )
+            )
+            results.append({**base, "status": "placed", "order_id": str(order.id)})
+
+        except Exception as e:
+            results.append({**base, "status": f"error: {e}"})
+
+    return results
+
+
+def cancel_open_orders() -> int:
+    """Cancel all open GTC orders. Call at end of week for cleanup.
+
+    Returns number of cancelled orders.
+    """
+    client = _get_trading_client()
+    if client is None:
+        return 0
+    try:
+        cancelled = client.cancel_orders()
+        return len(cancelled) if cancelled else 0
+    except Exception:
+        return 0
