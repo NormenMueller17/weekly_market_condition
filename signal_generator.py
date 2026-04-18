@@ -64,6 +64,7 @@ DEFAULT_RULES: dict = {
     "min_price":              _f.get("min_price",              5.0),
     "min_market_cap_mio":     _f.get("min_market_cap_mio",    300.0),
     "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
+    "gap_limit_pct":          _f.get("gap_limit_pct",         5.0),
 }
 
 # ── Ranking weights (must sum to 1.0) ─────────────────────────────────────────
@@ -241,6 +242,7 @@ class TradeSignal:
     # Entry & stop
     entry_price:        float
     buy_stop:           float           # Buy-Stop-Order: max(entry, breakout_level) * (1 + buffer%)
+    max_gap_price:      float           # Order verwerfen wenn Montag-Open > dieser Preis
     stop_loss:          float
     stop_loss_pct:      float           # e.g. 0.092  →  9.2 % below entry
 
@@ -435,7 +437,12 @@ def generate_signals(
 
         # Buy-Stop: 0.1% über dem höheren von entry und breakout_level
         buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
-        buy_stop = round(max(entry, bl if bl else 0.0) * buf, 2)
+        pivot = bl if bl else entry
+        buy_stop = round(max(entry, pivot) * buf, 2)
+
+        # Max. Gap: Order verwerfen wenn Montag-Open mehr als gap_limit_pct% über Pivot
+        gap_limit = 1.0 + r.get("gap_limit_pct", 5.0) / 100.0
+        max_gap_price = round(pivot * gap_limit, 2)
 
         kelly_value = account_equity * pos_size_pct
         if available_cash is not None:
@@ -459,6 +466,7 @@ def generate_signals(
             sector             = str(row.get("Sektor", "")),
             entry_price        = round(entry, 2),
             buy_stop           = buy_stop,
+            max_gap_price      = max_gap_price,
             stop_loss          = round(stop, 2),
             stop_loss_pct      = round(stop_pct, 4),
             pattern            = pattern,

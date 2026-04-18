@@ -382,6 +382,7 @@ HTML_TMPL = """
         <th class="left sortable" onclick="sortTable(this)">Muster</th>
         <th class="sortable" onclick="sortTable(this)">Entry</th>
         <th class="sortable" onclick="sortTable(this)">Buy-Stop</th>
+        <th class="sortable" onclick="sortTable(this)" title="Order verwerfen wenn Montag-Open über diesem Preis">Max. Gap</th>
         <th class="sortable" onclick="sortTable(this)">Stop-Loss</th>
         <th class="sortable" onclick="sortTable(this)">Stop %</th>
         <th class="sortable" onclick="sortTable(this)">BO-Level</th>
@@ -424,6 +425,7 @@ HTML_TMPL = """
           {%- else %}#e3f2fd{% endif %}">{{ s.pattern }}</td>
         <td><strong>{{ '%.2f' % s.entry_price }}</strong></td>
         <td style="background-color:#e8f4fd;font-weight:bold">{{ '%.2f' % s.buy_stop }}</td>
+        <td style="background-color:#fdecea;font-weight:bold" title="Order verwerfen wenn Montag-Open über diesem Preis">{{ '%.2f' % s.max_gap_price }}</td>
         <td style="background-color:#fff3e0">{{ '%.2f' % s.stop_loss }}</td>
         <td style="background-color:#fff3e0">{{ stop_pct_display }}%</td>
         <td>{{ '%.2f' % s.breakout_level if s.breakout_level else '–' }}</td>
@@ -460,7 +462,7 @@ HTML_TMPL = """
       {% set crit = signal_criteria.get(s.ticker, {}) %}
       {% if crit %}
       <tr style="background-color:{{ row_bg }}">
-        <td colspan="19" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
+        <td colspan="20" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
           {% for name, val in crit.items() %}
           <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
                        font-size:0.76em;font-weight:bold;white-space:nowrap;
@@ -487,7 +489,9 @@ HTML_TMPL = """
     <p style="font-size:0.82em;color:#777;margin-top:0.3em">
       Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%).
       🏆 = Top-{{ signals | selectattr("is_top_pick") | list | length }} Kaufkandidaten.
-      🟢 = Kriterium erfüllt &nbsp;|&nbsp; 🔴 = nicht erfüllt &nbsp;|&nbsp; Rot hinterlegt = Risiko/Equity &gt; 1.8%.
+      🔵 Buy-Stop = Einstiegsorder (max(Entry, Pivot) +0.1%) &nbsp;|&nbsp;
+      🔴 Max. Gap = Order verwerfen wenn Montag-Open über diesem Preis (Pivot +5%) &nbsp;|&nbsp;
+      🟢/🔴 Scorecard = Minervini-Kriterien &nbsp;|&nbsp; Rot hinterlegt = Risiko/Equity &gt; 1.8%.
     </p>
     {% endif %}
 
