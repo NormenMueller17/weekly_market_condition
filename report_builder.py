@@ -42,9 +42,36 @@ HTML_TMPL = """
             padding: 12px 14px;
             background: #fff;
         }
+        /* Portfolio cards */
+        .portfolio-summary {
+            background: #f5f7fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 1em;
+            border-collapse: separate;
+            width: 100%;
+        }
+        .portfolio-summary td {
+            border: none;
+            text-align: center;
+            padding: 4px 12px;
+            font-size: 0.95em;
+        }
+        .portfolio-summary .summary-label {
+            font-size: 0.75em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .portfolio-summary .summary-value {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
         @media only screen and (max-width: 600px) {
             body { margin: 0.8em; }
             .leader-cell { display: block !important; width: 100% !important; box-sizing: border-box; }
+            .portfolio-summary td { display: block !important; width: 100% !important; text-align: left; padding: 2px 0; }
         }
     </style>
 </head>
@@ -136,7 +163,72 @@ HTML_TMPL = """
     <h2>4) Fazit</h2>
     <p>{{ summary }}</p>
 
-    <h2>5) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
+    {% if alpaca_portfolio %}
+    <h2>5) 💼 Alpaca Portfolio</h2>
+
+    {# ── Summary Banner ── #}
+    {% set pl = alpaca_portfolio.unrealized_pl %}
+    {% set pl_pct = (pl / (alpaca_portfolio.equity - pl) * 100) if (alpaca_portfolio.equity - pl) != 0 else 0 %}
+    <table class="portfolio-summary">
+      <tr>
+        <td>
+          <div class="summary-label">Cash</div>
+          <div class="summary-value">${{ "{:,.0f}".format(alpaca_portfolio.cash) }}</div>
+        </td>
+        <td>
+          <div class="summary-label">Equity</div>
+          <div class="summary-value">${{ "{:,.0f}".format(alpaca_portfolio.equity) }}</div>
+        </td>
+        <td>
+          <div class="summary-label">Unrealized P&amp;L</div>
+          <div class="summary-value {{ 'pos' if pl >= 0 else 'neg' }}">
+            {{ '+' if pl >= 0 else '' }}${{ "{:,.0f}".format(pl) }}
+            &nbsp;({{ '+' if pl_pct >= 0 else '' }}{{ "%.1f"|format(pl_pct) }}%)
+          </div>
+        </td>
+        <td>
+          <div class="summary-label">Positionen</div>
+          <div class="summary-value">{{ alpaca_portfolio.positions | length }}</div>
+        </td>
+      </tr>
+    </table>
+
+    {# ── Position Cards (2-spaltig, auf Mobile 1-spaltig) ── #}
+    {% if alpaca_portfolio.positions %}
+    {% set ns = namespace(col=0) %}
+    <table class="leader-grid">
+    {% for pos in alpaca_portfolio.positions | sort(attribute='market_value', reverse=True) %}
+      {% if ns.col == 0 %}<tr>{% endif %}
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">{{ pos.symbol }}</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            {{ "{:.0f}".format(pos.qty) }} Stk &nbsp;·&nbsp; Ø ${{ "{:,.2f}".format(pos.avg_entry_price) }}
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>${{ "{:,.2f}".format(pos.current_price) }}</strong>
+          </div>
+          <div class="{{ 'pos' if pos.unrealized_pl >= 0 else 'neg' }}" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            {{ '+' if pos.unrealized_pl >= 0 else '' }}${{ "{:,.0f}".format(pos.unrealized_pl) }}
+            &nbsp;&nbsp;
+            {{ '+' if pos.unrealized_plpc >= 0 else '' }}{{ "%.1f"|format(pos.unrealized_plpc) }}%
+            {{ '▲' if pos.unrealized_pl >= 0 else '▼' }}
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: ${{ "{:,.0f}".format(pos.market_value) }}</div>
+        </div>
+      </td>
+      {% set ns.col = ns.col + 1 %}
+      {% if ns.col == 2 %}</tr>{% set ns.col = 0 %}{% endif %}
+    {% endfor %}
+    {% if ns.col == 1 %}<td class="leader-cell"></td></tr>{% endif %}
+    </table>
+    {% else %}
+    <p style="color:#888">Keine offenen Positionen.</p>
+    {% endif %}
+
+    {% endif %}
+
+    <h2>6) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
 
     {% if not signals %}
     <p style="color:#888">
@@ -297,7 +389,7 @@ HTML_TMPL = """
 
     {% endif %}
 
-    <h2>6) Marktführer nach Minervini (Score 8/8)</h2>
+    <h2>7) Marktführer nach Minervini (Score 8/8)</h2>
 
     {% if leaders.empty %}
     <p>Keine Aktien erfüllen alle 8 Minervini-Kriterien.</p>
@@ -435,7 +527,7 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
 
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
                       signals=None, pages_url=None,
-                      alpaca_cash=None, alpaca_positions=None):
+                      alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None):
     """Build the weekly HTML email.
 
     Parameters
@@ -525,6 +617,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         pages_url        = pages_url,
         alpaca_cash      = alpaca_cash,
         alpaca_positions = alpaca_positions or [],
+        alpaca_portfolio = alpaca_portfolio,
     )
     return html
 
