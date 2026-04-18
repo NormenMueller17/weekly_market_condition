@@ -37,6 +37,8 @@ jobs:
           echo "UNIVERSE=${{ vars.UNIVERSE }}" >> $GITHUB_ENV
           echo "CUSTOM_TICKERS=${{ vars.CUSTOM_TICKERS }}" >> $GITHUB_ENV
           echo "LOOKBACK_WEEKS=${{ vars.LOOKBACK_WEEKS }}" >> $GITHUB_ENV
+          echo "ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}" >> $GITHUB_ENV
+          echo "ALPACA_API_SECRET=${{ secrets.ALPACA_API_SECRET }}" >> $GITHUB_ENV
 
       - name: Run report
         run: |
