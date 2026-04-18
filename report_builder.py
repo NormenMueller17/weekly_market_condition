@@ -230,6 +230,16 @@ HTML_TMPL = """
 
     <h2>6) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
 
+    {% if pages_url %}
+    <p style="margin-bottom:0.6em">
+      <a href="{{ pages_url }}" target="_blank"
+         style="display:inline-block;padding:6px 18px;background:#003d99;color:white;
+                text-decoration:none;border-radius:6px;font-weight:bold;font-size:0.88em">
+        Vollständigen Report ansehen →
+      </a>
+    </p>
+    {% endif %}
+
     {% if not signals %}
     <p style="color:#888">
         Keine Kaufsignale diese Woche —
