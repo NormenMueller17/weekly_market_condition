@@ -31,6 +31,7 @@ from report_builder import (
     heuristic_verdict,
 )
 from signal_generator import generate_signals, is_market_bullish, save_signals_json
+import alpaca_client
 
 BOOLEAN_HEADERS = [
     "SMA10W steigend",
@@ -430,6 +431,14 @@ def run():
     remaining     = [c for c in leaders.columns if c not in existing_pref]
     leaders       = leaders[existing_pref + remaining]
 
+    # ── Alpaca: verfügbares Kapital & offene Positionen ──────────────────────
+    alpaca_cash      = alpaca_client.available_cash()
+    alpaca_positions = alpaca_client.open_position_tickers()
+    if alpaca_cash is not None:
+        print(f"[ALPACA] Cash: ${alpaca_cash:,.0f} | Positionen: {alpaca_positions or '–'}")
+    else:
+        print("[ALPACA] Nicht verbunden – Fallback auf account_equity aus Einstellungen")
+
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
     signals, _signal_candidates = generate_signals(
         leaders,
@@ -440,6 +449,8 @@ def run():
         kelly_fraction  = SETTINGS.kelly_fraction,
         max_positions   = SETTINGS.max_positions,
         rules           = {"max_industry_rank": SETTINGS.max_industry_rank},
+        available_cash  = alpaca_cash,
+        open_positions  = alpaca_positions,
     )
     print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
 

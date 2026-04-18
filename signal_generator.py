@@ -279,14 +279,16 @@ class TradeSignal:
 
 def generate_signals(
     leaders:                 pd.DataFrame,
-    market_bullish:          bool  = True,
-    account_equity:          float = _DEFAULT_ACCOUNT_EQUITY,
-    win_rate:                float = _DEFAULT_WIN_RATE,
-    win_loss_ratio:          float = _DEFAULT_WIN_LOSS_RATIO,
-    kelly_fraction:          float = _DEFAULT_KELLY_FRACTION,
-    bearish_kelly_fraction:  float = _DEFAULT_BEARISH_KELLY_FRACTION,
-    max_positions:           int   = _DEFAULT_MAX_POSITIONS,
-    rules:                   dict  | None = None,
+    market_bullish:          bool        = True,
+    account_equity:          float       = _DEFAULT_ACCOUNT_EQUITY,
+    win_rate:                float       = _DEFAULT_WIN_RATE,
+    win_loss_ratio:          float       = _DEFAULT_WIN_LOSS_RATIO,
+    kelly_fraction:          float       = _DEFAULT_KELLY_FRACTION,
+    bearish_kelly_fraction:  float       = _DEFAULT_BEARISH_KELLY_FRACTION,
+    max_positions:           int         = _DEFAULT_MAX_POSITIONS,
+    rules:                   dict | None = None,
+    available_cash:          float | None = None,
+    open_positions:          list[str] | None = None,
 ) -> tuple[list[TradeSignal], pd.DataFrame]:
     """Apply Blueprint buy rules to the leaders DataFrame.
 
@@ -352,6 +354,15 @@ def generate_signals(
     if candidates.empty:
         return [], candidates
 
+    # ── Portfolio-aware filtering ─────────────────────────────────────────────
+    held = set(open_positions or [])
+    if held:
+        candidates = candidates[~candidates.index.isin(held)]
+
+    remaining_slots = max_positions - len(held)
+    if remaining_slots <= 0:
+        return [], candidates
+
     # ── Build signal objects ──────────────────────────────────────────────────
 
     signals: list[TradeSignal] = []
@@ -400,7 +411,14 @@ def generate_signals(
             stop     = entry * 0.80
             stop_pct = 0.20
 
-        position_value = account_equity * pos_size_pct
+        kelly_value = account_equity * pos_size_pct
+        if available_cash is not None:
+            # Distribute available cash evenly across remaining slots,
+            # but never exceed what Kelly allows per position.
+            cash_per_slot = available_cash / max(1, remaining_slots)
+            position_value = min(kelly_value, cash_per_slot)
+        else:
+            position_value = kelly_value
         risk_value     = position_value * stop_pct
         risk_on_equity = risk_value / account_equity
 
@@ -436,7 +454,7 @@ def generate_signals(
         ))
 
     # ── Rank and flag top picks ───────────────────────────────────────────────
-    signals = rank_signals(signals, max_positions=max_positions)
+    signals = rank_signals(signals, max_positions=remaining_slots)
 
     return signals, candidates
 
