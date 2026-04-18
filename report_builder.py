@@ -73,7 +73,61 @@ HTML_TMPL = """
             .leader-cell { display: block !important; width: 100% !important; box-sizing: border-box; }
             .portfolio-summary td { display: block !important; width: 100% !important; text-align: left; padding: 2px 0; }
         }
+        th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        th.sortable:hover { background: #f0f0f0; }
+        th.sortable::after { content: ' ⇅'; font-size: 0.75em; color: #aaa; }
+        th.sortable.asc::after  { content: ' ▲'; color: #333; }
+        th.sortable.desc::after { content: ' ▼'; color: #333; }
     </style>
+    <script>
+    function sortTable(th) {
+        var table = th.closest('table');
+        var tbody = table.querySelector('tbody') || table;
+        var col   = th.cellIndex;
+        var asc   = th.classList.toggle('asc');
+        if (!asc) th.classList.toggle('desc');
+        else th.classList.remove('desc');
+
+        // Collect sortable row-groups (data row + optional scorecard row)
+        var allRows = Array.from(tbody.querySelectorAll('tr')).slice(1); // skip header
+        var groups = [];
+        var i = 0;
+        while (i < allRows.length) {
+            var group = [allRows[i]];
+            // If next row is a scorecard row (has colspan), attach it to this group
+            if (allRows[i+1]) {
+                var cells = allRows[i+1].querySelectorAll('td');
+                if (cells.length === 1 && cells[0].colSpan > 1) {
+                    group.push(allRows[i+1]);
+                    i++;
+                }
+            }
+            groups.push(group);
+            i++;
+        }
+
+        var parse = function(txt) {
+            var s = txt.replace(/[+%$,]/g, '').trim();
+            var n = parseFloat(s);
+            return isNaN(n) ? s.toLowerCase() : n;
+        };
+
+        groups.sort(function(a, b) {
+            var ta = parse(a[0].cells[col] ? a[0].cells[col].innerText : '');
+            var tb = parse(b[0].cells[col] ? b[0].cells[col].innerText : '');
+            if (ta < tb) return asc ? -1 : 1;
+            if (ta > tb) return asc ? 1 : -1;
+            return 0;
+        });
+
+        // Clear header sort indicators on siblings
+        th.closest('tr').querySelectorAll('th').forEach(function(t) {
+            if (t !== th) { t.classList.remove('asc'); t.classList.remove('desc'); }
+        });
+
+        groups.forEach(function(g) { g.forEach(function(r) { tbody.appendChild(r); }); });
+    }
+    </script>
 </head>
 <body>
     <h1>Weekly US Market Report</h1>
@@ -321,24 +375,24 @@ HTML_TMPL = """
     {# ── VOLLSTÄNDIGE VERSION FÜR GITHUB PAGES ── #}
     <table>
       <tr>
-        <th>Rang</th>
-        <th class="left">Ticker</th>
-        <th class="left">Unternehmen</th>
-        <th class="left">Sektor / Branche</th>
-        <th class="left">Muster</th>
-        <th>Entry</th>
-        <th>Stop-Loss</th>
-        <th>Stop %</th>
-        <th>BO-Level</th>
-        <th>Dist 52W H</th>
-        <th>RS</th>
-        <th>ΔRS 4W</th>
-        <th>Industry<br>Rank</th>
-        <th>ROE %</th>
-        <th>Op.Margin</th>
-        <th>Rev. Growth</th>
-        <th>Position</th>
-        <th>Risiko / Equity</th>
+        <th class="sortable" onclick="sortTable(this)">Rang</th>
+        <th class="left sortable" onclick="sortTable(this)">Ticker</th>
+        <th class="left sortable" onclick="sortTable(this)">Unternehmen</th>
+        <th class="left sortable" onclick="sortTable(this)">Sektor / Branche</th>
+        <th class="left sortable" onclick="sortTable(this)">Muster</th>
+        <th class="sortable" onclick="sortTable(this)">Entry</th>
+        <th class="sortable" onclick="sortTable(this)">Stop-Loss</th>
+        <th class="sortable" onclick="sortTable(this)">Stop %</th>
+        <th class="sortable" onclick="sortTable(this)">BO-Level</th>
+        <th class="sortable" onclick="sortTable(this)">Dist 52W H</th>
+        <th class="sortable" onclick="sortTable(this)">RS</th>
+        <th class="sortable" onclick="sortTable(this)">ΔRS 4W</th>
+        <th class="sortable" onclick="sortTable(this)">Industry<br>Rank</th>
+        <th class="sortable" onclick="sortTable(this)">ROE %</th>
+        <th class="sortable" onclick="sortTable(this)">Op.Margin</th>
+        <th class="sortable" onclick="sortTable(this)">Rev. Growth</th>
+        <th class="sortable" onclick="sortTable(this)">Position</th>
+        <th class="sortable" onclick="sortTable(this)">Risiko / Equity</th>
       </tr>
       {% for s in signals %}
       {% set stop_pct_display  = (s.stop_loss_pct * 100)      | round(1) %}
