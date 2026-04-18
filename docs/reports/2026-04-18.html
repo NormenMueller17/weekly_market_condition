@@ -61,7 +61,61 @@
             .leader-cell { display: block !important; width: 100% !important; box-sizing: border-box; }
             .portfolio-summary td { display: block !important; width: 100% !important; text-align: left; padding: 2px 0; }
         }
+        th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        th.sortable:hover { background: #f0f0f0; }
+        th.sortable::after { content: ' ⇅'; font-size: 0.75em; color: #aaa; }
+        th.sortable.asc::after  { content: ' ▲'; color: #333; }
+        th.sortable.desc::after { content: ' ▼'; color: #333; }
     </style>
+    <script>
+    function sortTable(th) {
+        var table = th.closest('table');
+        var tbody = table.querySelector('tbody') || table;
+        var col   = th.cellIndex;
+        var asc   = th.classList.toggle('asc');
+        if (!asc) th.classList.toggle('desc');
+        else th.classList.remove('desc');
+
+        // Collect sortable row-groups (data row + optional scorecard row)
+        var allRows = Array.from(tbody.querySelectorAll('tr')).slice(1); // skip header
+        var groups = [];
+        var i = 0;
+        while (i < allRows.length) {
+            var group = [allRows[i]];
+            // If next row is a scorecard row (has colspan), attach it to this group
+            if (allRows[i+1]) {
+                var cells = allRows[i+1].querySelectorAll('td');
+                if (cells.length === 1 && cells[0].colSpan > 1) {
+                    group.push(allRows[i+1]);
+                    i++;
+                }
+            }
+            groups.push(group);
+            i++;
+        }
+
+        var parse = function(txt) {
+            var s = txt.replace(/[+%$,]/g, '').trim();
+            var n = parseFloat(s);
+            return isNaN(n) ? s.toLowerCase() : n;
+        };
+
+        groups.sort(function(a, b) {
+            var ta = parse(a[0].cells[col] ? a[0].cells[col].innerText : '');
+            var tb = parse(b[0].cells[col] ? b[0].cells[col].innerText : '');
+            if (ta < tb) return asc ? -1 : 1;
+            if (ta > tb) return asc ? 1 : -1;
+            return 0;
+        });
+
+        // Clear header sort indicators on siblings
+        th.closest('tr').querySelectorAll('th').forEach(function(t) {
+            if (t !== th) { t.classList.remove('asc'); t.classList.remove('desc'); }
+        });
+
+        groups.forEach(function(g) { g.forEach(function(r) { tbody.appendChild(r); }); });
+    }
+    </script>
 </head>
 <body>
     <h1>Weekly US Market Report</h1>
@@ -517,10 +571,12 @@
     <h2>6) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
 
     
+
+    
     <p style="color:#888">
         Keine Kaufsignale diese Woche —
         
-        Kriterien (Score 8/8 + Muster + Fundamentals + Industry Rank) nicht erfüllt.
+        Kriterien (Score ≥ 6/8 + Vol-Breakout + RS ≥ 70 + Industry Top 50) nicht erfüllt.
         
     </p>
     
