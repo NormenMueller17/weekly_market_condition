@@ -365,7 +365,7 @@ def generate_signals(
 
     # 10. Minimum market cap — no micro caps
     if r.get("min_market_cap_mio", 0) > 0:
-        mask &= _num("MarketCap_Mio", 0) >= r["min_market_cap_mio"]
+        mask &= _num("MarketCap (Mio USD)", 0) >= r["min_market_cap_mio"]
 
     candidates = df[mask].copy()
 
