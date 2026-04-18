@@ -431,6 +431,11 @@ def run():
     remaining     = [c for c in leaders.columns if c not in existing_pref]
     leaders       = leaders[existing_pref + remaining]
 
+    # ── Alpaca: nicht ausgelöste Orders der Vorwoche cancellen ───────────────
+    cancelled = alpaca_client.cancel_open_orders()
+    if cancelled > 0:
+        print(f"[ORDER] 🗑  {cancelled} offene Order(s) aus der Vorwoche gecancelt")
+
     # ── Alpaca: verfügbares Kapital & offene Positionen ──────────────────────
     alpaca_portfolio = alpaca_client.get_portfolio()
     if alpaca_portfolio is not None:
