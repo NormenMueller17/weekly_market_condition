@@ -236,7 +236,7 @@ HTML_TMPL = """
         {% if not market_bullish %}
         <strong>Marktfilter aktiv</strong>: S&amp;P 500 10W EMA &lt; 20W EMA.
         {% else %}
-        Kriterien (Score 8/8 + Muster + Fundamentals + Industry Rank) nicht erfüllt.
+        Kriterien (Score ≥ 6/8 + Vol-Breakout + RS ≥ 70 + Industry Top 50) nicht erfüllt.
         {% endif %}
     </p>
     {% else %}
