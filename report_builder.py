@@ -371,15 +371,27 @@ HTML_TMPL = """
         <td style="background-color:#fff3e0">{{ '%.2f' % s.stop_loss }}</td>
         <td style="background-color:#fff3e0">{{ stop_pct_display }}%</td>
         <td>{{ '%.2f' % s.breakout_level if s.breakout_level else '–' }}</td>
-        <td>{{ '%.1f' % s.dist_52w_high_pct if s.dist_52w_high_pct is not none else '–' }}%</td>
-        <td><strong>{{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}</strong></td>
+        <td style="background-color:
+          {%- if s.dist_52w_high_pct is not none and s.dist_52w_high_pct <= 25 %}#d4edda
+          {%- elif s.dist_52w_high_pct is not none %}#f8d7da
+          {%- else %}transparent{% endif %}">
+          {{ '%.1f' % s.dist_52w_high_pct if s.dist_52w_high_pct is not none else '–' }}%</td>
+        <td style="background-color:
+          {%- if s.rs_score is not none and s.rs_score >= 70 %}#d4edda
+          {%- elif s.rs_score is not none %}#f8d7da
+          {%- else %}transparent{% endif %}">
+          <strong>{{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}</strong></td>
         <td style="background-color:
           {%- if s.rs_delta_4w and s.rs_delta_4w > 0 %}{{ COLOR_POSITIVE }}
           {%- elif s.rs_delta_4w and s.rs_delta_4w < 0 %}{{ COLOR_NEGATIVE }}
           {%- else %}transparent{% endif %}">
           {% if s.rs_delta_4w is not none %}{% if s.rs_delta_4w > 0 %}+{% endif %}{{ '%.0f' % s.rs_delta_4w }}{% else %}–{% endif %}
         </td>
-        <td style="text-align:center">{{ s.industry_ranking if s.industry_ranking is not none else '–' }}</td>
+        <td style="text-align:center;background-color:
+          {%- if s.industry_ranking is not none and s.industry_ranking <= 50 %}#d4edda
+          {%- elif s.industry_ranking is not none %}#f8d7da
+          {%- else %}transparent{% endif %}">
+          {{ s.industry_ranking if s.industry_ranking is not none else '–' }}</td>
         <td>{{ '%.1f' % s.roe if s.roe is not none else '–' }}%</td>
         <td>{{ '%.1f' % s.op_margin if s.op_margin is not none else '–' }}%</td>
         <td>{{ '%.1f' % s.revenue_growth if s.revenue_growth is not none else '–' }}%</td>
@@ -388,12 +400,38 @@ HTML_TMPL = """
           {{ risk_pct_display }}%
         </td>
       </tr>
+      {# ── Minervini Scorecard ── #}
+      {% set crit = signal_criteria.get(s.ticker, {}) %}
+      {% if crit %}
+      <tr style="background-color:{{ row_bg }}">
+        <td colspan="18" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
+          {% for name, val in crit.items() %}
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:{{ '#d4edda' if val else '#f8d7da' }};
+                       color:{{ '#155724' if val else '#721c24' }}">
+            {{ '✅' if val else '❌' }}&nbsp;{{ name }}
+          </span>
+          {% endfor %}
+          {# ATR Hard-Filter #}
+          {% if s.atr_pct is not none %}
+          {% set atr_ok = s.atr_pct < 8 %}
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:{{ '#d4edda' if atr_ok else '#f8d7da' }};
+                       color:{{ '#155724' if atr_ok else '#721c24' }}">
+            {{ '✅' if atr_ok else '❌' }}&nbsp;ATR {{ '%.1f' % s.atr_pct }}% &lt;8%
+          </span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endif %}
       {% endfor %}
     </table>
     <p style="font-size:0.82em;color:#777;margin-top:0.3em">
       Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%).
       🏆 = Top-{{ signals | selectattr("is_top_pick") | list | length }} Kaufkandidaten.
-      Rot = Risiko/Equity &gt; 1.8%.
+      🟢 = Kriterium erfüllt &nbsp;|&nbsp; 🔴 = nicht erfüllt &nbsp;|&nbsp; Rot hinterlegt = Risiko/Equity &gt; 1.8%.
     </p>
     {% endif %}
 
@@ -557,6 +595,20 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     # We surface this to the template so it can show the right "why no signals" text.
     market_bullish = True   # assume bullish; generator already filtered if bearish
 
+    # Build Minervini criteria lookup for the Cloudflare Pages scorecard row
+    _MINERVINI_CRITERIA = [
+        "SMA10W steigend", "SMA30W steigend", "SMA40W steigend",
+        "MA-Ordnung 10>30>40", "52W Range OK", "RS-Trend ↑",
+        "Vol-Breakout", "Close > Vorwoche",
+    ]
+    signal_criteria: dict = {}
+    for sig in signals:
+        if sig.ticker in leaders.index:
+            row = leaders.loc[sig.ticker]
+            signal_criteria[sig.ticker] = {
+                c: bool(row[c]) for c in _MINERVINI_CRITERIA if c in leaders.columns
+            }
+
     # 1) Divergenzen & Breadth-Snapshots
     divergences  = build_divergence_text(idx)
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
@@ -628,6 +680,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         alpaca_cash      = alpaca_cash,
         alpaca_positions = alpaca_positions or [],
         alpaca_portfolio = alpaca_portfolio,
+        signal_criteria  = signal_criteria,
     )
     return html
 
