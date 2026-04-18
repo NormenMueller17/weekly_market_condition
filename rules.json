@@ -12,6 +12,9 @@
     "max_industry_rank":      "Nur Industrien mit Ranking <= diesem Wert (Top 50 = schärfer). 0 = Filter deaktiviert.",
     "max_stop_pct":           "Maximaler Stop-Loss in % vom Entry. Blueprint-Cap: 20.",
     "volume_breakout_score":  "Mindest-Faktor für Volume-Breakout vs. 20-Tage-Durchschnitt. 1.3 = 30% erhöhtes Volumen.",
+    "min_price":              "Mindest-Aktienkurs in USD. Filtert Penny Stocks heraus.",
+    "min_market_cap_mio":     "Mindest-Market-Cap in Mio. USD. 300 = keine Micro Caps.",
+    "buy_stop_buffer_pct":    "Puffer über max(entry, breakout_level) für die Buy-Stop-Order in %. 0.1 = 0.1% über Pivot.",
     "max_positions":          "Anzahl Top-Picks (Gold-Badge in der Email). 5 = empfohlen.",
     "bearish_kelly_fraction": "Kelly-Multiplikator bei bärischem Markt (relativ zu kelly_fraction). 0.5 = halbe Größe.",
     "account_equity":         "Kontogröße in EUR/USD für die Positionsgröße.",
@@ -31,7 +34,10 @@
     "min_rev_growth":         0.0,
     "max_industry_rank":      50,
     "max_stop_pct":           20.0,
-    "volume_breakout_score":  1.3
+    "volume_breakout_score":  1.3,
+    "min_price":              5.0,
+    "min_market_cap_mio":     300.0,
+    "buy_stop_buffer_pct":    0.1
   },
 
   "portfolio": {
