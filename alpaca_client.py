@@ -28,13 +28,13 @@ def _get_trading_client():
 
 
 def available_cash() -> Optional[float]:
-    """Return paper-account buying power, or None on failure."""
+    """Return non-marginable buying power (actual cash, no leverage), or None on failure."""
     client = _get_trading_client()
     if client is None:
         return None
     try:
         account = client.get_account()
-        return float(account.buying_power)
+        return float(account.non_marginable_buying_power)
     except Exception:
         return None
 
