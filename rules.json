@@ -21,7 +21,9 @@
     "account_equity":         "Kontogröße in EUR/USD für die Positionsgröße.",
     "win_rate":               "Historische Trefferquote (0-1). Blueprint: 0.59.",
     "win_loss_ratio":         "Gewinn/Verlust-Verhältnis. Blueprint: 4.04.",
-    "kelly_fraction":         "Fractional-Kelly-Faktor. 1/3 = konservativ. Blueprint: 0.33."
+    "kelly_fraction":         "Fractional-Kelly-Faktor. 1/3 = konservativ. Blueprint: 0.33.",
+    "max_risk_per_trade_pct": "Max. Risiko pro Trade in % des Portfolios (Risk-first Sizing). 1.5 = 1.5%.",
+    "max_position_pct":       "Max. Positionsgröße in % des Portfolios. Cap für enge Stops. 15 = 15%."
   },
 
   "filters": {
@@ -43,7 +45,7 @@
   },
 
   "portfolio": {
-    "max_positions":          5,
+    "max_positions":          3,
     "account_equity":         100000.0
   },
 
@@ -51,7 +53,9 @@
     "win_rate":               0.59,
     "win_loss_ratio":         4.04,
     "kelly_fraction":         0.33,
-    "bearish_kelly_fraction": 0.5
+    "bearish_kelly_fraction": 0.5,
+    "max_risk_per_trade_pct": 1.5,
+    "max_position_pct":       15.0
   },
 
   "ranking_weights": {
