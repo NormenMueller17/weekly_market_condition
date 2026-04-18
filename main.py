@@ -519,6 +519,7 @@ def run():
     html_full = build_html_report(
         breadth_df, idx_df, risk_df, summary, report_date,
         weekly, leaders_html, signals=signals, pages_url=None,
+        alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions,
     )
     docs_reports_dir = Path("docs/reports")
     docs_reports_dir.mkdir(parents=True, exist_ok=True)
@@ -539,6 +540,7 @@ def run():
     html_email = build_html_report(
         breadth_df, idx_df, risk_df, summary, report_date,
         weekly, leaders_html, signals=signals, pages_url=report_url,
+        alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions,
     )
 
     # E-Mail Betreff zeigt Signalanzahl für schnellen Montags-Check

@@ -154,6 +154,12 @@ HTML_TMPL = """
         ({{ "{:,.0f}".format(signals[0].position_value) }} €/$) &nbsp;|&nbsp;
         <strong>Kelly-Fraction:</strong> 1/3 &nbsp;|&nbsp;
         <strong>Signale gesamt:</strong> {{ signals | length }}
+        {% if alpaca_cash is not none %}
+        &nbsp;|&nbsp;<strong>Alpaca Cash:</strong> ${{ "{:,.0f}".format(alpaca_cash) }}
+        {% if alpaca_positions %}
+        &nbsp;|&nbsp;<strong>Offen ({{ alpaca_positions | length }}):</strong> {{ alpaca_positions | join(", ") }}
+        {% endif %}
+        {% endif %}
     </p>
 
     {% if pages_url %}
@@ -428,7 +434,8 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
     return rows
 
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
-                      signals=None, pages_url=None):
+                      signals=None, pages_url=None,
+                      alpaca_cash=None, alpaca_positions=None):
     """Build the weekly HTML email.
 
     Parameters
@@ -436,6 +443,10 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     signals : list[TradeSignal] | None
         Buy signals produced by signal_generator.generate_signals().
         Shown in Section 5 of the email; pass None or [] for "no signals".
+    alpaca_cash : float | None
+        Available buying power from Alpaca paper account.
+    alpaca_positions : list[str] | None
+        Tickers of currently held positions.
     """
     signals = signals or []
 
@@ -499,19 +510,21 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     # 5) Template rendern
     tmpl = Template(HTML_TMPL)
     html = tmpl.render(
-        breadth        = breadth,
-        breadth_snap   = breadth_snap,
-        idx            = idx,
-        risk           = risk,
-        summary        = summary,
-        report_date    = report_date,
-        leaders        = leaders_html,
-        signals        = signals,
-        market_bullish = market_bullish,
-        COLOR_POSITIVE = COLOR_POSITIVE,
-        COLOR_NEGATIVE = COLOR_NEGATIVE,
-        divergences    = divergences,
-        pages_url      = pages_url,
+        breadth          = breadth,
+        breadth_snap     = breadth_snap,
+        idx              = idx,
+        risk             = risk,
+        summary          = summary,
+        report_date      = report_date,
+        leaders          = leaders_html,
+        signals          = signals,
+        market_bullish   = market_bullish,
+        COLOR_POSITIVE   = COLOR_POSITIVE,
+        COLOR_NEGATIVE   = COLOR_NEGATIVE,
+        divergences      = divergences,
+        pages_url        = pages_url,
+        alpaca_cash      = alpaca_cash,
+        alpaca_positions = alpaca_positions or [],
     )
     return html
 
