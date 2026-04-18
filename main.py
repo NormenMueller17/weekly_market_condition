@@ -432,11 +432,14 @@ def run():
     leaders       = leaders[existing_pref + remaining]
 
     # ── Alpaca: verfügbares Kapital & offene Positionen ──────────────────────
-    alpaca_cash      = alpaca_client.available_cash()
-    alpaca_positions = alpaca_client.open_position_tickers()
-    if alpaca_cash is not None:
-        print(f"[ALPACA] Cash: ${alpaca_cash:,.0f} | Positionen: {alpaca_positions or '–'}")
+    alpaca_portfolio = alpaca_client.get_portfolio()
+    if alpaca_portfolio is not None:
+        alpaca_cash      = alpaca_portfolio["cash"]
+        alpaca_positions = [p["symbol"] for p in alpaca_portfolio["positions"]]
+        print(f"[ALPACA] Cash: ${alpaca_cash:,.0f} | Equity: ${alpaca_portfolio['equity']:,.0f} | Positionen: {alpaca_positions or '–'}")
     else:
+        alpaca_cash      = None
+        alpaca_positions = []
         print("[ALPACA] Nicht verbunden – Fallback auf account_equity aus Einstellungen")
 
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
@@ -519,7 +522,7 @@ def run():
     html_full = build_html_report(
         breadth_df, idx_df, risk_df, summary, report_date,
         weekly, leaders_html, signals=signals, pages_url=None,
-        alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions,
+        alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
     )
     docs_reports_dir = Path("docs/reports")
     docs_reports_dir.mkdir(parents=True, exist_ok=True)
@@ -540,7 +543,7 @@ def run():
     html_email = build_html_report(
         breadth_df, idx_df, risk_df, summary, report_date,
         weekly, leaders_html, signals=signals, pages_url=report_url,
-        alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions,
+        alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
     )
 
     # E-Mail Betreff zeigt Signalanzahl für schnellen Montags-Check
