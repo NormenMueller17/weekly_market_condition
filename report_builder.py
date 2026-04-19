@@ -316,6 +316,7 @@ HTML_TMPL = """
       <tr>
         <th class="left sortable" onclick="sortTable(this)">Ticker</th>
         <th class="left sortable" onclick="sortTable(this)">Unternehmen</th>
+        <th class="left sortable" onclick="sortTable(this)">Industry</th>
         <th class="sortable" onclick="sortTable(this)">Score</th>
         <th class="left sortable" onclick="sortTable(this)">Muster</th>
         <th class="sortable" onclick="sortTable(this)">Close</th>
@@ -337,6 +338,7 @@ HTML_TMPL = """
       <tr>
         <td class="left"><strong style="color:#003d99">{{ idx }}</strong></td>
         <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Company", "–") }}</td>
+        <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Industry", "–") }}</td>
         <td style="text-align:center">{{ row.get("score", "–") }}</td>
         <td class="left">
           {% set pat = row.get("VCP Entry", "") %}
