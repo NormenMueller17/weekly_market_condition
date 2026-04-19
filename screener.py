@@ -11,6 +11,28 @@ _rules_json = json.loads((Path(__file__).parent / "rules.json").read_text(encodi
 _VOLUME_BREAKOUT_SCORE: float = _rules_json.get("filters", {}).get("volume_breakout_score", 1.3)
 
 
+def _macd_above_signal_weekly(df: pd.DataFrame, price_col: str = "Close",
+                             fast: int = 12, slow: int = 26, signal: int = 9) -> bool:
+    """
+    True wenn MACD-Linie aktuell über der Signal-Linie liegt (wöchentlich).
+    Der Cross kann beliebig lange zurückliegen — nur der aktuelle Zustand zählt.
+    """
+    if df is None or df.empty or price_col not in df.columns:
+        return False
+    s = pd.to_numeric(df[price_col], errors="coerce").dropna()
+    if len(s) < (slow + signal + 2):
+        return False
+    ema_fast = s.ewm(span=fast, adjust=False).mean()
+    ema_slow = s.ewm(span=slow, adjust=False).mean()
+    macd_line = ema_fast - ema_slow
+    sig_line  = macd_line.ewm(span=signal, adjust=False).mean()
+    aligned = pd.concat([macd_line.rename("macd"), sig_line.rename("sig")], axis=1).dropna()
+    if aligned.empty:
+        return False
+    last = aligned.iloc[-1]
+    return bool(last["macd"] > last["sig"])
+
+
 def _macd_bullish_cross_weekly(df: pd.DataFrame, price_col: str = "Close",
                               fast: int = 12, slow: int = 26, signal: int = 9) -> bool:
     """
@@ -365,6 +387,7 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
                 .dropna()
             )
             res["MACD Bullish Cross (W)"] = _macd_bullish_cross_weekly(wdf)
+            res["MACD > Signal (W)"]      = _macd_above_signal_weekly(wdf)
 
             results[t] = res
 

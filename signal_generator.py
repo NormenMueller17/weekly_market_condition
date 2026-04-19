@@ -105,6 +105,7 @@ DEFAULT_RULES: dict = {
     "min_market_cap_mio":     _f.get("min_market_cap_mio",    300.0),
     "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
     "gap_limit_pct":          _f.get("gap_limit_pct",         5.0),
+    "require_macd_above_signal": _f.get("require_macd_above_signal", True),
 }
 
 # ── Ranking weights (must sum to 1.0) ─────────────────────────────────────────
@@ -397,7 +398,12 @@ def generate_signals(
         )
         mask &= ind_rank_raw.isna() | (ind_rank_raw <= r["max_industry_rank"])
 
-    # 8. Volume Breakout mandatory — only stocks with confirmed volume surge qualify
+    # 8. MACD > Signal (weekly) — only buy into rising momentum, not falling
+    if r.get("require_macd_above_signal", True):
+        macd_ok = df.get("MACD > Signal (W)", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+        mask &= macd_ok
+
+    # 9. Volume Breakout mandatory — only stocks with confirmed volume surge qualify
     vol_breakout_col = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
     mask &= vol_breakout_col
 
