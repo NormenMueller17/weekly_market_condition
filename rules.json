@@ -17,6 +17,7 @@
     "min_market_cap_mio":     "Mindest-Market-Cap in Mio. USD. 300 = keine Micro Caps.",
     "buy_stop_buffer_pct":    "Puffer über max(entry, breakout_level) für die Buy-Stop-Order in %. 0.1 = 0.1% über Pivot.",
     "gap_limit_pct":          "Max. erlaubter Gap über dem Breakout-Level in %. Order verwerfen wenn Montag-Open > Pivot * (1 + gap_limit_pct/100).",
+    "require_macd_above_signal": "true = MACD-Linie muss über Signal-Linie liegen (wöchentlich). Cross kann zurückliegen — nur aktueller Zustand zählt.",
     "max_positions":          "Anzahl Top-Picks (Gold-Badge in der Email). 5 = empfohlen.",
     "bearish_kelly_fraction": "Kelly-Multiplikator bei bärischem Markt (relativ zu kelly_fraction). 0.5 = halbe Größe.",
     "account_equity":         "Kontogröße in EUR/USD für die Positionsgröße.",
@@ -43,7 +44,8 @@
     "min_price":              5.0,
     "min_market_cap_mio":     300.0,
     "buy_stop_buffer_pct":    0.1,
-    "gap_limit_pct":          5.0
+    "gap_limit_pct":          5.0,
+    "require_macd_above_signal": true
   },
 
   "portfolio": {

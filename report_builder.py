@@ -795,6 +795,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     def _compute_fails(row) -> str:
         fails = []
         def _n(col): return pd.to_numeric(row.get(col, None), errors='coerce')
+        if not bool(row.get("MACD > Signal (W)", False)):
+            fails.append("MACD fällt")
         if not bool(row.get("Vol-Breakout", False)):
             fails.append("Vol-BO fehlt")
         rs = _n("RS (O'Neil)")
