@@ -315,6 +315,7 @@ HTML_TMPL = """
     <table>
       <tr>
         <th class="left sortable" onclick="sortTable(this)">Ticker</th>
+        <th class="left sortable" onclick="sortTable(this)">Unternehmen</th>
         <th class="sortable" onclick="sortTable(this)">Score</th>
         <th class="left sortable" onclick="sortTable(this)">Muster</th>
         <th class="sortable" onclick="sortTable(this)">Close</th>
@@ -335,6 +336,7 @@ HTML_TMPL = """
       {% set drs_val = row["ΔRS 4W"] if "ΔRS 4W" in all_leaders.columns else none %}
       <tr>
         <td class="left"><strong style="color:#003d99">{{ idx }}</strong></td>
+        <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Company", "–") }}</td>
         <td style="text-align:center">{{ row.get("score", "–") }}</td>
         <td class="left">
           {% set pat = row.get("VCP Entry", "") %}
