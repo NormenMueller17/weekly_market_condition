@@ -485,10 +485,13 @@ def run():
     leaders_html = leaders.copy()
 
     def fmt_2dec(x):
-        return f"{x:.2f}" if pd.notna(x) else ""
+        return f"{x:.2f}" if pd.notna(x) else "–"
 
     def fmt_int(x):
-        return f"{x:,.0f}" if pd.notna(x) else ""
+        return f"{x:,.0f}" if pd.notna(x) else "–"
+
+    def fmt_0dec(x):
+        return f"{x:.0f}" if pd.notna(x) else "–"
     
     # Spalten mit 2 Nachkommastellen
     for col in [
@@ -527,6 +530,10 @@ def run():
     ]:
         if col in leaders_html.columns:
             leaders_html[col] = leaders_html[col].apply(fmt_int)
+
+    # RS als ganze Zahl formatieren
+    if "RS (O'Neil)" in leaders_html.columns:
+        leaders_html["RS (O'Neil)"] = leaders_html["RS (O'Neil)"].apply(fmt_0dec)
 
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")

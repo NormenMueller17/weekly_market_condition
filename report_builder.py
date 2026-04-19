@@ -331,7 +331,7 @@ HTML_TMPL = """
       {% for idx, row in all_leaders.iterrows() %}
       {% set rs_val = row.get("RS (O'Neil)", none) %}
       {% set dist_val = row.get("Dist to 52W High (%)", none) %}
-      {% set ind_val = row.get("Industry Rank", none) %}
+      {% set ind_val = row.get("Industry Ranking", none) %}
       {% set drs_val = row["ΔRS 4W"] if "ΔRS 4W" in all_leaders.columns else none %}
       <tr>
         <td class="left"><strong style="color:#003d99">{{ idx }}</strong></td>
@@ -789,7 +789,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         rs = _n("RS (O'Neil)")
         if pd.isna(rs) or rs < _min_rs:
             fails.append(f"RS&nbsp;&lt;&nbsp;{_min_rs:.0f}")
-        rank = _n("Industry Rank")
+        rank = _n("Industry Ranking")
         if pd.isna(rank) or rank > _max_rank:
             fails.append(f"Rank&nbsp;&gt;&nbsp;{_max_rank:.0f}")
         atr = _n("ATR / Price (%)")
