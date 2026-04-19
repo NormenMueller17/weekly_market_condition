@@ -310,6 +310,9 @@ def run():
         quote_map = batch_fetch_quote_data(tickers_for_fundamentals)
         leaders.insert(4, "Sektor", leaders.index.map(lambda t: quote_map.get(t, {}).get("Sector", "n/a")))
         leaders.insert(5, "Close", leaders.index.map(lambda t: quote_map.get(t, {}).get("Close")))
+        # Fallback: Screener-Wochenschlusskurs wenn API-Fetch fehlschlug
+        if "close_weekly_now" in leaders.columns:
+            leaders["Close"] = leaders["Close"].combine_first(leaders["close_weekly_now"])
         leaders.insert(6, "MarketCap (Mio USD)", leaders.index.map(lambda t: quote_map.get(t, {}).get("MarketCap_Mio")))
         leaders.insert(7, "EPS (Forward/TTM)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_FWD_TTM")))
         leaders.insert(8, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_GROWTH_FWD_TTM")))
