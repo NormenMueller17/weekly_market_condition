@@ -401,13 +401,19 @@ def generate_signals(
     vol_breakout_col = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
     mask &= vol_breakout_col
 
-    # 9. Minimum price — no penny stocks
+    # 9. Minimum price — no penny stocks (fail-open: NaN Close = data gap, not penny stock)
     if r.get("min_price", 0) > 0:
-        mask &= _num("Close", 0) >= r["min_price"]
+        price_raw = pd.to_numeric(
+            df.get("Close", pd.Series(index=df.index)), errors="coerce"
+        )
+        mask &= price_raw.isna() | (price_raw >= r["min_price"])
 
-    # 10. Minimum market cap — no micro caps
+    # 10. Minimum market cap — no micro caps (fail-open: NaN MCap = data gap)
     if r.get("min_market_cap_mio", 0) > 0:
-        mask &= _num("MarketCap (Mio USD)", 0) >= r["min_market_cap_mio"]
+        cap_raw = pd.to_numeric(
+            df.get("MarketCap (Mio USD)", pd.Series(index=df.index)), errors="coerce"
+        )
+        mask &= cap_raw.isna() | (cap_raw >= r["min_market_cap_mio"])
 
     candidates = df[mask].copy()
 
