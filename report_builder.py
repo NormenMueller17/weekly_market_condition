@@ -286,6 +286,7 @@ HTML_TMPL = """
 
     <h2>6) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
 
+    {% if not signals %}
     {% if pages_url %}
     <p style="margin-bottom:0.6em">
       <a href="{{ pages_url }}" target="_blank"
@@ -295,8 +296,6 @@ HTML_TMPL = """
       </a>
     </p>
     {% endif %}
-
-    {% if not signals %}
     <p style="color:#888">
         Keine Kaufsignale diese Woche —
         {% if not market_bullish %}
@@ -610,7 +609,7 @@ HTML_TMPL = """
             Rev:&nbsp;{{ row["_card_rev"] }}&nbsp;&nbsp;EPS:&nbsp;{{ row["_card_eps"] }}
           </div>
           <!-- Muster + Abstand 52W High -->
-          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap">
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
             {% if row["VCP"] or row["Launchpad"] %}
             <span style="background:#fff8e1;padding:1px 6px;border-radius:3px">
               📐&nbsp;{% if row["VCP"] and row["Launchpad"] %}VCP+Launchpad{% elif row["VCP"] %}VCP{% else %}Launchpad{% endif %}
@@ -619,6 +618,12 @@ HTML_TMPL = """
             {% if row["_card_dist"] != '–' %}
             <span>Dist 52W&nbsp;H:&nbsp;{{ row["_card_dist"] }}%</span>
             {% endif %}
+          </div>
+          <!-- Kauf-Filter-Status -->
+          {% set fails = row.get("_filter_fails", "–") %}
+          <div style="font-size:0.78em;font-weight:bold;
+            {% if fails == '✅' %}color:#2e7d32{% else %}color:#c62828{% endif %}">
+            {% if fails == '✅' %}✅ Kaufkandidat{% else %}❌ {{ fails | safe }}{% endif %}
           </div>
         </div>
       </td>
@@ -814,6 +819,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         return " · ".join(fails) if fails else "✅"
 
     all_leaders_html["_filter_fails"] = all_leaders_html.apply(_compute_fails, axis=1)
+    leaders_html["_filter_fails"]     = leaders_html.apply(_compute_fails, axis=1)
 
     # 4b) Vorformatierte Spalten für Card-Layout (NaN-sicher)
     def _card_fmt(val, fmt, sign=False):
