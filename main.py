@@ -32,6 +32,7 @@ from report_builder import (
 )
 from signal_generator import generate_signals, is_market_bullish, save_signals_json
 import alpaca_client
+import exit_manager
 
 BOOLEAN_HEADERS = [
     "SMA10W steigend",
@@ -449,6 +450,25 @@ def run():
         alpaca_cash      = None
         alpaca_positions = []
         print("[ALPACA] Nicht verbunden – Fallback auf account_equity aus Einstellungen")
+
+    # ── Exit-Manager: MACD Bearish Cross auf offenen Positionen prüfen ──────────
+    if alpaca_portfolio is not None:
+        exit_results = exit_manager.run_exit_checks(alpaca_portfolio)
+        for r in exit_results:
+            sym = r["symbol"]
+            if r["cross"]:
+                print(
+                    f"[EXIT] 🔔 {sym}  MACD Bearish Cross — "
+                    f"MACD={r['macd']}  Signal={r['signal']}  "
+                    f"Raised Stop: ${r['new_stop']}  → {r['status']}"
+                )
+            else:
+                print(
+                    f"[EXIT] ✅ {sym}  kein Cross "
+                    f"(MACD={r['macd']}, Signal={r['signal']})"
+                )
+    else:
+        print("[EXIT] Kein Alpaca-Portfolio — Exit-Check übersprungen")
 
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
     signals, _signal_candidates = generate_signals(
