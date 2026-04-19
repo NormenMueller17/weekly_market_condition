@@ -111,17 +111,24 @@ def fetch_quote_data_single(ticker: str) -> dict:
             # IMPORTANT: `.info` can be None; always normalize to dict.
             GLOBAL_LIMITER.acquire()
             info = (tkr.info or {})
-            fast = getattr(tkr, "fast_info", {}) or {}
+            fast_info = getattr(tkr, "fast_info", None)
 
-            # Close
-            close = (
-                fast.get("lastPrice")
-                or fast.get("last_price")
-                or info.get("regularMarketPrice")
-            )
+            # Close — fast_info is an object (not a dict) in modern yfinance
+            close = None
+            if fast_info is not None:
+                close = (
+                    getattr(fast_info, "last_price", None)
+                    or getattr(fast_info, "lastPrice",  None)
+                )
+            if not close:
+                close = info.get("currentPrice") or info.get("regularMarketPrice")
 
             # MarketCap
-            market_cap = fast.get("marketCap") or info.get("marketCap")
+            market_cap = None
+            if fast_info is not None:
+                market_cap = getattr(fast_info, "market_cap", None)
+            if not market_cap:
+                market_cap = info.get("marketCap")
             market_cap_mio = market_cap / 1_000_000 if market_cap else None
 
             # Sector
