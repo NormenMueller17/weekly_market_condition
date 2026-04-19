@@ -961,6 +961,7 @@ def build_index_page(reports_dir, base_url: str) -> str:
   <h1>📈 Weekly Market Report</h1>
   <p>Automatisch generierter wöchentlicher Marktreport nach dem Financial Wisdom Blueprint.</p>
   <a href="{latest_url}" class="btn">Aktuellen Report öffnen →</a>
+  <a href="trades.html" class="btn" style="background:#1a6e1a;margin-left:.8em">Tradetagebuch →</a>
   <h2>Archiv</h2>
   <ul>
 {rows_html}  </ul>

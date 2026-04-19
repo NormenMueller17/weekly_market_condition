@@ -165,6 +165,52 @@ def place_signal_orders(signals: list, dry_run: bool = False) -> list[dict]:
     return results
 
 
+def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
+    """Return filled buy or sell orders from Alpaca order history.
+
+    Args:
+      side      : "buy" or "sell"
+      days_back : how far back to search (default 1 year)
+
+    Returns list of dicts with keys:
+      symbol, qty, filled_avg_price, filled_at (ISO str), order_id, order_type
+    """
+    import datetime
+    client = _get_trading_client()
+    if client is None:
+        return []
+    try:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums   import QueryOrderStatus, OrderSide
+
+        after     = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_back)
+        side_enum = OrderSide.BUY if side == "buy" else OrderSide.SELL
+
+        orders = client.get_orders(GetOrdersRequest(
+            status = QueryOrderStatus.CLOSED,
+            side   = side_enum,
+            after  = after,
+            limit  = 500,
+        ))
+
+        result = []
+        for o in orders:
+            if str(getattr(o, "status", "")) != "filled":
+                continue
+            result.append({
+                "symbol":           o.symbol,
+                "qty":              float(getattr(o, "filled_qty",      0) or 0),
+                "filled_avg_price": float(getattr(o, "filled_avg_price", 0) or 0),
+                "filled_at":        str(getattr(o,  "filled_at",        "") or ""),
+                "order_id":         str(o.id),
+                "order_type":       str(getattr(o,  "type",             "") or ""),
+            })
+        return result
+    except Exception as e:
+        print(f"[ALPACA] get_filled_orders({side}): {e}")
+        return []
+
+
 def cancel_open_orders() -> int:
     """Cancel all open GTC orders. Call at end of week for cleanup.
 

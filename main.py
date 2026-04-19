@@ -33,6 +33,7 @@ from report_builder import (
 from signal_generator import generate_signals, is_market_bullish, save_signals_json
 import alpaca_client
 import exit_manager
+import trade_journal
 
 BOOLEAN_HEADERS = [
     "SMA10W steigend",
@@ -452,6 +453,7 @@ def run():
         print("[ALPACA] Nicht verbunden – Fallback auf account_equity aus Einstellungen")
 
     # ── Exit-Manager: MACD Bearish Cross auf offenen Positionen prüfen ──────────
+    exit_results: list[dict] = []
     if alpaca_portfolio is not None:
         exit_results = exit_manager.run_exit_checks(alpaca_portfolio)
         for r in exit_results:
@@ -469,6 +471,20 @@ def run():
                 )
     else:
         print("[EXIT] Kein Alpaca-Portfolio — Exit-Check übersprungen")
+
+    # ── Trade Journal: Positionen synchronisieren & HTML aktualisieren ────────
+    if alpaca_portfolio is not None:
+        filled_buys  = alpaca_client.get_filled_orders("buy")
+        filled_sells = alpaca_client.get_filled_orders("sell")
+        journal_data = trade_journal.sync(alpaca_portfolio, filled_buys, filled_sells)
+        if exit_results:
+            journal_data = trade_journal.apply_raised_stops(journal_data, exit_results)
+        trades_html = trade_journal.build_and_save_html(journal_data)
+        open_count   = len(journal_data.get("open",   []))
+        closed_count = len(journal_data.get("closed", []))
+        print(f"[JOURNAL] {open_count} offen / {closed_count} geschlossen → {trades_html}")
+    else:
+        print("[JOURNAL] Kein Alpaca-Portfolio — Journal-Sync übersprungen")
 
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
     signals, _signal_candidates = generate_signals(
