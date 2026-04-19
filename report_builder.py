@@ -796,7 +796,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         if pd.isna(rs) or rs < _min_rs:
             fails.append(f"RS&nbsp;&lt;&nbsp;{_min_rs:.0f}")
         rank = _n("Industry Ranking")
-        if pd.isna(rank) or rank > _max_rank:
+        if not pd.isna(rank) and rank > _max_rank:
             fails.append(f"Rank&nbsp;&gt;&nbsp;{_max_rank:.0f}")
         atr = _n("ATR / Price (%)")
         if not pd.isna(atr) and atr > _max_atr:

@@ -390,10 +390,12 @@ def generate_signals(
     if r["min_rev_growth"] > 0:  mask &= _num("Revenue Wachstum TTM YoY (%)") >= r["min_rev_growth"]
 
     # 7. Industry Ranking filter  (lower rank number = stronger industry)
-    #    NaN industry rank → excluded (unknown industry = no tailwind)
+    #    NaN industry rank → pass (fail-open: computation failure ≠ bad industry)
     if r.get("max_industry_rank") is not None and r["max_industry_rank"] > 0:
-        ind_rank = _num("Industry Ranking", fill=9999)
-        mask &= ind_rank <= r["max_industry_rank"]
+        ind_rank_raw = pd.to_numeric(
+            df.get("Industry Ranking", pd.Series(index=df.index)), errors="coerce"
+        )
+        mask &= ind_rank_raw.isna() | (ind_rank_raw <= r["max_industry_rank"])
 
     # 8. Volume Breakout mandatory — only stocks with confirmed volume surge qualify
     vol_breakout_col = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
