@@ -236,7 +236,9 @@ def compute_industry_scores(
     # --- 5b) Industry ranking (1 = highest Industry Score) ---
     # "min" gives tied industries the same best rank.
     industry_tbl["Industry Ranking"] = (
-        industry_tbl["Industry Score"].rank(ascending=False, method="min").astype(int)
+        industry_tbl["Industry Score"]
+        .rank(ascending=False, method="min", na_option="bottom")
+        .astype(int)
     )
 
     # --- 6) Map industry scores back to tickers ---
