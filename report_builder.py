@@ -814,9 +814,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         elif price < _min_price:
             fails.append(f"Kurs&nbsp;&lt;&nbsp;${_min_price:.0f}")
         cap = _n("MarketCap (Mio USD)")
-        if pd.isna(cap):
-            fails.append("MCap fehlt")
-        elif cap < _min_cap:
+        if not pd.isna(cap) and cap < _min_cap:
             fails.append(f"MCap&nbsp;&lt;&nbsp;{_min_cap:.0f}M")
         return " · ".join(fails) if fails else "✅"
 

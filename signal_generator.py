@@ -529,8 +529,8 @@ def generate_signals(
         signals.append(TradeSignal(
             ticker             = str(ticker),
             company            = str(row.get("Company", "")),
-            industry           = str(row.get("Industry", "")),
-            sector             = str(row.get("Sektor", "")),
+            industry           = str(row.get("Industry", "") or ""),
+            sector             = str(row.get("Sektor", "") or ""),
             entry_price        = round(entry, 2),
             buy_stop           = buy_stop,
             max_gap_price      = max_gap_price,
