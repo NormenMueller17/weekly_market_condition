@@ -325,7 +325,7 @@ HTML_TMPL = """
         <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">Dist 52W H %</th>
         <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">Ind. Rank</th>
         <th class="sortable" onclick="sortTable(this)">ATR %</th>
-        <th class="sortable" onclick="sortTable(this)">Vol-BO</th>
+        <th class="sortable" onclick="sortTable(this)">Vol-Score</th>
         <th class="sortable" onclick="sortTable(this)">MarketCap<br>(Mio $)</th>
         <th class="sortable" onclick="sortTable(this)">SA</th>
         <th class="left sortable" onclick="sortTable(this)" style="color:#c62828">Scheitert an</th>
@@ -361,8 +361,10 @@ HTML_TMPL = """
           {{ ind_val if ind_val != none else "–" }}
         </td>
         <td style="text-align:center">{{ row.get("ATR / Price (%)", "–") }}</td>
-        <td style="text-align:center">
-          {% if row.get("Vol-Breakout", false) %}✅{% else %}❌{% endif %}
+        {% set vol_bo = row.get("Vol-Breakout", false) %}
+        {% set vol_sc = row.get("Volume Score", none) %}
+        <td style="text-align:center;background:{% if vol_bo %}#e8f5e9{% else %}transparent{% endif %}">
+          {% if vol_sc is not none and vol_sc != "–" %}{{ "%.2f"|format(vol_sc|float) }}{% else %}–{% endif %}
         </td>
         <td style="text-align:right">{{ row.get("MarketCap (Mio USD)", "–") }}</td>
         <td style="text-align:center">{{ row.get("SA", "") }}</td>
