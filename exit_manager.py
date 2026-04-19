@@ -1,18 +1,36 @@
 """
-MACD Bearish Cross Exit Manager.
+Exit Manager — MACD Bearish Cross + Profit-Taking (Minervini / O'Neill).
 
-Blueprint exit rule (weekly):
+MACD exit rule (weekly):
   1. MACD line crosses below Signal line on a completed weekly candle
   2. Raised stop = Low (wick) of the trigger week candle
-  3. Alpaca stop order for that position is updated to the raised stop
-     (only raised, never lowered — Alpaca executes the sell automatically
-     if price drops below the new stop in any subsequent week)
+  3. Alpaca stop order updated (only raised, never lowered)
+
+Profit-Taking rules (weekly, per open position):
+  Regel 1 — Breakeven: Nach +10 % → Stop auf Einstiegspreis heben
+  Regel 2 — O'Neill Fast Mover: +20 % in ≤ 3 Wochen → 8 Wochen halten, kein Teilverkauf
+  Regel 3 — Minervini Power of Three:
+      Bei +20 %  (normaler Move): 1/3 der Position verkaufen
+      Bei +40 %: weiteres 1/3 verkaufen
+      Rest: ATR-basierter Trailing Stop (2× ATR unter höchstem Wochenschluss)
 """
 
 import os
+import json
+import datetime
+from pathlib import Path
 import yfinance as yf
 import pandas as pd
 from typing import Optional
+
+
+def _load_pt_rules() -> dict:
+    """Load profit_taking section from rules.json."""
+    try:
+        rules = json.loads((Path(__file__).parent / "rules.json").read_text(encoding="utf-8"))
+        return rules.get("profit_taking", {})
+    except Exception:
+        return {}
 
 
 # ── MACD helpers ─────────────────────────────────────────────────────────────
@@ -76,6 +94,23 @@ def check_macd_bearish_cross(ticker: str) -> dict:
 
 
 # ── Alpaca helpers ────────────────────────────────────────────────────────────
+
+def _place_market_sell(client, symbol: str, qty: int) -> bool:
+    """Place a DAY market-sell order for *qty* shares of *symbol*."""
+    try:
+        from alpaca.trading.requests import MarketOrderRequest
+        from alpaca.trading.enums import OrderSide, TimeInForce
+        client.submit_order(MarketOrderRequest(
+            symbol=symbol,
+            qty=qty,
+            side=OrderSide.SELL,
+            time_in_force=TimeInForce.DAY,
+        ))
+        return True
+    except Exception as e:
+        print(f"[PROFIT] _place_market_sell({symbol}, {qty}): {e}")
+        return False
+
 
 def _trading_client():
     key    = os.environ.get("ALPACA_API_KEY")
@@ -203,5 +238,216 @@ def run_exit_checks(portfolio: Optional[dict], dry_run: bool = False) -> list[di
         success        = _replace_stop(client, str(stop_order.id), raised_stop)
         record["status"] = "updated" if success else "update_failed"
         results.append(record)
+
+    return results
+
+
+# ── Profit-Taking ─────────────────────────────────────────────────────────────
+
+def check_profit_taking(trade: dict) -> dict:
+    """Evaluate all profit-taking rules for a single open position.
+
+    Returns a result dict with flags and target levels.  No orders are placed
+    here — execution happens in run_profit_taking_checks().
+
+    Keys returned:
+      symbol, is_fast_mover, hold_until,
+      raise_breakeven, breakeven_stop,
+      partial_sell_1, partial_sell_1_qty,
+      partial_sell_2, partial_sell_2_qty,
+      trailing_stop, trailing_stop_level
+    """
+    symbol = trade.get("symbol", "")
+    result: dict = {
+        "symbol":             symbol,
+        "is_fast_mover":      False,
+        "hold_until":         None,
+        "raise_breakeven":    False,
+        "breakeven_stop":     None,
+        "partial_sell_1":     False,
+        "partial_sell_1_qty": 0,
+        "partial_sell_2":     False,
+        "partial_sell_2_qty": 0,
+        "trailing_stop":      False,
+        "trailing_stop_level": None,
+    }
+
+    entry_price   = trade.get("entry_price") or 0.0
+    current_price = trade.get("current_price") or 0.0
+    if entry_price <= 0 or current_price <= 0:
+        return result
+
+    gain_pct    = (current_price / entry_price - 1) * 100
+    entry_date  = trade.get("entry_date", "")
+    original_qty = int(trade.get("pt_original_qty") or trade.get("qty") or 0)
+    current_qty  = int(trade.get("qty") or 0)
+
+    # State flags already persisted in the journal
+    is_fast_mover  = trade.get("pt_is_fast_mover",  False)
+    hold_until     = trade.get("pt_hold_until")
+    breakeven_done = trade.get("pt_breakeven_done", False)
+    partial_1_done = trade.get("pt_partial_1_done", False)
+    partial_2_done = trade.get("pt_partial_2_done", False)
+
+    # Rule parameters
+    pt = _load_pt_rules()
+    breakeven_trigger  = pt.get("breakeven_trigger_pct", 10.0)
+    fast_move_weeks    = int(pt.get("fast_move_weeks",    3))
+    fast_move_hold     = int(pt.get("fast_move_hold_weeks", 8))
+    partial_1_trigger  = pt.get("partial_1_trigger_pct", 20.0)
+    partial_1_frac     = pt.get("partial_1_qty_frac",    0.333)
+    partial_2_trigger  = pt.get("partial_2_trigger_pct", 40.0)
+    partial_2_frac     = pt.get("partial_2_qty_frac",    0.333)
+    trailing_atr_mult  = pt.get("trailing_atr_mult",     2.0)
+
+    # ── Fetch weekly data ─────────────────────────────────────────────────────
+    try:
+        hist = yf.download(symbol, period="2y", interval="1wk",
+                           progress=False, auto_adjust=True)
+        if hist is None or hist.empty or len(hist) < 10:
+            return result
+        if isinstance(hist.columns, pd.MultiIndex):
+            hist.columns = hist.columns.get_level_values(0)
+    except Exception as e:
+        print(f"[PROFIT] {symbol} data: {e}")
+        return result
+
+    close = pd.to_numeric(hist["Close"], errors="coerce")
+    high  = pd.to_numeric(hist["High"],  errors="coerce")
+    low   = pd.to_numeric(hist["Low"],   errors="coerce")
+
+    try:
+        hist_since = hist[hist.index >= pd.Timestamp(entry_date)] if entry_date else hist
+    except Exception:
+        hist_since = hist
+
+    # ── Regel 1: Breakeven-Stop nach +breakeven_trigger % ────────────────────
+    if not breakeven_done and gain_pct >= breakeven_trigger:
+        result["raise_breakeven"] = True
+        result["breakeven_stop"]  = round(entry_price, 2)
+
+    # ── Regel 2: O'Neill Fast-Mover-Erkennung ────────────────────────────────
+    if not is_fast_mover and not partial_1_done:
+        target = entry_price * (1 + partial_1_trigger / 100)
+        first_n = hist_since.head(fast_move_weeks)
+        if not first_n.empty:
+            reached_early = (pd.to_numeric(first_n["High"], errors="coerce") >= target).any()
+            if reached_early:
+                result["is_fast_mover"] = True
+                try:
+                    hold_dt = (datetime.date.fromisoformat(entry_date)
+                               + datetime.timedelta(weeks=fast_move_hold))
+                    result["hold_until"] = hold_dt.isoformat()
+                except Exception:
+                    pass
+
+    # ── Regel 3a + 3b: Minervini Teilverkäufe ────────────────────────────────
+    today_str = datetime.date.today().isoformat()
+    effective_fast = is_fast_mover or result["is_fast_mover"]
+    fast_hold_over = effective_fast and hold_until and today_str >= hold_until
+    allow_partial  = (not effective_fast) or fast_hold_over
+
+    if allow_partial and not partial_1_done and gain_pct >= partial_1_trigger:
+        qty1 = max(1, round(original_qty * partial_1_frac))
+        if qty1 < current_qty:
+            result["partial_sell_1"]     = True
+            result["partial_sell_1_qty"] = qty1
+
+    if allow_partial and partial_1_done and not partial_2_done and gain_pct >= partial_2_trigger:
+        qty2 = max(1, round(original_qty * partial_2_frac))
+        if qty2 < current_qty:
+            result["partial_sell_2"]     = True
+            result["partial_sell_2_qty"] = qty2
+
+    # ── Regel 3c: ATR-Trailing-Stop für den Runner ───────────────────────────
+    if partial_1_done:
+        try:
+            tr = pd.concat([
+                (high - low).abs(),
+                (high - close.shift(1)).abs(),
+                (low  - close.shift(1)).abs(),
+            ], axis=1).max(axis=1)
+            atr10 = tr.rolling(10).mean().iloc[-1]
+
+            highest_close = pd.to_numeric(hist_since["Close"], errors="coerce").max()
+            if pd.notna(highest_close) and pd.notna(atr10) and atr10 > 0:
+                trailing_level = round(highest_close - trailing_atr_mult * atr10, 2)
+                current_stop   = trade.get("current_stop") or 0.0
+                if trailing_level > current_stop and trailing_level < current_price:
+                    result["trailing_stop"]       = True
+                    result["trailing_stop_level"] = trailing_level
+        except Exception as e:
+            print(f"[PROFIT] ATR-Trailing {symbol}: {e}")
+
+    return result
+
+
+def run_profit_taking_checks(journal_data: dict, dry_run: bool = False) -> list[dict]:
+    """Run all profit-taking rules for every open position in the journal.
+
+    For each position this may:
+      - Raise the Alpaca stop to breakeven (after +10 %)
+      - Place a partial market-sell (1/3 at +20 %, 1/3 at +40 %)
+      - Apply an ATR-based trailing stop (after first partial sell)
+
+    Returns list of result dicts with an extra key 'actions_taken'.
+    """
+    results: list[dict] = []
+    open_trades = journal_data.get("open", [])
+    if not open_trades:
+        return results
+
+    client = None if dry_run else _trading_client()
+
+    for trade in open_trades:
+        check = check_profit_taking(trade)
+        symbol = check["symbol"]
+        actions: list[str] = []
+
+        # 1. Breakeven-Stop
+        if check["raise_breakeven"]:
+            if dry_run:
+                actions.append("breakeven_dry")
+            elif client:
+                order = _find_stop_order(client, symbol)
+                if order:
+                    existing = float(getattr(order, "stop_price", 0) or 0)
+                    new_stop = check["breakeven_stop"]
+                    if new_stop > existing and _replace_stop(client, str(order.id), new_stop):
+                        actions.append("breakeven")
+
+        # 2. Teilverkauf 1
+        if check["partial_sell_1"]:
+            qty = check["partial_sell_1_qty"]
+            if dry_run:
+                actions.append("partial_1_dry")
+            elif client and _place_market_sell(client, symbol, qty):
+                actions.append("partial_1")
+
+        # 3. Teilverkauf 2
+        if check["partial_sell_2"]:
+            qty = check["partial_sell_2_qty"]
+            if dry_run:
+                actions.append("partial_2_dry")
+            elif client and _place_market_sell(client, symbol, qty):
+                actions.append("partial_2")
+
+        # 4. ATR-Trailing-Stop
+        if check["trailing_stop"]:
+            if dry_run:
+                actions.append("trailing_dry")
+            elif client:
+                order = _find_stop_order(client, symbol)
+                if order:
+                    existing = float(getattr(order, "stop_price", 0) or 0)
+                    new_stop = check["trailing_stop_level"]
+                    if new_stop > existing and _replace_stop(client, str(order.id), new_stop):
+                        actions.append("trailing")
+
+        check["actions_taken"] = actions
+        results.append(check)
+
+        if actions:
+            print(f"[PROFIT] {symbol}: {', '.join(actions)}")
 
     return results

@@ -165,6 +165,18 @@ def sync(
             "current_price":    pos["current_price"],
             "unrealized_pl":    pos["unrealized_pl"],
             "unrealized_plpc":  pos["unrealized_plpc"],
+            # Profit-Taking state (Minervini / O'Neill)
+            "pt_original_qty":    pos["qty"],
+            "pt_is_fast_mover":   False,
+            "pt_hold_until":      None,
+            "pt_breakeven_done":  False,
+            "pt_partial_1_done":  False,
+            "pt_partial_1_qty":   0,
+            "pt_partial_1_date":  None,
+            "pt_partial_2_done":  False,
+            "pt_partial_2_qty":   0,
+            "pt_partial_2_date":  None,
+            "pt_trailing_stop":   None,
         })
         print(f"[JOURNAL] ➕ {sym} neu eingetragen (Entry {entry_date} @ {pos['avg_entry_price']})")
 
@@ -205,7 +217,7 @@ def sync(
 
     data["open"] = still_open
 
-    # 3. Update current price / unrealized P&L for all open positions
+    # 3. Update current price, qty and unrealized P&L from Alpaca (source of truth)
     pos_map = {p["symbol"]: p for p in portfolio["positions"]}
     for trade in data["open"]:
         sym = trade["symbol"]
@@ -214,9 +226,54 @@ def sync(
             trade["current_price"]   = p["current_price"]
             trade["unrealized_pl"]   = round(p["unrealized_pl"], 2)
             trade["unrealized_plpc"] = round(p["unrealized_plpc"], 2)
+            trade["qty"]             = p["qty"]
 
     # Sort closed: newest exit first
     data["closed"].sort(key=lambda t: t.get("exit_date", ""), reverse=True)
+
+    save(data)
+    return data
+
+
+def apply_profit_taking(data: dict, pt_results: list[dict]) -> dict:
+    """Persist profit-taking actions from exit_manager into open trades."""
+    sym_map = {r["symbol"]: r for r in pt_results}
+    today   = datetime.date.today().isoformat()
+
+    for trade in data["open"]:
+        sym = trade["symbol"]
+        if sym not in sym_map:
+            continue
+        r       = sym_map[sym]
+        actions = r.get("actions_taken", [])
+
+        if r.get("is_fast_mover") and not trade.get("pt_is_fast_mover"):
+            trade["pt_is_fast_mover"] = True
+            trade["pt_hold_until"]    = r.get("hold_until")
+            print(f"[JOURNAL] 🚀 {sym}: Fast Mover — halten bis {r.get('hold_until')}")
+
+        if "breakeven" in actions:
+            trade["pt_breakeven_done"] = True
+            trade["current_stop"]      = r["breakeven_stop"]
+            trade["stop_raised_date"]  = today
+
+        if "partial_1" in actions:
+            qty = r["partial_sell_1_qty"]
+            trade["pt_partial_1_done"] = True
+            trade["pt_partial_1_qty"]  = qty
+            trade["pt_partial_1_date"] = today
+            # Qty wird beim nächsten sync() von Alpaca bestätigt
+
+        if "partial_2" in actions:
+            qty = r["partial_sell_2_qty"]
+            trade["pt_partial_2_done"] = True
+            trade["pt_partial_2_qty"]  = qty
+            trade["pt_partial_2_date"] = today
+
+        if "trailing" in actions:
+            trade["pt_trailing_stop"]  = r["trailing_stop_level"]
+            trade["current_stop"]      = r["trailing_stop_level"]
+            trade["stop_raised_date"]  = today
 
     save(data)
     return data
@@ -280,6 +337,21 @@ def _exit_reason_label(r):
     return {"stop_hit": "Stop Hit", "manual": "Manuell",
             "manual_market": "Manuell"}.get(r, r or "–")
 
+def _pt_status(t: dict) -> str:
+    parts = []
+    if t.get("pt_is_fast_mover"):
+        hold = t.get("pt_hold_until", "")
+        parts.append(f"&#x1F680; Fast Mover (bis {hold})")
+    if t.get("pt_breakeven_done"):
+        parts.append("&#x2705; Breakeven")
+    if t.get("pt_partial_1_done"):
+        parts.append(f"&frac13; TV1 {t.get('pt_partial_1_date','')}")
+    if t.get("pt_partial_2_done"):
+        parts.append(f"&frac13; TV2 {t.get('pt_partial_2_date','')}")
+    if t.get("pt_trailing_stop"):
+        parts.append(f"&#x1F4C9; Trail ${t['pt_trailing_stop']:.2f}")
+    return "<br>".join(parts) if parts else "–"
+
 
 def build_html(data: dict) -> str:
     stats   = _stats(data)
@@ -314,6 +386,7 @@ def build_html(data: dict) -> str:
           <td>{t.get('current_price', 0):.2f}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
+          <td class="left" style="font-size:.8em">{_pt_status(t)}</td>
         </tr>"""
 
     if not open_rows:
@@ -393,6 +466,7 @@ def build_html(data: dict) -> str:
       <th>Kurs aktuell</th>
       <th>P&amp;L %</th>
       <th>P&amp;L $</th>
+      <th class="left">Gewinnmitnahme</th>
     </tr>
     {open_rows}
   </table>

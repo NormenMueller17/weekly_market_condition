@@ -479,6 +479,13 @@ def run():
         journal_data = trade_journal.sync(alpaca_portfolio, filled_buys, filled_sells)
         if exit_results:
             journal_data = trade_journal.apply_raised_stops(journal_data, exit_results)
+
+        # ── Profit-Taking: Teilverkäufe und Stop-Nachzug ──────────────────────
+        pt_results   = exit_manager.run_profit_taking_checks(journal_data)
+        journal_data = trade_journal.apply_profit_taking(journal_data, pt_results)
+        if not any(r.get("actions_taken") for r in pt_results):
+            print("[PROFIT] Keine Gewinnmitnahme-Aktionen diese Woche")
+
         trades_html = trade_journal.build_and_save_html(journal_data)
         open_count   = len(journal_data.get("open",   []))
         closed_count = len(journal_data.get("closed", []))
