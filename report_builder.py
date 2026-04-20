@@ -299,7 +299,10 @@ HTML_TMPL = """
     <p style="color:#888">
         Keine Kaufsignale diese Woche —
         {% if not market_bullish %}
-        <strong>Marktfilter aktiv</strong>: S&amp;P 500 10W EMA &lt; 20W EMA.
+        <strong>Marktfilter aktiv</strong>: S&amp;P 500 10W EMA &lt; 20W EMA
+        {% if sp500_breadth_pct is not none and sp500_breadth_pct < min_breadth_pct %}
+        und Marktbreite {{ "%.1f"|format(sp500_breadth_pct) }}% &lt; {{ min_breadth_pct }}%.
+        {% else %}.{% endif %}
         {% else %}
         Kriterien (Score ≥ 6/8 + Vol-Breakout + RS ≥ 70 + Industry Top 50) nicht erfüllt.
         {% endif %}
@@ -378,7 +381,12 @@ HTML_TMPL = """
 
     {% else %}
     <p style="margin-bottom:0.8em">
-        <strong>Marktfilter:</strong> S&amp;P 500 10W EMA &gt; 20W EMA ✅ &nbsp;|&nbsp;
+        <strong>Marktfilter:</strong> S&amp;P 500 10W EMA &gt; 20W EMA ✅
+        {% if sp500_breadth_pct is not none %}
+        &nbsp;|&nbsp;<strong>Marktbreite:</strong> {{ "%.1f"|format(sp500_breadth_pct) }}% über 200d
+        {% if sp500_breadth_pct >= min_breadth_pct %}✅{% else %}⚠️{% endif %}
+        {% endif %}
+        &nbsp;|&nbsp;
         <strong>Position:</strong> {{ (signals[0].position_size_pct * 100) | round(1) }}% des Kapitals
         ({{ "{:,.0f}".format(signals[0].position_value) }} €/$) &nbsp;|&nbsp;
         <strong>Kelly-Fraction:</strong> 1/3 &nbsp;|&nbsp;
@@ -715,7 +723,8 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
                       signals=None, pages_url=None,
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
-                      sector_excluded=None):
+                      sector_excluded=None,
+                      sp500_breadth_pct=None, min_breadth_pct=40):
     """Build the weekly HTML email.
 
     Parameters
@@ -861,16 +870,18 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         report_date      = report_date,
         leaders          = leaders_html,
         all_leaders      = all_leaders_html,
-        signals          = signals,
-        market_bullish   = market_bullish,
-        COLOR_POSITIVE   = COLOR_POSITIVE,
-        COLOR_NEGATIVE   = COLOR_NEGATIVE,
-        divergences      = divergences,
-        pages_url        = pages_url,
-        alpaca_cash      = alpaca_cash,
-        alpaca_positions = alpaca_positions or [],
-        alpaca_portfolio = alpaca_portfolio,
-        signal_criteria  = signal_criteria,
+        signals            = signals,
+        market_bullish     = market_bullish,
+        sp500_breadth_pct  = sp500_breadth_pct,
+        min_breadth_pct    = min_breadth_pct,
+        COLOR_POSITIVE     = COLOR_POSITIVE,
+        COLOR_NEGATIVE     = COLOR_NEGATIVE,
+        divergences        = divergences,
+        pages_url          = pages_url,
+        alpaca_cash        = alpaca_cash,
+        alpaca_positions   = alpaca_positions or [],
+        alpaca_portfolio   = alpaca_portfolio,
+        signal_criteria    = signal_criteria,
     )
     return html
 

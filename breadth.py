@@ -1,4 +1,5 @@
 import pandas as pd
+import yfinance as yf
 from typing import Dict, List
 
 from indicators import rsi, macd, ema
@@ -149,3 +150,35 @@ def compute_breadth_snapshots_with_advancers(weekly_data: Dict[str, pd.DataFrame
     ]
     out = pd.DataFrame(result).reindex(order_rows)
     return out
+
+
+def compute_sp500_breadth_200d() -> float:
+    """Returns % of S&P 500 stocks currently above their 200-day MA.
+
+    Data source: Wikipedia S&P 500 component list + yfinance daily prices.
+    Fails open (returns 100.0) on any error so a data glitch never silently
+    blocks buy signals.
+    """
+    try:
+        tickers = pd.read_html(
+            "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+            attrs={"id": "constituents"},
+        )[0]["Symbol"].tolist()
+        tickers = [t.replace(".", "-") for t in tickers]
+
+        raw = yf.download(
+            tickers, period="1y", interval="1d",
+            auto_adjust=True, progress=False, threads=True,
+        )
+        close = raw["Close"] if isinstance(raw.columns, pd.MultiIndex) else raw
+
+        ma200     = close.rolling(200).mean()
+        last_c    = close.iloc[-1]
+        last_ma   = ma200.iloc[-1]
+        valid     = last_c.notna() & last_ma.notna()
+        if valid.sum() == 0:
+            return 100.0
+        above = (last_c[valid] > last_ma[valid]).sum()
+        return round(float(above / valid.sum() * 100), 1)
+    except Exception:
+        return 100.0

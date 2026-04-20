@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from config import SETTINGS
 from data_sources import get_universe, get_company_info_map_from_csv, load_weekly_history, load_index_series
-from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
+from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots, compute_sp500_breadth_200d
 from emailer import send_email
 from screener import screen_universe_minervini
 from fetch_quote_data import batch_fetch_quote_data, fetch_quote_data_single
@@ -227,9 +227,18 @@ def run():
     idx_rows   = build_index_rows(idx_data)
     risk_rows  = build_risk_rows(idx_data)
 
-    # Market filter (Blueprint: S&P 500 10W EMA > 20W EMA)
+    # Market filter 1: S&P 500 10W EMA > 20W EMA
     market_bullish = is_market_bullish(idx_data.get("SPY"))
     print(f"[SIGNALS] Marktfilter 10EMA>20EMA: {'✅ BULLISH' if market_bullish else '❌ BÄRISCH – keine Kaufsignale'}")
+
+    # Market filter 2: S&P 500 Marktbreite (% Aktien über 200d-MA)
+    from signal_generator import _RULES_JSON as _rules_json
+    _min_breadth = _rules_json.get("filters", {}).get("min_breadth_pct_200d", 40)
+    sp500_breadth_pct = compute_sp500_breadth_200d()
+    breadth_bullish = (_min_breadth == 0) or (sp500_breadth_pct >= _min_breadth)
+    if not breadth_bullish:
+        market_bullish = False
+    print(f"[SIGNALS] S&P 500 Marktbreite: {sp500_breadth_pct:.1f}% über 200d {'✅' if breadth_bullish else f'❌ Kaufstopp (< {_min_breadth}%)'}")
 
     # 3) Report erzeugen
     summary = heuristic_verdict(breadth_df, idx_rows)
@@ -601,6 +610,7 @@ def run():
         weekly, leaders_html, signals=signals, pages_url=None,
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
         sector_excluded=sector_excluded,
+        sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
     )
     docs_reports_dir = Path("docs/reports")
     docs_reports_dir.mkdir(parents=True, exist_ok=True)
@@ -623,6 +633,7 @@ def run():
         weekly, leaders_html, signals=signals, pages_url=report_url,
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
         sector_excluded=sector_excluded,
+        sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
     )
 
     # E-Mail Betreff zeigt Signalanzahl für schnellen Montags-Check
