@@ -172,13 +172,15 @@ def compute_sp500_breadth_200d() -> float:
         )
         close = raw["Close"] if isinstance(raw.columns, pd.MultiIndex) else raw
 
-        ma200     = close.rolling(200).mean()
-        last_c    = close.iloc[-1]
-        last_ma   = ma200.iloc[-1]
-        valid     = last_c.notna() & last_ma.notna()
+        ma200  = close.rolling(200).mean()
+        last_c = close.iloc[-1]
+        last_ma = ma200.iloc[-1]
+        valid   = last_c.notna() & last_ma.notna()
         if valid.sum() == 0:
+            print("[BREADTH] Warnung: Keine gültigen 200d-MA-Werte — Marktbreite-Filter deaktiviert (fail-open)")
             return 100.0
         above = (last_c[valid] > last_ma[valid]).sum()
         return round(float(above / valid.sum() * 100), 1)
-    except Exception:
+    except Exception as e:
+        print(f"[BREADTH] Fehler beim Abruf der S&P-500-Marktbreite: {e} — Filter deaktiviert (fail-open, 100.0%)")
         return 100.0
