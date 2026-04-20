@@ -714,7 +714,8 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
 
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
                       signals=None, pages_url=None,
-                      alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None):
+                      alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
+                      sector_excluded=None):
     """Build the weekly HTML email.
 
     Parameters
@@ -792,8 +793,12 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     _min_price = float(_rules.get("filters", {}).get("min_price",               5.0))
     _min_cap   = float(_rules.get("filters", {}).get("min_market_cap_mio",    300.0))
 
+    _sector_excluded: set = sector_excluded or set()
+
     def _compute_fails(row) -> str:
         fails = []
+        if row.name in _sector_excluded:
+            fails.append("Sektor-Limit")
         def _n(col): return pd.to_numeric(row.get(col, None), errors='coerce')
         if not bool(row.get("MACD > Signal (W)", False)):
             fails.append("MACD fällt")

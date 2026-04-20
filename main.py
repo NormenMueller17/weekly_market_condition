@@ -494,7 +494,7 @@ def run():
         print("[JOURNAL] Kein Alpaca-Portfolio — Journal-Sync übersprungen")
 
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
-    signals, _signal_candidates = generate_signals(
+    signals, _signal_candidates, sector_excluded = generate_signals(
         leaders,
         market_bullish  = market_bullish,
         account_equity  = SETTINGS.account_equity,
@@ -600,6 +600,7 @@ def run():
         breadth_df, idx_df, risk_df, summary, report_date,
         weekly, leaders_html, signals=signals, pages_url=None,
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
+        sector_excluded=sector_excluded,
     )
     docs_reports_dir = Path("docs/reports")
     docs_reports_dir.mkdir(parents=True, exist_ok=True)
@@ -621,6 +622,7 @@ def run():
         breadth_df, idx_df, risk_df, summary, report_date,
         weekly, leaders_html, signals=signals, pages_url=report_url,
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
+        sector_excluded=sector_excluded,
     )
 
     # E-Mail Betreff zeigt Signalanzahl für schnellen Montags-Check
