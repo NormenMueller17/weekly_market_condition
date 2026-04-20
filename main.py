@@ -328,6 +328,7 @@ def run():
         leaders.insert(7, "EPS (Forward/TTM)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_FWD_TTM")))
         leaders.insert(8, "EPS Wachstum FWD/TTM (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_GROWTH_FWD_TTM")))
         leaders.insert(9, "Revenue Wachstum TTM YoY (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("REV_GROWTH_TTM_YOY")))
+        leaders.insert(10, "EPS Wachstum letztes Q YoY (%)", leaders.index.map(lambda t: quote_map.get(t, {}).get("EPS_GROWTH_LAST_Q_YOY")))
 
         "ROE (%)",
         "Operating Margin (%)",
@@ -405,6 +406,7 @@ def run():
         "MarketCap (Mio USD)",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
+        "EPS Wachstum letztes Q YoY (%)",
         "Revenue Wachstum TTM YoY (%)",
         "ROE (%)",
         "Operating Margin (%)",
@@ -556,6 +558,7 @@ def run():
         "Industry Volume Score",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
+        "EPS Wachstum letztes Q YoY (%)",
         "Revenue Wachstum TTM YoY (%)",
         "ROE (%)",
         "Operating Margin (%)",
@@ -745,6 +748,7 @@ def run():
         "Industry Volume Score",
         "EPS (Forward/TTM)",
         "EPS Wachstum FWD/TTM (%)",
+        "EPS Wachstum letztes Q YoY (%)",
         "Revenue Wachstum TTM YoY (%)",
         "ROE (%)",
         "Operating Margin (%)",

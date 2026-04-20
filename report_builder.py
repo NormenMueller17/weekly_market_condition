@@ -796,11 +796,13 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         _rules = json.loads((Path(__file__).parent / "rules.json").read_text(encoding="utf-8"))
     except Exception:
         _rules = {}
-    _min_rs    = float(_rules.get("filters", {}).get("min_rs_score",           70.0))
-    _max_rank  = float(_rules.get("filters", {}).get("max_industry_rank",      50.0))
-    _max_atr   = float(_rules.get("filters", {}).get("max_atr_pct",             8.0))
-    _min_price = float(_rules.get("filters", {}).get("min_price",               5.0))
-    _min_cap   = float(_rules.get("filters", {}).get("min_market_cap_mio",    300.0))
+    _min_rs         = float(_rules.get("filters", {}).get("min_rs_score",           70.0))
+    _max_rank       = float(_rules.get("filters", {}).get("max_industry_rank",      50.0))
+    _max_atr        = float(_rules.get("filters", {}).get("max_atr_pct",             8.0))
+    _min_price      = float(_rules.get("filters", {}).get("min_price",               5.0))
+    _min_cap        = float(_rules.get("filters", {}).get("min_market_cap_mio",    300.0))
+    _min_rev_growth = float(_rules.get("filters", {}).get("min_rev_growth",          0.0))
+    _min_eps_growth = float(_rules.get("filters", {}).get("min_eps_growth_last_q",   0.0))
 
     _sector_excluded: set = sector_excluded or set()
 
@@ -830,6 +832,14 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         cap = _n("MarketCap (Mio USD)")
         if not pd.isna(cap) and cap < _min_cap:
             fails.append(f"MCap&nbsp;&lt;&nbsp;{_min_cap:.0f}M")
+        if _min_rev_growth > 0:
+            rev = _n("Revenue Wachstum TTM YoY (%)")
+            if not pd.isna(rev) and rev < _min_rev_growth:
+                fails.append(f"Rev&nbsp;&lt;&nbsp;{_min_rev_growth:.0f}%")
+        if _min_eps_growth > 0:
+            eps = _n("EPS Wachstum letztes Q YoY (%)")
+            if not pd.isna(eps) and eps < _min_eps_growth:
+                fails.append(f"EPS-Q&nbsp;&lt;&nbsp;{_min_eps_growth:.0f}%")
         return " · ".join(fails) if fails else "✅"
 
     all_leaders_html["_filter_fails"] = all_leaders_html.apply(_compute_fails, axis=1)

@@ -98,6 +98,7 @@ DEFAULT_RULES: dict = {
     "min_roe":                _f.get("min_roe",                0.0),
     "min_op_margin":          _f.get("min_op_margin",          0.0),
     "min_rev_growth":         _f.get("min_rev_growth",         0.0),
+    "min_eps_growth_last_q":  _f.get("min_eps_growth_last_q",  0.0),
     "max_industry_rank":      _f.get("max_industry_rank",      100),
     "max_stop_pct":           _f.get("max_stop_pct",           20.0),
     "earnings_blackout_days": _f.get("earnings_blackout_days", 7),
@@ -317,6 +318,7 @@ class TradeSignal:
     roe:                Optional[float]
     op_margin:          Optional[float]
     revenue_growth:     Optional[float]
+    eps_growth_last_q:  Optional[float]
 
     # Technical
     rs_score:           Optional[float]
@@ -408,9 +410,10 @@ def generate_signals(
     mask &= _num("ATR / Price (%)", 999) < r["max_atr_pct"]
 
     # 6. Fundamental quality filters
-    if r["min_roe"]        > 0:  mask &= _num("ROE (%)")                       >= r["min_roe"]
-    if r["min_op_margin"]  > 0:  mask &= _num("Operating Margin (%)")          >= r["min_op_margin"]
-    if r["min_rev_growth"] > 0:  mask &= _num("Revenue Wachstum TTM YoY (%)") >= r["min_rev_growth"]
+    if r["min_roe"]             > 0:  mask &= _num("ROE (%)")                              >= r["min_roe"]
+    if r["min_op_margin"]       > 0:  mask &= _num("Operating Margin (%)")                 >= r["min_op_margin"]
+    if r["min_rev_growth"]      > 0:  mask &= _num("Revenue Wachstum TTM YoY (%)")        >= r["min_rev_growth"]
+    if r["min_eps_growth_last_q"] > 0: mask &= _num("EPS Wachstum letztes Q YoY (%)") >= r["min_eps_growth_last_q"]
 
     # 7. Industry Ranking filter  (lower rank number = stronger industry)
     #    NaN industry rank → pass (fail-open: computation failure ≠ bad industry)
@@ -563,6 +566,7 @@ def generate_signals(
             roe                = _safe_float(row.get("ROE (%)")),
             op_margin          = _safe_float(row.get("Operating Margin (%)")),
             revenue_growth     = _safe_float(row.get("Revenue Wachstum TTM YoY (%)")),
+            eps_growth_last_q  = _safe_float(row.get("EPS Wachstum letztes Q YoY (%)")),
             rs_score           = _safe_float(row.get("RS (O'Neil)")),
             rs_delta_4w        = _safe_float(row.get("ΔRS 4W")),
             atr_pct            = round(atr_pct, 2),

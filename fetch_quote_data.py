@@ -33,6 +33,7 @@ except Exception:
 _EMPTY_QUOTE: dict = {
     "Close": None, "MarketCap_Mio": None, "Sector": None,
     "EPS_FWD_TTM": None, "EPS_GROWTH_FWD_TTM": None, "REV_GROWTH_TTM_YOY": None,
+    "EPS_GROWTH_LAST_Q_YOY": None,
     "ROE": None, "Operating_Margin": None, "FCF_Margin": None,
     "Debt_to_Equity": None, "EPS_Acceleration": None, "ROIC": None,
     "Cash_Conversion": None, "Op_Margin_Stability_5y": None,
@@ -323,7 +324,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
                     except Exception:
                         return None, None, 0
                 
-                # --- Quarterly EPS Acceleration ---
+                # --- Quarterly EPS: YoY letztes Quartal + Acceleration ---
                 GLOBAL_LIMITER.acquire()
                 qs = getattr(tkr, "quarterly_income_stmt", None)
                 if qs is None or getattr(qs, "empty", True):
@@ -332,18 +333,24 @@ def fetch_quote_data_single(ticker: str) -> dict:
                         qs = get_stmt(freq="quarterly")
 
                 eps_q = _extract_eps_series(qs)
-                if eps_q is not None and len(eps_q) >= 6:
+                if eps_q is not None and len(eps_q) >= 5:
                     v = eps_q.values  # newest->oldest
                     g_latest = None
-                    g_prev = None
-                    if v[4] not in (0, None) and not pd.isna(v[4]):
+                    # YoY letztes Quartal: Q0 vs. Q4 (vor einem Jahr)
+                    if v[4] not in (0, None) and not pd.isna(v[0]) and not pd.isna(v[4]):
                         g_latest = (v[0] / v[4] - 1.0) * 100.0
-                    if v[5] not in (0, None) and not pd.isna(v[5]):
-                        g_prev = (v[1] / v[5] - 1.0) * 100.0
-                    if g_latest is not None and g_prev is not None:
-                        eps_acceleration = g_latest - g_prev
+                    eps_growth_last_q = g_latest
+                    # Acceleration braucht zusätzlich Q5
+                    if g_latest is not None and len(v) >= 6:
+                        g_prev = None
+                        if v[5] not in (0, None) and not pd.isna(v[1]) and not pd.isna(v[5]):
+                            g_prev = (v[1] / v[5] - 1.0) * 100.0
+                        if g_prev is not None:
+                            eps_acceleration = g_latest - g_prev
+                else:
+                    eps_growth_last_q = None
 
-                # --- Yearly fallback ---
+                # --- Yearly fallback (nur für Acceleration, nicht für Q-YoY) ---
                 if eps_acceleration is None:
                     ys = getattr(tkr, "income_stmt", None)
                     if ys is None or getattr(ys, "empty", True):
@@ -364,6 +371,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
                             eps_acceleration = g_latest - g_prev
             except Exception:
                 eps_acceleration = None
+                eps_growth_last_q = None
 
             # --- Quality compounder metrics (Phase 1) ---
             # Cash Conversion = FCF / Net Income
@@ -454,6 +462,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
                 "EPS_FWD_TTM": eps_fwd_ttm,
                 "EPS_GROWTH_FWD_TTM": eps_growth_pct,
                 "REV_GROWTH_TTM_YOY": rev_growth_pct,
+                "EPS_GROWTH_LAST_Q_YOY": eps_growth_last_q,
             "ROE": roe,
             "Operating_Margin": op_margin,
             "FCF_Margin": fcf_margin,
