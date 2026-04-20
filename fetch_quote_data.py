@@ -257,9 +257,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
                     # Yahoo sometimes returns debtToEquity as percentage (e.g., 45.3). Convert if it looks like percent.
                     debt_to_equity = d2e / 100.0 if d2e > 10 else d2e
 
-            # EPS Acceleration (percentage points)
-            # Prefer quarterly Diluted EPS (needs >= 6 quarters for 2 YoY rates). Fallback: yearly Diluted EPS (needs >= 3 years).
-            eps_acceleration = None
+            # EPS: letztes-Quartal-YoY (braucht >= 5 Quartale) + Acceleration (>= 6). Fallback: jährlich (>= 3 Jahre).
+            eps_acceleration  = None
+            eps_growth_last_q = None
             try:
                 def _extract_eps_series(stmt):
                     if stmt is None or getattr(stmt, "empty", True):

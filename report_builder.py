@@ -834,11 +834,15 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
             fails.append(f"MCap&nbsp;&lt;&nbsp;{_min_cap:.0f}M")
         if _min_rev_growth > 0:
             rev = _n("Revenue Wachstum TTM YoY (%)")
-            if not pd.isna(rev) and rev < _min_rev_growth:
+            if pd.isna(rev):
+                fails.append("Rev&nbsp;fehlt")
+            elif rev < _min_rev_growth:
                 fails.append(f"Rev&nbsp;&lt;&nbsp;{_min_rev_growth:.0f}%")
         if _min_eps_growth > 0:
             eps = _n("EPS Wachstum letztes Q YoY (%)")
-            if not pd.isna(eps) and eps < _min_eps_growth:
+            if pd.isna(eps):
+                fails.append("EPS-Q&nbsp;fehlt")
+            elif eps < _min_eps_growth:
                 fails.append(f"EPS-Q&nbsp;&lt;&nbsp;{_min_eps_growth:.0f}%")
         return " · ".join(fails) if fails else "✅"
 
