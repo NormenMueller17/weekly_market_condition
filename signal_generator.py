@@ -253,6 +253,22 @@ def _composite_score(sig: "TradeSignal") -> float:
     )
 
 
+def _filter_sector_limit(
+    signals:        list["TradeSignal"],
+    max_per_sector: int,
+) -> list["TradeSignal"]:
+    """Drop lower-ranked signals that exceed the per-sector cap (preserves rank order)."""
+    sector_count: dict[str, int] = {}
+    result = []
+    for sig in signals:
+        sector = sig.sector or "Unknown"
+        count  = sector_count.get(sector, 0)
+        if count < max_per_sector:
+            result.append(sig)
+            sector_count[sector] = count + 1
+    return result
+
+
 def rank_signals(
     signals:       list["TradeSignal"],
     max_positions: int = 5,
@@ -557,6 +573,11 @@ def generate_signals(
 
     # ── Rank and flag top picks ───────────────────────────────────────────────
     signals = rank_signals(signals, max_positions=remaining_slots)
+
+    # ── Sector concentration limit ────────────────────────────────────────────
+    max_per_sector = _RULES_JSON.get("portfolio", {}).get("max_positions_per_sector", 3)
+    if max_per_sector > 0:
+        signals = _filter_sector_limit(signals, max_per_sector=max_per_sector)
 
     return signals, candidates
 

@@ -50,6 +50,7 @@
 
   "portfolio": {
     "max_positions":          3,
+    "max_positions_per_sector": 3,
     "account_equity":         100000.0
   },
 
