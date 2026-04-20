@@ -379,11 +379,11 @@ def build_html(data: dict) -> str:
             <span style="font-size:.8em;color:#666">{t.get('company','')}</span></td>
           <td class="left">{t.get('pattern','–')}</td>
           <td>{t.get('entry_date','–')}</td>
-          <td>{t.get('entry_price', 0):.2f}</td>
-          <td>{t.get('qty', 0):.0f}</td>
+          <td>{(t.get('entry_price') or 0):.2f}</td>
+          <td>{(t.get('qty') or 0):.0f}</td>
           <td>{init_stop:.2f if init_stop is not None else '–'}</td>
           <td style="{'color:#1a8a1a;font-weight:600' if t.get('stop_raised_date') else ''}">{stop_raised}{cur_stop:.2f if cur_stop is not None else '–'}</td>
-          <td>{t.get('current_price', 0):.2f}</td>
+          <td>{(t.get('current_price') or 0):.2f}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
           <td class="left" style="font-size:.8em">{_pt_status(t)}</td>
@@ -404,9 +404,9 @@ def build_html(data: dict) -> str:
           <td class="left">{t.get('pattern','–')}</td>
           <td>{t.get('entry_date','–')}</td>
           <td>{t.get('exit_date','–')}</td>
-          <td>{t.get('entry_price', 0):.2f}</td>
-          <td>{t.get('exit_price', 0):.2f}</td>
-          <td>{t.get('qty', 0):.0f}</td>
+          <td>{(t.get('entry_price') or 0):.2f}</td>
+          <td>{(t.get('exit_price') or 0):.2f}</td>
+          <td>{(t.get('qty') or 0):.0f}</td>
           <td class="left">{_exit_reason_label(t.get('exit_reason'))}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>

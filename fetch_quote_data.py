@@ -137,11 +137,11 @@ def fetch_quote_data_single(ticker: str) -> dict:
 
             # EPS: Forward + TTM
             eps_forward = (
-                fast.get("epsForward")
+                info.get("epsForward")
                 or info.get("forwardEps")
             )
             eps_trailing = (
-                fast.get("epsTrailingTwelveMonths")
+                info.get("epsTrailingTwelveMonths")
                 or info.get("trailingEps")
             )
             eps_fwd_ttm = eps_forward if eps_forward is not None else eps_trailing
