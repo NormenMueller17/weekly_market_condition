@@ -3,7 +3,12 @@ name: Weekly US Market Report
 on:
   schedule:
     - cron: '0 8 * * 6'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test-Modus (keine Orders): 1 = Test, 0 = Live, leer = automatisch (nur samstags Live)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -39,6 +44,7 @@ jobs:
           echo "LOOKBACK_WEEKS=${{ vars.LOOKBACK_WEEKS }}" >> $GITHUB_ENV
           echo "ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}" >> $GITHUB_ENV
           echo "ALPACA_API_SECRET=${{ secrets.ALPACA_API_SECRET }}" >> $GITHUB_ENV
+          echo "TEST_MODE=${{ github.event.inputs.test_mode }}" >> $GITHUB_ENV
 
       - name: Run report
         run: |

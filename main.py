@@ -35,6 +35,19 @@ import alpaca_client
 import exit_manager
 import trade_journal
 
+# ── Test-Modus: TEST_MODE=1 → immer Test, TEST_MODE=0 → immer Live,
+#    nicht gesetzt → nur samstags Live (weekday 5)
+_tm_env = os.getenv("TEST_MODE", "")
+if _tm_env == "1":
+    TEST_MODE = True
+elif _tm_env == "0":
+    TEST_MODE = False
+else:
+    TEST_MODE = datetime.today().weekday() != 5
+
+if TEST_MODE:
+    print("[TEST-MODUS] Aktiv — keine Alpaca-Orders werden platziert oder storniert")
+
 BOOLEAN_HEADERS = [
     "SMA10W steigend",
     "SMA30W steigend",
@@ -448,9 +461,12 @@ def run():
     leaders       = leaders[existing_pref + remaining]
 
     # ── Alpaca: nicht ausgelöste Orders der Vorwoche cancellen ───────────────
-    cancelled = alpaca_client.cancel_open_orders()
-    if cancelled > 0:
-        print(f"[ORDER] 🗑  {cancelled} offene Order(s) aus der Vorwoche gecancelt")
+    if not TEST_MODE:
+        cancelled = alpaca_client.cancel_open_orders()
+        if cancelled > 0:
+            print(f"[ORDER] 🗑  {cancelled} offene Order(s) aus der Vorwoche gecancelt")
+    else:
+        print("[ORDER] TEST-MODUS — cancel_open_orders übersprungen")
 
     # ── Alpaca: verfügbares Kapital & offene Positionen ──────────────────────
     alpaca_portfolio = alpaca_client.get_portfolio()
@@ -466,7 +482,7 @@ def run():
     # ── Exit-Manager: MACD Bearish Cross auf offenen Positionen prüfen ──────────
     exit_results: list[dict] = []
     if alpaca_portfolio is not None:
-        exit_results = exit_manager.run_exit_checks(alpaca_portfolio)
+        exit_results = exit_manager.run_exit_checks(alpaca_portfolio, dry_run=TEST_MODE)
         for r in exit_results:
             sym = r["symbol"]
             if r["cross"]:
@@ -492,7 +508,7 @@ def run():
             journal_data = trade_journal.apply_raised_stops(journal_data, exit_results)
 
         # ── Profit-Taking: Teilverkäufe und Stop-Nachzug ──────────────────────
-        pt_results   = exit_manager.run_profit_taking_checks(journal_data)
+        pt_results   = exit_manager.run_profit_taking_checks(journal_data, dry_run=TEST_MODE)
         journal_data = trade_journal.apply_profit_taking(journal_data, pt_results)
         if not any(r.get("actions_taken") for r in pt_results):
             print("[PROFIT] Keine Gewinnmitnahme-Aktionen diese Woche")
@@ -521,7 +537,7 @@ def run():
 
     # ── Alpaca: OTO Stop-Limit Orders für Top-Picks platzieren ───────────────
     if signals and alpaca_portfolio is not None:
-        order_results = alpaca_client.place_signal_orders(signals, dry_run=False)
+        order_results = alpaca_client.place_signal_orders(signals, dry_run=TEST_MODE)
         for r in order_results:
             status = r["status"]
             ticker = r["ticker"]
@@ -614,6 +630,7 @@ def run():
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
         sector_excluded=sector_excluded,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
+        test_mode=TEST_MODE,
     )
     docs_reports_dir = Path("docs/reports")
     docs_reports_dir.mkdir(parents=True, exist_ok=True)
@@ -637,11 +654,13 @@ def run():
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
         sector_excluded=sector_excluded,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
+        test_mode=TEST_MODE,
     )
 
-    # E-Mail Betreff zeigt Signalanzahl für schnellen Montags-Check
+    # E-Mail Betreff zeigt Signalanzahl + TEST-MODUS-Hinweis
     signal_count = len(signals)
-    email_subject = f"Weekly US Market Report — {signal_count} Kaufsignal{'e' if signal_count != 1 else ''}"
+    tm_prefix = "[TEST-MODUS] " if TEST_MODE else ""
+    email_subject = f"{tm_prefix}Weekly US Market Report — {signal_count} Kaufsignal{'e' if signal_count != 1 else ''}"
 
     # ── Früher Rücksprung wenn Excel-Export deaktiviert (Standard) ────────────
     if not SETTINGS.export_excel:

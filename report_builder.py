@@ -132,6 +132,11 @@ HTML_TMPL = """
     </script>
 </head>
 <body>
+    {% if test_mode %}
+    <div style="background:#b30000;color:#fff;font-weight:bold;font-size:1.1em;padding:10px 16px;border-radius:6px;margin-bottom:1em;letter-spacing:.03em;">
+      ⚠️ TEST-MODUS — Keine Orders wurden platziert oder storniert
+    </div>
+    {% endif %}
     <h1>Weekly US Market Report</h1>
     <p><strong>Report-Woche:</strong> {{ report_date }}</p>
 
@@ -724,7 +729,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
                       signals=None, pages_url=None,
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
                       sector_excluded=None,
-                      sp500_breadth_pct=None, min_breadth_pct=40):
+                      sp500_breadth_pct=None, min_breadth_pct=40,
+                      test_mode=False):
     """Build the weekly HTML email.
 
     Parameters
@@ -896,6 +902,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         alpaca_positions   = alpaca_positions or [],
         alpaca_portfolio   = alpaca_portfolio,
         signal_criteria    = signal_criteria,
+        test_mode          = test_mode,
     )
     return html
 
