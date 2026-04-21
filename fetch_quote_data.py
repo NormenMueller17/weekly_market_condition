@@ -154,7 +154,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
                 except Exception:
                     eps_growth_pct = None
 
-            # Revenue Growth (TTM YoY)
+            # Revenue Growth (TTM YoY) — primär aus info, Fallback via Income Statement weiter unten
             rev_growth_pct = None
             try:
                 rg = info.get("revenueGrowth")
@@ -416,6 +416,35 @@ def fetch_quote_data_single(ticker: str) -> dict:
                 eps_neg_yoy_5y, eps_growth_std_5y = _yoy_growth_stats(eps_s_y, years=5)
             except Exception:
                 eps_neg_yoy_5y, eps_growth_std_5y = None, None
+
+            # ── Fallbacks für Hartfilter-Metriken wenn info-Felder fehlen ────────
+            # Revenue Growth: Fallback aus jährlichem Income Statement (ys)
+            if rev_growth_pct is None:
+                try:
+                    rev_s_fb = _extract_revenue_series(ys)
+                    if rev_s_fb is not None and len(rev_s_fb) >= 2:
+                        v0, v1 = float(rev_s_fb.iloc[0]), float(rev_s_fb.iloc[1])
+                        if v1 != 0 and not pd.isna(v0) and not pd.isna(v1):
+                            rev_growth_pct = (v0 / v1 - 1.0) * 100.0
+                except Exception:
+                    pass
+
+            # EPS-Q YoY: Fallback aus quarterly Income Statement wenn bisher None
+            if eps_growth_last_q is None:
+                try:
+                    GLOBAL_LIMITER.acquire()
+                    qs_fb = getattr(tkr, "quarterly_income_stmt", None)
+                    if qs_fb is None or getattr(qs_fb, "empty", True):
+                        get_stmt_fb = getattr(tkr, "get_income_stmt", None)
+                        if callable(get_stmt_fb):
+                            qs_fb = get_stmt_fb(freq="quarterly")
+                    eps_q_fb = _extract_eps_series(qs_fb)
+                    if eps_q_fb is not None and len(eps_q_fb) >= 5:
+                        v = eps_q_fb.values
+                        if v[4] not in (0, None) and not pd.isna(v[0]) and not pd.isna(v[4]):
+                            eps_growth_last_q = (v[0] / v[4] - 1.0) * 100.0
+                except Exception:
+                    pass
 
 
 
