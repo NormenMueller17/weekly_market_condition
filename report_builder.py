@@ -768,8 +768,11 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     divergences  = build_divergence_text(idx)
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
 
-    # 2) Leaders: für Cloudflare Pages alle behalten; für Email nur Score 8/8
-    all_leaders_html = leaders.copy()   # ungefilterter Fallback für Cloudflare Pages
+    # 2) Leaders: Screener-Kandidaten Score ≥ 6; für Email nur Score 8/8
+    all_leaders_html = leaders.copy()
+    if "score" in all_leaders_html.columns:
+        all_leaders_html["score_num"] = pd.to_numeric(all_leaders_html["score"], errors="coerce")
+        all_leaders_html = all_leaders_html[all_leaders_html["score_num"] >= 6].drop(columns=["score_num"])
     leaders_html = leaders.copy()
     if "score" in leaders_html.columns:
         leaders_html["score_num"] = pd.to_numeric(leaders_html["score"], errors="coerce")
