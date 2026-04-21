@@ -499,6 +499,27 @@ def run():
     else:
         print("[EXIT] Kein Alpaca-Portfolio — Exit-Check übersprungen")
 
+    # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
+    signals, _signal_candidates, sector_excluded = generate_signals(
+        leaders,
+        market_bullish  = market_bullish,
+        account_equity  = SETTINGS.account_equity,
+        win_rate        = SETTINGS.win_rate,
+        win_loss_ratio  = SETTINGS.win_loss_ratio,
+        kelly_fraction  = SETTINGS.kelly_fraction,
+        max_positions   = SETTINGS.max_positions,
+        rules           = {"max_industry_rank": SETTINGS.max_industry_rank},
+        available_cash  = alpaca_cash,
+        open_positions  = alpaca_positions,
+    )
+    print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
+
+    # Signale sofort speichern – trade_journal.sync() liest daraus den initial_stop
+    out_dir = Path("artifacts")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    signals_json = save_signals_json(signals, out_dir / f"signals_{report_date}.json")
+    print(f"[SIGNALS] Signale gespeichert → {signals_json}")
+
     # ── Trade Journal: Positionen synchronisieren & HTML aktualisieren ────────
     if alpaca_portfolio is not None:
         filled_buys  = alpaca_client.get_filled_orders("buy")
@@ -519,21 +540,6 @@ def run():
         print(f"[JOURNAL] {open_count} offen / {closed_count} geschlossen → {trades_html}")
     else:
         print("[JOURNAL] Kein Alpaca-Portfolio — Journal-Sync übersprungen")
-
-    # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
-    signals, _signal_candidates, sector_excluded = generate_signals(
-        leaders,
-        market_bullish  = market_bullish,
-        account_equity  = SETTINGS.account_equity,
-        win_rate        = SETTINGS.win_rate,
-        win_loss_ratio  = SETTINGS.win_loss_ratio,
-        kelly_fraction  = SETTINGS.kelly_fraction,
-        max_positions   = SETTINGS.max_positions,
-        rules           = {"max_industry_rank": SETTINGS.max_industry_rank},
-        available_cash  = alpaca_cash,
-        open_positions  = alpaca_positions,
-    )
-    print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
 
     # ── Alpaca: OTO Stop-Limit Orders für Top-Picks platzieren ───────────────
     if signals and alpaca_portfolio is not None:
@@ -611,14 +617,6 @@ def run():
 
     #Screener-Ausgabe prüfen
     print(f"[DEBUG] Found {len(leaders)} Minervini leaders")
-
-    # Ausgabe-Verzeichnis (immer anlegen – wird für JSON + ggf. Excel gebraucht)
-    out_dir = Path("artifacts")
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # Signale immer als JSON speichern (maschinenlesbar für Trade-Executor)
-    signals_json = save_signals_json(signals, out_dir / f"signals_{report_date}.json")
-    print(f"[SIGNALS] Signale gespeichert → {signals_json}")
 
     # ── GitHub Pages: vollständigen Report speichern ──────────────────────────
     PAGES_BASE_URL = "https://weekly-market-condition.pages.dev"
