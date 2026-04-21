@@ -348,11 +348,11 @@ HTML_TMPL = """
         <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Industry", "–") }}</td>
         <td style="text-align:center">{{ row.get("score", "–") }}</td>
         <td class="left">
-          {% set pat = row.get("VCP Entry", "") %}
-          {% set lp  = row.get("Launchpad Pivot", "") %}
-          {% if pat and pat != "" %}<span style="background:#e8f5e9;padding:1px 5px;border-radius:3px;font-size:0.82em">VCP</span>{% endif %}
-          {% if lp and lp != "" %}<span style="background:#fffde7;padding:1px 5px;border-radius:3px;font-size:0.82em">LP</span>{% endif %}
-          {% if (not pat or pat == "") and (not lp or lp == "") %}<span style="color:#aaa;font-size:0.82em">–</span>{% endif %}
+          {% set pat = row.get("VCP", false) %}
+          {% set lp  = row.get("Launchpad", false) %}
+          {% if pat %}<span style="background:#e8f5e9;padding:1px 5px;border-radius:3px;font-size:0.82em">VCP</span>{% endif %}
+          {% if lp %}<span style="background:#fffde7;padding:1px 5px;border-radius:3px;font-size:0.82em">LP</span>{% endif %}
+          {% if not pat and not lp %}<span style="color:#aaa;font-size:0.82em">–</span>{% endif %}
         </td>
         <td style="text-align:right">{{ row.get("Close", "–") }}</td>
         <td style="text-align:center;background:{% if rs_val != none and rs_val|float >= 70 %}#e8f5e9{% else %}transparent{% endif %}">
