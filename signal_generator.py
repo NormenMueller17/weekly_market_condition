@@ -449,7 +449,7 @@ def generate_signals(
     candidates = df[mask].copy()
 
     if candidates.empty:
-        return [], candidates
+        return [], candidates, []
 
     # 11. Earnings-Blackout: kein Kauf wenn Earnings ≤ 7 Tage entfernt
     earnings_window = r.get("earnings_blackout_days", 7)
@@ -457,7 +457,7 @@ def generate_signals(
         no_earnings = _filter_earnings_blackout(list(candidates.index), earnings_window)
         candidates = candidates[candidates.index.isin(no_earnings)]
         if candidates.empty:
-            return [], candidates
+            return [], candidates, []
 
     # ── Portfolio-aware filtering ─────────────────────────────────────────────
     held = set(open_positions or [])
@@ -466,7 +466,7 @@ def generate_signals(
 
     remaining_slots = max_positions - len(held)
     if remaining_slots <= 0:
-        return [], candidates
+        return [], candidates, []
 
     # ── Build signal objects ──────────────────────────────────────────────────
 
