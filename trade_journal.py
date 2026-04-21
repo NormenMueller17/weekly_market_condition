@@ -368,11 +368,14 @@ def build_html(data: dict) -> str:
     # ── Open positions rows ───────────────────────────────────────────────────
     open_rows = ""
     for t in open_t:
-        plpc = t.get("unrealized_plpc")
-        pl   = t.get("unrealized_pl")
+        plpc       = t.get("unrealized_plpc")
+        pl         = t.get("unrealized_pl")
         stop_raised = "↑ " if t.get("stop_raised_date") else ""
-        cur_stop = t.get("current_stop")
-        init_stop = t.get("initial_stop")
+        cur_stop   = t.get("current_stop")
+        init_stop  = t.get("initial_stop")
+        init_stop_str = f'{init_stop:.2f}' if init_stop is not None else '–'
+        cur_stop_str  = f'{cur_stop:.2f}'  if cur_stop  is not None else '–'
+        stop_style    = 'color:#1a8a1a;font-weight:600' if t.get('stop_raised_date') else ''
         open_rows += f"""
         <tr>
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
@@ -381,8 +384,8 @@ def build_html(data: dict) -> str:
           <td>{t.get('entry_date','–')}</td>
           <td>{(t.get('entry_price') or 0):.2f}</td>
           <td>{(t.get('qty') or 0):.0f}</td>
-          <td>{init_stop:.2f if init_stop is not None else '–'}</td>
-          <td style="{'color:#1a8a1a;font-weight:600' if t.get('stop_raised_date') else ''}">{stop_raised}{cur_stop:.2f if cur_stop is not None else '–'}</td>
+          <td>{init_stop_str}</td>
+          <td style="{stop_style}">{stop_raised}{cur_stop_str}</td>
           <td>{(t.get('current_price') or 0):.2f}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
