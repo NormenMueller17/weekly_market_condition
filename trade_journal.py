@@ -228,6 +228,16 @@ def sync(
             trade["unrealized_plpc"] = round(p["unrealized_plpc"], 2)
             trade["qty"]             = p["qty"]
 
+    # 4. Backfill initial_stop for existing trades where it is still missing
+    for trade in data["open"]:
+        if trade.get("initial_stop") is None:
+            stop = _find_initial_stop(trade["symbol"])
+            if stop is not None:
+                trade["initial_stop"] = stop
+                if trade.get("current_stop") is None:
+                    trade["current_stop"] = stop
+                print(f"[JOURNAL] 🔁 {trade['symbol']} initial_stop nachgetragen: {stop}")
+
     # Sort closed: newest exit first
     data["closed"].sort(key=lambda t: t.get("exit_date", ""), reverse=True)
 
