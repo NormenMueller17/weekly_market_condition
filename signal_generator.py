@@ -391,11 +391,11 @@ def generate_signals(
     # 1. All 8 Minervini criteria
     mask &= _num("score", 0) >= r["min_score"]
 
-    # 2. Pattern: VCP Entry OR Launchpad
+    # 2. Pattern: VCP Entry OR Launchpad Entry
     if r["require_pattern"]:
-        vcp_entry = df.get("VCP Entry",  pd.Series(False, index=df.index)).fillna(False).astype(bool)
-        launchpad = df.get("Launchpad",  pd.Series(False, index=df.index)).fillna(False).astype(bool)
-        mask &= vcp_entry | launchpad
+        vcp_entry      = df.get("VCP Entry",      pd.Series(False, index=df.index)).fillna(False).astype(bool)
+        launchpad_entry = df.get("Launchpad Entry", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+        mask &= vcp_entry | launchpad_entry
 
     # 3. RS Score — top-third relative strength (institutional sponsorship)
     if r.get("min_rs_score", 0) > 0:
@@ -478,8 +478,8 @@ def generate_signals(
             continue
 
         atr_pct    = _safe_float(row.get("ATR / Price (%)")) or 5.0
-        has_vcp    = bool(row.get("VCP Entry",  False))
-        has_launch = bool(row.get("Launchpad",  False))
+        has_vcp    = bool(row.get("VCP Entry",     False))
+        has_launch = bool(row.get("Launchpad Entry", False))
 
         # ── Determine pattern label, breakout level, and stop ────────────────
         stop: Optional[float] = None

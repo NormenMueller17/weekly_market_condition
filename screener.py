@@ -300,10 +300,12 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "VCP Breakout Level": vcp_breakout,
         "ATR / Price (%)": atr_pct,
         "Launchpad": launchpad_result.get("Launchpad", False),
+        "Launchpad Entry": launchpad_result.get("Launchpad_Entry", False),
         "Launchpad Score": launchpad_score,
         "Launchpad Weeks": launchpad_result.get("Base_Weeks", 0),
         "Launchpad Range (%)": launchpad_result.get("Range_Pct", float("nan")),
         "Launchpad Pivot": launchpad_result.get("Pivot_Level", None),
+        "Launchpad Near Pivot": launchpad_result.get("Near_Pivot", False),
         "Week Low": float(low.iloc[-1]) if len(low) > 0 else float("nan"),
     }
 
