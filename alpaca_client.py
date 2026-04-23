@@ -255,6 +255,36 @@ def get_filled_sells_since(symbols: list[str], since_date_str: str) -> dict[str,
         return {}
 
 
+def get_portfolio_history(period: str = "1A") -> Optional[dict]:
+    """Return daily equity history from Alpaca (up to 1 year).
+
+    Returns dict with:
+      timestamps – list of Unix timestamp ints (one per day)
+      equity     – list of equity floats (parallel to timestamps)
+      base_value – starting equity of the period
+    or None on failure.
+    """
+    client = _get_trading_client()
+    if client is None:
+        return None
+    try:
+        from alpaca.trading.requests import GetPortfolioHistoryRequest
+        history = client.get_portfolio_history(
+            GetPortfolioHistoryRequest(period=period, timeframe="1D")
+        )
+        timestamps = [int(t) for t in (history.timestamp or [])]
+        equity     = [float(e) if e is not None else None for e in (history.equity or [])]
+        base       = float(history.base_value) if history.base_value else None
+        # Drop leading None/zero entries (account not yet funded)
+        while equity and (equity[0] is None or equity[0] == 0):
+            equity.pop(0)
+            timestamps.pop(0)
+        return {"timestamps": timestamps, "equity": equity, "base_value": base}
+    except Exception as e:
+        print(f"[ALPACA] get_portfolio_history: {e}")
+        return None
+
+
 def cancel_open_orders() -> int:
     """Cancel all open GTC orders. Call at end of week for cleanup.
 

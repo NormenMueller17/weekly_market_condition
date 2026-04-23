@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio Performance</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body     { font-family: Arial, sans-serif; max-width: 1200px; margin: 2em auto; padding: 0 1em; color: #333; }
+    h1       { color: #003d99; margin-bottom: .15em; }
+    h2       { color: #003d99; margin: 1.8em 0 .5em; border-bottom: 2px solid #003d99; padding-bottom: .2em; }
+    .meta    { color: #888; font-size: .85em; margin-bottom: 1.5em; }
+    .kpis    { display: flex; gap: 1em; flex-wrap: wrap; margin-bottom: 1.5em; }
+    .kpi     { background: #f5f7fa; border: 1px solid #dde; border-radius: 8px;
+                padding: 10px 18px; min-width: 110px; text-align: center; flex: 1; }
+    .kpi .val { font-size: 1.35em; font-weight: bold; color: #003d99; }
+    .kpi .lbl { font-size: .78em; color: #888; margin-top: 3px; }
+    .charts2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; margin-bottom: 1.5em; }
+    .chart-box { background: #f9fafc; border: 1px solid #dde; border-radius: 8px; padding: 1em; }
+    .chart-box h3 { margin: 0 0 .6em; color: #003d99; font-size: .95em; }
+    .empty-note { color:#aaa; font-size:.85em; text-align:center; padding:2em 0; }
+    canvas   { max-height: 260px; }
+    .back    { display:inline-block; margin-bottom:1.5em; color:#003d99;
+                text-decoration:none; font-size:.9em; }
+    .back:hover { text-decoration:underline; }
+    @media(max-width:700px) { .charts2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back">← Zurück zur Übersicht</a>
+  <h1>Portfolio Performance</h1>
+  <p class="meta">Stand: 2026-04-23 &nbsp;|&nbsp; 0 abgeschlossene Trades &nbsp;|&nbsp; 5 offene Positionen</p>
+
+  <!-- KPI Row 1: Trade-Metriken -->
+  <h2>Trade-Statistik</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="val" style="">0/0</div><div class="lbl">Wins / Gesamt</div></div>
+    <div class="kpi"><div class="val" style="">–</div><div class="lbl">Win Rate</div></div>
+    <div class="kpi"><div class="val" style="">–</div><div class="lbl">Profit Factor</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a">–</div><div class="lbl">Ø Gewinner</div></div>
+    <div class="kpi"><div class="val" style="color:#cc2222">–</div><div class="lbl">Ø Verlierer</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a">–</div><div class="lbl">Größter Gewinn</div></div>
+    <div class="kpi"><div class="val" style="color:#cc2222">–</div><div class="lbl">Größter Verlust</div></div>
+    <div class="kpi"><div class="val" style="">–</div><div class="lbl">Ø Haltedauer</div></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="val" style="color:#cc2222;font-weight:600">0 $</div><div class="lbl">Realized P&amp;L</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+3,662 $</div><div class="lbl">Unrealized P&amp;L (offen)</div></div>
+    <div class="kpi"><div class="val" style="">–</div><div class="lbl">Aktuelles Depot-Equity</div></div>
+    <div class="kpi"><div class="val" style="">–</div><div class="lbl">Max. Drawdown</div></div>
+    <div class="kpi"><div class="val" style="">–</div><div class="lbl">CAGR (ann.)</div></div>
+  </div>
+
+  <!-- Equity Chart -->
+  <h2>Equity-Kurve</h2>
+  <div class="chart-box" style="margin-bottom:1.5em">
+    <canvas id="chartEquity"></canvas>
+    <p class="empty-note" id="emptyEquity" style="display:none">Noch keine Daten verfügbar.</p>
+  </div>
+
+  <!-- P&L by Sector + Pattern -->
+  <h2>P&amp;L-Analyse (abgeschlossene Trades)</h2>
+  <div class="charts2">
+    <div class="chart-box">
+      <h3>P&amp;L nach Sektor</h3>
+      <canvas id="chartSector"></canvas>
+      <p class="empty-note" id="emptySector" style="display:none">Noch keine abgeschlossenen Trades.</p>
+    </div>
+    <div class="chart-box">
+      <h3>P&amp;L nach Pattern</h3>
+      <canvas id="chartPattern"></canvas>
+      <p class="empty-note" id="emptyPattern" style="display:none">Noch keine abgeschlossenen Trades.</p>
+    </div>
+  </div>
+
+  <script>
+    // ── shared options ───────────────────────────────────────────────────────
+    const fmtMoney = v => (v >= 0 ? '+' : '') + v.toLocaleString('de-DE', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' $';
+
+    // ── Equity curve ─────────────────────────────────────────────────────────
+    const eqLabels = [];
+    const eqValues = [];
+    if (true) {
+      document.getElementById('chartEquity').style.display = 'none';
+      document.getElementById('emptyEquity').style.display = 'block';
+    } else {
+      new Chart(document.getElementById('chartEquity'), {
+        type: 'line',
+        data: {
+          labels: eqLabels,
+          datasets: [{
+            label: 'Depot-Equity',
+            data: eqValues,
+            borderColor: '#003d99',
+            backgroundColor: 'rgba(0,61,153,.08)',
+            fill: true,
+            pointRadius: eqValues.length > 60 ? 0 : 3,
+            tension: 0.3,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => fmtMoney(ctx.parsed.y) } },
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 10 } },
+            y: {
+              min: 0.00,
+              max: 100000.00,
+              ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k' },
+            },
+          },
+        },
+      });
+    }
+
+    // ── horizontal bar helper ─────────────────────────────────────────────────
+    function makeBarChart(id, emptyId, labels, values, colors) {
+      if (true && id === 'chartSector' || true && id === 'chartPattern') {
+        document.getElementById(id).style.display    = 'none';
+        document.getElementById(emptyId).style.display = 'block';
+        return;
+      }
+      new Chart(document.getElementById(id), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => fmtMoney(ctx.parsed.x) } },
+          },
+          scales: {
+            x: { ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k' } },
+          },
+        },
+      });
+    }
+
+    makeBarChart('chartSector',  'emptySector',  [], [], []);
+    makeBarChart('chartPattern', 'emptyPattern', [], [], []);
+  </script>
+</body>
+</html>

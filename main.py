@@ -633,8 +633,15 @@ def run():
         open_count   = len(journal_data.get("open",   []))
         closed_count = len(journal_data.get("closed", []))
         print(f"[JOURNAL] {open_count} offen / {closed_count} geschlossen → {trades_html}")
+
+        # ── Performance Dashboard ─────────────────────────────────────────────
+        import portfolio_performance
+        port_history = alpaca_client.get_portfolio_history()
+        portfolio_performance.build_and_save(port_history)
     else:
         print("[JOURNAL] Kein Alpaca-Portfolio — Journal-Sync übersprungen")
+        import portfolio_performance
+        portfolio_performance.build_and_save()
 
     # ── Projected Cash: Erlöse aus Gewinnmitnahmen in Signal-Sizing einrechnen ─
     # Sell-Orders füllen sich erst Montag. Wir projizieren das erwartete Cash,
