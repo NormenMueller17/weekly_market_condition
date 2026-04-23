@@ -431,11 +431,11 @@ def build_html(data: dict) -> str:
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
             <span style="font-size:.8em;color:#666">{t.get('company','')}</span></td>
           <td class="left" style="font-size:.85em">{t.get('sector','–') or '–'}</td>
+          <td style="text-align:center">{rs_str}</td>
           <td class="left">{t.get('pattern','–')}</td>
           <td>{t.get('entry_date','–')}</td>
           <td>{(t.get('entry_price') or 0):.2f}</td>
           <td>{(t.get('qty') or 0):.0f}</td>
-          <td style="text-align:center">{rs_str}</td>
           <td>{init_stop_str}</td>
           <td style="{stop_style}">{stop_raised}{cur_stop_str}</td>
           <td>{(t.get('current_price') or 0):.2f}</td>
@@ -459,13 +459,13 @@ def build_html(data: dict) -> str:
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
             <span style="font-size:.8em;color:#666">{t.get('company','')}</span></td>
           <td class="left" style="font-size:.85em">{t.get('sector','–') or '–'}</td>
+          <td style="text-align:center">{rs_str}</td>
           <td class="left">{t.get('pattern','–')}</td>
           <td>{t.get('entry_date','–')}</td>
           <td>{t.get('exit_date','–')}</td>
           <td>{(t.get('entry_price') or 0):.2f}</td>
           <td>{(t.get('exit_price') or 0):.2f}</td>
           <td>{(t.get('qty') or 0):.0f}</td>
-          <td style="text-align:center">{rs_str}</td>
           <td class="left">{_exit_reason_label(t.get('exit_reason'))}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
@@ -492,7 +492,7 @@ def build_html(data: dict) -> str:
     .kpi .lbl {{ font-size: .8em; color: #888; margin-top: 2px; }}
     table     {{ border-collapse: collapse; width: 100%; margin-bottom: 1em; font-size: .9em; }}
     th, td    {{ border: 1px solid #dde; padding: .4em .7em; text-align: right; white-space: nowrap; }}
-    th        {{ background: #f0f3fa; color: #003d99; font-weight: 600; }}
+    th        {{ background: #f0f3fa; color: #003d99; font-weight: 600; text-align: center; }}
     td.left   {{ text-align: left; }}
     tr:hover  {{ background: #f8f9ff; }}
     .back     {{ display:inline-block; margin-bottom:1.5em; color:#003d99; text-decoration:none; font-size:.9em; }}
@@ -540,11 +540,11 @@ def build_html(data: dict) -> str:
     <tr>
       <th class="left">Ticker</th>
       <th class="left">Sektor</th>
+      <th>RS@Entry</th>
       <th class="left">Pattern</th>
       <th>Entry-Datum</th>
       <th>Entry-Preis</th>
       <th>Qty</th>
-      <th>RS@Entry</th>
       <th>Initial Stop</th>
       <th>Aktueller Stop</th>
       <th>Kurs aktuell</th>
@@ -565,13 +565,13 @@ def build_html(data: dict) -> str:
     <tr>
       <th class="left">Ticker</th>
       <th class="left">Sektor</th>
+      <th>RS@Entry</th>
       <th class="left">Pattern</th>
       <th>Entry-Datum</th>
       <th>Exit-Datum</th>
       <th>Entry-Preis</th>
       <th>Exit-Preis</th>
       <th>Qty</th>
-      <th>RS@Entry</th>
       <th class="left">Exit-Grund</th>
       <th>P&amp;L %</th>
       <th>P&amp;L $</th>
