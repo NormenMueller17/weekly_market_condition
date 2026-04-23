@@ -6,11 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body    { font-family: Arial, sans-serif; margin: 2em; }
-        table   { border-collapse: collapse; margin-bottom: 2em; }
-        th, td  { border: 1px solid #ccc; padding: 0.4em 0.8em; text-align: right; }
+        table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; }
+        th, td  { border: 1px solid #d0d5e8; padding: 0.45em 0.9em; text-align: right; }
+        th      { background: #eef2fa; color: #003d99; font-weight: 600; white-space: nowrap; }
         th.left, td.left { text-align: left; }
-        .pos    { color: green; }
-        .neg    { color: red; }
+        tr:hover td { background-color: #f6f8ff; }
+        .pos    { color: #155724; }
+        .neg    { color: #721c24; }
         .btn-sa {
             display: inline-block;
             padding: 2px 6px;
@@ -62,7 +64,7 @@
             .portfolio-summary td { display: block !important; width: 100% !important; text-align: left; padding: 2px 0; }
         }
         th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-        th.sortable:hover { background: #f0f0f0; }
+        th.sortable:hover { background: #dde6f5; }
         th.sortable::after { content: ' ⇅'; font-size: 0.75em; color: #aaa; }
         th.sortable.asc::after  { content: ' ▲'; color: #333; }
         th.sortable.desc::after { content: ' ▼'; color: #333; }
@@ -147,7 +149,7 @@
               
               
                 
-                  <td style="background-color: #ff7c80">65.38%</td>
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">65.38%</td>
                 
               
             
@@ -175,7 +177,7 @@
               
               
                 
-                  <td style="background-color: #ff7c80">59.58%</td>
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">59.58%</td>
                 
               
             
@@ -203,7 +205,7 @@
               
               
                 
-                  <td style="background-color: #ff7c80">58.45%</td>
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">58.45%</td>
                 
               
             
@@ -231,7 +233,7 @@
               
               
                 
-                  <td style="background-color: #ff7c80">333</td>
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">333</td>
                 
               
             
@@ -259,7 +261,7 @@
               
               
                 
-                  <td style="background-color: #ff7c80">51</td>
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">51</td>
                 
               
             
@@ -287,7 +289,7 @@
               
               
                 
-                  <td style="background-color: #ff7c80">38.71%</td>
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">38.71%</td>
                 
               
             
@@ -347,17 +349,17 @@
             
                 
                 
-                    <td style="background-color: #99ff33">0.13%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">0.13%</td>
                 
             
                 
                 
-                    <td style="background-color: #99ff33">1.02%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">1.02%</td>
                 
             
                 
                 
-                    <td style="background-color: #99ff33">0.39%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">0.39%</td>
                 
             
         </tr>
@@ -387,17 +389,17 @@
             
                 
                 
-                    <td style="background-color: #99ff33">1.12%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">1.12%</td>
                 
             
                 
                 
-                    <td style="background-color: #99ff33">3.52%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">3.52%</td>
                 
             
                 
                 
-                    <td style="background-color: #ff7c80">-2.46%</td>
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-2.46%</td>
                 
             
         </tr>
@@ -447,17 +449,17 @@
             
                 
                 
-                    <td style="background-color: #99ff33">2.33%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">2.33%</td>
                 
             
                 
                 
-                    <td style="background-color: #99ff33">3.02%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">3.02%</td>
                 
             
                 
                 
-                    <td style="background-color: #99ff33">1.02%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">1.02%</td>
                 
             
         </tr>
@@ -467,17 +469,17 @@
             
                 
                 
-                    <td style="background-color: #99ff33">5.35%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">5.35%</td>
                 
             
                 
                 
-                    <td style="background-color: #99ff33">8.26%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">8.26%</td>
                 
             
                 
                 
-                    <td style="background-color: #99ff33">7.55%</td>
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">7.55%</td>
                 
             
         </tr>
@@ -502,7 +504,7 @@
             <td class="left">Volatility Index (VIX)</td>
             <td>18.94</td>
             <td>17.48</td>
-            <td style="background-color: #ff7c80">
+            <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
                 8.35
             </td>
         </tr>
@@ -514,7 +516,7 @@
             <td class="left">10Y Interest Rate</td>
             <td>4.29</td>
             <td>4.25</td>
-            <td style="background-color: #99ff33">
+            <td style="background-color:#d4edda;color:#155724;font-weight:bold">
                 1.13
             </td>
         </tr>
@@ -526,7 +528,7 @@
             <td class="left">US Dollar Index (UUP)</td>
             <td>27.50</td>
             <td>27.36</td>
-            <td style="background-color: #99ff33">
+            <td style="background-color:#d4edda;color:#155724;font-weight:bold">
                 0.50
             </td>
         </tr>

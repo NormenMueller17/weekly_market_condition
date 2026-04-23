@@ -9,8 +9,10 @@ from indicators import rsi, macd, pct_above_ma
 from breadth import compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
 
 
-COLOR_POSITIVE = "#99ff33"  # RGB (153,255,51)
-COLOR_NEGATIVE = "#ff7c80"  # RGB (255,124,128)
+COLOR_POSITIVE  = "#d4edda"   # soft green background
+COLOR_NEGATIVE  = "#f8d7da"   # soft red background
+COLOR_POS_TEXT  = "#155724"   # dark green text
+COLOR_NEG_TEXT  = "#721c24"   # dark red text
 
 HTML_TMPL = """
 <!DOCTYPE html>
@@ -20,11 +22,14 @@ HTML_TMPL = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body    { font-family: Arial, sans-serif; margin: 2em; }
-        table   { border-collapse: collapse; margin-bottom: 2em; }
-        th, td  { border: 1px solid #ccc; padding: 0.4em 0.8em; text-align: right; }
+        table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; }
+        th, td  { border: 1px solid #d0d5e8; padding: 0.45em 0.9em; text-align: right; }
+        th      { background: #eef2fa; color: #003d99; font-weight: 600; white-space: nowrap; }
         th.left, td.left { text-align: left; }
-        .pos    { color: green; }
-        .neg    { color: red; }
+        tr:hover td { background-color: #f6f8ff; }
+        tr:hover td[style] { filter: brightness(0.97); }
+        .pos    { color: #155724; }
+        .neg    { color: #721c24; }
         .btn-sa {
             display: inline-block;
             padding: 2px 6px;
@@ -76,7 +81,7 @@ HTML_TMPL = """
             .portfolio-summary td { display: block !important; width: 100% !important; text-align: left; padding: 2px 0; }
         }
         th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-        th.sortable:hover { background: #f0f0f0; }
+        th.sortable:hover { background: #dde6f5; }
         th.sortable::after { content: ' ⇅'; font-size: 0.75em; color: #aaa; }
         th.sortable.asc::after  { content: ' ▲'; color: #333; }
         th.sortable.desc::after { content: ' ▼'; color: #333; }
@@ -157,9 +162,9 @@ HTML_TMPL = """
               {% set is_high_good = "Tiefs" in row %}
               {% if col == "Aktuelle Woche" and ref is not none and val is not none %}
                 {% if (val > ref and not is_high_good) or (val < ref and is_high_good) %}
-                  <td style="background-color: {{ COLOR_POSITIVE }}">{{ '%.2f%%' % val if '%' in row else val|int }}</td>
+                  <td style="background-color:{{ COLOR_POSITIVE }};color:{{ COLOR_POS_TEXT }};font-weight:bold">{{ '%.2f%%' % val if '%' in row else val|int }}</td>
                 {% elif (val < ref and not is_high_good) or (val > ref and is_high_good) %}
-                  <td style="background-color: {{ COLOR_NEGATIVE }}">{{ '%.2f%%' % val if '%' in row else val|int }}</td>
+                  <td style="background-color:{{ COLOR_NEGATIVE }};color:{{ COLOR_NEG_TEXT }};font-weight:bold">{{ '%.2f%%' % val if '%' in row else val|int }}</td>
                 {% else %}
                   <td>{{ '%.2f%%' % val if '%' in row else val|int }}</td>
                 {% endif %}
@@ -185,7 +190,7 @@ HTML_TMPL = """
             {% for col in idx.columns %}
                 {% set val = idx.loc[row, col] %}
                 {% if row in ["Δ WoW", "Δ RSI", "Δ MACD", "vs 10W MA"] %}
-                    <td style="background-color: {{ COLOR_POSITIVE if val > 0 else COLOR_NEGATIVE if val < 0 else 'transparent' }}">{{ '%.2f%%' % val }}</td>
+                    <td style="background-color:{{ COLOR_POSITIVE if val > 0 else COLOR_NEGATIVE if val < 0 else 'transparent' }};color:{{ COLOR_POS_TEXT if val > 0 else COLOR_NEG_TEXT if val < 0 else 'inherit' }};font-weight:{{ 'bold' if val != 0 else 'normal' }}">{{ '%.2f%%' % val }}</td>
                 {% elif row == 'RSI(14)' %}
                     <td>{{ '%.1f' % val }}</td>
                 {% else %}
@@ -214,7 +219,7 @@ HTML_TMPL = """
             <td class="left">{{ name }}</td>
             <td>{{ '%.2f' % vals['Aktuell'] }}</td>
             <td>{{ '%.2f' % vals['Vorwoche'] }}</td>
-            <td style="background-color: {{ COLOR_POSITIVE if farbe == 'pos' else COLOR_NEGATIVE if farbe == 'neg' else 'transparent' }}">
+            <td style="background-color:{{ COLOR_POSITIVE if farbe == 'pos' else COLOR_NEGATIVE if farbe == 'neg' else 'transparent' }};color:{{ COLOR_POS_TEXT if farbe == 'pos' else COLOR_NEG_TEXT if farbe == 'neg' else 'inherit' }};font-weight:{{ 'bold' if farbe in ('pos','neg') else 'normal' }}">
                 {{ '%.2f' % vals['Δ'] }}
             </td>
         </tr>
