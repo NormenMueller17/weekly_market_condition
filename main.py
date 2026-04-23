@@ -687,6 +687,10 @@ def run():
     signals_json = save_signals_json(signals, out_dir / f"signals_{report_date}.json")
     print(f"[SIGNALS] Signale gespeichert → {signals_json}")
 
+    # Persist signal metadata in docs/data/ so it survives across CI runs (committed to git)
+    meta_json = save_signals_json(signals, Path("docs/data") / f"signals_meta_{report_date}.json")
+    print(f"[SIGNALS] Signal-Metadaten persistiert → {meta_json}")
+
     # ── Alpaca: OTO Orders sofort platzieren ODER als Pending zurückhalten ─────
     top_picks = [s for s in signals if s.is_top_pick]
     if sell_symbols and top_picks and alpaca_portfolio is not None:

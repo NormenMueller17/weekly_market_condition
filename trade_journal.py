@@ -18,9 +18,10 @@ import datetime
 from pathlib import Path
 from typing import Optional
 
-TRADES_FILE = Path("docs/data/trades.json")
-TRADES_HTML = Path("docs/trades.html")
-SIGNALS_DIR = Path("artifacts")
+TRADES_FILE    = Path("docs/data/trades.json")
+TRADES_HTML    = Path("docs/trades.html")
+SIGNALS_DIR    = Path("artifacts")
+SIGNALS_META_DIR = Path("docs/data")
 
 
 # ── JSON helpers ──────────────────────────────────────────────────────────────
@@ -46,10 +47,26 @@ def save(data: dict) -> None:
 
 # ── Signal-JSON lookup ────────────────────────────────────────────────────────
 
+def _signal_files(weeks_back: int = 16) -> list:
+    """Return signal JSON files from both docs/data/ (committed) and artifacts/ (local run),
+    sorted newest-first. docs/data/ files are preferred as they survive across CI runs."""
+    committed = sorted(SIGNALS_META_DIR.glob("signals_meta_*.json"), key=lambda f: f.stem, reverse=True)
+    local     = sorted(SIGNALS_DIR.glob("signals_*.json"), key=lambda f: f.stem, reverse=True)
+    # Merge: committed files take priority; deduplicate by date suffix
+    seen_dates = set()
+    merged = []
+    for f in committed + local:
+        date_part = f.stem.split("_")[-1]  # "2026-04-19"
+        if date_part not in seen_dates:
+            seen_dates.add(date_part)
+            merged.append(f)
+    merged.sort(key=lambda f: f.stem, reverse=True)
+    return merged[:weeks_back]
+
+
 def _find_initial_stop(symbol: str, weeks_back: int = 16) -> Optional[float]:
     """Search recent signals JSON files for the initial stop of *symbol*."""
-    files = sorted(SIGNALS_DIR.glob("signals_*.json"), reverse=True)
-    for f in files[:weeks_back]:
+    for f in _signal_files(weeks_back):
         try:
             payload = json.loads(f.read_text(encoding="utf-8"))
             for sig in payload.get("signals", []):
@@ -62,8 +79,7 @@ def _find_initial_stop(symbol: str, weeks_back: int = 16) -> Optional[float]:
 
 def _find_signal_meta(symbol: str, weeks_back: int = 16) -> dict:
     """Return pattern, company, rs_score, market_regime from the most recent signal."""
-    files = sorted(SIGNALS_DIR.glob("signals_*.json"), reverse=True)
-    for f in files[:weeks_back]:
+    for f in _signal_files(weeks_back):
         try:
             payload = json.loads(f.read_text(encoding="utf-8"))
             for sig in payload.get("signals", []):
@@ -238,6 +254,23 @@ def sync(
                     trade["current_stop"] = stop
                 print(f"[JOURNAL] 🔁 {trade['symbol']} initial_stop nachgetragen: {stop}")
 
+    # 5. Backfill rs_score / pattern / company for existing trades where missing
+    for trade in data["open"]:
+        needs_meta = (
+            trade.get("rs_score") is None
+            or trade.get("pattern") in (None, "–", "")
+            or not trade.get("company")
+        )
+        if needs_meta:
+            meta = _find_signal_meta(trade["symbol"])
+            if meta["rs_score"] is not None and trade.get("rs_score") is None:
+                trade["rs_score"] = meta["rs_score"]
+                print(f"[JOURNAL] 🔁 {trade['symbol']} rs_score nachgetragen: {meta['rs_score']}")
+            if meta["pattern"] not in ("–", "", None) and trade.get("pattern") in (None, "–", ""):
+                trade["pattern"] = meta["pattern"]
+            if meta.get("company") and not trade.get("company"):
+                trade["company"] = meta["company"]
+
     # Sort closed: newest exit first
     data["closed"].sort(key=lambda t: t.get("exit_date", ""), reverse=True)
 
@@ -386,6 +419,8 @@ def build_html(data: dict) -> str:
         init_stop_str = f'{init_stop:.2f}' if init_stop is not None else '–'
         cur_stop_str  = f'{cur_stop:.2f}'  if cur_stop  is not None else '–'
         stop_style    = 'color:#1a8a1a;font-weight:600' if t.get('stop_raised_date') else ''
+        rs_val = t.get('rs_score')
+        rs_str = f'{rs_val:.0f}' if rs_val is not None else '–'
         open_rows += f"""
         <tr>
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
@@ -394,6 +429,7 @@ def build_html(data: dict) -> str:
           <td>{t.get('entry_date','–')}</td>
           <td>{(t.get('entry_price') or 0):.2f}</td>
           <td>{(t.get('qty') or 0):.0f}</td>
+          <td style="text-align:center">{rs_str}</td>
           <td>{init_stop_str}</td>
           <td style="{stop_style}">{stop_raised}{cur_stop_str}</td>
           <td>{(t.get('current_price') or 0):.2f}</td>
@@ -403,13 +439,15 @@ def build_html(data: dict) -> str:
         </tr>"""
 
     if not open_rows:
-        open_rows = '<tr><td colspan="10" style="text-align:center;color:#999">Keine offenen Positionen</td></tr>'
+        open_rows = '<tr><td colspan="12" style="text-align:center;color:#999">Keine offenen Positionen</td></tr>'
 
     # ── Closed trades rows ────────────────────────────────────────────────────
     closed_rows = ""
     for t in closed_t:
         plpc = t.get("realized_plpc")
         pl   = t.get("realized_pl")
+        rs_val = t.get('rs_score')
+        rs_str = f'{rs_val:.0f}' if rs_val is not None else '–'
         closed_rows += f"""
         <tr>
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
@@ -420,13 +458,14 @@ def build_html(data: dict) -> str:
           <td>{(t.get('entry_price') or 0):.2f}</td>
           <td>{(t.get('exit_price') or 0):.2f}</td>
           <td>{(t.get('qty') or 0):.0f}</td>
+          <td style="text-align:center">{rs_str}</td>
           <td class="left">{_exit_reason_label(t.get('exit_reason'))}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
         </tr>"""
 
     if not closed_rows:
-        closed_rows = '<tr><td colspan="10" style="text-align:center;color:#999">Noch keine abgeschlossenen Trades</td></tr>'
+        closed_rows = '<tr><td colspan="11" style="text-align:center;color:#999">Noch keine abgeschlossenen Trades</td></tr>'
 
     return f"""<!DOCTYPE html>
 <html lang="de">
@@ -474,6 +513,7 @@ def build_html(data: dict) -> str:
       <th>Entry-Datum</th>
       <th>Entry-Preis</th>
       <th>Qty</th>
+      <th>RS@Entry</th>
       <th>Initial Stop</th>
       <th>Aktueller Stop</th>
       <th>Kurs aktuell</th>
@@ -494,6 +534,7 @@ def build_html(data: dict) -> str:
       <th>Entry-Preis</th>
       <th>Exit-Preis</th>
       <th>Qty</th>
+      <th>RS@Entry</th>
       <th class="left">Exit-Grund</th>
       <th>P&amp;L %</th>
       <th>P&amp;L $</th>
