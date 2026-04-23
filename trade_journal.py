@@ -474,7 +474,7 @@ def build_html(data: dict) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradetagebuch</title>
   <style>
-    body      {{ font-family: Arial, sans-serif; max-width: 1100px; margin: 2em auto; padding: 0 1em; color: #333; }}
+    body      {{ font-family: Arial, sans-serif; max-width: 1200px; margin: 2em auto; padding: 0 1em; color: #333; }}
     h1        {{ color: #003d99; margin-bottom: .2em; }}
     h2        {{ color: #003d99; margin-top: 2em; border-bottom: 2px solid #003d99; padding-bottom: .2em; }}
     .meta     {{ color: #888; font-size: .85em; margin-bottom: 1.5em; }}
@@ -490,7 +490,26 @@ def build_html(data: dict) -> str:
     tr:hover  {{ background: #f8f9ff; }}
     .back     {{ display:inline-block; margin-bottom:1.5em; color:#003d99; text-decoration:none; font-size:.9em; }}
     .back:hover {{ text-decoration:underline; }}
+    .section-header {{ display:flex; align-items:center; justify-content:space-between; margin-top:2em; }}
+    .section-header h2 {{ margin:0; border-bottom:none; flex:1; }}
+    .section-header::after {{ content:""; display:block; height:2px; background:#003d99; margin-top:.2em; }}
+    .dl-btn {{ display:inline-flex; align-items:center; gap:.4em; padding:.35em .9em;
+               background:#003d99; color:#fff; border:none; border-radius:5px; cursor:pointer;
+               font-size:.82em; font-weight:600; text-decoration:none; white-space:nowrap; }}
+    .dl-btn:hover {{ background:#0055cc; }}
+    .tbl-wrap {{ border-top:2px solid #003d99; padding-top:.5em; }}
   </style>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script>
+    function exportTable(tableId, filename) {{
+      var tbl = document.getElementById(tableId);
+      var wb  = XLSX.utils.book_new();
+      // Convert HTML table → worksheet; raw:false keeps text as-is
+      var ws  = XLSX.utils.table_to_sheet(tbl, {{raw: false}});
+      XLSX.utils.book_append_sheet(wb, ws, "Trades");
+      XLSX.writeFile(wb, filename);
+    }}
+  </script>
 </head>
 <body>
   <a href="../index.html" class="back">← Zurück zur Übersicht</a>
@@ -505,8 +524,12 @@ def build_html(data: dict) -> str:
     <div class="kpi"><div class="val" style="color:#cc2222">{al_str}</div><div class="lbl">Ø Verlierer</div></div>
   </div>
 
-  <h2>Offene Positionen</h2>
-  <table>
+  <div class="section-header">
+    <h2>Offene Positionen</h2>
+    <button class="dl-btn" onclick="exportTable('tbl-open','offene_positionen_{today}.xlsx')">&#8595; Excel</button>
+  </div>
+  <div class="tbl-wrap">
+  <table id="tbl-open">
     <tr>
       <th class="left">Ticker</th>
       <th class="left">Pattern</th>
@@ -523,9 +546,14 @@ def build_html(data: dict) -> str:
     </tr>
     {open_rows}
   </table>
+  </div>
 
-  <h2>Abgeschlossene Trades</h2>
-  <table>
+  <div class="section-header">
+    <h2>Abgeschlossene Trades</h2>
+    <button class="dl-btn" onclick="exportTable('tbl-closed','abgeschlossene_trades_{today}.xlsx')">&#8595; Excel</button>
+  </div>
+  <div class="tbl-wrap">
+  <table id="tbl-closed">
     <tr>
       <th class="left">Ticker</th>
       <th class="left">Pattern</th>
@@ -541,6 +569,7 @@ def build_html(data: dict) -> str:
     </tr>
     {closed_rows}
   </table>
+  </div>
 </body>
 </html>"""
 
