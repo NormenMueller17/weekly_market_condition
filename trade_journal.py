@@ -87,13 +87,14 @@ def _find_signal_meta(symbol: str, weeks_back: int = 16) -> dict:
                     return {
                         "pattern":       sig.get("pattern", "–"),
                         "company":       sig.get("company", ""),
+                        "sector":        sig.get("sector", ""),
                         "rs_score":      sig.get("rs_score"),
                         "market_regime": sig.get("market_regime", "bullish"),
                         "signal_date":   payload.get("generated", ""),
                     }
         except Exception:
             continue
-    return {"pattern": "–", "company": "", "rs_score": None,
+    return {"pattern": "–", "company": "", "sector": "", "rs_score": None,
             "market_regime": "bullish", "signal_date": ""}
 
 
@@ -169,6 +170,7 @@ def sync(
         data["open"].append({
             "symbol":           sym,
             "company":          meta["company"],
+            "sector":           meta.get("sector", ""),
             "pattern":          meta["pattern"],
             "market_regime":    meta["market_regime"],
             "rs_score":         meta["rs_score"],
@@ -254,12 +256,13 @@ def sync(
                     trade["current_stop"] = stop
                 print(f"[JOURNAL] 🔁 {trade['symbol']} initial_stop nachgetragen: {stop}")
 
-    # 5. Backfill rs_score / pattern / company for existing trades where missing
+    # 5. Backfill rs_score / pattern / company / sector for existing trades where missing
     for trade in data["open"]:
         needs_meta = (
             trade.get("rs_score") is None
             or trade.get("pattern") in (None, "–", "")
             or not trade.get("company")
+            or not trade.get("sector")
         )
         if needs_meta:
             meta = _find_signal_meta(trade["symbol"])
@@ -270,6 +273,8 @@ def sync(
                 trade["pattern"] = meta["pattern"]
             if meta.get("company") and not trade.get("company"):
                 trade["company"] = meta["company"]
+            if meta.get("sector") and not trade.get("sector"):
+                trade["sector"] = meta["sector"]
 
     # Sort closed: newest exit first
     data["closed"].sort(key=lambda t: t.get("exit_date", ""), reverse=True)
@@ -425,6 +430,7 @@ def build_html(data: dict) -> str:
         <tr>
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
             <span style="font-size:.8em;color:#666">{t.get('company','')}</span></td>
+          <td class="left" style="font-size:.85em">{t.get('sector','–') or '–'}</td>
           <td class="left">{t.get('pattern','–')}</td>
           <td>{t.get('entry_date','–')}</td>
           <td>{(t.get('entry_price') or 0):.2f}</td>
@@ -439,7 +445,7 @@ def build_html(data: dict) -> str:
         </tr>"""
 
     if not open_rows:
-        open_rows = '<tr><td colspan="12" style="text-align:center;color:#999">Keine offenen Positionen</td></tr>'
+        open_rows = '<tr><td colspan="13" style="text-align:center;color:#999">Keine offenen Positionen</td></tr>'
 
     # ── Closed trades rows ────────────────────────────────────────────────────
     closed_rows = ""
@@ -452,6 +458,7 @@ def build_html(data: dict) -> str:
         <tr>
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
             <span style="font-size:.8em;color:#666">{t.get('company','')}</span></td>
+          <td class="left" style="font-size:.85em">{t.get('sector','–') or '–'}</td>
           <td class="left">{t.get('pattern','–')}</td>
           <td>{t.get('entry_date','–')}</td>
           <td>{t.get('exit_date','–')}</td>
@@ -465,7 +472,7 @@ def build_html(data: dict) -> str:
         </tr>"""
 
     if not closed_rows:
-        closed_rows = '<tr><td colspan="11" style="text-align:center;color:#999">Noch keine abgeschlossenen Trades</td></tr>'
+        closed_rows = '<tr><td colspan="12" style="text-align:center;color:#999">Noch keine abgeschlossenen Trades</td></tr>'
 
     return f"""<!DOCTYPE html>
 <html lang="de">
@@ -532,6 +539,7 @@ def build_html(data: dict) -> str:
   <table id="tbl-open">
     <tr>
       <th class="left">Ticker</th>
+      <th class="left">Sektor</th>
       <th class="left">Pattern</th>
       <th>Entry-Datum</th>
       <th>Entry-Preis</th>
@@ -556,6 +564,7 @@ def build_html(data: dict) -> str:
   <table id="tbl-closed">
     <tr>
       <th class="left">Ticker</th>
+      <th class="left">Sektor</th>
       <th class="left">Pattern</th>
       <th>Entry-Datum</th>
       <th>Exit-Datum</th>
