@@ -1,0 +1,61 @@
+name: Monday Execute (Pending Orders)
+
+on:
+  schedule:
+    - cron: '0 15 * * 1'   # 15:00 UTC = 11:00 Uhr EDT (Sommer) / 10:00 Uhr EST (Winter)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  monday-execute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prüfe ob pending_orders.json existiert
+        id: check
+        run: |
+          if [ -f "docs/data/pending_orders.json" ]; then
+            echo "has_pending=true" >> $GITHUB_OUTPUT
+            echo "Pending orders gefunden."
+          else
+            echo "has_pending=false" >> $GITHUB_OUTPUT
+            echo "Keine pending_orders.json — nichts zu tun."
+          fi
+
+      - name: Set up Python
+        if: steps.check.outputs.has_pending == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        if: steps.check.outputs.has_pending == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+          pip install "yfinance>=0.2.54" "numpy<2.0"
+
+      - name: Export secrets to env
+        if: steps.check.outputs.has_pending == 'true'
+        run: |
+          echo "ALPACA_API_KEY=${{ secrets.ALPACA_API_KEY }}" >> $GITHUB_ENV
+          echo "ALPACA_API_SECRET=${{ secrets.ALPACA_API_SECRET }}" >> $GITHUB_ENV
+          echo "TEST_MODE=0" >> $GITHUB_ENV
+
+      - name: Execute pending orders
+        if: steps.check.outputs.has_pending == 'true'
+        run: |
+          python main.py --monday-execute
+
+      - name: Commit (pending_orders.json entfernen nach Erfolg)
+        if: steps.check.outputs.has_pending == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data/pending_orders.json
+          git diff --staged --quiet || git commit -m "orders: Monday execute $(date +%Y-%m-%d)"
+          git push

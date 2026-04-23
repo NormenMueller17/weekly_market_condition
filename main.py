@@ -210,7 +210,7 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
                 # neutral: z.B. leere Zellen
                 pass
 
-PENDING_ORDERS_PATH = Path("artifacts") / "pending_orders.json"
+PENDING_ORDERS_PATH = Path("docs") / "data" / "pending_orders.json"
 
 
 def _save_pending_orders(
