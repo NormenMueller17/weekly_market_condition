@@ -1,7 +1,10 @@
 import os
+import sys
+import json
 import time
 import pandas as pd
 from datetime import datetime
+from dataclasses import asdict
 from config import SETTINGS
 from data_sources import get_universe, get_company_info_map_from_csv, load_weekly_history, load_index_series
 from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots, compute_sp500_breadth_200d
@@ -206,6 +209,117 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
             else:
                 # neutral: z.B. leere Zellen
                 pass
+
+PENDING_ORDERS_PATH = Path("artifacts") / "pending_orders.json"
+
+
+def _save_pending_orders(
+    top_picks:      list,
+    sell_symbols:   list[str],
+    sell_proceeds:  float,
+    generated_date: str,
+) -> None:
+    """Serialize top-pick signals to pending_orders.json and wait for sell confirmation."""
+    PENDING_ORDERS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "generated_at": generated_date,
+        "waiting_for_sells": [
+            {
+                "symbol":            sym,
+                "approx_proceeds":   round(sell_proceeds / max(1, len(sell_symbols)), 2),
+            }
+            for sym in sell_symbols
+        ],
+        "signals": [asdict(s) for s in top_picks],
+    }
+    PENDING_ORDERS_PATH.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+def monday_execute() -> None:
+    """Place pending buy orders after confirming that the prerequisite sell orders filled.
+
+    Run on Monday morning: python main.py --monday-execute
+    """
+    if not PENDING_ORDERS_PATH.exists():
+        print("[MONDAY] Keine pending_orders.json gefunden – nichts zu tun.")
+        return
+
+    payload       = json.loads(PENDING_ORDERS_PATH.read_text(encoding="utf-8"))
+    generated_at  = payload.get("generated_at", "")
+    waiting_sells = payload.get("waiting_for_sells", [])
+    signal_dicts  = payload.get("signals", [])
+    sell_symbols  = [w["symbol"] for w in waiting_sells]
+
+    print(f"[MONDAY] Pending Orders vom {generated_at}")
+    print(f"[MONDAY] Warte auf Sells: {', '.join(sell_symbols)}")
+
+    # 1. Sells bestätigen
+    filled = alpaca_client.get_filled_sells_since(sell_symbols, generated_at)
+    missing = [s for s in sell_symbols if s not in filled]
+    if missing:
+        print(f"[MONDAY] ⚠  Noch nicht gefüllt: {', '.join(missing)}")
+        print("[MONDAY]    Bitte später erneut aufrufen oder manuell prüfen.")
+        return
+
+    for sym, fill in filled.items():
+        print(
+            f"[MONDAY] ✅ {sym} verkauft — "
+            f"Qty {fill['qty']}  @${fill['filled_avg_price']:,.2f}  "
+            f"({fill['filled_at']})"
+        )
+
+    # 2. Aktuelles Kapital holen
+    portfolio = alpaca_client.get_portfolio()
+    if portfolio is None:
+        print("[MONDAY] ❌ Kein Alpaca-Portfolio – Abbruch.")
+        return
+    actual_cash = portfolio["cash"]
+    print(f"[MONDAY] Aktuelles Cash: ${actual_cash:,.0f}")
+
+    if actual_cash <= 0:
+        print("[MONDAY] ⚠  Kein Cash verfügbar – keine Orders platziert.")
+        return
+
+    # 3. Buy-Orders mit realem Cash platzieren
+    from signal_generator import TradeSignal
+    placed_any = False
+    for sig_dict in signal_dicts:
+        try:
+            sig = TradeSignal(**sig_dict)
+        except Exception as e:
+            print(f"[MONDAY] Signal-Deserialisierung fehlgeschlagen: {e}")
+            continue
+
+        # position_value auf tatsächlich verfügbares Cash begrenzen
+        sig.position_value = min(sig.position_value, actual_cash)
+
+        qty = int(sig.position_value // sig.buy_stop)
+        if qty < 1:
+            print(f"[MONDAY] ⏭  {sig.ticker}: qty=0 — Cash reicht nicht (${actual_cash:,.0f})")
+            continue
+
+        results = alpaca_client.place_signal_orders([sig], dry_run=TEST_MODE)
+        for r in results:
+            status = r["status"]
+            if status == "placed":
+                print(
+                    f"[MONDAY] ✅ {sig.ticker}  Buy-Stop ${r['buy_stop']}  "
+                    f"Max-Gap ${r['max_gap']}  Stop ${r['stop_loss']}  "
+                    f"Qty {r['qty']}  → Order-ID {r['order_id']}"
+                )
+                placed_any = True
+            elif status == "dry_run":
+                print(f"[MONDAY] 🔍 DRY-RUN {sig.ticker}  qty={r['qty']}")
+                placed_any = True
+            else:
+                print(f"[MONDAY] ❌ {sig.ticker}: {status}")
+
+    if placed_any:
+        PENDING_ORDERS_PATH.unlink(missing_ok=True)
+        print("[MONDAY] pending_orders.json gelöscht.")
+
 
 def run():
     #cache_enabled = try_enable_yfinance_cache(
@@ -499,28 +613,9 @@ def run():
     else:
         print("[EXIT] Kein Alpaca-Portfolio — Exit-Check übersprungen")
 
-    # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
-    signals, _signal_candidates, sector_excluded = generate_signals(
-        leaders,
-        market_bullish  = market_bullish,
-        account_equity  = SETTINGS.account_equity,
-        win_rate        = SETTINGS.win_rate,
-        win_loss_ratio  = SETTINGS.win_loss_ratio,
-        kelly_fraction  = SETTINGS.kelly_fraction,
-        max_positions   = SETTINGS.max_positions,
-        rules           = {"max_industry_rank": SETTINGS.max_industry_rank},
-        available_cash  = alpaca_cash,
-        open_positions  = alpaca_positions,
-    )
-    print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
-
-    # Signale sofort speichern – trade_journal.sync() liest daraus den initial_stop
-    out_dir = Path("artifacts")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    signals_json = save_signals_json(signals, out_dir / f"signals_{report_date}.json")
-    print(f"[SIGNALS] Signale gespeichert → {signals_json}")
-
-    # ── Trade Journal: Positionen synchronisieren & HTML aktualisieren ────────
+    # ── Trade Journal: Positionen synchronisieren (vor Signal-Generator) ────────
+    journal_data: dict       = {}
+    pt_results:   list[dict] = []
     if alpaca_portfolio is not None:
         filled_buys  = alpaca_client.get_filled_orders("buy")
         filled_sells = alpaca_client.get_filled_orders("sell")
@@ -541,16 +636,78 @@ def run():
     else:
         print("[JOURNAL] Kein Alpaca-Portfolio — Journal-Sync übersprungen")
 
-    # ── Alpaca: OTO Stop-Limit Orders für Top-Picks platzieren ───────────────
-    if signals and alpaca_portfolio is not None:
+    # ── Projected Cash: Erlöse aus Gewinnmitnahmen in Signal-Sizing einrechnen ─
+    # Sell-Orders füllen sich erst Montag. Wir projizieren das erwartete Cash,
+    # damit der Signal-Generator die korrekte Positionsgröße berechnen kann.
+    # Die Kauforder wird erst nach Fill-Bestätigung platziert (--monday-execute).
+    sell_symbols:  list[str] = []
+    sell_proceeds: float     = 0.0
+    for r in pt_results:
+        actions      = r.get("actions_taken", [])
+        real_actions = [a for a in actions if "dry" not in a]
+        if not real_actions:
+            continue
+        sym   = r["symbol"]
+        trade = next((t for t in journal_data.get("open", []) if t["symbol"] == sym), None)
+        if trade:
+            price = float(trade.get("current_price") or 0.0)
+            if "partial_1" in real_actions:
+                sell_proceeds += r.get("partial_sell_1_qty", 0) * price
+                if sym not in sell_symbols:
+                    sell_symbols.append(sym)
+            if "partial_2" in real_actions:
+                sell_proceeds += r.get("partial_sell_2_qty", 0) * price
+                if sym not in sell_symbols:
+                    sell_symbols.append(sym)
+
+    projected_cash = (alpaca_cash or 0.0) + sell_proceeds
+    if sell_proceeds > 0:
+        print(
+            f"[ORDER] 💰 Erwartete Sell-Erlöse: ${sell_proceeds:,.0f}  → "
+            f"Projected Cash für Signal-Sizing: ${projected_cash:,.0f}"
+        )
+
+    # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
+    signals, _signal_candidates, sector_excluded = generate_signals(
+        leaders,
+        market_bullish  = market_bullish,
+        account_equity  = SETTINGS.account_equity,
+        win_rate        = SETTINGS.win_rate,
+        win_loss_ratio  = SETTINGS.win_loss_ratio,
+        kelly_fraction  = SETTINGS.kelly_fraction,
+        max_positions   = SETTINGS.max_positions,
+        rules           = {"max_industry_rank": SETTINGS.max_industry_rank},
+        available_cash  = projected_cash if projected_cash > 0 else alpaca_cash,
+        open_positions  = alpaca_positions,
+    )
+    print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
+
+    out_dir = Path("artifacts")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    signals_json = save_signals_json(signals, out_dir / f"signals_{report_date}.json")
+    print(f"[SIGNALS] Signale gespeichert → {signals_json}")
+
+    # ── Alpaca: OTO Orders sofort platzieren ODER als Pending zurückhalten ─────
+    top_picks = [s for s in signals if s.is_top_pick]
+    if sell_symbols and top_picks and alpaca_portfolio is not None:
+        # Sell-Orders wurden gerade platziert → Käufe erst nach Fill-Bestätigung
+        _save_pending_orders(top_picks, sell_symbols, sell_proceeds, report_date)
+        print(
+            f"[ORDER] ⏳ {len(top_picks)} Kauforder(s) zurückgehalten — "
+            f"warte auf Sell-Bestätigung ({', '.join(sell_symbols)})"
+        )
+        print("[ORDER]    Montag ausführen: python main.py --monday-execute")
+    elif signals and alpaca_portfolio is not None:
         order_results = alpaca_client.place_signal_orders(signals, dry_run=TEST_MODE)
         for r in order_results:
             status = r["status"]
             ticker = r["ticker"]
             if status == "placed":
-                print(f"[ORDER] ✅ {ticker}  Buy-Stop ${r['buy_stop']}  "
-                      f"Max-Gap ${r['max_gap']}  Stop ${r['stop_loss']}  "
-                      f"Qty {r['qty']}  → Order-ID {r['order_id']}")
+                print(
+                    f"[ORDER] ✅ {ticker}  Buy-Stop ${r['buy_stop']}  "
+                    f"Max-Gap ${r['max_gap']}  Stop ${r['stop_loss']}  "
+                    f"Qty {r['qty']}  → Order-ID {r['order_id']}"
+                )
             elif status.startswith("skip"):
                 print(f"[ORDER] ⏭  {ticker}: {status}")
             elif status == "dry_run":
@@ -987,4 +1144,7 @@ def run():
     send_email(html_email, subject_suffix=email_subject, attachments=[str(out_path)])
 
 if __name__ == "__main__":
-    run()
+    if "--monday-execute" in sys.argv:
+        monday_execute()
+    else:
+        run()

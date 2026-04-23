@@ -211,6 +211,50 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
         return []
 
 
+def get_filled_sells_since(symbols: list[str], since_date_str: str) -> dict[str, dict]:
+    """Return filled sell orders for *symbols* placed on/after *since_date_str* (YYYY-MM-DD).
+
+    Returns dict mapping symbol -> {qty, filled_avg_price, filled_at, order_id}.
+    Only the most recent fill per symbol is kept.
+    """
+    import datetime
+    client = _get_trading_client()
+    if client is None:
+        return {}
+    try:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums   import QueryOrderStatus, OrderSide
+
+        since  = datetime.datetime.fromisoformat(since_date_str).replace(
+            tzinfo=datetime.timezone.utc
+        )
+        orders = client.get_orders(GetOrdersRequest(
+            status = QueryOrderStatus.CLOSED,
+            side   = OrderSide.SELL,
+            after  = since,
+            limit  = 500,
+        ))
+
+        result: dict[str, dict] = {}
+        sym_set = set(symbols)
+        for o in orders:
+            if str(getattr(o, "status", "")) != "filled":
+                continue
+            sym = o.symbol
+            if sym not in sym_set:
+                continue
+            result[sym] = {
+                "qty":              float(getattr(o, "filled_qty",      0) or 0),
+                "filled_avg_price": float(getattr(o, "filled_avg_price", 0) or 0),
+                "filled_at":        str(getattr(o,  "filled_at",        "") or ""),
+                "order_id":         str(o.id),
+            }
+        return result
+    except Exception as e:
+        print(f"[ALPACA] get_filled_sells_since: {e}")
+        return {}
+
+
 def cancel_open_orders() -> int:
     """Cancel all open GTC orders. Call at end of week for cleanup.
 
