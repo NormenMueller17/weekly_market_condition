@@ -14,6 +14,20 @@ COLOR_NEGATIVE  = "#f8d7da"   # soft red background
 COLOR_POS_TEXT  = "#155724"   # dark green text
 COLOR_NEG_TEXT  = "#721c24"   # dark red text
 
+SECTOR_ETFS = {
+    "XLK":  "Technology",
+    "XLF":  "Financials",
+    "XLV":  "Health Care",
+    "XLE":  "Energy",
+    "XLI":  "Industrials",
+    "XLY":  "Consumer Discret.",
+    "XLP":  "Consumer Staples",
+    "XLB":  "Materials",
+    "XLU":  "Utilities",
+    "XLRE": "Real Estate",
+    "XLC":  "Communication",
+}
+
 HTML_TMPL = """
 <!DOCTYPE html>
 <html>
@@ -85,6 +99,24 @@ HTML_TMPL = """
         th.sortable::after { content: ' ⇅'; font-size: 0.75em; color: #aaa; }
         th.sortable.asc::after  { content: ' ▲'; color: #333; }
         th.sortable.desc::after { content: ' ▼'; color: #333; }
+        /* Marktampel */
+        .ampel-wrap { position: relative; display: inline-block; margin-bottom: 1.5em; }
+        .ampel-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; border-radius: 22px; font-weight: bold;
+            font-size: 1.05em; cursor: default; border: 1px solid rgba(0,0,0,0.1);
+            user-select: none;
+        }
+        .ampel-tooltip {
+            display: none; position: absolute; left: 0; top: 115%;
+            background: #fff; border: 1px solid #d0d5e8; border-radius: 8px;
+            padding: 10px 16px; min-width: 300px; z-index: 100;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.13); font-size: 0.88em;
+            white-space: nowrap;
+        }
+        .ampel-wrap:hover .ampel-tooltip { display: block; }
+        .ampel-tooltip table { border: none; margin: 4px 0 0 0; font-size: 1em; }
+        .ampel-tooltip td { border: none; padding: 3px 8px; }
     </style>
     <script>
     function sortTable(th) {
@@ -145,6 +177,26 @@ HTML_TMPL = """
     <h1>Weekly US Market Report</h1>
     <p><strong>Report-Woche:</strong> {{ report_date }}</p>
 
+    {% if ampel %}
+    <div class="ampel-wrap">
+      <div class="ampel-badge" style="background:{{ ampel.bg }};color:{{ ampel.color }}">
+        {{ ampel.emoji }} Marktampel: <strong>{{ ampel.label }}</strong> &nbsp;({{ ampel.score }}/6)
+      </div>
+      <div class="ampel-tooltip">
+        <strong>Marktampel-Kriterien</strong>
+        <table>
+          {% for c in ampel.criteria %}
+          <tr>
+            <td>{{ "✅" if c.met else "❌" }}</td>
+            <td>{{ c.name }}</td>
+            <td style="color:#888;padding-left:12px">{{ c.value }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
     <h2>1) Marktbreite – Vergleich</h2>
     <table>
         <tr>
@@ -176,6 +228,26 @@ HTML_TMPL = """
         {% endfor %}
     </table>
     
+    {% if sector_rows %}
+    <h2>1b) Sektor-Performance (Wochenbasis)</h2>
+    <table>
+      <tr>
+        <th class="left">Sektor</th>
+        <th class="left" style="color:#888">ETF</th>
+        <th>Performance Woche</th>
+      </tr>
+      {% for s in sector_rows %}
+      <tr>
+        <td class="left">{{ s.name }}</td>
+        <td class="left" style="font-size:0.85em;color:#888">{{ s.ticker }}</td>
+        <td style="background-color:{{ COLOR_POSITIVE if s.chg > 0 else COLOR_NEGATIVE if s.chg < 0 else 'transparent' }};color:{{ COLOR_POS_TEXT if s.chg > 0 else COLOR_NEG_TEXT if s.chg < 0 else 'inherit' }};font-weight:{{ 'bold' if s.chg != 0 else 'normal' }}">
+          {{ '+' if s.chg > 0 else '' }}{{ '%.2f'|format(s.chg) }}%
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
     <h2>2) Trend & Momentum (Weekly)</h2>
     <table>
         <tr>
@@ -730,12 +802,70 @@ def build_risk_rows(idx_data: dict) -> list[tuple]:
         
     return rows
 
+def compute_ampel(breadth_snap: pd.DataFrame, idx: pd.DataFrame) -> dict:
+    """Berechnet die Marktampel anhand von 6 Kriterien."""
+    spy_col = "S&P 500 (SPY)"
+    qqq_col = "Nasdaq 100 (QQQ)"
+
+    def _v(df, row, col, default=0.0):
+        try:
+            return float(df.loc[row, col])
+        except Exception:
+            return default
+
+    nh = _v(breadth_snap, "Neue 52W\u2011Hochs (Anzahl)", "Aktuelle Woche", 0)
+    nl = _v(breadth_snap, "Neue 52W\u2011Tiefs (Anzahl)", "Aktuelle Woche", 0)
+    spy_10w  = _v(idx, "vs 10W MA", spy_col)
+    qqq_10w  = _v(idx, "vs 10W MA", qqq_col)
+    breadth_ = _v(breadth_snap, "% \u00fcber 10\u2011Wochen\u2011EMA", "Aktuelle Woche")
+    winners  = _v(breadth_snap, "1W-Kursgewinner (%)", "Aktuelle Woche")
+    spy_macd = _v(idx, "\u0394 MACD", spy_col)
+
+    criteria = [
+        {"name": "SPY über 10W MA",              "met": spy_10w > 0,    "value": f"{spy_10w:+.2f}%"},
+        {"name": "QQQ über 10W MA",              "met": qqq_10w > 0,    "value": f"{qqq_10w:+.2f}%"},
+        {"name": "Marktbreite >55% über 10W EMA","met": breadth_ > 55,  "value": f"{breadth_:.1f}%"},
+        {"name": "Wochenkursgewinner >55%",       "met": winners  > 55,  "value": f"{winners:.1f}%"},
+        {"name": "New Highs > New Lows",          "met": nh > nl,        "value": f"NH={int(nh)}, NL={int(nl)}"},
+        {"name": "SPY MACD-Momentum positiv",     "met": spy_macd > 0,   "value": f"{spy_macd:+.4f}"},
+    ]
+
+    score = sum(1 for c in criteria if c["met"])
+    if score >= 5:
+        label, color, bg, emoji = "Bullish",  "#155724", "#d4edda", "🟢"
+    elif score >= 3:
+        label, color, bg, emoji = "Neutral",  "#856404", "#fff3cd", "🟡"
+    else:
+        label, color, bg, emoji = "Defensiv", "#721c24", "#f8d7da", "🔴"
+
+    return {"score": score, "label": label, "color": color, "bg": bg,
+            "emoji": emoji, "criteria": criteria}
+
+
+def build_sector_rows(idx_data: dict) -> list:
+    """Wöchentliche Performance aller Sektor-ETFs, absteigend sortiert."""
+    rows = []
+    for sym, name in SECTOR_ETFS.items():
+        df = idx_data.get(sym)
+        if df is None:
+            continue
+        close = _extract_close_series(df)
+        if len(close) < 2:
+            continue
+        prev = float(close.iloc[-2])
+        curr = float(close.iloc[-1])
+        chg  = (curr - prev) / prev * 100 if prev != 0 else 0.0
+        rows.append({"ticker": sym, "name": name, "chg": chg})
+    rows.sort(key=lambda r: r["chg"], reverse=True)
+    return rows
+
+
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
                       signals=None, pages_url=None,
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
                       sector_excluded=None,
                       sp500_breadth_pct=None, min_breadth_pct=40,
-                      test_mode=False):
+                      test_mode=False, sector_rows=None):
     """Build the weekly HTML email.
 
     Parameters
@@ -772,6 +902,19 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     # 1) Divergenzen & Breadth-Snapshots
     divergences  = build_divergence_text(idx)
     breadth_snap = compute_breadth_snapshots(weekly_data, offsets=[0, 1, 4])
+
+    # NH/NL-Ratio als zusätzliche Zeile
+    try:
+        nh_row = breadth_snap.loc["Neue 52W\u2011Hochs (Anzahl)"].astype(float)
+        nl_row = breadth_snap.loc["Neue 52W\u2011Tiefs (Anzahl)"].astype(float)
+        total  = nh_row + nl_row
+        ratio  = nh_row.where(total == 0, other=nh_row / total.where(total > 0, 1) * 100)
+        breadth_snap.loc["NH/(NH+NL) (%)"] = ratio
+    except Exception:
+        pass
+
+    # Marktampel berechnen
+    ampel = compute_ampel(breadth_snap, idx)
 
     # 2) Leaders: Screener-Kandidaten Score ≥ 6; für Email nur Score 8/8
     all_leaders_html = leaders.copy()
@@ -904,6 +1047,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         min_breadth_pct    = min_breadth_pct,
         COLOR_POSITIVE     = COLOR_POSITIVE,
         COLOR_NEGATIVE     = COLOR_NEGATIVE,
+        COLOR_POS_TEXT     = COLOR_POS_TEXT,
+        COLOR_NEG_TEXT     = COLOR_NEG_TEXT,
         divergences        = divergences,
         pages_url          = pages_url,
         alpaca_cash        = alpaca_cash,
@@ -911,6 +1056,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         alpaca_portfolio   = alpaca_portfolio,
         signal_criteria    = signal_criteria,
         test_mode          = test_mode,
+        ampel              = ampel,
+        sector_rows        = sector_rows or [],
     )
     return html
 

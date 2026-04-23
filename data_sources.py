@@ -556,13 +556,24 @@ def load_index_series():
     So vermeiden wir period='…w' Fehler und inkonsistente Weekly-APIs.
     """
     symbols = {
-        "SPY": "SPY",    # S&P 500 ETF
-        "QQQ": "QQQ",    # Nasdaq 100 ETF
-        "IWM": "IWM",    # Russell 2000 ETF
-        "VIX": "^VIX",   # Volatilität
-        "TNX": "^TNX",   # 10y Yield * 10
-        "UUP": "UUP",    # USD-Proxy ETF
-        #"CPC": "^CPC",   # Put/Call Ratio (oft nur daily verfügbar)
+        "SPY":  "SPY",    # S&P 500 ETF
+        "QQQ":  "QQQ",    # Nasdaq 100 ETF
+        "IWM":  "IWM",    # Russell 2000 ETF
+        "VIX":  "^VIX",   # Volatilität
+        "TNX":  "^TNX",   # 10y Yield * 10
+        "UUP":  "UUP",    # USD-Proxy ETF
+        # Sektor-ETFs (SPDR)
+        "XLK":  "XLK",
+        "XLF":  "XLF",
+        "XLV":  "XLV",
+        "XLE":  "XLE",
+        "XLI":  "XLI",
+        "XLY":  "XLY",
+        "XLP":  "XLP",
+        "XLB":  "XLB",
+        "XLU":  "XLU",
+        "XLRE": "XLRE",
+        "XLC":  "XLC",
     }
     out = {}
     start = _start_date_for_weeks(max(SETTINGS.lookback_weeks, 260))

@@ -31,6 +31,7 @@ from report_builder import (
     build_html_report,
     build_index_rows,
     build_risk_rows,
+    build_sector_rows,
     heuristic_verdict,
 )
 from signal_generator import generate_signals, is_market_bullish, save_signals_json
@@ -350,9 +351,10 @@ def run():
     print(f"[DEBUG] Weekly non-empty datasets: {non_empty}")    
 
     # 2) Kennzahlen berechnen
-    breadth_df = compute_breadth(weekly)
-    idx_rows   = build_index_rows(idx_data)
-    risk_rows  = build_risk_rows(idx_data)
+    breadth_df   = compute_breadth(weekly)
+    idx_rows     = build_index_rows(idx_data)
+    risk_rows    = build_risk_rows(idx_data)
+    sector_rows  = build_sector_rows(idx_data)
 
     # Market filter 1: S&P 500 10W EMA > 20W EMA
     market_bullish = is_market_bullish(idx_data.get("SPY"))
@@ -796,7 +798,7 @@ def run():
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
         sector_excluded=sector_excluded,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
-        test_mode=TEST_MODE,
+        test_mode=TEST_MODE, sector_rows=sector_rows,
     )
     docs_reports_dir = Path("docs/reports")
     docs_reports_dir.mkdir(parents=True, exist_ok=True)
@@ -820,7 +822,7 @@ def run():
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
         sector_excluded=sector_excluded,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
-        test_mode=TEST_MODE,
+        test_mode=TEST_MODE, sector_rows=sector_rows,
     )
 
     # E-Mail Betreff zeigt Signalanzahl + TEST-MODUS-Hinweis
