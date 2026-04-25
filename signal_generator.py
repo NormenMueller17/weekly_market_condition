@@ -107,6 +107,7 @@ DEFAULT_RULES: dict = {
     "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
     "gap_limit_pct":          _f.get("gap_limit_pct",         5.0),
     "require_macd_above_signal": _f.get("require_macd_above_signal", True),
+    "bearish_risk_fraction":  _s.get("bearish_risk_fraction", 0.5),
 }
 
 # ── Ranking weights (must sum to 1.0) ─────────────────────────────────────────
@@ -126,10 +127,6 @@ _DEFAULT_PORTFOLIO_MAX_POSITIONS = _p.get("portfolio_max_positions", 12)
 _DEFAULT_MAX_NEW_PER_WEEK_BULL   = _p.get("max_new_per_week_bull",   3)
 _DEFAULT_MAX_NEW_PER_WEEK_BEAR   = _p.get("max_new_per_week_bear",   1)
 _DEFAULT_ACCOUNT_EQUITY         = _p.get("account_equity",          100_000.0)
-_DEFAULT_WIN_RATE               = _s.get("win_rate",                0.59)
-_DEFAULT_WIN_LOSS_RATIO         = _s.get("win_loss_ratio",          4.04)
-_DEFAULT_KELLY_FRACTION         = _s.get("kelly_fraction",          0.33)
-_DEFAULT_BEARISH_KELLY_FRACTION = _s.get("bearish_kelly_fraction",  0.5)
 
 
 # ── Market filter ─────────────────────────────────────────────────────────────
@@ -151,23 +148,6 @@ def is_market_bullish(spy_df: pd.DataFrame | None) -> bool:
     ema10 = close.ewm(span=10, adjust=False).mean()
     ema20 = close.ewm(span=20, adjust=False).mean()
     return bool(ema10.iloc[-1] > ema20.iloc[-1])
-
-
-# ── Position sizing (Fractional Kelly) ───────────────────────────────────────
-
-def _fractional_kelly(win_rate: float, win_loss_ratio: float, fraction: float) -> float:
-    """Return fractional Kelly position size as a decimal (e.g. 0.16 = 16 %).
-
-    Formula:  f = (p*b - q) / b  ,  then multiply by fraction (e.g. 1/3).
-
-    With Blueprint defaults (win_rate=0.59, win_loss_ratio=4.04, fraction=0.33)
-    the result is ≈ 0.161  →  16 % of equity per position.
-    """
-    p = win_rate
-    q = 1.0 - p
-    b = win_loss_ratio
-    kelly_full = (p * b - q) / b
-    return round(max(0.0, kelly_full * fraction), 4)
 
 
 # ── Stop-loss helpers ─────────────────────────────────────────────────────────
@@ -354,10 +334,6 @@ def generate_signals(
     leaders:                 pd.DataFrame,
     market_bullish:          bool        = True,
     account_equity:          float       = _DEFAULT_ACCOUNT_EQUITY,
-    win_rate:                float       = _DEFAULT_WIN_RATE,
-    win_loss_ratio:          float       = _DEFAULT_WIN_LOSS_RATIO,
-    kelly_fraction:          float       = _DEFAULT_KELLY_FRACTION,
-    bearish_kelly_fraction:  float       = _DEFAULT_BEARISH_KELLY_FRACTION,
     portfolio_max_positions: int         = _DEFAULT_PORTFOLIO_MAX_POSITIONS,
     max_new_per_week_bull:   int         = _DEFAULT_MAX_NEW_PER_WEEK_BULL,
     max_new_per_week_bear:   int         = _DEFAULT_MAX_NEW_PER_WEEK_BEAR,
@@ -375,11 +351,6 @@ def generate_signals(
     """
     r             = {**DEFAULT_RULES, **(rules or {})}
     market_regime = "bullish" if market_bullish else "bearish"
-
-    # Regime-based Kelly: halve position size in bearish markets instead of blocking entirely.
-    # This keeps us in the game for early-recovery breakouts while cutting risk exposure.
-    effective_kelly = kelly_fraction if market_bullish else kelly_fraction * bearish_kelly_fraction
-    pos_size_pct    = _fractional_kelly(win_rate, win_loss_ratio, effective_kelly)
 
     df = leaders.copy()
 
@@ -542,7 +513,7 @@ def generate_signals(
         max_pos_pct   = r.get("max_position_pct",       15.0) / 100.0
         # Bearish regime: halve risk exposure
         if not market_bullish:
-            max_risk_pct *= r.get("bearish_kelly_fraction", 0.5)
+            max_risk_pct *= r.get("bearish_risk_fraction", 0.5)
         risk_based_pct = max_risk_pct / stop_pct if stop_pct > 0 else max_pos_pct
         pos_size_pct   = min(risk_based_pct, max_pos_pct)
         risk_value     = account_equity * max_risk_pct  # always exact target risk

@@ -58,10 +58,6 @@ class Settings:
 
     # ── Trade signal / position-sizing parameters (Blueprint defaults) ────────
     account_equity:  float = _get_env_float("ACCOUNT_EQUITY",  100_000.0)
-    win_rate:        float = _get_env_float("WIN_RATE",         0.59)
-    win_loss_ratio:  float = _get_env_float("WIN_LOSS_RATIO",   4.04)
-    kelly_fraction:          float = _get_env_float("KELLY_FRACTION",          0.33)
-    bearish_kelly_fraction:  float = _get_env_float("BEARISH_KELLY_FRACTION",  0.5)
 
     # ── Portfolio constraints ──────────────────────────────────────────────────
     # PORTFOLIO_MAX_POSITIONS: hard cap on total open positions.
