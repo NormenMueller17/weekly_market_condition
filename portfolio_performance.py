@@ -15,6 +15,8 @@ import math
 from pathlib import Path
 from typing import Optional
 
+import yfinance as yf
+
 TRADES_FILE  = Path("docs/data/trades.json")
 EQUITY_FILE  = Path("docs/data/equity_history.json")
 PERF_HTML    = Path("docs/performance.html")
@@ -157,6 +159,37 @@ def _equity_metrics(history: Optional[dict]) -> dict:
     }
 
 
+def _fetch_spy_benchmark(labels: list, start_equity: float) -> list:
+    """SPY closing prices aligned to equity dates, normalized to start_equity. Returns [] on failure."""
+    if not labels:
+        return []
+    try:
+        end_dt = datetime.date.fromisoformat(labels[-1]) + datetime.timedelta(days=2)
+        spy = yf.download("SPY", start=labels[0], end=end_dt.isoformat(),
+                          auto_adjust=True, progress=False)
+        if spy.empty:
+            return []
+        close_col = spy["Close"]
+        # yfinance may return MultiIndex columns — flatten to single ticker
+        if hasattr(close_col, "columns"):
+            close_col = close_col.iloc[:, 0]
+        spy_map = {k.strftime("%Y-%m-%d"): float(v)
+                   for k, v in close_col.items()}
+        base_price = None
+        last_val = None
+        result = []
+        for lbl in labels:
+            price = spy_map.get(lbl)
+            if price is not None:
+                if base_price is None:
+                    base_price = price
+                last_val = round(start_equity * price / base_price, 2)
+            result.append(last_val)  # None until first trading day matched
+        return result
+    except Exception:
+        return []
+
+
 # ── Formatting helpers ────────────────────────────────────────────────────────
 
 def _fmt(v, suffix="", decimals=1, plus=False):
@@ -190,7 +223,7 @@ def _bar_chart_data(by_dict: dict) -> tuple[list, list, list]:
 
 # ── HTML builder ──────────────────────────────────────────────────────────────
 
-def build_html(tm: dict, em: dict) -> str:
+def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     today = datetime.date.today().isoformat()
 
     # ── KPI card helper ───────────────────────────────────────────────────────
@@ -218,8 +251,13 @@ def build_html(tm: dict, em: dict) -> str:
     # ── Equity chart ──────────────────────────────────────────────────────────
     eq_labels = json.dumps(em["chart_labels"])
     eq_values = json.dumps(em["chart_values"])
-    eq_min    = min(em["chart_values"]) * 0.98 if em["chart_values"] else 0
-    eq_max    = max(em["chart_values"]) * 1.02 if em["chart_values"] else 100000
+    spy_vals  = spy_values or []
+    spy_js    = json.dumps(spy_vals)
+    has_spy   = "true" if any(v is not None for v in spy_vals) else "false"
+
+    all_vals  = em["chart_values"] + [v for v in spy_vals if v is not None]
+    eq_min    = min(all_vals) * 0.98 if all_vals else 0
+    eq_max    = max(all_vals) * 1.02 if all_vals else 100000
     eq_empty  = "true" if not em["chart_values"] else "false"
 
     # ── Sector chart ──────────────────────────────────────────────────────────
@@ -319,29 +357,43 @@ def build_html(tm: dict, em: dict) -> str:
     // ── Equity curve ─────────────────────────────────────────────────────────
     const eqLabels = {eq_labels};
     const eqValues = {eq_values};
+    const spyValues = {spy_js};
+    const hasSpy = {has_spy};
     if ({eq_empty}) {{
       document.getElementById('chartEquity').style.display = 'none';
       document.getElementById('emptyEquity').style.display = 'block';
     }} else {{
+      const datasets = [{{
+        label: 'Depot-Equity',
+        data: eqValues,
+        borderColor: '#003d99',
+        backgroundColor: 'rgba(0,61,153,.08)',
+        fill: true,
+        pointRadius: eqValues.length > 60 ? 0 : 3,
+        tension: 0.3,
+        order: 1,
+      }}];
+      if (hasSpy) {{
+        datasets.push({{
+          label: 'SPY (100k Benchmark)',
+          data: spyValues,
+          borderColor: 'rgba(180,180,180,0.85)',
+          backgroundColor: 'transparent',
+          fill: false,
+          pointRadius: 0,
+          borderDash: [4, 3],
+          tension: 0.3,
+          order: 2,
+        }});
+      }}
       new Chart(document.getElementById('chartEquity'), {{
         type: 'line',
-        data: {{
-          labels: eqLabels,
-          datasets: [{{
-            label: 'Depot-Equity',
-            data: eqValues,
-            borderColor: '#003d99',
-            backgroundColor: 'rgba(0,61,153,.08)',
-            fill: true,
-            pointRadius: eqValues.length > 60 ? 0 : 3,
-            tension: 0.3,
-          }}]
-        }},
+        data: {{ labels: eqLabels, datasets }},
         options: {{
           responsive: true,
           plugins: {{
-            legend: {{ display: false }},
-            tooltip: {{ callbacks: {{ label: ctx => fmtMoney(ctx.parsed.y) }} }},
+            legend: {{ display: hasSpy, labels: {{ boxWidth: 14, font: {{ size: 11 }} }} }},
+            tooltip: {{ callbacks: {{ label: ctx => ctx.dataset.label + ': ' + fmtMoney(ctx.parsed.y) }} }},
           }},
           scales: {{
             x: {{ ticks: {{ maxTicksLimit: 10 }} }},
@@ -401,8 +453,9 @@ def build_and_save(portfolio_history: Optional[dict] = None) -> Path:
 
     tm = _trade_metrics(trades.get("closed", []), trades.get("open", []))
     em = _equity_metrics(eq_history)
+    spy = _fetch_spy_benchmark(em["chart_labels"], em["start_equity"] or 100_000)
 
     PERF_HTML.parent.mkdir(parents=True, exist_ok=True)
-    PERF_HTML.write_text(build_html(tm, em), encoding="utf-8")
+    PERF_HTML.write_text(build_html(tm, em, spy), encoding="utf-8")
     print(f"[PERF] Performance-Dashboard gespeichert → {PERF_HTML}")
     return PERF_HTML
