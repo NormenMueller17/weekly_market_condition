@@ -286,7 +286,10 @@ def get_portfolio_history(period: str = "1A") -> Optional[dict]:
 
 
 def cancel_open_orders() -> int:
-    """Cancel all open GTC orders. Call at end of week for cleanup.
+    """Cancel unfired BUY-stop orders from the previous week.
+
+    Only cancels open BUY-side orders. SELL-side orders (protective stops for
+    existing positions) are intentionally left untouched.
 
     Returns number of cancelled orders.
     """
@@ -294,7 +297,21 @@ def cancel_open_orders() -> int:
     if client is None:
         return 0
     try:
-        cancelled = client.cancel_orders()
-        return len(cancelled) if cancelled else 0
-    except Exception:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import QueryOrderStatus, OrderSide
+
+        open_buys = client.get_orders(GetOrdersRequest(
+            status=QueryOrderStatus.OPEN,
+            side=OrderSide.BUY,
+        ))
+        cancelled = 0
+        for order in (open_buys or []):
+            try:
+                client.cancel_order_by_id(str(order.id))
+                cancelled += 1
+            except Exception as e:
+                print(f"[ALPACA] cancel_open_orders: Fehler bei {order.symbol}: {e}")
+        return cancelled
+    except Exception as e:
+        print(f"[ALPACA] cancel_open_orders: {e}")
         return 0

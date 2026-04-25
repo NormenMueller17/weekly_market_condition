@@ -86,34 +86,6 @@
       "pt_trailing_stop": null
     },
     {
-      "symbol": "RVMD",
-      "company": "Revolution Medicines, Inc.",
-      "sector": "Pharmaceuticals: other",
-      "pattern": "–",
-      "market_regime": "bullish",
-      "rs_score": 97,
-      "entry_date": "2026-04-21",
-      "entry_price": 152.0,
-      "qty": 100.0,
-      "initial_stop": 133.77,
-      "current_stop": 133.77,
-      "stop_raised_date": null,
-      "current_price": 135.125,
-      "unrealized_pl": -1687.5,
-      "unrealized_plpc": -11.1,
-      "pt_original_qty": 100.0,
-      "pt_is_fast_mover": false,
-      "pt_hold_until": null,
-      "pt_breakeven_done": false,
-      "pt_partial_1_done": false,
-      "pt_partial_1_qty": 0,
-      "pt_partial_1_date": null,
-      "pt_partial_2_done": false,
-      "pt_partial_2_qty": 0,
-      "pt_partial_2_date": null,
-      "pt_trailing_stop": null
-    },
-    {
       "symbol": "VSH",
       "company": "Vishay Intertechnology, Inc.",
       "sector": "Electronic production equipment",
@@ -142,5 +114,35 @@
       "pt_trailing_stop": null
     }
   ],
-  "closed": []
+  "closed": [
+    {
+      "symbol": "RVMD",
+      "company": "Revolution Medicines, Inc.",
+      "sector": "Pharmaceuticals: other",
+      "pattern": "–",
+      "market_regime": "bullish",
+      "rs_score": 97,
+      "entry_date": "2026-04-21",
+      "entry_price": 152.0,
+      "qty": 100.0,
+      "initial_stop": 133.77,
+      "pt_original_qty": 100.0,
+      "pt_is_fast_mover": false,
+      "pt_hold_until": null,
+      "pt_breakeven_done": false,
+      "pt_partial_1_done": false,
+      "pt_partial_1_qty": 0,
+      "pt_partial_1_date": null,
+      "pt_partial_2_done": false,
+      "pt_partial_2_qty": 0,
+      "pt_partial_2_date": null,
+      "pt_trailing_stop": null,
+      "exit_date": "2026-04-25",
+      "exit_price": 133.69,
+      "exit_reason": "stop_hit",
+      "exit_order_id": "alpaca_stop_133.77",
+      "realized_pl": -1831.0,
+      "realized_plpc": -12.05
+    }
+  ]
 }
