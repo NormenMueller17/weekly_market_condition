@@ -64,10 +64,14 @@ class Settings:
     bearish_kelly_fraction:  float = _get_env_float("BEARISH_KELLY_FRACTION",  0.5)
 
     # ── Portfolio constraints ──────────────────────────────────────────────────
-    # MAX_POSITIONS: how many top-ranked signals to flag as "Top Pick" in the
-    # email. All signals still appear in the report and JSON; only the top N
-    # are highlighted with a gold badge.
-    max_positions:    int  = _get_env_int("MAX_POSITIONS",    5)
+    # PORTFOLIO_MAX_POSITIONS: hard cap on total open positions.
+    # No new signals are generated once this limit is reached.
+    portfolio_max_positions: int = _get_env_int("PORTFOLIO_MAX_POSITIONS", 12)
+
+    # MAX_NEW_PER_WEEK_BULL / BEAR: weekly buy-order limit, regime-dependent.
+    # Bullish = 10W-EMA > 20W-EMA + Breadth ≥ 40 %; bearish = all other cases.
+    max_new_per_week_bull: int = _get_env_int("MAX_NEW_PER_WEEK_BULL", 3)
+    max_new_per_week_bear: int = _get_env_int("MAX_NEW_PER_WEEK_BEAR", 1)
 
     # MAX_INDUSTRY_RANK: only buy stocks in industries ranked this or better.
     # Industry Ranking is computed by weekly_market_condition (1 = best).

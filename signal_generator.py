@@ -122,7 +122,9 @@ RANK_WEIGHTS = {
 # ── Portfolio / sizing defaults from rules.json ───────────────────────────────
 _p = _RULES_JSON.get("portfolio", {})
 _s = _RULES_JSON.get("sizing", {})
-_DEFAULT_MAX_POSITIONS          = _p.get("max_positions",          5)
+_DEFAULT_PORTFOLIO_MAX_POSITIONS = _p.get("portfolio_max_positions", 12)
+_DEFAULT_MAX_NEW_PER_WEEK_BULL   = _p.get("max_new_per_week_bull",   3)
+_DEFAULT_MAX_NEW_PER_WEEK_BEAR   = _p.get("max_new_per_week_bear",   1)
 _DEFAULT_ACCOUNT_EQUITY         = _p.get("account_equity",          100_000.0)
 _DEFAULT_WIN_RATE               = _s.get("win_rate",                0.59)
 _DEFAULT_WIN_LOSS_RATIO         = _s.get("win_loss_ratio",          4.04)
@@ -356,7 +358,9 @@ def generate_signals(
     win_loss_ratio:          float       = _DEFAULT_WIN_LOSS_RATIO,
     kelly_fraction:          float       = _DEFAULT_KELLY_FRACTION,
     bearish_kelly_fraction:  float       = _DEFAULT_BEARISH_KELLY_FRACTION,
-    max_positions:           int         = _DEFAULT_MAX_POSITIONS,
+    portfolio_max_positions: int         = _DEFAULT_PORTFOLIO_MAX_POSITIONS,
+    max_new_per_week_bull:   int         = _DEFAULT_MAX_NEW_PER_WEEK_BULL,
+    max_new_per_week_bear:   int         = _DEFAULT_MAX_NEW_PER_WEEK_BEAR,
     rules:                   dict | None = None,
     available_cash:          float | None = None,
     open_positions:          list[str] | None = None,
@@ -464,9 +468,11 @@ def generate_signals(
     if held:
         candidates = candidates[~candidates.index.isin(held)]
 
-    remaining_slots = max_positions - len(held)
-    if remaining_slots <= 0:
+    portfolio_remaining = portfolio_max_positions - len(held)
+    if portfolio_remaining <= 0:
         return [], candidates, []
+    max_new_this_week = max_new_per_week_bull if market_bullish else max_new_per_week_bear
+    remaining_slots = min(max_new_this_week, portfolio_remaining)
 
     # ── Build signal objects ──────────────────────────────────────────────────
 

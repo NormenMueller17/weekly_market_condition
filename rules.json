@@ -20,7 +20,9 @@
     "gap_limit_pct":          "Max. erlaubter Gap über dem Breakout-Level in %. Order verwerfen wenn Montag-Open > Pivot * (1 + gap_limit_pct/100).",
     "require_macd_above_signal": "true = MACD-Linie muss über Signal-Linie liegen (wöchentlich). Cross kann zurückliegen — nur aktueller Zustand zählt.",
     "min_breadth_pct_200d":     "Kaufstopp wenn % der S&P-500-Aktien über ihrer 200d-MA unter diesem Wert liegt. 40 = klassischer Bärenmodus. 0 = deaktiviert.",
-    "max_positions":          "Anzahl Top-Picks (Gold-Badge in der Email). 5 = empfohlen.",
+    "portfolio_max_positions":  "Absolute Obergrenze offener Positionen. Wenn erreicht, werden keine neuen Signale generiert.",
+    "max_new_per_week_bull":    "Max. neue Buy-Orders pro Woche im bullischen Markt (10W-EMA > 20W-EMA + Breadth OK).",
+    "max_new_per_week_bear":    "Max. neue Buy-Orders pro Woche im bärischen Markt. Konservativ halten (1 = empfohlen).",
     "bearish_kelly_fraction": "Kelly-Multiplikator bei bärischem Markt (relativ zu kelly_fraction). 0.5 = halbe Größe.",
     "account_equity":         "Kontogröße in EUR/USD für die Positionsgröße.",
     "win_rate":               "Historische Trefferquote (0-1). Blueprint: 0.59.",
@@ -53,9 +55,11 @@
   },
 
   "portfolio": {
-    "max_positions":          3,
+    "portfolio_max_positions":  12,
+    "max_new_per_week_bull":    3,
+    "max_new_per_week_bear":    1,
     "max_positions_per_sector": 3,
-    "account_equity":         100000.0
+    "account_equity":           100000.0
   },
 
   "sizing": {
