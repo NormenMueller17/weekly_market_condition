@@ -1,6 +1,7 @@
 import datetime as dt
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Dict, List, Tuple
 import pandas as pd
 from jinja2 import Template
@@ -302,8 +303,45 @@ HTML_TMPL = """
     <h2>4) Fazit</h2>
     <p>{{ summary }}</p>
 
+    {% if recent_trades %}
+    <h2>5) 📋 Portfolio Trades – letzte Woche</h2>
+    <table>
+      <tr>
+        <th class="left">Symbol</th>
+        <th class="left">Unternehmen</th>
+        <th class="left">Muster</th>
+        <th>Entry</th>
+        <th>Exit</th>
+        <th>Entry $</th>
+        <th>Exit $</th>
+        <th>P&amp;L $</th>
+        <th>P&amp;L %</th>
+        <th class="left">Grund</th>
+      </tr>
+      {% for t in recent_trades %}
+      {% set pl_pos = t.realized_pl > 0 %}
+      <tr>
+        <td class="left"><strong style="color:#003d99">{{ t.symbol }}</strong></td>
+        <td class="left" style="font-size:0.85em;color:#555">{{ t.company or '–' }}</td>
+        <td class="left" style="font-size:0.85em">{{ t.pattern or '–' }}</td>
+        <td>{{ t.entry_date }}</td>
+        <td>{{ t.exit_date }}</td>
+        <td>${{ "%.2f"|format(t.entry_price) }}</td>
+        <td>${{ "%.2f"|format(t.exit_price) }}</td>
+        <td style="background-color:{{ COLOR_POSITIVE if pl_pos else COLOR_NEGATIVE }};color:{{ COLOR_POS_TEXT if pl_pos else COLOR_NEG_TEXT }};font-weight:bold">
+          {{ '+' if pl_pos else '' }}${{ "{:,.0f}".format(t.realized_pl) }}
+        </td>
+        <td style="background-color:{{ COLOR_POSITIVE if pl_pos else COLOR_NEGATIVE }};color:{{ COLOR_POS_TEXT if pl_pos else COLOR_NEG_TEXT }};font-weight:bold">
+          {{ '+' if pl_pos else '' }}{{ "%.1f"|format(t.realized_plpc) }}%
+        </td>
+        <td class="left" style="font-size:0.85em">{{ t.exit_reason_label }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
     {% if alpaca_portfolio %}
-    <h2>5) 💼 Alpaca Portfolio</h2>
+    <h2>6) 💼 Alpaca Portfolio</h2>
 
     {# ── Summary Banner ── #}
     {% set pl = alpaca_portfolio.unrealized_pl %}
@@ -367,7 +405,7 @@ HTML_TMPL = """
 
     {% endif %}
 
-    <h2>6) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
+    <h2>7) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
 
     {% if not signals %}
     {% if pages_url %}
@@ -661,7 +699,7 @@ HTML_TMPL = """
 
     {% endif %}
 
-    <h2>7) Marktführer nach Minervini (Score 8/8)</h2>
+    <h2>8) Marktführer nach Minervini (Score 8/8)</h2>
 
     {% if leaders.empty %}
     <p>Keine Aktien erfüllen alle 8 Minervini-Kriterien.</p>
@@ -881,6 +919,35 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     """
     signals = signals or []
 
+    # ── Recent closed trades (last 7 days) ───────────────────────────────────
+    _EXIT_LABELS = {
+        "stop_hit":      "Stop Loss",
+        "manual":        "Manuell",
+        "manual_market": "Manuell",
+    }
+    recent_trades = []
+    try:
+        _tf = Path(__file__).parent / "docs" / "data" / "trades.json"
+        if _tf.exists():
+            _all = json.loads(_tf.read_text(encoding="utf-8")).get("closed", [])
+            _cutoff = (dt.date.today() - dt.timedelta(days=7)).isoformat()
+            for t in _all:
+                if t.get("exit_date", "") >= _cutoff:
+                    reason = t.get("exit_reason", "")
+                    label  = _EXIT_LABELS.get(reason, reason or "–")
+                    # Differentiate initial vs. raised stop
+                    if reason == "stop_hit":
+                        init_stop = t.get("initial_stop")
+                        exit_px   = t.get("exit_price", 0)
+                        if init_stop and abs(exit_px - init_stop) / init_stop > 0.03:
+                            label = "Stop nachgezogen"
+                        else:
+                            label = "Initialer Stop Loss"
+                    recent_trades.append(SimpleNamespace(**{**t, "exit_reason_label": label}))
+            recent_trades.sort(key=lambda x: x.exit_date, reverse=True)
+    except Exception:
+        pass
+
     # Derive market_bullish from the signal list:
     # if the market filter was active, generate_signals returns an empty list.
     # We surface this to the template so it can show the right "why no signals" text.
@@ -1059,6 +1126,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         test_mode          = test_mode,
         ampel              = ampel,
         sector_rows        = sector_rows or [],
+        recent_trades      = recent_trades,
     )
     return html
 
