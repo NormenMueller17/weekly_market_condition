@@ -266,7 +266,7 @@ def build_html(tm: dict, em: dict) -> str:
   </style>
 </head>
 <body>
-  <a href="index.html" class="back">← Zurück zur Übersicht</a>
+  <a href="index.html" class="back">← Back to Overview</a>
   <h1>Portfolio Performance</h1>
   <p class="meta">Stand: {today} &nbsp;|&nbsp; {tm['total_trades']} abgeschlossene Trades &nbsp;|&nbsp; {tm['open_count']} offene Positionen</p>
 
