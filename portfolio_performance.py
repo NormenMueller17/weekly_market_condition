@@ -106,7 +106,7 @@ def _trade_metrics(closed: list, open_: list) -> dict:
     }
 
 
-def _equity_metrics(history: Optional[dict]) -> dict:
+def _equity_metrics(history: Optional[dict], trim_from: Optional[str] = None) -> dict:
     empty = {"max_drawdown_pct": None, "cagr": None,
              "current_equity": None, "start_equity": None,
              "chart_labels": [], "chart_values": []}
@@ -128,6 +128,15 @@ def _equity_metrics(history: Optional[dict]) -> dict:
             d = str(t)
         labels.append(d)
         values.append(round(e, 2))
+
+    # Trim to trim_from date (keep the latest point before it as anchor)
+    if trim_from:
+        idx = next((i for i, lbl in enumerate(labels) if lbl >= trim_from), None)
+        if idx is not None:
+            anchor = max(0, idx - 1)
+            labels = labels[anchor:]
+            values = values[anchor:]
+            pairs  = pairs[anchor:]
 
     # Max drawdown
     peak   = values[0]
@@ -451,8 +460,12 @@ def build_and_save(portfolio_history: Optional[dict] = None) -> Path:
     trades = _load_trades()
     eq_history = _load_equity_history()
 
+    all_trades = trades.get("closed", []) + trades.get("open", [])
+    entry_dates = [t["entry_date"] for t in all_trades if t.get("entry_date")]
+    trim_from = min(entry_dates) if entry_dates else None
+
     tm = _trade_metrics(trades.get("closed", []), trades.get("open", []))
-    em = _equity_metrics(eq_history)
+    em = _equity_metrics(eq_history, trim_from=trim_from)
     spy = _fetch_spy_benchmark(em["chart_labels"], em["start_equity"] or 100_000)
 
     PERF_HTML.parent.mkdir(parents=True, exist_ok=True)
