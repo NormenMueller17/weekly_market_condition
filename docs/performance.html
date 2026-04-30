@@ -31,7 +31,7 @@
 <body>
   <a href="index.html" class="back">← Back to Overview</a>
   <h1>Portfolio Performance</h1>
-  <p class="meta">Stand: 2026-04-25 &nbsp;|&nbsp; 1 abgeschlossene Trades &nbsp;|&nbsp; 4 offene Positionen</p>
+  <p class="meta">Stand: 2026-04-30 &nbsp;|&nbsp; 1 abgeschlossene Trades &nbsp;|&nbsp; 5 offene Positionen</p>
 
   <!-- KPI Row 1: Trade-Metriken -->
   <h2>Trade-Statistik</h2>
@@ -47,10 +47,10 @@
   </div>
   <div class="kpis">
     <div class="kpi"><div class="val" style="color:#cc2222;font-weight:600">-1,831 $</div><div class="lbl">Realized P&amp;L</div></div>
-    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+6,781 $</div><div class="lbl">Unrealized P&amp;L (offen)</div></div>
-    <div class="kpi"><div class="val" style="">104,950 $</div><div class="lbl">Aktuelles Depot-Equity</div></div>
-    <div class="kpi"><div class="val" style="">–</div><div class="lbl">Max. Drawdown</div></div>
-    <div class="kpi"><div class="val" style="">–</div><div class="lbl">CAGR (ann.)</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+4,858 $</div><div class="lbl">Unrealized P&amp;L (offen)</div></div>
+    <div class="kpi"><div class="val" style="">102,307 $</div><div class="lbl">Aktuelles Depot-Equity</div></div>
+    <div class="kpi"><div class="val" style="color:#cc2222">4.9%</div><div class="lbl">Max. Drawdown</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a">+100.2%</div><div class="lbl">CAGR (ann.)</div></div>
   </div>
 
   <!-- Equity Chart -->
@@ -80,9 +80,9 @@
     const fmtMoney = v => (v >= 0 ? '+' : '') + v.toLocaleString('de-DE', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' $';
 
     // ── Equity curve ─────────────────────────────────────────────────────────
-    const eqLabels = ["2026-04-18", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25"];
-    const eqValues = [100000.0, 100898.56, 102561.27, 102792.9, 103488.63, 104950.41];
-    const spyValues = [null, 100000.0, 101012.67, 100620.67, 101400.41, 101400.41];
+    const eqLabels = ["2026-04-18", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-28", "2026-04-29", "2026-04-30"];
+    const eqValues = [100000.0, 100898.56, 102561.27, 102792.9, 103488.63, 104950.41, 102767.35, 99789.19, 102307.36];
+    const spyValues = [null, 100000.0, 101012.67, 100620.67, 101400.41, 101400.41, 101080.84, 101065.22, 102070.78];
     const hasSpy = true;
     if (false) {
       document.getElementById('chartEquity').style.display = 'none';
@@ -123,7 +123,7 @@
           scales: {
             x: { ticks: { maxTicksLimit: 10 } },
             y: {
-              min: 98000.00,
+              min: 97793.41,
               max: 107049.42,
               ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k' },
             },
