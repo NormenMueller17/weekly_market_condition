@@ -107,7 +107,6 @@ DEFAULT_RULES: dict = {
     "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
     "gap_limit_pct":          _f.get("gap_limit_pct",         5.0),
     "require_macd_above_signal": _f.get("require_macd_above_signal", True),
-    "bearish_risk_fraction":  _s.get("bearish_risk_fraction", 0.5),
 }
 
 # ── Ranking weights (must sum to 1.0) ─────────────────────────────────────────
@@ -123,6 +122,7 @@ RANK_WEIGHTS = {
 # ── Portfolio / sizing defaults from rules.json ───────────────────────────────
 _p = _RULES_JSON.get("portfolio", {})
 _s = _RULES_JSON.get("sizing", {})
+DEFAULT_RULES["bearish_risk_fraction"] = _s.get("bearish_risk_fraction", 0.5)
 _DEFAULT_PORTFOLIO_MAX_POSITIONS = _p.get("portfolio_max_positions", 12)
 _DEFAULT_MAX_NEW_PER_WEEK_BULL   = _p.get("max_new_per_week_bull",   3)
 _DEFAULT_MAX_NEW_PER_WEEK_BEAR   = _p.get("max_new_per_week_bear",   1)
