@@ -408,14 +408,19 @@ def generate_signals(
     vol_breakout_col = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
     mask &= vol_breakout_col
 
-    # 9. Minimum price — no penny stocks (fail-open: NaN Close = data gap, not penny stock)
+    # 10. Close > Vorwoche — kein Kauf bei fallendem Wochenkurs
+    #     (fail-open: fehlendes Signal = kein Ausschluss)
+    close_above_prev = df.get("Close > Vorwoche", pd.Series(True, index=df.index)).fillna(True).astype(bool)
+    mask &= close_above_prev
+
+    # 11. Minimum price — no penny stocks (fail-open: NaN Close = data gap, not penny stock)
     if r.get("min_price", 0) > 0:
         price_raw = pd.to_numeric(
             df.get("Close", pd.Series(index=df.index)), errors="coerce"
         )
         mask &= price_raw.isna() | (price_raw >= r["min_price"])
 
-    # 10. Minimum market cap — no micro caps (fail-open: NaN MCap = data gap)
+    # 12. Minimum market cap — no micro caps (fail-open: NaN MCap = data gap)
     if r.get("min_market_cap_mio", 0) > 0:
         cap_raw = pd.to_numeric(
             df.get("MarketCap (Mio USD)", pd.Series(index=df.index)), errors="coerce"
