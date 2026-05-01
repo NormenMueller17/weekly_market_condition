@@ -595,7 +595,9 @@ HTML_TMPL = """
         <th class="sortable" onclick="sortTable(this)">Industry<br>Rank</th>
         <th class="sortable" onclick="sortTable(this)">ROE %</th>
         <th class="sortable" onclick="sortTable(this)">Op.Margin</th>
+        <th class="sortable" onclick="sortTable(this)">EPS Growth Q</th>
         <th class="sortable" onclick="sortTable(this)">Rev. Growth</th>
+        <th class="sortable" onclick="sortTable(this)" title="Wochenvolumen / Ø20T-Volumen">Vol Score</th>
         <th class="sortable" onclick="sortTable(this)">Position</th>
         <th class="sortable" onclick="sortTable(this)">Risiko / Equity</th>
       </tr>
@@ -655,7 +657,18 @@ HTML_TMPL = """
           {{ s.industry_ranking if s.industry_ranking is not none else '–' }}</td>
         <td>{{ '%.1f' % s.roe if s.roe is not none else '–' }}%</td>
         <td>{{ '%.1f' % s.op_margin if s.op_margin is not none else '–' }}%</td>
+        <td style="background-color:
+          {%- if s.eps_growth_last_q is not none and s.eps_growth_last_q >= 20 %}#d4edda
+          {%- elif s.eps_growth_last_q is not none and s.eps_growth_last_q >= 0 %}transparent
+          {%- elif s.eps_growth_last_q is not none %}#f8d7da
+          {%- else %}transparent{% endif %}">
+          {{ '%.0f' % s.eps_growth_last_q if s.eps_growth_last_q is not none else '–' }}%</td>
         <td>{{ '%.1f' % s.revenue_growth if s.revenue_growth is not none else '–' }}%</td>
+        <td style="background-color:
+          {%- if s.vol_score is not none and s.vol_score >= 1.3 %}#d4edda
+          {%- elif s.vol_score is not none %}transparent
+          {%- else %}transparent{% endif %}">
+          {{ '%.2f' % s.vol_score if s.vol_score is not none else '–' }}</td>
         <td>{{ (s.position_size_pct * 100) | round(1) }}%</td>
         <td style="{% if risk_high %}background-color:#ffcccc;font-weight:bold{% endif %}">
           {{ risk_pct_display }}%
@@ -665,7 +678,7 @@ HTML_TMPL = """
       {% set crit = signal_criteria.get(s.ticker, {}) %}
       {% if crit %}
       <tr style="background-color:{{ row_bg }}">
-        <td colspan="20" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
+        <td colspan="22" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
           {% for name, val in crit.items() %}
           <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
                        font-size:0.76em;font-weight:bold;white-space:nowrap;

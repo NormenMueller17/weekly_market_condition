@@ -307,6 +307,7 @@ class TradeSignal:
     rs_delta_4w:        Optional[float]
     atr_pct:            Optional[float]
     dist_52w_high_pct:  Optional[float]
+    vol_score:          Optional[float]
 
     # Position sizing
     position_size_pct:  float           # e.g. 0.161  →  16.1 %
@@ -548,6 +549,7 @@ def generate_signals(
             rs_delta_4w        = _safe_float(row.get("ΔRS 4W")),
             atr_pct            = round(atr_pct, 2),
             dist_52w_high_pct  = _safe_float(row.get("Dist to 52W High (%)")),
+            vol_score          = _safe_float(row.get("Volume Score")),
             position_size_pct  = round(pos_size_pct, 4),
             position_value     = round(position_value, 2),
             risk_value         = round(risk_value, 2),
