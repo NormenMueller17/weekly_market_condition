@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Screener — Blueprint</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      background: #f7f9fc;
+    }
+
+    /* ── Layout ──────────────────────────────────────────────────────── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: #fff;
+      border-right: 1px solid #dde3ee;
+      padding: 1.6em 0 2em 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sidebar .logo {
+      font-size: 1em;
+      font-weight: bold;
+      color: #003d99;
+      padding: 0 1.2em 1em;
+      border-bottom: 1px solid #eef0f6;
+      margin-bottom: .8em;
+      display: block;
+      text-decoration: none;
+    }
+    .sidebar .back-link {
+      display: block;
+      padding: .3em 1.2em .8em;
+      font-size: .82em;
+      color: #5bbde8;
+      text-decoration: none;
+      border-bottom: 1px solid #eef0f6;
+      margin-bottom: .8em;
+    }
+    .sidebar .back-link:hover { text-decoration: underline; }
+
+    .nav-group { margin-bottom: .3em; }
+    .nav-h1 {
+      display: block;
+      padding: .42em 1.2em;
+      font-size: .82em;
+      font-weight: bold;
+      color: #003d99;
+      text-decoration: none;
+      letter-spacing: .02em;
+    }
+    .nav-h1:hover { background: #f0f4ff; }
+    .nav-h2 {
+      display: block;
+      padding: .33em 1.2em .33em 2em;
+      font-size: .78em;
+      color: #445;
+      text-decoration: none;
+      line-height: 1.35;
+    }
+    .nav-h2:hover { background: #f5f7ff; color: #003d99; }
+    .nav-h2.active { color: #003d99; font-weight: bold; }
+
+    /* ── Main content ────────────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      padding: 2em 2.5em 3em 2.5em;
+      max-width: 960px;
+    }
+
+    /* ── Back link (top of content) ──────────────────────────────────── */
+    .back {
+      display: inline-block;
+      margin-bottom: 1.2em;
+      color: #5bbde8;
+      text-decoration: none;
+      font-size: .88em;
+    }
+    .back:hover { text-decoration: underline; }
+
+    /* ── Typography ──────────────────────────────────────────────────── */
+    h1 {
+      color: #003d99;
+      font-size: 1.55em;
+      margin: 1.8em 0 .4em;
+      padding-bottom: .25em;
+      border-bottom: 2px solid #003d99;
+    }
+    h1:first-of-type { margin-top: .2em; }
+    h2 {
+      color: #003d99;
+      font-size: 1.1em;
+      margin: 1.5em 0 .4em;
+      padding-bottom: .15em;
+      border-bottom: 1px solid #ccd6f0;
+    }
+    .doc-title {
+      font-size: 1.9em;
+      font-weight: bold;
+      color: #003d99;
+      margin-bottom: .1em;
+    }
+    .doc-subtitle {
+      color: #666;
+      font-size: .95em;
+      margin: 0 0 .15em;
+    }
+    .doc-meta {
+      color: #999;
+      font-size: .82em;
+      margin-bottom: 2em;
+    }
+    p { margin: .6em 0 .9em; line-height: 1.65; }
+    ul { margin: .4em 0 .8em 0; padding-left: 1.5em; }
+    li { margin-bottom: .35em; line-height: 1.6; }
+
+    /* ── Subheading (bold, non-H) ────────────────────────────────────── */
+    .sub-bold {
+      font-weight: bold;
+      color: #1a3a6e;
+      margin: 1.1em 0 .35em;
+      display: block;
+    }
+
+    /* ── Tables ──────────────────────────────────────────────────────── */
+    .tbl-wrap { overflow-x: auto; margin: .8em 0 1.2em; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: .88em;
+    }
+    th {
+      background: #003d99;
+      color: #fff;
+      padding: 7px 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+    td {
+      padding: 6px 12px;
+      border-bottom: 1px solid #e0e6f0;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    tr:nth-child(even) td { background: #f5f8ff; }
+    tr:hover td { background: #eef2ff; }
+
+    /* ── Example / code box ──────────────────────────────────────────── */
+    .example {
+      background: #f0f4ff;
+      border-left: 3px solid #5bbde8;
+      padding: .7em 1em;
+      margin: .6em 0 1em;
+      font-size: .88em;
+      border-radius: 0 4px 4px 0;
+      line-height: 1.6;
+    }
+
+    /* ── Warning box ─────────────────────────────────────────────────── */
+    .warning {
+      background: #fffbea;
+      border-left: 3px solid #f5a623;
+      padding: .7em 1em;
+      margin: .6em 0 1em;
+      border-radius: 0 4px 4px 0;
+      font-size: .88em;
+      line-height: 1.6;
+    }
+
+    /* ── Formula box ─────────────────────────────────────────────────── */
+    .formula {
+      background: #f4f8ff;
+      border: 1px solid #ccd6f0;
+      border-radius: 6px;
+      padding: .8em 1.2em;
+      margin: .6em 0 1em;
+      font-family: 'Courier New', monospace;
+      font-size: .85em;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────── */
+    @media (max-width: 800px) {
+      .sidebar { display: none; }
+      .main { padding: 1.5em 1em 2em; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
+  <nav class="sidebar">
+    <span class="logo">📈 Weekly Screener</span>
+    <a href="index.html" class="back-link">← Back to Overview</a>
+
+    <div class="nav-group">
+      <a href="#ueberblick" class="nav-h1">Überblick</a>
+    </div>
+
+    <div class="nav-group">
+      <a href="#samstag" class="nav-h1">Samstagsablauf</a>
+      <a href="#s1"  class="nav-h2">Schritt 1 — Systemstart</a>
+      <a href="#s2"  class="nav-h2">Schritt 2 — Universum laden</a>
+      <a href="#s3"  class="nav-h2">Schritt 3 — Kursdaten laden</a>
+      <a href="#s4"  class="nav-h2">Schritt 4 — Indexdaten laden</a>
+      <a href="#s5"  class="nav-h2">Schritt 5 — Marktbreite</a>
+      <a href="#s6"  class="nav-h2">Schritt 6 — Marktampel</a>
+      <a href="#s7"  class="nav-h2">Schritt 7 — Orders stornieren</a>
+      <a href="#s8"  class="nav-h2">Schritt 8 — Portfolio-Daten</a>
+      <a href="#s9"  class="nav-h2">Schritt 9 — MACD Bearish Cross</a>
+      <a href="#s10" class="nav-h2">Schritt 10 — Trade Journal</a>
+      <a href="#s11" class="nav-h2">Schritt 11 — Gewinnmitnahme</a>
+      <a href="#s12" class="nav-h2">Schritt 12 — Performance</a>
+      <a href="#s13" class="nav-h2">Schritt 13 — Minervini-Screener</a>
+      <a href="#s14" class="nav-h2">Schritt 14 — Fundamentaldaten</a>
+      <a href="#s15" class="nav-h2">Schritt 15 — Branchen-Stärke</a>
+      <a href="#s16" class="nav-h2">Schritt 16 — Signal-Generator</a>
+      <a href="#s17" class="nav-h2">Schritt 17 — Orders platzieren</a>
+      <a href="#s18" class="nav-h2">Schritt 18 — Report &amp; E-Mail</a>
+    </div>
+
+    <div class="nav-group">
+      <a href="#montag" class="nav-h1">Montagsablauf</a>
+    </div>
+
+    <div class="nav-group">
+      <a href="#schwaechen" class="nav-h1">Identifizierte Schwächen</a>
+    </div>
+  </nav>
+
+  <!-- ══ MAIN CONTENT ═════════════════════════════════════════════════ -->
+  <main class="main">
+    <a href="index.html" class="back">← Back to Overview</a>
+
+    <div class="doc-title">Weekly Screener</div>
+    <p class="doc-subtitle">Vollautomatisierter Aktien-Scan, Portfoliomanagement und Risikosteuerung</p>
+    <p class="doc-meta">Systembeschreibung für Außenstehende &nbsp;·&nbsp; Erstellt auf Basis des Regelwerks Weekly Screener</p>
+
+    <!-- ── Überblick ──────────────────────────────────────────────── -->
+    <h1 id="ueberblick">Überblick</h1>
+    <p>Der Weekly Screener ist ein vollautomatisiertes System zur Selektion, zum Erwerb und zur Verwaltung von US-Aktien. Es läuft einmal wöchentlich — jeden Samstag — und trifft alle Kauf-, Verkaufs- und Risikomanagement-Entscheidungen eigenständig, ohne manuellen Eingriff.</p>
+    <p>Das System folgt der Anlagephilosophie von Mark Minervini (SEPA-Methode) und dem O'Neil-Ansatz. Es kauft ausschließlich Aktien, die sich in einem nachweisbaren Aufwärtstrend befinden, fundamentale Stärke zeigen und ein klar definiertes Chartmuster aufweisen. Jede Position wird mit einem vordefinierten Risikolimit und einem automatischen Stop-Loss abgesichert.</p>
+
+    <!-- ── Samstagsablauf ─────────────────────────────────────────── -->
+    <h1 id="samstag">Samstagsablauf — Hauptprogramm</h1>
+
+    <h2 id="s1">Schritt 1 — Systemstart und Initialisierung</h2>
+    <p>Zu Beginn legt das System fest, in welchem Modus es läuft. An einem Samstag wechselt es automatisch in den Live-Modus und verbindet sich mit dem Broker-API. An allen anderen Wochentagen läuft es im Testmodus, ohne echte Orders zu platzieren.</p>
+    <p>Zusätzlich wird ein Datenzwischenspeicher aktiviert. Einmal heruntergeladene Kursdaten werden 24 Stunden lokal gespeichert, um bei einem Neustart keine Daten erneut herunterladen zu müssen.</p>
+
+    <h2 id="s2">Schritt 2 — Aktien-Universum laden</h2>
+    <p>Das System definiert zunächst, welche Aktien überhaupt betrachtet werden sollen. Dieses Universum ist eine Liste von Ticker-Symbolen und wird aus zwei Quellen zusammengestellt:</p>
+    <ul>
+      <li><strong>Lokale CSV-Datei (Standard-Fallback):</strong> Eine vorbereitete statische Liste der nach Marktkapitalisierung größten US-Aktien aus dem S&amp;P 500, Nasdaq 100 und Russell 1000.</li>
+      <li><strong>BlackRock ETF-Holdings:</strong> Täglich aktualisierte Listen der iShares-ETFs (Russell 1000, 2000 oder 3000), direkt von der BlackRock-Website heruntergeladen.</li>
+    </ul>
+    <p>Gleichzeitig liest das System Unternehmensnamen und Branchenzuordnungen aus der Quelldatei aus, ohne dafür externe Daten abzufragen.</p>
+
+    <h2 id="s3">Schritt 3 — Historische Kursdaten laden</h2>
+    <p>Für alle Aktien im Universum werden historische Wochenkursdaten der letzten zwei Jahre heruntergeladen. Jeder Datensatz enthält Eröffnung, Hoch, Tief, Schluss und Volumen auf Wochenbasis.</p>
+    <p>Das System prüft dabei, ob eine Aktie noch aktiv gehandelt wird. Liegt der letzte Handelstag einer Aktie mehr als 14 Tage zurück, wird sie als inaktiv eingestuft und aus dem weiteren Durchlauf ausgeschlossen.</p>
+
+    <h2 id="s4">Schritt 4 — Markt- und Indexdaten laden</h2>
+    <p>Neben den Einzelaktien lädt das System übergeordnete Marktdaten. Diese Tagesdaten werden auf Wochenbasis zusammengefasst:</p>
+    <ul>
+      <li><strong>Marktindizes:</strong> SPY (S&amp;P 500), QQQ (Nasdaq 100), IWM (Russell 2000)</li>
+      <li><strong>Sentiment-Indikatoren:</strong> VIX (Volatilitätsindex), TNX (10-jährige US-Staatsanleihen-Rendite), UUP (US-Dollar-ETF)</li>
+      <li><strong>Sektor-ETFs:</strong> Alle elf SPDR-Sektor-ETFs, darunter Technologie, Finanzen, Gesundheit, Energie und weitere</li>
+    </ul>
+
+    <h2 id="s5">Schritt 5 — Marktbreite berechnen</h2>
+    <p>Die Marktbreite beschreibt, wie breit eine Marktbewegung aufgestellt ist. Das System berechnet für das gesamte Universum vier Kennzahlen:</p>
+    <ul>
+      <li>Anteil der Aktien oberhalb ihres 10-Wochen-Exponentialgleitenden Durchschnitts (EMA)</li>
+      <li>Anteil der Aktien oberhalb ihres 50-Wochen-Gleitenden Durchschnitts (MA)</li>
+      <li>Anzahl neuer 52-Wochen-Hochs und Tiefs, absolut und als Verhältnis</li>
+      <li>Anteil der Aktien mit positiver Wochenrendite</li>
+    </ul>
+    <p>Diese Werte werden für die aktuelle Woche sowie für die Wochen minus 1 und minus 4 ausgewiesen, um Trends in der Marktbreite zu erkennen.</p>
+
+    <h2 id="s6">Schritt 6 — Marktampel: Kaufbedingung prüfen</h2>
+    <p>Bevor das System neue Kaufsignale generiert, prüft es zwei übergeordnete Bedingungen. Beide müssen erfüllt sein, damit der volle Kaufmodus aktiv ist:</p>
+    <ul>
+      <li><strong>Trendfilter:</strong> Der kurzfristige gleitende Durchschnitt des S&amp;P 500 (10-Wochen-EMA) liegt über dem mittelfristigen (20-Wochen-EMA). Das zeigt an, dass der Markt insgesamt im Aufwärtstrend ist.</li>
+      <li><strong>Marktbreite:</strong> Mindestens 40 % der S&amp;P-500-Aktien notieren oberhalb ihres 200-Tage-Gleitenden Durchschnitts. Das stellt sicher, dass der Aufschwung nicht nur von wenigen großen Werten getragen wird.</li>
+    </ul>
+    <div class="example">
+      <strong>Beispiel:</strong> SPY 10W-EMA = 520, SPY 20W-EMA = 512 → Trendfilter erfüllt.<br>
+      58 % der S&amp;P-500-Aktien über 200-Tage-MA → Marktbreite erfüllt.<br>
+      <strong>Ergebnis:</strong> Marktampel auf Grün. Bis zu 3 neue Kaufsignale möglich, volle Positionsgröße.
+    </div>
+    <p>Ist mindestens eine der beiden Bedingungen nicht erfüllt, wechselt das System in einen defensiven Modus. In diesem Fall wird nur noch maximal 1 neues Kaufsignal pro Woche ausgegeben, und alle Positionsgrößen werden halbiert.</p>
+
+    <h2 id="s7">Schritt 7 — Offene Kauforders stornieren</h2>
+    <p>Kauforders aus der Vorwoche, die nicht ausgelöst wurden, weil der Kurs das definierte Einstiegsniveau nicht erreicht hat, werden automatisch storniert. Das verhindert, dass veraltete Orders zu einem ungünstigen Zeitpunkt ausgelöst werden.</p>
+
+    <h2 id="s8">Schritt 8 — Portfolio-Daten abrufen</h2>
+    <p>Das System holt den aktuellen Stand des Portfolios vom Broker: das verfügbare Bargeld, den Gesamtdepotwert sowie alle Details zu aktuell gehaltenen Positionen (Einstiegspreis, Anzahl Aktien, aktueller Kurs, unrealisierter Gewinn/Verlust).</p>
+
+    <h2 id="s9">Schritt 9 — Exit-Manager: MACD Bearish Cross</h2>
+    <p>Für jede aktuell gehaltene Position prüft das System, ob ein sogenannter Bearish MACD Cross aufgetreten ist. Das ist ein technisches Signal, das auf nachlassendes Momentum hindeutet:</p>
+    <ul>
+      <li><strong>MACD-Linie:</strong> Differenz aus 12-Wochen-EMA und 26-Wochen-EMA des Schlusskurses</li>
+      <li><strong>Signallinie:</strong> 9-Wochen-EMA der MACD-Linie</li>
+    </ul>
+    <p>Ein Bearish Cross liegt vor, wenn die MACD-Linie von oberhalb der Signallinie nach unterhalb wechselt. Das System reagiert darauf mit einer Stop-Anpassung:</p>
+    <ul>
+      <li>Der neue Stop wird auf das Wochentief der auslösenden Kerze gesetzt.</li>
+      <li>Dieser angehobene Stop ersetzt den bisherigen nur dann, wenn er tatsächlich höher liegt. Ein Absenken des Stops ist ausgeschlossen.</li>
+    </ul>
+    <div class="example">
+      <strong>Beispiel:</strong> Eine Position hat einen bestehenden Stop bei 48 $. Ein Bearish Cross tritt auf.<br>
+      Das Wochentief der auslösenden Kerze liegt bei 54 $. Da 54 $ &gt; 48 $, wird der Stop auf 54 $ angehoben.<br>
+      Fällt der Kurs unter 54 $, verkauft der Broker die Position automatisch.
+    </div>
+
+    <h2 id="s10">Schritt 10 — Trade Journal synchronisieren</h2>
+    <p>Das System führt intern ein Trade Journal. In diesem Schritt wird es mit den tatsächlichen Broker-Transaktionen der letzten Woche abgeglichen:</p>
+    <ul>
+      <li>Neu ausgeführte Käufe werden als offene Positionen ins Journal aufgenommen.</li>
+      <li>Abgeschlossene Verkäufe werden mit Ausstiegspreis, Datum und Ausstiegsgrund ins Journal eingetragen und als abgeschlossene Trades markiert.</li>
+      <li>Angehobene Stops aus Schritt 9 werden ins Journal übertragen.</li>
+      <li>Der unrealisierte Gewinn und Verlust aller offenen Positionen wird aktualisiert.</li>
+    </ul>
+
+    <h2 id="s11">Schritt 11 — Gewinnmitnahme-System</h2>
+    <p>Das System wendet vier ineinandergreifende Regeln an, um Gewinne systematisch zu sichern. Alle Parameter sind zentral konfigurierbar.</p>
+
+    <span class="sub-bold">Regel 1 — Breakeven-Stop</span>
+    <p>Sobald eine Position mehr als 10 % im Plus liegt, wird der Schutzstopp auf den ursprünglichen Einstandspreis angehoben. Der Trade kann damit nicht mehr mit Verlust enden. Diese Regel ist immer aktiv und löst keinen Teilverkauf aus.</p>
+
+    <span class="sub-bold">Regel 2 — O'Neil Fast-Mover-Erkennung</span>
+    <p>Erreicht eine Position innerhalb von drei Wochenkerzen ab Einstieg einen Gewinn von 20 % oder mehr, wird kein Teilverkauf vorgenommen. Stattdessen wird die Position acht Wochen gehalten (O'Neil "8-week hold rule"). Nach Ablauf dieser Haltezeit wird ein ATR-basierter Trailing Stop aktiviert (Regel 4).</p>
+
+    <span class="sub-bold">Regel 3 — Minervini Power of Three</span>
+    <p>Für normale Bewegungen, also ein Gewinn von 20 % in mehr als 3 Wochen, gilt ein gestaffeltes Teilverkaufsschema:</p>
+    <ul>
+      <li>Bei +20 % Gewinn: Ein Drittel der Position wird automatisch zum Marktpreis verkauft.</li>
+      <li>Bei +40 % Gewinn: Ein weiteres Drittel wird automatisch verkauft.</li>
+      <li>Das verbleibende Drittel läuft als sogenannter Runner weiter. Für diesen wird Regel 4 aktiviert.</li>
+    </ul>
+
+    <span class="sub-bold">Regel 4 — ATR-Trailing Stop für den Runner</span>
+    <p>Nach dem ersten Teilverkauf (Regel 3) oder nach Ende der Fast-Mover-Haltezeit (Regel 2) wird ein dynamischer Trailing Stop aktiviert:</p>
+    <div class="formula">Trailing Stop = höchster Wochenschlusskurs seit Einstieg − 2 × ATR(10 Wochen)</div>
+    <div class="example">
+      <strong>Beispiel:</strong> Höchster Schlusskurs = 80 $, ATR = 3 $.<br>
+      Trailing Stop = 80 $ − (2 × 3 $) = 74 $.<br>
+      Steigt der Kurs auf 90 $, zieht der Stop automatisch auf 90 $ − 6 $ = 84 $ nach.<br>
+      Der Stop wird nur angehoben, nie abgesenkt.
+    </div>
+    <p>Bei Aktivierung ersetzt der ATR-Trailing Stop den bisherigen MACD-Stop. Das Modell sichert Gewinne, lässt der Position aber Raum zum Atmen.</p>
+
+    <h2 id="s12">Schritt 12 — Performance-Dashboard erstellen</h2>
+    <p>Das System generiert automatisch einen visuellen Leistungsbericht. Dieser enthält die Eigenkapitalkurve des Portfolios, eine Vergleichslinie mit dem S&amp;P 500, Gewinn-/Verlust-Statistiken sowie eine Übersicht aller abgeschlossenen Trades.</p>
+
+    <h2 id="s13">Schritt 13 — Minervini-Screener</h2>
+    <p>Das Herzstück des Systems: Jede Aktie im Universum wird anhand von acht technischen Kriterien nach Mark Minervini bewertet. Für jedes erfüllte Kriterium erhält die Aktie einen Punkt — der maximale Score beträgt 8/8.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Kriterium</th><th>Bedingung</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>SMA 10 Wochen steigend</td><td>10-Wochen-Durchschnitt liegt über dem der Vorwoche</td></tr>
+          <tr><td>2</td><td>SMA 30 Wochen steigend</td><td>30-Wochen-Durchschnitt liegt über dem der Vorwoche</td></tr>
+          <tr><td>3</td><td>SMA 40 Wochen steigend</td><td>40-Wochen-Durchschnitt liegt über dem der Vorwoche</td></tr>
+          <tr><td>4</td><td>MA-Ordnung</td><td>Kurs &gt; SMA 10W &gt; SMA 30W &gt; SMA 40W (bullische Hierarchie)</td></tr>
+          <tr><td>5</td><td>52-Wochen-Position</td><td>Kurs ≥ 130 % des 52-Wochen-Tiefs UND ≥ 75 % des 52-Wochen-Hochs</td></tr>
+          <tr><td>6</td><td>RS-Trend steigend</td><td>Aktueller RS-Score &gt; RS-Score vor 4 Wochen</td></tr>
+          <tr><td>7</td><td>Volumenausbruch</td><td>Wochenvolumen ≥ 1,3× des 20-Wochen-Durchschnitts</td></tr>
+          <tr><td>8</td><td>Wochenkurs positiv</td><td>Schlusskurs liegt über dem der Vorwoche</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <span class="sub-bold">RS-Score (Relative Stärke nach O'Neil)</span>
+    <p>Jede Aktie erhält einen RS-Score zwischen 1 und 99, der ihre Kursentwicklung relativ zu allen anderen Aktien im Universum abbildet. Ein Score von 90 bedeutet, dass die Aktie besser als 90 % aller anderen Aktien performed hat.</p>
+    <div class="example">
+      <strong>Rechenbeispiel RS-Score:</strong><br>
+      3-Monats-Performance: +18 % (Gewichtung 40 %)<br>
+      6-Monats-Performance: +25 % (Gewichtung 20 %)<br>
+      9-Monats-Performance: +30 % (Gewichtung 20 %)<br>
+      12-Monats-Performance: +22 % (Gewichtung 20 %)<br>
+      Gewichtete Performance = 0,4 × 18 + 0,2 × 25 + 0,2 × 30 + 0,2 × 22 = 22,6 %<br>
+      Dieser Wert wird gegen alle Aktien im Universum gerankt → Ergebnis: z. B. RS-Score 78.
+    </div>
+    <p>Zusätzlich: ΔRS 4W = RS-Score aktuell minus RS-Score vor 4 Wochen. Ein stark steigender Wert signalisiert, dass eine Aktie gerade dynamisch an Stärke gewinnt.</p>
+
+    <span class="sub-bold">Chartmuster-Erkennung (kein Pflichtkriterium, aber Ranking-Booster)</span>
+    <p>Das System erkennt zwei klassische Chartmuster, die als Kaufauslöser besonders wertvoll sind:</p>
+    <ul>
+      <li><strong>VCP (Volatility Contraction Pattern):</strong> Eine Abfolge kleiner werdender Konsolidierungsphasen mit abnehmendem Volumen. Das Muster signalisiert, dass eine Aktie dabei ist, Energie für einen Ausbruch aufzubauen.</li>
+      <li><strong>Launchpad:</strong> Eine stabile, enge Basis über mehrere Wochen mit einer Kursspanne unter 8 % und einem Qualitätsscore von mindestens 60/100.</li>
+    </ul>
+    <p>Das Erkennen eines dieser Muster ist kein Pflichtkriterium für ein Kaufsignal, verbessert aber den Rang einer Aktie im abschließenden Ranking erheblich.</p>
+
+    <h2 id="s14">Schritt 14 — Fundamentaldaten laden</h2>
+    <p>Um den Rechenaufwand zu begrenzen, werden Fundamentaldaten nur für Aktien abgerufen, die im Minervini-Screener mindestens 5 von 8 Punkten erreicht haben. Abgerufen werden:</p>
+    <ul>
+      <li>Kurs und Marktkapitalisierung</li>
+      <li>EPS (Gewinn je Aktie): Vorausschauend und der letzten 12 Monate (TTM)</li>
+      <li>EPS-Wachstum: Vorausschauend, TTM und letztes Quartal im Jahresvergleich</li>
+      <li>Umsatzwachstum: TTM im Jahresvergleich</li>
+      <li>Rentabilitätskennzahlen: ROE, operative Marge, Free-Cashflow-Marge (derzeit deaktiviert als Pflichtfilter)</li>
+      <li>Verschuldungsgrad, EPS-Beschleunigung und Sektorzuordnung</li>
+    </ul>
+
+    <h2 id="s15">Schritt 15 — Branchen-Stärke berechnen</h2>
+    <p>Das System aggregiert die Einzelaktien-Kennzahlen auf Branchenebene und erstellt eine Rangliste der stärksten Branchen. Drei Kennzahlen fließen ein:</p>
+    <ul>
+      <li><strong>Industry RS Score:</strong> Durchschnittlicher RS-Score aller Aktien der Branche</li>
+      <li><strong>Industry Strong Stock Score:</strong> Anteil der Aktien mit einem Minervini-Score von 8/8</li>
+      <li><strong>Industry Volume Score:</strong> Volumenaktivität gewichtet nach Kursrichtung, als Indikator für Kapitalflüsse</li>
+    </ul>
+    <p>Diese drei Werte werden zu einem Composite Industry Score zusammengefasst und in eine Rangliste überführt. Nur Aktien aus den Top-50-%-Branchen kommen für ein Kaufsignal in Frage.</p>
+
+    <h2 id="s16">Schritt 16 — Signal-Generator: Kaufkriterien</h2>
+    <p>Alle Aktien, die den Minervini-Screener und die Fundamentalprüfung überstanden haben, durchlaufen nun 17 Kauffilter. Alle Filter müssen erfüllt sein:</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Filterkriterium</th><th>Schwellenwert</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Minervini-Score</td><td>≥ 6 von 8 Punkten</td></tr>
+          <tr><td>2</td><td>RS-Score (Relative Stärke)</td><td>≥ 70 (Top 30 % des Universums)</td></tr>
+          <tr><td>3</td><td>Abstand zum 52-Wochen-Hoch</td><td>≤ 25 % unter dem 52-Wochen-Hoch</td></tr>
+          <tr><td>4</td><td>Volatilität (ATR / Kurs)</td><td>&lt; 8 % (keine übermäßig schwankenden Aktien)</td></tr>
+          <tr><td>5</td><td>Volumenausbruch</td><td>Wochenvolumen ≥ 1,3× des 20-Wochen-Durchschnitts</td></tr>
+          <tr><td>6</td><td>Branchen-Ranking</td><td>Top 50 % aller Branchen im Universum</td></tr>
+          <tr><td>7</td><td>Mindestkurs</td><td>≥ 5 $ (kein Penny Stock)</td></tr>
+          <tr><td>8</td><td>Marktkapitalisierung</td><td>≥ 300 Mio. $ (kein Micro Cap)</td></tr>
+          <tr><td>9</td><td>Earnings-Blackout</td><td>Nächste Ergebnispublikation &gt; 14 Tage entfernt</td></tr>
+          <tr><td>10</td><td>Wöchentlicher MACD</td><td>&gt; Signallinie (positives Momentum)</td></tr>
+          <tr><td>11</td><td>Marktfilter (Trendfilter)</td><td>S&amp;P 500: 10W-EMA &gt; 20W-EMA (sonst halbe Positionsgröße)</td></tr>
+          <tr><td>12</td><td>Nicht im Portfolio</td><td>Position darf nicht bereits gehalten werden</td></tr>
+          <tr><td>13</td><td>Sektor-Konzentrationslimit</td><td>Maximal 3 Positionen pro Sektor</td></tr>
+          <tr><td>14</td><td>Marktbreite</td><td>≥ 40 % der S&amp;P-500-Aktien über ihrem 200-Tage-MA</td></tr>
+          <tr><td>15</td><td>Umsatzwachstum (TTM, YoY)</td><td>≥ 20 %</td></tr>
+          <tr><td>16</td><td>EPS-Wachstum (letztes Quartal)</td><td>≥ 20 % im Jahresvergleich</td></tr>
+          <tr><td>17</td><td>Wochenkurs steigend</td><td>Schlusskurs &gt; Schlusskurs der Vorwoche</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><em>Hinweis: Rentabilitätskennzahlen wie ROE und operative Marge sind als Filter vorhanden, aber derzeit deaktiviert. Sie können bei Bedarf aktiviert werden.</em></p>
+
+    <span class="sub-bold">Positionsgröße: Risk-First-Methode</span>
+    <p>Die Positionsgröße wird so berechnet, dass maximal 1,5 % des Gesamtportfolios pro Trade riskiert werden. Das Verlustrisiko ist damit von vornherein begrenzt:</p>
+    <div class="formula">Positionsgröße (%) = min(max_risk_pct / stop_pct, max_position_pct)
+                     = min(1,5 % / Stop-Abstand in %, 15 %)
+Position ($)         = Portfolio × Positionsgröße (%)</div>
+    <div class="example">
+      <strong>Beispiel</strong> bei 100.000 $ Portfolio und einem Stop-Abstand von 8 %:<br>
+      Positionsgröße = 1,5 % / 8 % = 18,75 % → gekappt auf maximal 15 % = 15.000 $<br>
+      Maximales Risiko = 100.000 $ × 1,5 % = 1.500 $
+    </div>
+    <p>Im defensiven Marktmodus (Marktampel gedämpft): max. Risiko = 0,75 % → kleinere Positionen. Zusätzlich: Position wird auf "verfügbares Cash / verbleibende Slots" gedeckelt.</p>
+
+    <span class="sub-bold">Ranking der Kaufkandidaten</span>
+    <p>Alle Aktien, die alle Filter bestehen, werden nach einem gewichteten Score sortiert. Die bestplatzierten Kandidaten (Top-Picks) erhalten bevorzugt Orders:</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Kriterium</th><th>Gewichtung</th><th>Bedeutung</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>RS-Score (Relative Stärke)</td><td>35 %</td><td>Aktuelle Stärke gegenüber dem Gesamtmarkt</td></tr>
+          <tr><td>ΔRS über 4 Wochen</td><td>20 %</td><td>Beschleunigung der relativen Stärke</td></tr>
+          <tr><td>Muster-Qualität</td><td>20 %</td><td>VCP oder Launchpad, Qualitätsscore</td></tr>
+          <tr><td>Stop-Enge (Tightness)</td><td>15 %</td><td>Je enger die Basis, desto kontrollierter</td></tr>
+          <tr><td>Branchen-Stärke</td><td>10 %</td><td>Rang der Branche im Universum</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="s17">Schritt 17 — Orders platzieren</h2>
+    <p>Das System unterscheidet bei der Orderplatzierung zwei Szenarien:</p>
+
+    <span class="sub-bold">Fall A — Gewinnmitnahmen wurden platziert</span>
+    <p>Wurden im selben Durchlauf bereits Teilverkäufe aus bestehenden Positionen ausgelöst, wartet das System mit neuen Käufen bis zum nächsten Montag. Der Grund: Der Verkaufserlös steht erst nach dem Settlement-Prozess des Brokers zur Verfügung.</p>
+
+    <span class="sub-bold">Fall B — Direkte Platzierung</span>
+    <p>Sind keine offenen Verkäufe vorhanden, werden Kauforders sofort beim Broker als sogenannte OTO-Orders (One-Triggers-Other) platziert. Eine OTO-Order besteht aus zwei verknüpften Teilen:</p>
+    <ul>
+      <li><strong>Kauforder (Parent):</strong> Eine Stop-Limit-Kauforder wird gesetzt. Der Auslöser liegt 0,1 % über dem Pivot-Kurs. Das Limit liegt 5 % über dem Pivot — bei einem höheren Eröffnungskurs am Montag wird die Order automatisch verworfen.</li>
+      <li><strong>Schutzstop (Child):</strong> Sobald die Kauforder ausgeführt wurde, wird automatisch eine Stop-Loss-Verkaufsorder aktiviert. Diese schützt die Position nach unten.</li>
+    </ul>
+    <p>Der initiale Stop-Loss wird je nach erkanntem Chartmuster unterschiedlich gesetzt:</p>
+    <ul>
+      <li><strong>VCP:</strong> 2-fache ATR unter dem Ausbruchsniveau, maximal 15 % unter Entry</li>
+      <li><strong>Launchpad:</strong> Unteres Drittel der Konsolidierungsbox, gecappt auf das Wick-Tief der Trigger-Kerze</li>
+      <li><strong>Fallback (kein Muster erkannt):</strong> 10 % unter dem Einstiegskurs</li>
+      <li><strong>Absolutes Sicherheitslimit:</strong> Niemals mehr als 20 % unter dem Einstiegskurs</li>
+    </ul>
+    <div class="example">
+      <strong>Beispiel OTO-Order (VCP-Setup):</strong> Pivot = 100 $, ATR = 4 $.<br>
+      Buy-Stop = 100,10 $ (0,1 % über Pivot). Max-Limit = 105 $ (5 % über Pivot).<br>
+      Initialer Stop-Loss = 100 $ − (2 × 4 $) = 92 $ (8 % unter Pivot, innerhalb des 15%-Caps).<br>
+      → Wird die Aktie am Montag zwischen 100,10 $ und 105 $ gekauft, ist der maximale Verlust von vornherein auf ca. 8 % begrenzt.
+    </div>
+
+    <h2 id="s18">Schritt 18 — Report und E-Mail</h2>
+    <p>Zum Abschluss des Samstagdurchlaufs erzeugt das System einen vollständigen Wochenbericht:</p>
+    <ul>
+      <li><strong>Vollständiger HTML-Report:</strong> Marktampel, Marktbreite, Sektorperformance, Trend- und Momentum-Analyse, Risiko- und Sentiment-Daten, alle Kaufsignale mit Orderparametern.</li>
+      <li><strong>Kompakte E-Mail:</strong> Zeigt nur die Top-Picks als übersichtliche Karten mit Link zum vollständigen Report.</li>
+      <li><strong>Index-Seite:</strong> Eine Liste aller bisher generierten Wochenreports wird aktualisiert.</li>
+      <li><strong>Optionaler Excel-Export:</strong> Bei entsprechender Konfiguration wird eine Excel-Datei mit Leaders- und Branchendaten inklusive Chartmuster-Ergebnissen erzeugt.</li>
+    </ul>
+
+    <!-- ── Montagsablauf ───────────────────────────────────────────── -->
+    <h1 id="montag">Montagsablauf — Verzögerter Kaufabschluss</h1>
+    <p>Der Montagsablauf ist nur relevant, wenn der Samstagdurchlauf Gewinnmitnahmen platziert hat und neue Käufe deshalb verschoben wurden (Fall A). Er läuft dann wie folgt ab:</p>
+    <ul>
+      <li>Die gespeicherte Liste der geplanten Kauforders wird geladen.</li>
+      <li>Das System prüft, ob alle geplanten Verkäufe vom Samstag tatsächlich ausgeführt wurden. Fehlt noch eine Bestätigung, bricht der Montagslauf ab.</li>
+      <li>Das tatsächlich verfügbare Bargeld wird vom Broker abgerufen, nach Settlement der Verkäufe.</li>
+      <li>Die Positionsgrößen werden auf Basis des real verfügbaren Cashs angepasst und die Kauforders werden als OTO-Orders an den Broker übermittelt.</li>
+      <li>Die Datei mit den gespeicherten Kauforders wird nach erfolgreicher Platzierung gelöscht.</li>
+    </ul>
+    <div class="warning">
+      ⚠ <strong>Mögliche Schwäche:</strong> Der Montagsablauf muss manuell gestartet werden. Es gibt keinen automatischen Zeitplaner. Vergisst man den Start, werden die Top-Picks der Woche nicht gekauft.
+    </div>
+
+    <!-- ── Schwächen ──────────────────────────────────────────────── -->
+    <h1 id="schwaechen">Zusammenfassung: Identifizierte Schwächen</h1>
+    <p>Die folgende Tabelle fasst alle im Dokument markierten Schwachstellen zusammen. Sie soll als Ausgangspunkt für Verbesserungen dienen.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Bereich</th><th>Beschreibung der Schwäche</th><th>Empfehlung</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Modussteuerung</strong></td>
+            <td>Live-/Testmodus basiert allein auf dem Wochentag. Ein versehentlicher Samstagsstart sendet sofort echte Orders.</td>
+            <td>Manuelles Bestätigungsflag oder Dry-Run-Option einführen.</td>
+          </tr>
+          <tr>
+            <td><strong>Universum-Aktualität</strong></td>
+            <td>Die statische CSV-Datei wird nicht automatisch aktualisiert. Neu gelistete oder herausgefallene Aktien werden verpasst.</td>
+            <td>Automatische wöchentliche Aktualisierung aus einer verlässlichen Quelle einplanen.</td>
+          </tr>
+          <tr>
+            <td><strong>Datenladegeschwindigkeit</strong></td>
+            <td>Sequenzielle 40er-Batches verlangsamen den Durchlauf bei großen Universen erheblich.</td>
+            <td>Parallele Downloads einführen, um die Laufzeit zu reduzieren.</td>
+          </tr>
+          <tr>
+            <td><strong>Marktampel-Granularität</strong></td>
+            <td>Es gibt nur zwei Zustände: grün und gedämpft. Kein harter Stopp bei extremen Markteinbrüchen.</td>
+            <td>Einen dritten Zustand "rot" mit vollständigem Kaufstopp einführen.</td>
+          </tr>
+          <tr>
+            <td><strong>Gap-Down-Risiko</strong></td>
+            <td>MACD-Bearish-Cross löst nur einen angehobenen Stop aus, keinen sofortigen Verkauf. Bei Wochenend-Lücken entsteht Slippage-Risiko.</td>
+            <td>Option für einen sofortigen Marktverkauf nach Bearish Cross ergänzen.</td>
+          </tr>
+          <tr>
+            <td><strong>Trade-Journal</strong></td>
+            <td>Ausstiegsgrund wird vereinfacht aus dem Ordertyp abgeleitet. Komplexe Szenarien werden unvollständig dokumentiert.</td>
+            <td>Detailliertere Exit-Klassifizierung implementieren.</td>
+          </tr>
+          <tr>
+            <td><strong>Gewinnziele statisch</strong></td>
+            <td>TV1 (+20 %) und TV2 (+40 %) sind feste Prozentwerte, unabhängig von der individuellen Volatilität der Aktie.</td>
+            <td>ATR-basierte Schwellen für Teilverkäufe einführen.</td>
+          </tr>
+          <tr>
+            <td><strong>Regelpriorität</strong></td>
+            <td>Bei gleichzeitigem Auftreten von Fast-Mover (Regel 2) und normalem Move (Regel 3) ist die Priorität nicht explizit dokumentiert.</td>
+            <td>Klare Rangfolge der Gewinnmitnahme-Regeln im Regelwerk festlegen.</td>
+          </tr>
+          <tr>
+            <td><strong>Fundamentaldaten-Quelle</strong></td>
+            <td>Alle Fundamentaldaten stammen aus nur einer Quelle. Fehler oder Ausfälle bleiben unerkannt.</td>
+            <td>Zweite Datenquelle als Fallback einbinden. Fehlende Daten protokollieren.</td>
+          </tr>
+          <tr>
+            <td><strong>Performance-Dashboard</strong></td>
+            <td>Kein fixer Benchmark-Startpunkt. Der Vergleich mit SPY ist abhängig vom ersten Trade-Datum.</td>
+            <td>Fixen Startzeitpunkt für den Benchmark-Vergleich definieren.</td>
+          </tr>
+          <tr>
+            <td><strong>Cash-Berechnung</strong></td>
+            <td>Wenn Gewinnmitnahmen und Neukäufe im gleichen Durchlauf stattfinden, kann die berechnete Positionsgröße zu klein ausfallen.</td>
+            <td>Erwartete Verkaufserlöse zum verfügbaren Cash hinzurechnen, bevor Positionsgrößen berechnet werden.</td>
+          </tr>
+          <tr>
+            <td><strong>5%-Gap-Limit</strong></td>
+            <td>Bei einem Montagsgap von mehr als 5 % über den Pivot verfällt die Kauforder kommentarlos ohne Benachrichtigung.</td>
+            <td>Logging und optionale Benachrichtigung bei verworfenen Orders einführen.</td>
+          </tr>
+          <tr>
+            <td><strong>Fehlende Fehleralarme</strong></td>
+            <td>Bei fehlgeschlagenem E-Mail-Versand oder Cloudflare-Fehler gibt es keine Warnmeldung an den Betreiber.</td>
+            <td>Fehler-Logging mit automatischem Alert (E-Mail oder SMS) implementieren.</td>
+          </tr>
+          <tr>
+            <td><strong>Montagsstart manuell</strong></td>
+            <td>Der Montagsablauf hat keinen Scheduler. Ein vergessener Start führt dazu, dass die Top-Picks der Woche nicht gekauft werden.</td>
+            <td>Automatischen Scheduler für den Montagsablauf einrichten.</td>
+          </tr>
+          <tr>
+            <td><strong>Mustererkennung</strong></td>
+            <td>Algorithmische VCP-Erkennung ist fehleranfällig in seitwärtslaufenden oder hochvolatilen Märkten.</td>
+            <td>Zusätzliche Plausibilitätsprüfungen oder manuelle Review-Möglichkeit für erkannte Muster einbauen.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Highlight active sidebar link on scroll
+  const headings = document.querySelectorAll('h1[id], h2[id]');
+  const navLinks = document.querySelectorAll('.nav-h1, .nav-h2');
+
+  function onScroll() {
+    let current = '';
+    headings.forEach(h => {
+      if (window.scrollY + 80 >= h.offsetTop) current = h.id;
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+</script>
+</body>
+</html>
