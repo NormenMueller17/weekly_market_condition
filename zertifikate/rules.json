@@ -1,0 +1,89 @@
+{
+  "_comment": "Alle Schwellenwerte des Zertifikate-Scanners. Änderungen hier brauchen keinen Code-Edit.",
+
+  "universe": {
+    "etf": "IWL",
+    "min_market_cap_b": 150,
+    "lookback_weeks": 60,
+    "chunk_size": 20
+  },
+
+  "marktampel": {
+    "index": "^GSPC",
+    "ema_fast": 10,
+    "ema_slow": 50,
+    "ma_long": 200,
+    "vix_ticker": "^VIX",
+    "vix_green_max": 20,
+    "vix_red_min": 25,
+    "ema_distance_yellow_pct": 1.0
+  },
+
+  "einzelampel": {
+    "ma_trend": 50,
+    "adx_min": 25,
+    "adx_sideways": 20,
+    "rsi_min": 45,
+    "rsi_max": 65,
+    "macd_must_be_positive": false
+  },
+
+  "zeitampel": {
+    "green_min_months": 9,
+    "yellow_min_months": 5
+  },
+
+  "einstieg": {
+    "ebene1": {
+      "ma_long": 200,
+      "ma_mid": 50,
+      "adx_min": 25,
+      "performance_52w_min_pct": 0
+    },
+    "ebene2": {
+      "pullback_min_pct": 5,
+      "pullback_max_pct": 15,
+      "rsi_min": 40,
+      "rsi_max": 55,
+      "williams_r_min": -80,
+      "williams_r_max": -60,
+      "hv30_max": 25,
+      "beta_max": 0.9
+    },
+    "ebene3": {
+      "min_confirmed": 2,
+      "volume_multiplier": 1.3,
+      "macd_lookback": 3,
+      "momentum_length": 4
+    }
+  },
+
+  "ausstieg": {
+    "ma_exit": 50,
+    "adx_sideways": 20,
+    "rsi_overbought": 70,
+    "williams_r_overbought": -20,
+    "macd_zero_cross": true
+  },
+
+  "rollen": {
+    "zeitwert_min_restlaufzeit_monate": 6,
+    "theta_weekly_max_pct": 1.5,
+    "hebel_min": 2,
+    "delta_target_low": 0.6,
+    "delta_target_high": 0.7,
+    "gewinn_rollen_min_pct": 50,
+    "ziel_laufzeit_monate": 18,
+    "ziel_hebel": 3
+  },
+
+  "scoring": {
+    "ebene2_weight": 0.60,
+    "ebene3_weight": 0.40
+  },
+
+  "report": {
+    "max_kandidaten": 15,
+    "mail_subject": "Zertifikate-Scanner"
+  }
+}

@@ -36,6 +36,66 @@ def pct_above_ma(series: pd.Series, length: int) -> pd.Series:
     ma = series.rolling(length).mean()
     return (series - ma) / ma * 100
 
+# ── Zertifikate-Indikatoren (additiv, keine Änderung am bestehenden Code) ──────
+
+def adx(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 14) -> pd.Series:
+    """Average Directional Index (Wilder-Smoothing)."""
+    prev_close = close.shift(1)
+    tr = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low - prev_close).abs(),
+    ], axis=1).max(axis=1)
+    dm_plus  = high.diff().clip(lower=0)
+    dm_minus = (-low.diff()).clip(lower=0)
+    # Nur die jeweils dominierende Seite zählt
+    mask = dm_plus >= dm_minus
+    dm_plus  = dm_plus.where(mask, 0.0)
+    dm_minus = dm_minus.where(~mask, 0.0)
+    alpha = 1.0 / length
+    atr_s  = tr.ewm(alpha=alpha, adjust=False).mean()
+    dip_s  = dm_plus.ewm(alpha=alpha, adjust=False).mean()
+    dim_s  = dm_minus.ewm(alpha=alpha, adjust=False).mean()
+    di_plus  = 100 * dip_s / atr_s.replace(0, np.nan)
+    di_minus = 100 * dim_s / atr_s.replace(0, np.nan)
+    dx = 100 * (di_plus - di_minus).abs() / (di_plus + di_minus).replace(0, np.nan)
+    return dx.ewm(alpha=alpha, adjust=False).mean()
+
+
+def williams_r(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 14) -> pd.Series:
+    """Williams %R — Werte zwischen -100 (überverkauft) und 0 (überkauft)."""
+    hh = high.rolling(length).max()
+    ll = low.rolling(length).min()
+    return -100 * (hh - close) / (hh - ll).replace(0, np.nan)
+
+
+def hv(close: pd.Series, length: int = 30) -> pd.Series:
+    """Historische Volatilität (annualisiert in %) über `length` Perioden."""
+    log_ret = np.log(close / close.shift(1))
+    # Wochendaten: 52 Wochen/Jahr; Tagesdaten: 252 Tage/Jahr — Caller gibt passende Series
+    periods_per_year = 52 if length <= 60 else 252
+    return log_ret.rolling(length).std() * np.sqrt(periods_per_year) * 100
+
+
+def beta(stock_close: pd.Series, market_close: pd.Series, length: int = 52) -> float:
+    """Beta einer Aktie vs. Markt über die letzten `length` Perioden."""
+    s_ret = stock_close.pct_change().dropna()
+    m_ret = market_close.pct_change().dropna()
+    common = s_ret.index.intersection(m_ret.index)
+    if len(common) < max(10, length // 3):
+        return np.nan
+    sr = s_ret.loc[common].tail(length).values
+    mr = m_ret.loc[common].tail(length).values
+    cov_matrix = np.cov(sr, mr)
+    var_market = cov_matrix[1, 1]
+    return float(cov_matrix[0, 1] / var_market) if var_market != 0 else np.nan
+
+
+def momentum(close: pd.Series, length: int = 12) -> pd.Series:
+    """Momentum-Oszillator: Rate of Change in % über `length` Perioden."""
+    return (close / close.shift(length) - 1) * 100
+
+
 def compute_index_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     Berechnet RSI, MACD, Signal-Linie, 10W-MA und deren Differenzen zum Vorwert.
