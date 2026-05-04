@@ -46,6 +46,8 @@ def build_report(
     positionen: list[dict],
     roll_kandidaten: list[dict],
     report_date: Optional[str] = None,
+    universe_all: Optional[list[dict]] = None,
+    company_info: Optional[dict] = None,
 ) -> str:
     """
     Gibt einen vollständigen, selbst-enthaltenen HTML-String zurück.
@@ -57,6 +59,8 @@ def build_report(
     positionen      : list[dict]  — Ausgabe von portfolio.enrich_positions()
     roll_kandidaten : list[dict]  — gefilterte Teilmenge aus positionen
     report_date     : str         — ISO-Datum, default heute
+    universe_all    : list[dict]  — Ausgabe von scanner.screen_universe_full()
+    company_info    : dict        — {ticker: {name, sector}} aus universe.fetch_company_info()
     """
     if report_date is None:
         report_date = date.today().isoformat()
@@ -78,6 +82,9 @@ def build_report(
 
     if roll_kandidaten:
         sections.append(_section_roll(roll_kandidaten))
+
+    if universe_all:
+        sections.append(_section_universe_overview(universe_all, company_info or {}))
 
     sections.append(_section_footer(report_date))
 
@@ -392,6 +399,91 @@ def _section_roll(roll_kandidaten: list[dict]) -> str:
       <tr>
         <th>Basiswert</th><th>Schein</th><th>Fälligkeit</th>
         <th>Restlaufzeit</th><th>Dringlichkeit</th><th>Empfehlung</th>
+      </tr>
+    </thead>
+    <tbody>{rows}</tbody>
+  </table>
+  </div>
+</div>"""
+
+
+def _section_universe_overview(universe_all: list[dict], company_info: dict) -> str:
+    """Zeigt alle Titel mit ihren 12 Screening-Metriken als grün/rot gefärbte Tabelle."""
+
+    def _cell(ok: bool, val: str) -> str:
+        bg    = "#d5f5e3" if ok else "#fadbd8"
+        color = "#1e8449" if ok else "#922b21"
+        return (
+            f'<td style="background:{bg};color:{color};text-align:center;'
+            f'white-space:nowrap;font-size:0.82em">{val}</td>'
+        )
+
+    rows = ""
+    for t in universe_all:
+        ticker  = t["ticker"]
+        info    = company_info.get(ticker, {})
+        name    = info.get("name", ticker)
+        sector  = info.get("sector", "n/a")
+        erfuellt = t["kriterien_erfuellt"]
+
+        if erfuellt >= 9:
+            badge_bg, badge_color = "#d5f5e3", "#1e8449"
+        elif erfuellt >= 6:
+            badge_bg, badge_color = "#fef9e7", "#9a7d0a"
+        else:
+            badge_bg, badge_color = "#fadbd8", "#922b21"
+
+        rows += f"""<tr>
+          <td><strong>{ticker}</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">{name}</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">{sector}</td>
+          {_cell(t["e1_ma200"],    f">MA200<br>{t['close']}")}
+          {_cell(t["e1_ma50"],     ">MA50")}
+          {_cell(t["e1_adx"],      f"ADX<br>{t['adx_val']}")}
+          {_cell(t["e1_perf"],     f"52W<br>{t['perf_52w']}%")}
+          {_cell(t["e2_pullback"], f"PB%<br>{t['pullback_pct']}%")}
+          {_cell(t["e2_rsi"],      f"RSI<br>{t['rsi_val']}")}
+          {_cell(t["e2_williams"], f"W%R<br>{t['williams_val']}")}
+          {_cell(t["e2_hv"],       f"HV30<br>{t['hv30_val']}%")}
+          {_cell(t["e2_beta"],     f"Beta<br>{t['beta_val']}")}
+          {_cell(t["e3_macd"],     "MACD↑<br>" + ("✓" if t["e3_macd"]     else "✗"))}
+          {_cell(t["e3_momentum"], "Mom↑<br>"  + ("✓" if t["e3_momentum"] else "✗"))}
+          {_cell(t["e3_volumen"],  "Vol↑<br>"  + ("✓" if t["e3_volumen"]  else "✗"))}
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:{badge_bg};color:{badge_color}">{erfuellt}/12</td>
+        </tr>"""
+
+    return f"""
+<div class="section" style="max-width:100%">
+  <h2>Universum-Übersicht — {len(universe_all)} Large-/Mega-Caps &nbsp;|&nbsp; 12 Kriterien</h2>
+  <p style="margin-bottom:10px;font-size:0.85em;color:#555">
+    Sortiert nach Anzahl erfüllter Kriterien (absteigend).
+    <strong style="color:#1e8449">Grün</strong> = Kriterium erfüllt &nbsp;|&nbsp;
+    <strong style="color:#922b21">Rot</strong> = nicht erfüllt.<br>
+    <span style="opacity:0.8">E1: Trendqualität (alle 4 Pflicht) &nbsp;·&nbsp;
+    E2: Pullback-Profil (5 Kriterien) &nbsp;·&nbsp;
+    E3: Wiederanlauf-Signale (mind. 2/3 für Kandidaten)</span>
+  </p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th>
+        <th>Name</th>
+        <th>Sektor</th>
+        <th title="Kurs über 200W-MA">E1.1<br>&gt;MA200</th>
+        <th title="Kurs über 50W-MA">E1.2<br>&gt;MA50</th>
+        <th title="ADX ≥ 25 (Trendstärke)">E1.3<br>ADX</th>
+        <th title="52-Wochen-Performance ≥ 0%">E1.4<br>52W%</th>
+        <th title="Pullback 5–15% vom 3M-Hoch">E2.1<br>PB%</th>
+        <th title="RSI 40–55">E2.2<br>RSI</th>
+        <th title="Williams %%R −80 bis −60">E2.3<br>W%%R</th>
+        <th title="Hist. Volatilität 30T &lt; 25%%">E2.4<br>HV30</th>
+        <th title="Beta &lt; 0,9">E2.5<br>Beta</th>
+        <th title="MACD dreht nach oben">E3.1<br>MACD↑</th>
+        <th title="Momentum-Wechsel positiv">E3.2<br>Mom↑</th>
+        <th title="Bullische Kerze + Überdurchschn. Volumen">E3.3<br>Vol↑</th>
+        <th>Erfüllt</th>
       </tr>
     </thead>
     <tbody>{rows}</tbody>

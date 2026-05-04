@@ -38,6 +38,40 @@ _HEADERS = {
 _BLACKLIST = {"BRK/B", "BRK.B", "BF/B", "BF.B"}
 
 
+def fetch_company_info(tickers: List[str]) -> dict:
+    """
+    Holt Name und Sektor für eine Liste von Tickern via yfinance.
+    Rückgabe: {ticker: {"name": str, "sector": str}}
+
+    Nutzt den yfinance-Cache (falls aktiviert) — erster Lauf dauert länger.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    info_map: dict = {}
+
+    def _fetch_one(t: str) -> tuple:
+        try:
+            inf = yf.Ticker(t).info
+            return t, {
+                "name":   inf.get("longName") or inf.get("shortName") or t,
+                "sector": inf.get("sector") or inf.get("industry") or "n/a",
+            }
+        except Exception:
+            return t, {"name": t, "sector": "n/a"}
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(_fetch_one, t): t for t in tickers}
+        for fut in as_completed(futures):
+            try:
+                ticker, info = fut.result(timeout=15)
+                info_map[ticker] = info
+            except Exception:
+                t = futures[fut]
+                info_map[t] = {"name": t, "sector": "n/a"}
+
+    return info_map
+
+
 def load_large_cap_universe(rules: dict) -> List[str]:
     """
     Gibt eine Liste von Ticker-Symbolen zurück (US Large Caps > min_market_cap_b).

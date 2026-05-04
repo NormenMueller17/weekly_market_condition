@@ -41,9 +41,9 @@ from emailer import send_email
 from data_sources import download_ohlcv_batched
 from config import SETTINGS
 
-from zertifikate.universe import load_large_cap_universe
+from zertifikate.universe import load_large_cap_universe, fetch_company_info
 from zertifikate.ampel import compute_marktampel, compute_zeitampel, combine, Ampel
-from zertifikate.scanner import screen_kandidaten
+from zertifikate.scanner import screen_kandidaten, screen_universe_full
 from zertifikate.portfolio import load_portfolio, enrich_positions, portfolio_stats
 from zertifikate.report import build_report, save_report
 
@@ -109,18 +109,30 @@ def run(dry_run: bool = False) -> None:
           f"{len(roll_kandidaten)} Roll-Kandidaten.")
 
     # ── 6. Screenen (nur wenn Markt nicht ROT) ────────────────────────────────
+    spy_series = spy_close if spy_close is not None and not spy_close.empty else pd.Series(dtype=float)
     kandidaten: list[dict] = []
     if markt.status != Ampel.ROT:
         print(f"[6/7] Screene Kandidaten (Markt {markt.status.label}) …")
-        spy_series = spy_close if spy_close is not None and not spy_close.empty else pd.Series(dtype=float)
         kandidaten = screen_kandidaten(weekly_data, spy_series, rules)
         print(f"  → {len(kandidaten)} Kandidaten nach Drei-Ebenen-Filter.")
     else:
         print("[6/7] Marktampel ROT — kein Screening.")
 
+    # ── 6b. Universum-Übersicht: alle Titel mit 12 Metriken ─────────────────
+    print("[6b] Berechne Universum-Übersicht (alle Large-/Mega-Caps) …")
+    universe_all = screen_universe_full(weekly_data, spy_series, rules)
+    print(f"  → {len(universe_all)} Titel ausgewertet.")
+
+    print("[6c] Lade Company-Info (Name, Sektor) …")
+    company_info = fetch_company_info([t["ticker"] for t in universe_all])
+    print(f"  → {len(company_info)} Titel mit Info.")
+
     # ── 7. Report generieren ─────────────────────────────────────────────────
     print("[7/7] Generiere Report …")
-    html = build_report(markt, kandidaten, positionen, roll_kandidaten, report_date)
+    html = build_report(
+        markt, kandidaten, positionen, roll_kandidaten, report_date,
+        universe_all=universe_all, company_info=company_info,
+    )
     report_path = save_report(html, report_date)
 
     if dry_run:

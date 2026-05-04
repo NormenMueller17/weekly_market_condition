@@ -26,6 +26,29 @@ from indicators import ema, rsi, macd, adx, williams_r, hv, beta, momentum
 
 # ── Öffentliche API ──────────────────────────────────────────────────────────
 
+def screen_universe_full(
+    weekly_data: dict[str, pd.DataFrame],
+    spy_weekly: pd.Series,
+    rules: dict,
+) -> list[dict]:
+    """
+    Screent das gesamte Universum OHNE Filter.
+    Gibt alle Titel mit ihren 12 Metrik-Flags zurück, sortiert absteigend
+    nach Anzahl erfüllter Kriterien.
+    """
+    e_rules = rules.get("einstieg", {})
+    s_rules = rules.get("scoring", {})
+    results = []
+
+    for ticker, df in weekly_data.items():
+        result = _screen_single_full(ticker, df, spy_weekly, e_rules, s_rules)
+        if result is not None:
+            results.append(result)
+
+    results.sort(key=lambda x: x["kriterien_erfuellt"], reverse=True)
+    return results
+
+
 def screen_kandidaten(
     weekly_data: dict[str, pd.DataFrame],
     spy_weekly: pd.Series,
@@ -120,6 +143,114 @@ def check_ausstieg(
 
 
 # ── Interne Screening-Logik ───────────────────────────────────────────────────
+
+def _screen_single_full(
+    ticker: str,
+    weekly: pd.DataFrame,
+    spy_weekly: pd.Series,
+    e_rules: dict,
+    s_rules: dict,
+) -> Optional[dict]:
+    """Screent einen Titel ohne Filter — gibt immer ein Dict zurück (sofern genug Daten)."""
+    try:
+        close = _col(weekly, "Close")
+        high  = _col(weekly, "High")
+        low   = _col(weekly, "Low")
+        vol   = _col(weekly, "Volume")
+    except KeyError:
+        return None
+
+    if len(close) < 52:
+        return None
+
+    e1 = e_rules.get("ebene1", {})
+    e2 = e_rules.get("ebene2", {})
+    e3 = e_rules.get("ebene3", {})
+
+    e1_r = _check_ebene1(close, high, low, e1)
+    e2_r = _check_ebene2_full(close, high, low, spy_weekly, e2)
+    e3_r = _check_ebene3(close, high, low, vol, e3)
+
+    flags = [
+        e1_r["ueber_ma200"],
+        e1_r["ueber_ma50"],
+        e1_r["adx_ok"],
+        e1_r["perf_ok"],
+        e2_r["pullback_ok"],
+        e2_r["rsi_ok"],
+        e2_r["williams_ok"],
+        e2_r["hv_ok"],
+        e2_r["beta_ok"],
+        e3_r["macd_dreht"],
+        e3_r["momentum_positiv"],
+        e3_r["volumen_ok"],
+    ]
+
+    return {
+        "ticker":             ticker,
+        "kriterien_erfuellt": sum(flags),
+        "close":              round(float(close.iloc[-1]), 2),
+        "e1_ma200":    e1_r["ueber_ma200"],
+        "e1_ma50":     e1_r["ueber_ma50"],
+        "e1_adx":      e1_r["adx_ok"],
+        "e1_perf":     e1_r["perf_ok"],
+        "adx_val":     round(e1_r["adx"], 1),
+        "perf_52w":    round(e1_r["perf_52w_pct"], 1),
+        "e2_pullback": e2_r["pullback_ok"],
+        "e2_rsi":      e2_r["rsi_ok"],
+        "e2_williams": e2_r["williams_ok"],
+        "e2_hv":       e2_r["hv_ok"],
+        "e2_beta":     e2_r["beta_ok"],
+        "pullback_pct": round(e2_r["pullback_pct"], 1),
+        "rsi_val":     round(e2_r["rsi"], 1),
+        "williams_val": round(e2_r["williams_r"], 1),
+        "hv30_val":    round(e2_r["hv30"], 1),
+        "beta_val":    round(e2_r["beta"], 2),
+        "e3_macd":     e3_r["macd_dreht"],
+        "e3_momentum": e3_r["momentum_positiv"],
+        "e3_volumen":  e3_r["volumen_ok"],
+    }
+
+
+def _check_ebene2_full(
+    close: pd.Series,
+    high: pd.Series,
+    low: pd.Series,
+    spy_close: pd.Series,
+    rules: dict,
+) -> dict:
+    """Wie _check_ebene2, aber ohne Early-Return — liefert immer alle Flags."""
+    pb_min   = float(rules.get("pullback_min_pct", 5))
+    pb_max   = float(rules.get("pullback_max_pct", 15))
+    rsi_min  = float(rules.get("rsi_min", 40))
+    rsi_max  = float(rules.get("rsi_max", 55))
+    wr_min   = float(rules.get("williams_r_min", -80))
+    wr_max   = float(rules.get("williams_r_max", -60))
+    hv_max   = float(rules.get("hv30_max", 25))
+    beta_max = float(rules.get("beta_max", 0.9))
+
+    current      = float(close.iloc[-1])
+    recent_high  = float(high.tail(13).max())
+    pullback_pct = (recent_high - current) / recent_high * 100 if recent_high > 0 else 0.0
+
+    rsi_val = float(rsi(close).iloc[-1])
+    wr_val  = float(williams_r(high, low, close).iloc[-1])
+    hv30    = float(hv(close, 30).iloc[-1]) if not np.isnan(hv(close, 30).iloc[-1]) else 99.0
+    b_val   = beta(close, spy_close, 52) if len(spy_close) >= 10 else np.nan
+
+    return {
+        "pullback_ok": pb_min <= pullback_pct <= pb_max,
+        "rsi_ok":      rsi_min <= rsi_val <= rsi_max,
+        "williams_ok": wr_min <= wr_val <= wr_max,
+        "hv_ok":       hv30 < hv_max,
+        "beta_ok":     (not np.isnan(b_val)) and float(b_val) < beta_max,
+        "pullback_pct": pullback_pct,
+        "rsi":          rsi_val,
+        "williams_r":   wr_val,
+        "hv30":         hv30,
+        "beta":         float(b_val) if not np.isnan(b_val) else 99.0,
+    }
+
 
 def _screen_single(
     ticker: str,
