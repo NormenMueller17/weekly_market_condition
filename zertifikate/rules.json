@@ -35,8 +35,8 @@
 
   "einstieg": {
     "ebene1": {
-      "ma_long": 200,
-      "ma_mid": 50,
+      "ma_long": 40,
+      "ma_mid": 10,
       "adx_min": 25,
       "performance_52w_min_pct": 0
     },
