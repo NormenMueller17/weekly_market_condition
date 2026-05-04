@@ -520,7 +520,7 @@ def build_html(data: dict) -> str:
   </script>
 </head>
 <body>
-  <a href="../index.html" class="back">← Back to Overview</a>
+  <a href="index.html" class="back">← Back to Overview</a>
   <h1>Tradetagebuch</h1>
   <p class="meta">Stand: {today} &nbsp;|&nbsp; {stats['count']} abgeschlossene Trades &nbsp;|&nbsp; {len(open_t)} offene Position{'en' if len(open_t) != 1 else ''}</p>
 
