@@ -135,7 +135,7 @@ def run(dry_run: bool = False) -> None:
         f"| {len(kandidaten)} Kandidaten"
     )
     try:
-        send_email(subject=subject, html_body=html)
+        send_email(html_body=html, subject_suffix=subject)
         print(f"[MAIL] Report gesendet an {SETTINGS.mail_to}")
     except Exception as exc:
         print(f"[MAIL][WARN] E-Mail fehlgeschlagen: {exc}")
