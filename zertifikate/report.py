@@ -199,15 +199,22 @@ def _section_marktampel(markt: MarktampelResult) -> str:
                "⚠️" if markt.vix < d.get("vix_rot_schwelle", 25) else "❌"
     )
 
+    fp = d.get('ema_fast_period', 10)
+    sp = d.get('ema_slow_period', 50)
+    fv = d.get('ema_fast_val', '—')
+    sv = d.get('ema_slow_val', '—')
+    ema_richtung = 'über' if markt.ema_fast_above_slow else 'unter'
+
     return f"""
 <div class="section">
   <h2>Ampel 1 — Marktampel</h2>
   <div class="ampel-box {css}">
     <div class="ampel-status">{s.emoji} {s.label} — {markt.aktion()}</div>
     <div class="ampel-aktion">
-      {ema_ok} EMA{d.get('ema_fast','10')} {'über' if markt.ema_fast_above_slow else 'unter'}
-      EMA{d.get('ema_slow','50')} (Abstand: {markt.ema_distance_pct:.1f}%) &nbsp;|&nbsp;
-      {ma200_ok} Index {'über' if markt.index_above_200ma else 'unter'} 200-MA &nbsp;|&nbsp;
+      {ema_ok} {fp}W-EMA {ema_richtung} {sp}W-EMA
+      &nbsp;<span style="opacity:0.7;font-size:0.9em">({fp}W: {fv} / {sp}W: {sv} / Abstand: {markt.ema_distance_pct:.1f}%)</span>
+      &nbsp;|&nbsp;
+      {ma200_ok} S&amp;P 500 {'über' if markt.index_above_200ma else 'unter'} 200W-MA &nbsp;|&nbsp;
       {vix_icon} VIX: {markt.vix:.1f}
     </div>
   </div>

@@ -202,12 +202,14 @@ def compute_marktampel(
         vix=current_vix,
         ema_distance_pct=round(ema_dist_pct, 2),
         details={
-            "index_close": round(current_close, 2),
-            "ema_fast": round(current_ema_f, 2),
-            "ema_slow": round(current_ema_s, 2),
-            "ma200": round(current_ma200, 2),
+            "index_close":      round(current_close, 2),
+            "ema_fast_val":     round(current_ema_f, 2),
+            "ema_slow_val":     round(current_ema_s, 2),
+            "ema_fast_period":  fast,
+            "ema_slow_period":  slow,
+            "ma200":            round(current_ma200, 2),
             "vix_gruen_schwelle": vix_g,
-            "vix_rot_schwelle": vix_r,
+            "vix_rot_schwelle":   vix_r,
         },
     )
 
