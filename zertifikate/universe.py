@@ -40,35 +40,25 @@ _BLACKLIST = {"BRK/B", "BRK.B", "BF/B", "BF.B"}
 
 def fetch_company_info(tickers: List[str]) -> dict:
     """
-    Holt Name und Sektor für eine Liste von Tickern via yfinance.
+    Holt Name und Sektor für eine Liste von Tickern sequenziell via yfinance.
     Rückgabe: {ticker: {"name": str, "sector": str}}
 
-    Nutzt den yfinance-Cache (falls aktiviert) — erster Lauf dauert länger.
+    Sequenziell statt parallel, weil die SQLite-CachedSession von requests_cache
+    nicht thread-sicher ist — parallele Requests schlagen lautlos fehl.
+    Mit aktiviertem HTTP-Cache ist der erste Lauf langsamer; danach instant.
     """
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-
     info_map: dict = {}
-
-    def _fetch_one(t: str) -> tuple:
+    for t in tickers:
         try:
-            inf = yf.Ticker(t).info
-            return t, {
+            inf = yf.Ticker(t).info or {}
+            info_map[t] = {
                 "name":   inf.get("longName") or inf.get("shortName") or t,
                 "sector": inf.get("sector") or inf.get("industry") or "n/a",
             }
-        except Exception:
-            return t, {"name": t, "sector": "n/a"}
-
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        futures = {pool.submit(_fetch_one, t): t for t in tickers}
-        for fut in as_completed(futures):
-            try:
-                ticker, info = fut.result(timeout=15)
-                info_map[ticker] = info
-            except Exception:
-                t = futures[fut]
-                info_map[t] = {"name": t, "sector": "n/a"}
-
+        except Exception as exc:
+            print(f"[INFO] fetch_company_info: {t} fehlgeschlagen ({exc})")
+            info_map[t] = {"name": t, "sector": "n/a"}
+        time.sleep(0.05)
     return info_map
 
 
