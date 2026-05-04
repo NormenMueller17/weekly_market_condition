@@ -1238,6 +1238,7 @@ def build_index_page(reports_dir, base_url: str) -> str:
   <a href="{latest_url}" class="btn">Open Current Report →</a>
   <a href="trades.html" class="btn" style="background:#1a6bb5;">Trade Journal →</a>
   <a href="performance.html" class="btn" style="background:#3a8fd1;">Performance Dashboard →</a>
+  <a href="zertifikate/index.html" class="btn" style="background:#27ae60;">📊 Zertifikate-Scanner →</a>
   <h2>Archiv</h2>
   <ul>
 {rows_html}  </ul>
