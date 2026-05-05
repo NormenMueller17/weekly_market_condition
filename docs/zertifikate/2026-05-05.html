@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zertifikate-Scanner 2026-05-05</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #f5f6fa; color: #2c3e50; font-size: 14px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    header { background: #2c3e50; color: white; padding: 20px 24px;
+             border-radius: 8px; margin-bottom: 20px; }
+    header h1 { font-size: 1.6em; margin-bottom: 4px; }
+    header .subtitle { opacity: 0.8; font-size: 0.9em; margin-bottom: 8px; }
+    header nav a { color: #7fb3d3; text-decoration: none; font-size: 0.85em; }
+    header nav a:hover { color: white; }
+    .section { background: white; border-radius: 8px; padding: 20px;
+               margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .section h2 { font-size: 1.1em; margin-bottom: 14px; padding-bottom: 8px;
+                  border-bottom: 2px solid #ecf0f1; color: #2c3e50; }
+    .ampel-box { border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; }
+    .ampel-gruen { background: #d5f5e3; border-left: 5px solid #27ae60; }
+    .ampel-gelb  { background: #fef9e7; border-left: 5px solid #f39c12; }
+    .ampel-rot   { background: #fadbd8; border-left: 5px solid #e74c3c; }
+    .ampel-status { font-size: 1.3em; font-weight: 700; margin-bottom: 4px; }
+    .ampel-aktion { font-size: 0.9em; opacity: 0.85; }
+    .ampel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .ampel-card { border-radius: 6px; padding: 12px; text-align: center; }
+    .ampel-card .label { font-size: 0.75em; text-transform: uppercase;
+                         letter-spacing: 0.05em; opacity: 0.7; margin-bottom: 4px; }
+    .ampel-card .value { font-size: 1.05em; font-weight: 600; }
+    .warnung { background: #fadbd8; border: 2px solid #e74c3c; border-radius: 8px;
+               padding: 16px; font-weight: 600; color: #922b21; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
+    th { background: #2c3e50; color: white; padding: 8px 10px;
+         text-align: left; font-weight: 600; white-space: nowrap; }
+    td { padding: 7px 10px; border-bottom: 1px solid #ecf0f1; vertical-align: middle; }
+    tr:hover td { background: #f8f9fa; }
+    tr:last-child td { border-bottom: none; }
+    .score-bar { display: inline-block; height: 8px; border-radius: 4px;
+                 background: #27ae60; vertical-align: middle; margin-right: 6px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px;
+             font-size: 0.78em; font-weight: 600; }
+    .badge-gruen { background: #d5f5e3; color: #1e8449; }
+    .badge-gelb  { background: #fef9e7; color: #9a7d0a; }
+    .badge-rot   { background: #fadbd8; color: #922b21; }
+    .badge-grau  { background: #eaecee; color: #555; }
+    .os-empfehlung { font-size: 0.82em; color: #2980b9; font-style: italic; }
+    .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+                 margin-bottom: 16px; }
+    .info-card { background: #f8f9fa; border-radius: 6px; padding: 10px 14px; }
+    .info-card .label { font-size: 0.75em; color: #7f8c8d; margin-bottom: 2px; }
+    .info-card .value { font-size: 1.1em; font-weight: 700; }
+    .keine { color: #7f8c8d; font-style: italic; padding: 8px 0; }
+    .footer { text-align: center; color: #95a5a6; font-size: 0.8em; padding: 16px 0 8px; }
+    @media (max-width: 700px) {
+      .ampel-grid, .info-grid { grid-template-columns: 1fr 1fr; }
+      table { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📊 Zertifikate-Scanner</h1>
+      <p class="subtitle">Wochenbericht 2026-05-05 &mdash; Low-Vol Momentum Screener</p>
+      <nav>
+        <a href="index.html">← Alle Reports</a>
+        &nbsp;|&nbsp;
+        <a href="../zertifikate/portfolio.html">Portfolio verwalten</a>
+        &nbsp;|&nbsp;
+        <a href="../index.html">Hauptreport</a>
+      </nav>
+    </header>
+    
+<div class="section">
+  <h2>Ampel 1 — Marktampel</h2>
+  <div class="ampel-box ampel-gruen">
+    <div class="ampel-status">🟢 GRÜN — Neue Longs erlaubt</div>
+    <div class="ampel-aktion">
+      ✅ 10W-EMA über 50W-EMA
+      &nbsp;<span style="opacity:0.7;font-size:0.9em">(10W: 6977.89 / 50W: 6617.99 / Abstand: 5.4%)</span>
+      &nbsp;|&nbsp;
+      ✅ S&amp;P 500 über 200W-MA &nbsp;|&nbsp;
+      ✅ VIX: 17.4
+    </div>
+  </div>
+  <div class="ampel-grid">
+    <div class="ampel-card" style="background:#d5f5e3">
+      <div class="label">S&amp;P 500</div>
+      <div class="value">7259.22</div>
+    </div>
+    <div class="ampel-card" style="background:#d5f5e3">
+      <div class="label">200-MA</div>
+      <div class="value">5284.3</div>
+    </div>
+    <div class="ampel-card" style="background:#d5f5e3">
+      <div class="label">VIX</div>
+      <div class="value">17.4</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Neue Kaufkandidaten</h2>
+  <p class="keine">Diese Woche keine Kaufkandidaten. Kein Titel hat alle drei Einstiegs-Ebenen bestanden.</p>
+</div>
+
+<div class="section" style="max-width:100%">
+  <h2>Universum-Übersicht — 80 Large-/Mega-Caps &nbsp;|&nbsp; 12 Kriterien</h2>
+  <p style="margin-bottom:10px;font-size:0.85em;color:#555">
+    Sortiert nach Anzahl erfüllter Kriterien (absteigend).
+    <strong style="color:#1e8449">Grün</strong> = Kriterium erfüllt &nbsp;|&nbsp;
+    <strong style="color:#922b21">Rot</strong> = nicht erfüllt.<br>
+    <span style="opacity:0.8">E1: Trendqualität (alle 4 Pflicht) &nbsp;·&nbsp;
+    E2: Pullback-Profil (5 Kriterien) &nbsp;·&nbsp;
+    E3: Wiederanlauf-Signale (mind. 2/3 für Kandidaten)</span>
+  </p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th>
+        <th>Name</th>
+        <th>Sektor</th>
+        <th title="Kurs über 200W-MA">E1.1<br>&gt;MA200</th>
+        <th title="Kurs über 50W-MA">E1.2<br>&gt;MA50</th>
+        <th title="ADX ≥ 25 (Trendstärke)">E1.3<br>ADX</th>
+        <th title="52-Wochen-Performance ≥ 0%">E1.4<br>52W%</th>
+        <th title="Pullback 5–15% vom 3M-Hoch">E2.1<br>PB%</th>
+        <th title="RSI 40–55">E2.2<br>RSI</th>
+        <th title="Williams %%R −80 bis −60">E2.3<br>W%%R</th>
+        <th title="Hist. Volatilität 30T &lt; 25%%">E2.4<br>HV30</th>
+        <th title="Beta &lt; 0,9">E2.5<br>Beta</th>
+        <th title="MACD dreht nach oben">E3.1<br>MACD↑</th>
+        <th title="Momentum-Wechsel positiv">E3.2<br>Mom↑</th>
+        <th title="Bullische Kerze + Überdurchschn. Volumen">E3.3<br>Vol↑</th>
+        <th>Erfüllt</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+          <td><strong>GS</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">The Goldman Sachs Group, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>918.89</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>48.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>47.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-26.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">8/12</td>
+        </tr><tr>
+          <td><strong>PFE</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Pfizer Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>26.44</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>42.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>15.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>8.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>50.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-66.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>16.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.51</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">8/12</td>
+        </tr><tr>
+          <td><strong>JPM</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">JPMorgan Chase & Co.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>309.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>15.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.2%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>51.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-35.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>22.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.98</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>LLY</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Eli Lilly and Company</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>988.87</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>20.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>30.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>10.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>45.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-47.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>32.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.53</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>XOM</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Exxon Mobil Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Energy</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>154.88</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>52.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>43.2%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>12.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>59.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-56.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>21.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.56</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>JNJ</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Johnson & Johnson</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>225.59</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>49.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>10.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>48.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-92.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>19.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.09</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>CVX</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Chevron Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Energy</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>192.65</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>41.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>35.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>10.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>61.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-52.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>20.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.15</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>BAC</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Bank of America Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>53.12</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.7</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>18.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>6.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>49.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-34.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.23</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>GEV</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">GE Vernova Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>1095.21</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>53.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>155.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>7.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>76.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-18.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>40.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.52</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>MRK</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Merck & Co., Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>113.15</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>39.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>48.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>53.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-69.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>27.2%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.37</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>PEP</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">PepsiCo, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>155.04</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>17.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>51.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-73.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>25.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.31</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>VZ</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Verizon Communications Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>47.34</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>26.7</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>7.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>8.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>58.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-55.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.13</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>NEE</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">NextEra Energy, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Utilities</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>96.28</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>39.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>28.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>64.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-19.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>17.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.41</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>TJX</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">The TJX Companies, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>154.96</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>35.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>16.2%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>6.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>57.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-63.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>14.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.41</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>COP</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">ConocoPhillips</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Energy</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>123.32</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>41.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>33.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>66.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-35.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.23</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">7/12</td>
+        </tr><tr>
+          <td><strong>NVDA</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">NVIDIA Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>196.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>45.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>52.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-38.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>29.7%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.64</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>V</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Visa Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>322.03</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>26.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-11.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>50.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-41.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>19.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.92</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>COST</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Costco Wholesale Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>1016.42</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-0.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>63.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-18.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>20.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.23</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>CSCO</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Cisco Systems, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>94.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>36.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>48.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>71.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>26.2%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.76</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>KO</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">The Coca-Cola Company</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>78.48</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>9.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>4.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>58.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-44.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>16.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.21</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>PM</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Philip Morris International Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>169.46</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-0.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>11.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>43.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-55.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>28.2%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.26</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>C</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Citigroup Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>128.04</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>31.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>69.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>58.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-21.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>29.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.45</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>MS</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Morgan Stanley</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>189.25</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>43.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>54.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-12.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>25.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>CRM</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Salesforce, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>186.99</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>35.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-35.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>8.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>40.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-56.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>44.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.09</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>BA</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">The Boeing Company</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>224.38</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>9.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>46.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-39.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>36.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>UNP</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Union Pacific Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>264.01</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>14.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>3.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>64.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-24.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>19.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.61</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>WELL</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Welltower Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Real Estate</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>214.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>44.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>68.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-13.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.28</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>DE</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Deere & Company</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>575.79</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>34.7</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>8.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>14.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>57.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-64.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>28.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.56</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fef9e7;color:#9a7d0a">6/12</td>
+        </tr><tr>
+          <td><strong>AAPL</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Apple Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>284.18</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>34.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>62.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-7.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>22.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.19</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>MSFT</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Microsoft Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>411.38</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-9.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>45.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-28.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>30.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.11</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>GOOGL</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Alphabet Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>388.43</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>32.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>133.7%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>62.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-3.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>34.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.57</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>AVGO</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Broadcom Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>427.36</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>86.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>74.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-4.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>43.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.11</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>GOOG</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Alphabet Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>384.27</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>33.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>129.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>61.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-4.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>33.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.55</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>MU</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Micron Technology, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>640.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>44.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>553.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>71.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-3.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>60.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.25</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>WMT</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Walmart Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>130.79</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>33.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>60.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-23.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>26.2%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.25</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>AMD</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Advanced Micro Devices, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>355.26</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>28.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>203.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>77.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-4.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>62.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.32</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>INTC</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Intel Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>108.15</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>52.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>399.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>86.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-3.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>62.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>CAT</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Caterpillar Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>904.59</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>53.7</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>155.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>76.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>32.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>ABBV</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">AbbVie Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>206.11</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>12.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>13.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>38.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-66.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>21.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.01</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>UNH</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">UnitedHealth Group Incorporated</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>363.87</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>24.7%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>71.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-7.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>42.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>LRCX</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Lam Research Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>275.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>42.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>226.7%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>60.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-4.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>49.7%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.98</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>TXN</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Texas Instruments Incorporated</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>281.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>49.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>72.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-6.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>39.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.24</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>LIN</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Linde plc</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Basic Materials</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>500.29</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>9.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>4.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>63.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-27.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>19.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.23</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>KLAC</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">KLA Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>1732.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>39.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>119.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>10.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>62.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-31.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>44.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.73</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>ADI</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Analog Devices, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>404.77</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>35.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>78.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>73.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-3.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>35.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.61</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>T</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">AT&T Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>25.93</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-6.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>11.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>48.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-78.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>23.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.14</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>SNDK</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Sandisk Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>1406.32</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>59.9</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>3377.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>82.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>91.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.49</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>ANET</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Arista Networks, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>170.22</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.7</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>76.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>65.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-14.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>49.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.12</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>AMGN</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Amgen Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>329.59</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>25.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>21.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>15.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>46.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-87.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>27.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.38</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>AXP</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">American Express Company</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>315.95</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>5.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>14.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>38.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-68.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>28.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.29</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>APH</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Amphenol Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>136.69</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>57.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>12.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>46.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-50.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>37.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.41</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>ETN</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Eaton Corporation plc</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>410.86</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>24.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>66.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-25.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>29.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.93</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>GILD</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Gilead Sciences, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>133.48</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>30.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>15.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>42.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-80.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.37</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>BLK</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">BlackRock, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>1048.83</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>6.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>42.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-36.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>26.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.16</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>SCHW</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">The Charles Schwab Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>92.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>4.2%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>14.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>32.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-76.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>21.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.52</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>WDC</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Western Digital Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>465.26</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>66.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>830.7%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>3.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>82.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-6.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>51.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.72</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>APP</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">AppLovin Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>478.11</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.0</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>32.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>8.1%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>50.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-26.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>67.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">5/12</td>
+        </tr><tr>
+          <td><strong>AMZN</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Amazon.com, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>273.55</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>33.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>62.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-6.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>37.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.66</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>TSLA</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Tesla, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>389.37</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.1</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>11.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>10.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>39.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-47.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>36.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.58</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>PG</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">The Procter & Gamble Company</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>144.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-11.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>13.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>42.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-84.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>18.6%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.45</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>PLTR</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Palantir Technologies Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>135.91</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>4.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>16.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>45.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-68.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>54.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.48</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>AMAT</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Applied Materials, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>410.82</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>148.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>65.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-7.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>42.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.35</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>GE</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">GE Aerospace</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>286.68</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>25.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>23.7%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>17.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>43.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-77.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>32.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.13</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>QCOM</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">QUALCOMM Incorporated</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>186.55</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.7</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>22.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>68.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>40.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.42</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>DIS</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">The Walt Disney Company</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>100.48</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-11.4%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>35.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-56.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>23.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.09</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>UBER</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Uber Technologies, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>72.95</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-20.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>7.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>40.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-66.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>31.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.65</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>TMUS</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">T-Mobile US, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>194.31</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>20.0</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-19.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>13.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>48.2</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-71.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>27.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.21</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>BX</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Blackstone Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>122.72</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>29.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-16.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>10.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>37.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-49.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>32.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.39</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">4/12</td>
+        </tr><tr>
+          <td><strong>MA</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Mastercard Incorporated</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>497.08</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-14.8%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>37.4</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-79.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>20.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.93</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">3/12</td>
+        </tr><tr>
+          <td><strong>NFLX</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Netflix, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>87.89</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-26.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>19.3%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>53.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-62.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>39.0%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.45</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">3/12</td>
+        </tr><tr>
+          <td><strong>ORCL</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Oracle Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>185.45</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.7</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>15.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>57.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-6.8</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>57.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.64</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">3/12</td>
+        </tr><tr>
+          <td><strong>WFC</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Wells Fargo & Company</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>79.89</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.6</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>4.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>16.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>38.8</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-72.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>30.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.11</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">3/12</td>
+        </tr><tr>
+          <td><strong>RTX</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">RTX Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>172.87</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>33.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>27.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>19.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>32.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-96.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>29.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">3/12</td>
+        </tr><tr>
+          <td><strong>ABT</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Abbott Laboratories</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>87.17</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-35.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>25.4%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>20.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-96.7</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>22.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.24</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">3/12</td>
+        </tr><tr>
+          <td><strong>MCD</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">McDonald's Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>285.17</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-10.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>16.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>34.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-96.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>16.7%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.26</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">2/12</td>
+        </tr><tr>
+          <td><strong>ISRG</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Intuitive Surgical, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>451.38</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>28.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-19.9%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>11.8%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>33.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-86.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>37.6%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.04</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">2/12</td>
+        </tr><tr>
+          <td><strong>META</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Meta Platforms, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>604.96</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>13.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-5.5%</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>12.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>38.1</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-57.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>43.9%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.7</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">1/12</td>
+        </tr><tr>
+          <td><strong>HD</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">The Home Depot, Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>315.42</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>23.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-17.2%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>20.7%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>30.2</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-94.3</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>25.0%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.16</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">1/12</td>
+        </tr><tr>
+          <td><strong>IBM</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">International Business Machines Corporation</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>229.03</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>29.5</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-14.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>23.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>28.9</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-91.3</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>36.5%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.04</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">1/12</td>
+        </tr><tr>
+          <td><strong>TMO</strong></td>
+          <td style="font-size:0.82em;white-space:nowrap">Thermo Fisher Scientific Inc.</td>
+          <td style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA200<br>466.76</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">>MA50</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.5</td>
+          <td style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>13.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>15.3%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>29.4</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-91.6</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>30.1%</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.03</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+          <td style="text-align:center;font-weight:700;font-size:0.95em;
+                     background:#fadbd8;color:#922b21">1/12</td>
+        </tr></tbody>
+  </table>
+  </div>
+</div>
+
+<div class="footer">
+  Generiert am 2026-05-05 &mdash; Zertifikate-Scanner &mdash;
+  Alle Angaben ohne Gewähr. Keine Anlageberatung.
+</div>
+  </div>
+</body>
+</html>
