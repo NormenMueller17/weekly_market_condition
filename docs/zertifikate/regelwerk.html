@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regelwerk — Zertifikate-Scanner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #f5f6fa; color: #2c3e50; font-size: 14px; line-height: 1.6; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+    header { background: #2c3e50; color: white; padding: 20px 24px;
+             border-radius: 8px; margin-bottom: 20px; }
+    header h1 { font-size: 1.6em; margin-bottom: 4px; }
+    header .subtitle { opacity: 0.8; font-size: 0.9em; margin-bottom: 8px; }
+    header nav a { color: #7fb3d3; text-decoration: none; font-size: 0.85em; }
+    header nav a:hover { color: white; }
+    .footer { text-align:center;color:#95a5a6;font-size:0.8em;padding:16px 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📋 Regelwerk — Zertifikate-Scanner</h1>
+      <p class="subtitle">Drei-Ebenen-Screening-System &mdash; Low-Vol Momentum Screener</p>
+      <nav>
+        <a href="index.html">← Alle Reports</a>
+        &nbsp;|&nbsp;
+        <a href="../zertifikate/portfolio.html">Portfolio verwalten</a>
+        &nbsp;|&nbsp;
+        <a href="../index.html">Hauptreport</a>
+      </nav>
+    </header>
+
+    
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #7f8c8d">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🌍 Universum</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:12px">
+    Der Scanner läuft über alle Titel aus dem <strong>iShares Russell 1000 ETF (IWB)</strong>,
+    gefiltert auf einen Marktwert ≥ <strong>150 Mrd. USD</strong>
+    (Large-/Mega-Caps). Datengrundlage: wöchentliche OHLCV-Daten
+    der letzten <strong>60 Wochen</strong>.
+  </p>
+  <p style="color:#555;font-size:0.88em">
+    Alle drei Ebenen werden für jeden Titel berechnet. Kaufkandidaten müssen
+    <em>alle</em> E1-Kriterien bestehen, einen positiven E2-Score erzielen
+    und mindestens 2/3 E3-Signale zeigen.
+    Die Universum-Übersicht im Report zeigt <em>alle</em> Titel, unabhängig davon ob sie die
+    Filter bestehen — so behältst du den Gesamtüberblick.
+  </p>
+</div>
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #27ae60">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🟢 Ebene 1 — Trendqualität</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:16px">Alle 4 Kriterien müssen erfüllt sein. Ist auch nur eines nicht erfüllt, wird der Titel als Kaufkandidat ausgeschlossen.</p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f8f9fa">
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Kriterium</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Schwellenwert</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Bedeutung</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E1.1 &nbsp; Kurs &gt; MA200</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Kurs &gt; 40W-MA</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Entspricht dem ≈200-Tage-MA (Langfristtrend intakt). Aktien unter ihrem 200-Tage-MA haben statistisch schlechtere Aufwärtschancen.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E1.2 &nbsp; Kurs &gt; MA50</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Kurs &gt; 10W-MA</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Entspricht dem ≈50-Tage-MA (mittelfristiger Trend intakt). Bestätigt, dass auch der kurzfristigere Impuls aufwärts gerichtet ist.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E1.3 &nbsp; ADX (Trendstärke)</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">ADX ≥ 25</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Average Directional Index: Misst die Stärke des Trends unabhängig von seiner Richtung. Werte &lt; 20 = Seitwärts, ≥ 25 = klarer Trend. Verhindert Fehlsignale in trendlosen Märkten.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E1.4 &nbsp; 52-Wochen-Performance</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Perf ≥ 0 %</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Die Aktie darf in den letzten 52 Wochen nicht gefallen sein. Relative Stärke gegenüber dem Markt ist ein zentrales Minervini-Kriterium.</td>
+        </tr></tbody>
+  </table>
+</div>
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #f39c12">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🟡 Ebene 2 — Pullback-Profil</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:16px">Bewertet die Qualität des Pullbacks auf einer Skala von 0–100. Ein Pullback außerhalb des Bereichs 5–15 % führt direkt zum Ausschluss.</p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f8f9fa">
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Kriterium</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Schwellenwert</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Bedeutung</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.1 &nbsp; Pullback vom 3M-Hoch</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">5 % – 15 %</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Die Aktie hat sich vom Hoch der letzten 13 Wochen um 5–15% zurückgezogen. Zu wenig Pullback (&lt;5%) = zu teuer für Einstieg; zu viel (&gt;15%) = mögliche Trendumkehr.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.2 &nbsp; RSI</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">40 – 55</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Relative Strength Index (14 Perioden). Werte von 40–55 zeigen eine abgekühlte, aber noch nicht überverkaufte Situation — idealer Einstiegsbereich nach einem Pullback in einem intakten Aufwärtstrend.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.3 &nbsp; Williams %R</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">-80 bis -60</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Misst die Position des Kurses relativ zum Hoch-Tief-Bereich der letzten 14 Wochen. Bereich -80 bis -60 = Aktie hat sich deutlich vom Hoch entfernt, aber ohne extremen Verkaufsdruck — günstiger Wiedereinstiegsbereich.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.4 &nbsp; Historische Volatilität (HV30)</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">&lt; 25 %</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Annualisierte Standardabweichung der Wochenrenditen der letzten 30 Wochen. Niedrige Volatilität (&lt;25%) hält die Optionsschein-Prämie (Zeitwert) gering und reduziert das Verlustrisiko bei stagnierendem Kurs.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.5 &nbsp; Beta</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">&lt; 0.9</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Korrelation zur Marktbewegung (SPY, 52 Wochen). Beta &lt; 0.9 bedeutet: die Aktie schwankt weniger als der Gesamtmarkt. Bei Optionsscheinen mit Hebel ~3 bleibt der effektive Gesamthebel dadurch kontrollierbar.</td>
+        </tr>
+<div style="background:#fef9e7;border-radius:6px;padding:12px 16px;margin-top:14px;
+            font-size:0.88em;color:#7d6608">
+  <strong>Score-Berechnung:</strong> Jedes E2-Kriterium liefert einen Teilscore 0–100
+  (100 = perfekt in der Mitte des Idealbereichs, 0 = außerhalb). Der E2-Gesamtscore
+  ist der Durchschnitt der 5 Teilscores. Ein Pullback außerhalb des Bereichs
+  5–15% führt sofort zu Score 0 (Ebene 2 nicht bestanden).
+  <br>Gewichtung im Gesamtscore: E2 = 60%, E3 = 40%.
+</div></tbody>
+  </table>
+</div>
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #2980b9">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🔵 Ebene 3 — Wiederanlauf-Bestätigung</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:16px">Mind. 2 von 3 Signalen müssen vorliegen, um einen Wiedereinstieg zu bestätigen.</p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f8f9fa">
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Kriterium</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Schwellenwert</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Bedeutung</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E3.1 &nbsp; MACD dreht nach oben</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">MACD-Linie steigend</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Die MACD-Linie (12/26/9 Wochen) ist in der aktuellen Woche höher als in der Vorwoche und hat über die letzten 3 Wochen ein lokales Tief gebildet. Frühes Signal einer Trendwende nach dem Pullback.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E3.2 &nbsp; Momentum-Wechsel positiv</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Mom(4W): − → +</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Das 4-Wochen-Momentum (Kurs heute minus Kurs vor 4 Wochen) wechselt von negativ auf positiv. Bestätigt, dass der Kurs wieder Fahrt aufnimmt.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E3.3 &nbsp; Volumen-Bestätigung</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Vol ≥ 1.3× Ø</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Die aktuelle Wochenkerze ist bullisch (Close &gt; Close Vorwoche) und das Volumen liegt mindestens 1.3× über dem 20-Wochen-Durchschnitt. Institutionelles Kaufinteresse als Bestätigung des Wiederanlaufs.</td>
+        </tr>
+<div style="background:#eaf4fb;border-radius:6px;padding:12px 16px;margin-top:14px;
+            font-size:0.88em;color:#1a5276">
+  <strong>Mindestanforderung für Kaufkandidaten:</strong> Mindestens 2 von 3
+  E3-Kriterien müssen erfüllt sein. Für die Universum-Übersicht werden alle 3 einzeln
+  angezeigt, unabhängig davon ob der Titel die anderen Ebenen besteht.
+</div></tbody>
+  </table>
+</div>
+
+    <div class="footer">Generiert am 2026-05-05 &mdash; Alle Schwellenwerte aus zertifikate/rules.json</div>
+  </div>
+</body>
+</html>

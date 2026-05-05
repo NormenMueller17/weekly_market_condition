@@ -127,6 +127,8 @@ def _wrap_html(body: str, report_date: str) -> str:
         <a href="../zertifikate/portfolio.html">Portfolio verwalten</a>
         &nbsp;|&nbsp;
         <a href="../index.html">Hauptreport</a>
+        &nbsp;|&nbsp;
+        <a href="regelwerk.html">📋 Regelwerk</a>
       </nav>
     </header>
     {body}
@@ -556,6 +558,238 @@ def _section_footer(report_date: str) -> str:
   Generiert am {report_date} &mdash; Zertifikate-Scanner &mdash;
   Alle Angaben ohne Gewähr. Keine Anlageberatung.
 </div>"""
+
+
+# ── Regelwerk-Seite ───────────────────────────────────────────────────────────
+
+def build_regelwerk_page(rules: dict) -> str:
+    """Generiert eine statische HTML-Seite, die das Screening-Regelwerk beschreibt."""
+    e1 = rules.get("einstieg", {}).get("ebene1", {})
+    e2 = rules.get("einstieg", {}).get("ebene2", {})
+    e3 = rules.get("einstieg", {}).get("ebene3", {})
+
+    ma_long_w = e1.get("ma_long", 40)
+    ma_mid_w  = e1.get("ma_mid",  10)
+    ma_long_d = ma_long_w * 5   # Wochenäquivalent → Tage
+    ma_mid_d  = ma_mid_w  * 5
+    adx_min   = e1.get("adx_min", 25)
+    perf_min  = e1.get("performance_52w_min_pct", 0)
+
+    pb_min    = e2.get("pullback_min_pct", 5)
+    pb_max    = e2.get("pullback_max_pct", 15)
+    rsi_min   = e2.get("rsi_min", 40)
+    rsi_max   = e2.get("rsi_max", 55)
+    wr_min    = e2.get("williams_r_min", -80)
+    wr_max    = e2.get("williams_r_max", -60)
+    hv_max    = e2.get("hv30_max", 25)
+    beta_max  = e2.get("beta_max", 0.9)
+    w_e2      = int(rules.get("scoring", {}).get("ebene2_weight", 0.6) * 100)
+    w_e3      = int(rules.get("scoring", {}).get("ebene3_weight", 0.4) * 100)
+
+    min_conf  = e3.get("min_confirmed", 2)
+    vol_mult  = e3.get("volume_multiplier", 1.3)
+    mom_len   = e3.get("momentum_length", 4)
+    macd_lb   = e3.get("macd_lookback", 3)
+
+    u_cap     = rules.get("universe", {}).get("min_market_cap_b", 150)
+    lw        = rules.get("universe", {}).get("lookback_weeks", 60)
+
+    from datetime import date as _date
+    generated = _date.today().isoformat()
+
+    def _row(label, value, detail=""):
+        det = f'<br><span style="font-size:0.82em;color:#7f8c8d">{detail}</span>' if detail else ""
+        return f"""<tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">{label}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">{value}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">{detail}</td>
+        </tr>"""
+
+    def _section(title, color, badge, rows_html, intro):
+        return f"""
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid {color}">
+  <h2 style="margin-bottom:6px;color:#2c3e50">{badge} {title}</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:16px">{intro}</p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f8f9fa">
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Kriterium</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Schwellenwert</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Bedeutung</th>
+      </tr>
+    </thead>
+    <tbody>{rows_html}</tbody>
+  </table>
+</div>"""
+
+    e1_rows = (
+        _row("E1.1 &nbsp; Kurs &gt; MA200",
+             f"Kurs &gt; {ma_long_w}W-MA",
+             f"Entspricht dem ≈{ma_long_d}-Tage-MA (Langfristtrend intakt). "
+             f"Aktien unter ihrem 200-Tage-MA haben statistisch schlechtere Aufwärtschancen.") +
+        _row("E1.2 &nbsp; Kurs &gt; MA50",
+             f"Kurs &gt; {ma_mid_w}W-MA",
+             f"Entspricht dem ≈{ma_mid_d}-Tage-MA (mittelfristiger Trend intakt). "
+             f"Bestätigt, dass auch der kurzfristigere Impuls aufwärts gerichtet ist.") +
+        _row("E1.3 &nbsp; ADX (Trendstärke)",
+             f"ADX ≥ {adx_min}",
+             f"Average Directional Index: Misst die Stärke des Trends unabhängig von seiner Richtung. "
+             f"Werte &lt; 20 = Seitwärts, ≥ {adx_min} = klarer Trend. Verhindert Fehlsignale in trendlosen Märkten.") +
+        _row("E1.4 &nbsp; 52-Wochen-Performance",
+             f"Perf ≥ {perf_min} %",
+             "Die Aktie darf in den letzten 52 Wochen nicht gefallen sein. "
+             "Relative Stärke gegenüber dem Markt ist ein zentrales Minervini-Kriterium.")
+    )
+
+    e2_rows = (
+        _row("E2.1 &nbsp; Pullback vom 3M-Hoch",
+             f"{pb_min} % – {pb_max} %",
+             f"Die Aktie hat sich vom Hoch der letzten 13 Wochen um {pb_min}–{pb_max}% zurückgezogen. "
+             f"Zu wenig Pullback (&lt;{pb_min}%) = zu teuer für Einstieg; "
+             f"zu viel (&gt;{pb_max}%) = mögliche Trendumkehr.") +
+        _row("E2.2 &nbsp; RSI",
+             f"{rsi_min} – {rsi_max}",
+             f"Relative Strength Index (14 Perioden). Werte von {rsi_min}–{rsi_max} zeigen "
+             "eine abgekühlte, aber noch nicht überverkaufte Situation — idealer Einstiegsbereich "
+             "nach einem Pullback in einem intakten Aufwärtstrend.") +
+        _row("E2.3 &nbsp; Williams %R",
+             f"{wr_min} bis {wr_max}",
+             f"Misst die Position des Kurses relativ zum Hoch-Tief-Bereich der letzten 14 Wochen. "
+             f"Bereich {wr_min} bis {wr_max} = Aktie hat sich deutlich vom Hoch entfernt, "
+             "aber ohne extremen Verkaufsdruck — günstiger Wiedereinstiegsbereich.") +
+        _row("E2.4 &nbsp; Historische Volatilität (HV30)",
+             f"&lt; {hv_max} %",
+             f"Annualisierte Standardabweichung der Wochenrenditen der letzten 30 Wochen. "
+             f"Niedrige Volatilität (&lt;{hv_max}%) hält die Optionsschein-Prämie (Zeitwert) gering "
+             "und reduziert das Verlustrisiko bei stagnierendem Kurs.") +
+        _row("E2.5 &nbsp; Beta",
+             f"&lt; {beta_max}",
+             f"Korrelation zur Marktbewegung (SPY, 52 Wochen). Beta &lt; {beta_max} bedeutet: "
+             "die Aktie schwankt weniger als der Gesamtmarkt. Bei Optionsscheinen mit Hebel ~3 "
+             "bleibt der effektive Gesamthebel dadurch kontrollierbar.")
+    )
+
+    e2_scoring = f"""
+<div style="background:#fef9e7;border-radius:6px;padding:12px 16px;margin-top:14px;
+            font-size:0.88em;color:#7d6608">
+  <strong>Score-Berechnung:</strong> Jedes E2-Kriterium liefert einen Teilscore 0–100
+  (100 = perfekt in der Mitte des Idealbereichs, 0 = außerhalb). Der E2-Gesamtscore
+  ist der Durchschnitt der 5 Teilscores. Ein Pullback außerhalb des Bereichs
+  {pb_min}–{pb_max}% führt sofort zu Score 0 (Ebene 2 nicht bestanden).
+  <br>Gewichtung im Gesamtscore: E2 = {w_e2}%, E3 = {w_e3}%.
+</div>"""
+
+    e3_rows = (
+        _row("E3.1 &nbsp; MACD dreht nach oben",
+             "MACD-Linie steigend",
+             f"Die MACD-Linie (12/26/9 Wochen) ist in der aktuellen Woche höher als in der Vorwoche "
+             f"und hat über die letzten {macd_lb} Wochen ein lokales Tief gebildet. "
+             "Frühes Signal einer Trendwende nach dem Pullback.") +
+        _row("E3.2 &nbsp; Momentum-Wechsel positiv",
+             "Mom(4W): − → +",
+             f"Das {mom_len}-Wochen-Momentum (Kurs heute minus Kurs vor {mom_len} Wochen) "
+             f"wechselt von negativ auf positiv. Bestätigt, dass der Kurs wieder Fahrt aufnimmt.") +
+        _row("E3.3 &nbsp; Volumen-Bestätigung",
+             f"Vol ≥ {vol_mult}× Ø",
+             f"Die aktuelle Wochenkerze ist bullisch (Close &gt; Close Vorwoche) "
+             f"und das Volumen liegt mindestens {vol_mult}× über dem 20-Wochen-Durchschnitt. "
+             "Institutionelles Kaufinteresse als Bestätigung des Wiederanlaufs.")
+    )
+
+    e3_note = f"""
+<div style="background:#eaf4fb;border-radius:6px;padding:12px 16px;margin-top:14px;
+            font-size:0.88em;color:#1a5276">
+  <strong>Mindestanforderung für Kaufkandidaten:</strong> Mindestens {min_conf} von 3
+  E3-Kriterien müssen erfüllt sein. Für die Universum-Übersicht werden alle 3 einzeln
+  angezeigt, unabhängig davon ob der Titel die anderen Ebenen besteht.
+</div>"""
+
+    universe_box = f"""
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #7f8c8d">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🌍 Universum</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:12px">
+    Der Scanner läuft über alle Titel aus dem <strong>iShares Russell 1000 ETF (IWB)</strong>,
+    gefiltert auf einen Marktwert ≥ <strong>{u_cap} Mrd. USD</strong>
+    (Large-/Mega-Caps). Datengrundlage: wöchentliche OHLCV-Daten
+    der letzten <strong>{lw} Wochen</strong>.
+  </p>
+  <p style="color:#555;font-size:0.88em">
+    Alle drei Ebenen werden für jeden Titel berechnet. Kaufkandidaten müssen
+    <em>alle</em> E1-Kriterien bestehen, einen positiven E2-Score erzielen
+    und mindestens {min_conf}/3 E3-Signale zeigen.
+    Die Universum-Übersicht im Report zeigt <em>alle</em> Titel, unabhängig davon ob sie die
+    Filter bestehen — so behältst du den Gesamtüberblick.
+  </p>
+</div>"""
+
+    body = (
+        universe_box +
+        _section("Ebene 1 — Trendqualität", "#27ae60", "🟢",
+                 e1_rows,
+                 "Alle 4 Kriterien müssen erfüllt sein. Ist auch nur eines nicht erfüllt, "
+                 "wird der Titel als Kaufkandidat ausgeschlossen.") +
+        _section("Ebene 2 — Pullback-Profil", "#f39c12", "🟡",
+                 e2_rows + e2_scoring,
+                 "Bewertet die Qualität des Pullbacks auf einer Skala von 0–100. "
+                 "Ein Pullback außerhalb des Bereichs 5–15 % führt direkt zum Ausschluss.") +
+        _section("Ebene 3 — Wiederanlauf-Bestätigung", "#2980b9", "🔵",
+                 e3_rows + e3_note,
+                 f"Mind. {min_conf} von 3 Signalen müssen vorliegen, um einen Wiedereinstieg zu bestätigen.")
+    )
+
+    return f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regelwerk — Zertifikate-Scanner</title>
+  <style>
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #f5f6fa; color: #2c3e50; font-size: 14px; line-height: 1.6; }}
+    .container {{ max-width: 900px; margin: 0 auto; padding: 20px; }}
+    header {{ background: #2c3e50; color: white; padding: 20px 24px;
+             border-radius: 8px; margin-bottom: 20px; }}
+    header h1 {{ font-size: 1.6em; margin-bottom: 4px; }}
+    header .subtitle {{ opacity: 0.8; font-size: 0.9em; margin-bottom: 8px; }}
+    header nav a {{ color: #7fb3d3; text-decoration: none; font-size: 0.85em; }}
+    header nav a:hover {{ color: white; }}
+    .footer {{ text-align:center;color:#95a5a6;font-size:0.8em;padding:16px 0 8px; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📋 Regelwerk — Zertifikate-Scanner</h1>
+      <p class="subtitle">Drei-Ebenen-Screening-System &mdash; Low-Vol Momentum Screener</p>
+      <nav>
+        <a href="index.html">← Alle Reports</a>
+        &nbsp;|&nbsp;
+        <a href="../zertifikate/portfolio.html">Portfolio verwalten</a>
+        &nbsp;|&nbsp;
+        <a href="../index.html">Hauptreport</a>
+      </nav>
+    </header>
+
+    {body}
+
+    <div class="footer">Generiert am {generated} &mdash; Alle Schwellenwerte aus zertifikate/rules.json</div>
+  </div>
+</body>
+</html>"""
+
+
+def save_regelwerk(html: str, output_dir: str = "docs/zertifikate") -> None:
+    """Speichert die Regelwerk-Seite."""
+    path = Path(output_dir) / "regelwerk.html"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(html, encoding="utf-8")
+    print(f"[REPORT] Regelwerk gespeichert: {path}")
 
 
 # ── Index-Seite ────────────────────────────────────────────────────────────────

@@ -45,7 +45,7 @@ from zertifikate.universe import load_large_cap_universe, fetch_company_info
 from zertifikate.ampel import compute_marktampel, compute_zeitampel, combine, Ampel
 from zertifikate.scanner import screen_kandidaten, screen_universe_full
 from zertifikate.portfolio import load_portfolio, enrich_positions, portfolio_stats
-from zertifikate.report import build_report, save_report
+from zertifikate.report import build_report, save_report, build_regelwerk_page, save_regelwerk
 
 _RULES_PATH = ROOT / "zertifikate" / "rules.json"
 
@@ -127,13 +127,14 @@ def run(dry_run: bool = False) -> None:
     company_info = fetch_company_info([t["ticker"] for t in universe_all])
     print(f"  → {len(company_info)} Titel mit Info.")
 
-    # ── 7. Report generieren ─────────────────────────────────────────────────
+    # ── 7. Report + Regelwerk generieren ─────────────────────────────────────
     print("[7/7] Generiere Report …")
     html = build_report(
         markt, kandidaten, positionen, roll_kandidaten, report_date,
         universe_all=universe_all, company_info=company_info,
     )
     report_path = save_report(html, report_date)
+    save_regelwerk(build_regelwerk_page(rules))
 
     if dry_run:
         print(f"\n[DRY-RUN] Report gespeichert: {report_path}")
