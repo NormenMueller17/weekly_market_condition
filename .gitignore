@@ -24,6 +24,7 @@
  # Project
  artifacts/
  .cache/
+ zertifikate/company_info_cache.json
 
  # Secrets — never commit the real .env
  .env
