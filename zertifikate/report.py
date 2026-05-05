@@ -408,22 +408,25 @@ def _section_roll(roll_kandidaten: list[dict]) -> str:
 
 
 def _section_universe_overview(universe_all: list[dict], company_info: dict) -> str:
-    """Zeigt alle Titel mit ihren 12 Screening-Metriken als grün/rot gefärbte Tabelle."""
+    """Zeigt alle Titel mit ihren 12 Screening-Metriken als grün/rot gefärbte Tabelle.
+    Erste 3 Spalten sind sticky (fixiert beim Horizontal-Scrollen).
+    Alle Spalten sind durch Klick auf den Header auf- und absteigend sortierbar.
+    """
 
-    def _cell(ok: bool, val: str) -> str:
+    def _cell(ok: bool, display: str, sort_val: str) -> str:
         bg    = "#d5f5e3" if ok else "#fadbd8"
         color = "#1e8449" if ok else "#922b21"
         return (
-            f'<td style="background:{bg};color:{color};text-align:center;'
-            f'white-space:nowrap;font-size:0.82em">{val}</td>'
+            f'<td data-val="{sort_val}" style="background:{bg};color:{color};'
+            f'text-align:center;white-space:nowrap;font-size:0.82em">{display}</td>'
         )
 
     rows = ""
     for t in universe_all:
-        ticker  = t["ticker"]
-        info    = company_info.get(ticker, {})
-        name    = info.get("name", ticker)
-        sector  = info.get("sector", "n/a")
+        ticker   = t["ticker"]
+        info     = company_info.get(ticker, {})
+        name     = info.get("name", ticker)
+        sector   = info.get("sector", "n/a")
         erfuellt = t["kriterien_erfuellt"]
 
         if erfuellt >= 9:
@@ -434,62 +437,117 @@ def _section_universe_overview(universe_all: list[dict], company_info: dict) -> 
             badge_bg, badge_color = "#fadbd8", "#922b21"
 
         rows += f"""<tr>
-          <td><strong>{ticker}</strong></td>
-          <td style="font-size:0.82em;white-space:nowrap">{name}</td>
-          <td style="font-size:0.78em;color:#555;white-space:nowrap">{sector}</td>
-          {_cell(t["e1_ma200"],    f">MA200<br>{t['close']}")}
-          {_cell(t["e1_ma50"],     ">MA50")}
-          {_cell(t["e1_adx"],      f"ADX<br>{t['adx_val']}")}
-          {_cell(t["e1_perf"],     f"52W<br>{t['perf_52w']}%")}
-          {_cell(t["e2_pullback"], f"PB%<br>{t['pullback_pct']}%")}
-          {_cell(t["e2_rsi"],      f"RSI<br>{t['rsi_val']}")}
-          {_cell(t["e2_williams"], f"W%R<br>{t['williams_val']}")}
-          {_cell(t["e2_hv"],       f"HV30<br>{t['hv30_val']}%")}
-          {_cell(t["e2_beta"],     f"Beta<br>{t['beta_val']}")}
-          {_cell(t["e3_macd"],     "MACD↑<br>" + ("✓" if t["e3_macd"]     else "✗"))}
-          {_cell(t["e3_momentum"], "Mom↑<br>"  + ("✓" if t["e3_momentum"] else "✗"))}
-          {_cell(t["e3_volumen"],  "Vol↑<br>"  + ("✓" if t["e3_volumen"]  else "✗"))}
-          <td style="text-align:center;font-weight:700;font-size:0.95em;
-                     background:{badge_bg};color:{badge_color}">{erfuellt}/12</td>
+          <td class="u-sticky u-col0" data-val="{ticker}"><strong>{ticker}</strong></td>
+          <td class="u-sticky u-col1" data-val="{name}" style="font-size:0.82em;white-space:nowrap">{name}</td>
+          <td class="u-sticky u-col2" data-val="{sector}" style="font-size:0.78em;color:#555;white-space:nowrap">{sector}</td>
+          {_cell(t["e1_ma200"],    f"&gt;MA200<br>{t['close']}",  str(int(t['e1_ma200'])))}
+          {_cell(t["e1_ma50"],     f"&gt;MA50",                   str(int(t['e1_ma50'])))}
+          {_cell(t["e1_adx"],      f"ADX<br>{t['adx_val']}",      str(t['adx_val']))}
+          {_cell(t["e1_perf"],     f"52W<br>{t['perf_52w']}%",    str(t['perf_52w']))}
+          {_cell(t["e2_pullback"], f"PB%<br>{t['pullback_pct']}%",str(t['pullback_pct']))}
+          {_cell(t["e2_rsi"],      f"RSI<br>{t['rsi_val']}",      str(t['rsi_val']))}
+          {_cell(t["e2_williams"], f"W%R<br>{t['williams_val']}",  str(t['williams_val']))}
+          {_cell(t["e2_hv"],       f"HV30<br>{t['hv30_val']}%",   str(t['hv30_val']))}
+          {_cell(t["e2_beta"],     f"Beta<br>{t['beta_val']}",     str(t['beta_val']))}
+          {_cell(t["e3_macd"],     "MACD↑<br>" + ("✓" if t["e3_macd"]     else "✗"), str(int(t["e3_macd"])))}
+          {_cell(t["e3_momentum"], "Mom↑<br>"  + ("✓" if t["e3_momentum"] else "✗"), str(int(t["e3_momentum"])))}
+          {_cell(t["e3_volumen"],  "Vol↑<br>"  + ("✓" if t["e3_volumen"]  else "✗"), str(int(t["e3_volumen"])))}
+          <td data-val="{erfuellt}" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:{badge_bg};color:{badge_color}">{erfuellt}/12</td>
         </tr>"""
 
     return f"""
+<style>
+  #univ-wrap {{ overflow-x: auto; }}
+  #univ-tbl  {{ border-collapse: collapse; min-width: 100%; }}
+  #univ-tbl th, #univ-tbl td {{ padding: 7px 10px; border-bottom: 1px solid #ecf0f1;
+      white-space: nowrap; vertical-align: middle; }}
+  #univ-tbl thead th {{ background: #2c3e50; color: #fff; font-size: 0.83em;
+      font-weight: 600; text-align: center; cursor: pointer; user-select: none; }}
+  #univ-tbl thead th:hover {{ background: #3d5370; }}
+  #univ-tbl tbody tr:hover td {{ background: #f0f4f8 !important; }}
+  #univ-tbl tbody tr:hover td.u-sticky {{ background: #f0f4f8 !important; }}
+  .u-sticky {{ position: sticky; z-index: 1; background: #fff; }}
+  #univ-tbl thead th.u-sticky {{ background: #2c3e50; z-index: 2; }}
+  #univ-tbl thead th.u-sticky:hover {{ background: #3d5370; }}
+  .u-col0 {{ left: 0;     min-width: 68px;  max-width: 68px;  }}
+  .u-col1 {{ left: 68px;  min-width: 180px; max-width: 180px;
+             box-shadow: none; overflow: hidden; text-overflow: ellipsis; }}
+  .u-col2 {{ left: 248px; min-width: 120px; max-width: 140px;
+             box-shadow: 3px 0 6px -2px rgba(0,0,0,0.15); }}
+  .sort-icon {{ font-size: 0.75em; opacity: 0.6; margin-left: 3px; }}
+</style>
+
 <div class="section" style="max-width:100%">
   <h2>Universum-Übersicht — {len(universe_all)} Large-/Mega-Caps &nbsp;|&nbsp; 12 Kriterien</h2>
   <p style="margin-bottom:10px;font-size:0.85em;color:#555">
-    Sortiert nach Anzahl erfüllter Kriterien (absteigend).
+    Auf Spalten-Header klicken zum Sortieren &nbsp;·&nbsp;
     <strong style="color:#1e8449">Grün</strong> = Kriterium erfüllt &nbsp;|&nbsp;
     <strong style="color:#922b21">Rot</strong> = nicht erfüllt.<br>
     <span style="opacity:0.8">E1: Trendqualität (alle 4 Pflicht) &nbsp;·&nbsp;
     E2: Pullback-Profil (5 Kriterien) &nbsp;·&nbsp;
     E3: Wiederanlauf-Signale (mind. 2/3 für Kandidaten)</span>
   </p>
-  <div style="overflow-x:auto">
-  <table>
+  <div id="univ-wrap">
+  <table id="univ-tbl">
     <thead>
       <tr>
-        <th>Ticker</th>
-        <th>Name</th>
-        <th>Sektor</th>
-        <th title="Kurs über 200W-MA">E1.1<br>&gt;MA200</th>
-        <th title="Kurs über 50W-MA">E1.2<br>&gt;MA50</th>
-        <th title="ADX ≥ 25 (Trendstärke)">E1.3<br>ADX</th>
-        <th title="52-Wochen-Performance ≥ 0%">E1.4<br>52W%</th>
-        <th title="Pullback 5–15% vom 3M-Hoch">E2.1<br>PB%</th>
-        <th title="RSI 40–55">E2.2<br>RSI</th>
-        <th title="Williams %%R −80 bis −60">E2.3<br>W%%R</th>
-        <th title="Hist. Volatilität 30T &lt; 25%%">E2.4<br>HV30</th>
-        <th title="Beta &lt; 0,9">E2.5<br>Beta</th>
-        <th title="MACD dreht nach oben">E3.1<br>MACD↑</th>
-        <th title="Momentum-Wechsel positiv">E3.2<br>Mom↑</th>
-        <th title="Bullische Kerze + Überdurchschn. Volumen">E3.3<br>Vol↑</th>
-        <th>Erfüllt</th>
+        <th class="u-sticky u-col0" onclick="univSort(0)">Ticker<span class="sort-icon">⇅</span></th>
+        <th class="u-sticky u-col1" onclick="univSort(1)">Name<span class="sort-icon">⇅</span></th>
+        <th class="u-sticky u-col2" onclick="univSort(2)">Sektor<span class="sort-icon">⇅</span></th>
+        <th title="Kurs über 40W-MA (≈200-Tage-MA)" onclick="univSort(3)">E1.1<br>&gt;MA200<span class="sort-icon">⇅</span></th>
+        <th title="Kurs über 10W-MA (≈50-Tage-MA)"  onclick="univSort(4)">E1.2<br>&gt;MA50<span class="sort-icon">⇅</span></th>
+        <th title="ADX ≥ 25 (Trendstärke)"           onclick="univSort(5)">E1.3<br>ADX<span class="sort-icon">⇅</span></th>
+        <th title="52-Wochen-Performance ≥ 0%"        onclick="univSort(6)">E1.4<br>52W%<span class="sort-icon">⇅</span></th>
+        <th title="Pullback 5–15% vom 3M-Hoch"        onclick="univSort(7)">E2.1<br>PB%<span class="sort-icon">⇅</span></th>
+        <th title="RSI 40–55"                         onclick="univSort(8)">E2.2<br>RSI<span class="sort-icon">⇅</span></th>
+        <th title="Williams %R −80 bis −60"           onclick="univSort(9)">E2.3<br>W%R<span class="sort-icon">⇅</span></th>
+        <th title="Hist. Volatilität 30T &lt; 25%"   onclick="univSort(10)">E2.4<br>HV30<span class="sort-icon">⇅</span></th>
+        <th title="Beta &lt; 0,9"                     onclick="univSort(11)">E2.5<br>Beta<span class="sort-icon">⇅</span></th>
+        <th title="MACD dreht nach oben"              onclick="univSort(12)">E3.1<br>MACD↑<span class="sort-icon">⇅</span></th>
+        <th title="Momentum-Wechsel positiv"          onclick="univSort(13)">E3.2<br>Mom↑<span class="sort-icon">⇅</span></th>
+        <th title="Bullische Kerze + Überdurchschn. Volumen" onclick="univSort(14)">E3.3<br>Vol↑<span class="sort-icon">⇅</span></th>
+        <th title="Anzahl erfüllter Kriterien"        onclick="univSort(15)">Erfüllt<span class="sort-icon">⇅</span></th>
       </tr>
     </thead>
     <tbody>{rows}</tbody>
   </table>
   </div>
-</div>"""
+</div>
+
+<script>
+(function() {{
+  var _sortCol = 15, _sortAsc = false;  // Standard: Erfüllt absteigend
+
+  window.univSort = function(col) {{
+    var tbl  = document.getElementById('univ-tbl');
+    var tbody = tbl.querySelector('tbody');
+    var rows  = Array.from(tbody.querySelectorAll('tr'));
+    var ths   = tbl.querySelectorAll('thead th');
+
+    _sortAsc = (col === _sortCol) ? !_sortAsc : true;
+    _sortCol = col;
+
+    // Sort-Icons zurücksetzen
+    ths.forEach(function(th) {{
+      th.querySelector('.sort-icon').textContent = '⇅';
+    }});
+    ths[col].querySelector('.sort-icon').textContent = _sortAsc ? ' ▲' : ' ▼';
+
+    rows.sort(function(a, b) {{
+      var av = a.cells[col].dataset.val || '';
+      var bv = b.cells[col].dataset.val || '';
+      var an = parseFloat(av), bn = parseFloat(bv);
+      var cmp = (!isNaN(an) && !isNaN(bn))
+                ? an - bn
+                : av.localeCompare(bv, 'de', {{sensitivity: 'base'}});
+      return _sortAsc ? cmp : -cmp;
+    }});
+
+    rows.forEach(function(r) {{ tbody.appendChild(r); }});
+  }};
+}})();
+</script>"""
 
 
 def _section_footer(report_date: str) -> str:
