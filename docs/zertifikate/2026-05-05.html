@@ -71,6 +71,8 @@
         <a href="../zertifikate/portfolio.html">Portfolio verwalten</a>
         &nbsp;|&nbsp;
         <a href="../index.html">Hauptreport</a>
+        &nbsp;|&nbsp;
+        <a href="regelwerk.html">📋 Regelwerk</a>
       </nav>
     </header>
     
@@ -145,25 +147,27 @@
         <th class="u-sticky u-col0" onclick="univSort(0)">Ticker<span class="sort-icon">⇅</span></th>
         <th class="u-sticky u-col1" onclick="univSort(1)">Name<span class="sort-icon">⇅</span></th>
         <th class="u-sticky u-col2" onclick="univSort(2)">Sektor<span class="sort-icon">⇅</span></th>
-        <th title="Kurs über 40W-MA (≈200-Tage-MA)" onclick="univSort(3)">E1.1<br>&gt;MA200<span class="sort-icon">⇅</span></th>
-        <th title="Kurs über 10W-MA (≈50-Tage-MA)"  onclick="univSort(4)">E1.2<br>&gt;MA50<span class="sort-icon">⇅</span></th>
-        <th title="ADX ≥ 25 (Trendstärke)"           onclick="univSort(5)">E1.3<br>ADX<span class="sort-icon">⇅</span></th>
-        <th title="52-Wochen-Performance ≥ 0%"        onclick="univSort(6)">E1.4<br>52W%<span class="sort-icon">⇅</span></th>
-        <th title="Pullback 5–15% vom 3M-Hoch"        onclick="univSort(7)">E2.1<br>PB%<span class="sort-icon">⇅</span></th>
-        <th title="RSI 40–55"                         onclick="univSort(8)">E2.2<br>RSI<span class="sort-icon">⇅</span></th>
-        <th title="Williams %R −80 bis −60"           onclick="univSort(9)">E2.3<br>W%R<span class="sort-icon">⇅</span></th>
-        <th title="Hist. Volatilität 30T &lt; 25%"   onclick="univSort(10)">E2.4<br>HV30<span class="sort-icon">⇅</span></th>
-        <th title="Beta &lt; 0,9"                     onclick="univSort(11)">E2.5<br>Beta<span class="sort-icon">⇅</span></th>
-        <th title="MACD dreht nach oben"              onclick="univSort(12)">E3.1<br>MACD↑<span class="sort-icon">⇅</span></th>
-        <th title="Momentum-Wechsel positiv"          onclick="univSort(13)">E3.2<br>Mom↑<span class="sort-icon">⇅</span></th>
-        <th title="Bullische Kerze + Überdurchschn. Volumen" onclick="univSort(14)">E3.3<br>Vol↑<span class="sort-icon">⇅</span></th>
-        <th title="Anzahl erfüllter Kriterien"        onclick="univSort(15)">Erfüllt<span class="sort-icon">⇅</span></th>
+        <th title="Anzahl erfüllter Kriterien"        onclick="univSort(3)">Erfüllt<span class="sort-icon"> ▼</span></th>
+        <th title="Kurs über 40W-MA (≈200-Tage-MA)" onclick="univSort(4)">E1.1<br>&gt;MA200<span class="sort-icon">⇅</span></th>
+        <th title="Kurs über 10W-MA (≈50-Tage-MA)"  onclick="univSort(5)">E1.2<br>&gt;MA50<span class="sort-icon">⇅</span></th>
+        <th title="ADX ≥ 25 (Trendstärke)"           onclick="univSort(6)">E1.3<br>ADX<span class="sort-icon">⇅</span></th>
+        <th title="52-Wochen-Performance ≥ 0%"        onclick="univSort(7)">E1.4<br>52W%<span class="sort-icon">⇅</span></th>
+        <th title="Pullback 5–15% vom 3M-Hoch"        onclick="univSort(8)">E2.1<br>PB%<span class="sort-icon">⇅</span></th>
+        <th title="RSI 40–55"                         onclick="univSort(9)">E2.2<br>RSI<span class="sort-icon">⇅</span></th>
+        <th title="Williams %R −80 bis −60"           onclick="univSort(10)">E2.3<br>W%R<span class="sort-icon">⇅</span></th>
+        <th title="Hist. Volatilität 30T &lt; 25%"   onclick="univSort(11)">E2.4<br>HV30<span class="sort-icon">⇅</span></th>
+        <th title="Beta &lt; 0,9"                     onclick="univSort(12)">E2.5<br>Beta<span class="sort-icon">⇅</span></th>
+        <th title="MACD dreht nach oben"              onclick="univSort(13)">E3.1<br>MACD↑<span class="sort-icon">⇅</span></th>
+        <th title="Momentum-Wechsel positiv"          onclick="univSort(14)">E3.2<br>Mom↑<span class="sort-icon">⇅</span></th>
+        <th title="Bullische Kerze + Überdurchschn. Volumen" onclick="univSort(15)">E3.3<br>Vol↑<span class="sort-icon">⇅</span></th>
       </tr>
     </thead>
     <tbody><tr>
           <td class="u-sticky u-col0" data-val="GS"><strong>GS</strong></td>
           <td class="u-sticky u-col1" data-val="The Goldman Sachs Group, Inc." style="font-size:0.82em;white-space:nowrap">The Goldman Sachs Group, Inc.</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="8" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">8/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>918.89</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="27.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.3</td>
@@ -176,12 +180,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="8" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">8/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="PFE"><strong>PFE</strong></td>
           <td class="u-sticky u-col1" data-val="Pfizer Inc." style="font-size:0.82em;white-space:nowrap">Pfizer Inc.</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="8" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">8/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>26.45</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="42.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>42.1</td>
@@ -194,12 +198,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="8" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">8/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="JPM"><strong>JPM</strong></td>
           <td class="u-sticky u-col1" data-val="JPMorgan Chase & Co." style="font-size:0.82em;white-space:nowrap">JPMorgan Chase & Co.</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>309.4</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="16.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.4</td>
@@ -212,12 +216,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="LLY"><strong>LLY</strong></td>
           <td class="u-sticky u-col1" data-val="Eli Lilly and Company" style="font-size:0.82em;white-space:nowrap">Eli Lilly and Company</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>988.87</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="20.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>20.5</td>
@@ -230,12 +234,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="XOM"><strong>XOM</strong></td>
           <td class="u-sticky u-col1" data-val="Exxon Mobil Corporation" style="font-size:0.82em;white-space:nowrap">Exxon Mobil Corporation</td>
           <td class="u-sticky u-col2" data-val="Energy" style="font-size:0.78em;color:#555;white-space:nowrap">Energy</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>154.88</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="52.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>52.3</td>
@@ -248,12 +252,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="JNJ"><strong>JNJ</strong></td>
           <td class="u-sticky u-col1" data-val="Johnson & Johnson" style="font-size:0.82em;white-space:nowrap">Johnson & Johnson</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>225.55</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="37.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.8</td>
@@ -266,12 +270,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="CVX"><strong>CVX</strong></td>
           <td class="u-sticky u-col1" data-val="Chevron Corporation" style="font-size:0.82em;white-space:nowrap">Chevron Corporation</td>
           <td class="u-sticky u-col2" data-val="Energy" style="font-size:0.78em;color:#555;white-space:nowrap">Energy</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>192.64</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="41.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>41.9</td>
@@ -284,12 +288,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="BAC"><strong>BAC</strong></td>
           <td class="u-sticky u-col1" data-val="Bank of America Corporation" style="font-size:0.82em;white-space:nowrap">Bank of America Corporation</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>53.12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="19.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.7</td>
@@ -302,12 +306,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="GEV"><strong>GEV</strong></td>
           <td class="u-sticky u-col1" data-val="GE Vernova Inc." style="font-size:0.82em;white-space:nowrap">GE Vernova Inc.</td>
           <td class="u-sticky u-col2" data-val="Industrials" style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1095.21</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="53.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>53.9</td>
@@ -320,12 +324,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="MRK"><strong>MRK</strong></td>
           <td class="u-sticky u-col1" data-val="Merck & Co., Inc." style="font-size:0.82em;white-space:nowrap">Merck & Co., Inc.</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>113.15</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="39.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>39.0</td>
@@ -338,12 +342,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="PEP"><strong>PEP</strong></td>
           <td class="u-sticky u-col1" data-val="PepsiCo, Inc." style="font-size:0.82em;white-space:nowrap">PepsiCo, Inc.</td>
           <td class="u-sticky u-col2" data-val="Consumer Defensive" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>155.04</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="16.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.1</td>
@@ -356,12 +360,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="VZ"><strong>VZ</strong></td>
           <td class="u-sticky u-col1" data-val="Verizon Communications Inc." style="font-size:0.82em;white-space:nowrap">Verizon Communications Inc.</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>47.34</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="26.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>26.7</td>
@@ -374,12 +378,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="NEE"><strong>NEE</strong></td>
           <td class="u-sticky u-col1" data-val="NextEra Energy, Inc." style="font-size:0.82em;white-space:nowrap">NextEra Energy, Inc.</td>
           <td class="u-sticky u-col2" data-val="Utilities" style="font-size:0.78em;color:#555;white-space:nowrap">Utilities</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>96.28</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="39.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>39.1</td>
@@ -392,12 +396,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="TJX"><strong>TJX</strong></td>
           <td class="u-sticky u-col1" data-val="The TJX Companies, Inc." style="font-size:0.82em;white-space:nowrap">The TJX Companies, Inc.</td>
           <td class="u-sticky u-col2" data-val="Consumer Cyclical" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>154.96</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="35.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>35.5</td>
@@ -410,12 +414,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="COP"><strong>COP</strong></td>
           <td class="u-sticky u-col1" data-val="ConocoPhillips" style="font-size:0.82em;white-space:nowrap">ConocoPhillips</td>
           <td class="u-sticky u-col2" data-val="Energy" style="font-size:0.78em;color:#555;white-space:nowrap">Energy</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>123.32</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="41.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>41.5</td>
@@ -428,12 +432,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">7/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="NVDA"><strong>NVDA</strong></td>
           <td class="u-sticky u-col1" data-val="NVIDIA Corporation" style="font-size:0.82em;white-space:nowrap">NVIDIA Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>196.5</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="22.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.0</td>
@@ -446,12 +450,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="V"><strong>V</strong></td>
           <td class="u-sticky u-col1" data-val="Visa Inc." style="font-size:0.82em;white-space:nowrap">Visa Inc.</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>322.03</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="26.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>26.2</td>
@@ -464,12 +468,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="COST"><strong>COST</strong></td>
           <td class="u-sticky u-col1" data-val="Costco Wholesale Corporation" style="font-size:0.82em;white-space:nowrap">Costco Wholesale Corporation</td>
           <td class="u-sticky u-col2" data-val="Consumer Defensive" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1016.42</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="17.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.7</td>
@@ -482,12 +486,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="CSCO"><strong>CSCO</strong></td>
           <td class="u-sticky u-col1" data-val="Cisco Systems, Inc." style="font-size:0.82em;white-space:nowrap">Cisco Systems, Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>94.3</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="36.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>36.2</td>
@@ -500,12 +504,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="KO"><strong>KO</strong></td>
           <td class="u-sticky u-col1" data-val="The Coca-Cola Company" style="font-size:0.82em;white-space:nowrap">The Coca-Cola Company</td>
           <td class="u-sticky u-col2" data-val="Consumer Defensive" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>78.48</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="22.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.0</td>
@@ -518,12 +522,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="PM"><strong>PM</strong></td>
           <td class="u-sticky u-col1" data-val="Philip Morris International Inc." style="font-size:0.82em;white-space:nowrap">Philip Morris International Inc.</td>
           <td class="u-sticky u-col2" data-val="Consumer Defensive" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>169.46</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="18.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.8</td>
@@ -536,12 +540,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="C"><strong>C</strong></td>
           <td class="u-sticky u-col1" data-val="Citigroup Inc." style="font-size:0.82em;white-space:nowrap">Citigroup Inc.</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>128.01</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="31.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>31.1</td>
@@ -554,12 +558,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="MS"><strong>MS</strong></td>
           <td class="u-sticky u-col1" data-val="Morgan Stanley" style="font-size:0.82em;white-space:nowrap">Morgan Stanley</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>189.25</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="27.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.5</td>
@@ -572,12 +576,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="CRM"><strong>CRM</strong></td>
           <td class="u-sticky u-col1" data-val="Salesforce, Inc." style="font-size:0.82em;white-space:nowrap">Salesforce, Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>186.99</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="35.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>35.5</td>
@@ -590,12 +594,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="BA"><strong>BA</strong></td>
           <td class="u-sticky u-col1" data-val="The Boeing Company" style="font-size:0.82em;white-space:nowrap">The Boeing Company</td>
           <td class="u-sticky u-col2" data-val="Industrials" style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>224.38</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="17.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.3</td>
@@ -608,12 +612,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="UNP"><strong>UNP</strong></td>
           <td class="u-sticky u-col1" data-val="Union Pacific Corporation" style="font-size:0.82em;white-space:nowrap">Union Pacific Corporation</td>
           <td class="u-sticky u-col2" data-val="Industrials" style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>264.01</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="19.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.4</td>
@@ -626,12 +630,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="WELL"><strong>WELL</strong></td>
           <td class="u-sticky u-col1" data-val="Welltower Inc." style="font-size:0.82em;white-space:nowrap">Welltower Inc.</td>
           <td class="u-sticky u-col2" data-val="Real Estate" style="font-size:0.78em;color:#555;white-space:nowrap">Real Estate</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>214.3</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="24.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.4</td>
@@ -644,12 +648,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="DE"><strong>DE</strong></td>
           <td class="u-sticky u-col1" data-val="Deere & Company" style="font-size:0.82em;white-space:nowrap">Deere & Company</td>
           <td class="u-sticky u-col2" data-val="Industrials" style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>575.79</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="34.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>34.7</td>
@@ -662,12 +666,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fef9e7;color:#9a7d0a">6/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="AAPL"><strong>AAPL</strong></td>
           <td class="u-sticky u-col1" data-val="Apple Inc." style="font-size:0.82em;white-space:nowrap">Apple Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>284.18</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="22.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.8</td>
@@ -680,12 +684,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="MSFT"><strong>MSFT</strong></td>
           <td class="u-sticky u-col1" data-val="Microsoft Corporation" style="font-size:0.82em;white-space:nowrap">Microsoft Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>411.38</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="37.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.2</td>
@@ -698,12 +702,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="GOOGL"><strong>GOOGL</strong></td>
           <td class="u-sticky u-col1" data-val="Alphabet Inc." style="font-size:0.82em;white-space:nowrap">Alphabet Inc.</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>388.43</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="32.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>32.4</td>
@@ -716,12 +720,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="AVGO"><strong>AVGO</strong></td>
           <td class="u-sticky u-col1" data-val="Broadcom Inc." style="font-size:0.82em;white-space:nowrap">Broadcom Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>427.36</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="27.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.3</td>
@@ -734,12 +738,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="GOOG"><strong>GOOG</strong></td>
           <td class="u-sticky u-col1" data-val="Alphabet Inc." style="font-size:0.82em;white-space:nowrap">Alphabet Inc.</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>384.27</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="33.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>33.1</td>
@@ -752,12 +756,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="MU"><strong>MU</strong></td>
           <td class="u-sticky u-col1" data-val="Micron Technology, Inc." style="font-size:0.82em;white-space:nowrap">Micron Technology, Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>640.2</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="44.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>44.0</td>
@@ -770,12 +774,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="WMT"><strong>WMT</strong></td>
           <td class="u-sticky u-col1" data-val="Walmart Inc." style="font-size:0.82em;white-space:nowrap">Walmart Inc.</td>
           <td class="u-sticky u-col2" data-val="Consumer Defensive" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>130.79</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="37.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.8</td>
@@ -788,12 +792,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="AMD"><strong>AMD</strong></td>
           <td class="u-sticky u-col1" data-val="Advanced Micro Devices, Inc." style="font-size:0.82em;white-space:nowrap">Advanced Micro Devices, Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>355.26</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="28.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>28.8</td>
@@ -806,12 +810,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="INTC"><strong>INTC</strong></td>
           <td class="u-sticky u-col1" data-val="Intel Corporation" style="font-size:0.82em;white-space:nowrap">Intel Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>108.15</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="52.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>52.9</td>
@@ -824,12 +828,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="CAT"><strong>CAT</strong></td>
           <td class="u-sticky u-col1" data-val="Caterpillar Inc." style="font-size:0.82em;white-space:nowrap">Caterpillar Inc.</td>
           <td class="u-sticky u-col2" data-val="Industrials" style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>904.59</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="53.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>53.7</td>
@@ -842,12 +846,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="ABBV"><strong>ABBV</strong></td>
           <td class="u-sticky u-col1" data-val="AbbVie Inc." style="font-size:0.82em;white-space:nowrap">AbbVie Inc.</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>206.11</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="21.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.8</td>
@@ -860,12 +864,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="UNH"><strong>UNH</strong></td>
           <td class="u-sticky u-col1" data-val="UnitedHealth Group Incorporated" style="font-size:0.82em;white-space:nowrap">UnitedHealth Group Incorporated</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>363.87</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="19.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.6</td>
@@ -878,12 +882,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="LRCX"><strong>LRCX</strong></td>
           <td class="u-sticky u-col1" data-val="Lam Research Corporation" style="font-size:0.82em;white-space:nowrap">Lam Research Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>275.8</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="42.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>42.0</td>
@@ -896,12 +900,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="TXN"><strong>TXN</strong></td>
           <td class="u-sticky u-col1" data-val="Texas Instruments Incorporated" style="font-size:0.82em;white-space:nowrap">Texas Instruments Incorporated</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>281.0</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="27.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.6</td>
@@ -914,12 +918,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="LIN"><strong>LIN</strong></td>
           <td class="u-sticky u-col1" data-val="Linde plc" style="font-size:0.82em;white-space:nowrap">Linde plc</td>
           <td class="u-sticky u-col2" data-val="Basic Materials" style="font-size:0.78em;color:#555;white-space:nowrap">Basic Materials</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>500.29</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="17.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.6</td>
@@ -932,12 +936,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="KLAC"><strong>KLAC</strong></td>
           <td class="u-sticky u-col1" data-val="KLA Corporation" style="font-size:0.82em;white-space:nowrap">KLA Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1732.9</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="39.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>39.5</td>
@@ -950,12 +954,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="ADI"><strong>ADI</strong></td>
           <td class="u-sticky u-col1" data-val="Analog Devices, Inc." style="font-size:0.82em;white-space:nowrap">Analog Devices, Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>404.77</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="35.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>35.2</td>
@@ -968,12 +972,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="T"><strong>T</strong></td>
           <td class="u-sticky u-col1" data-val="AT&T Inc." style="font-size:0.82em;white-space:nowrap">AT&T Inc.</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>25.9</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="21.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.8</td>
@@ -986,12 +990,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="SNDK"><strong>SNDK</strong></td>
           <td class="u-sticky u-col1" data-val="Sandisk Corporation" style="font-size:0.82em;white-space:nowrap">Sandisk Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1406.32</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="59.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>59.9</td>
@@ -1004,12 +1008,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="ANET"><strong>ANET</strong></td>
           <td class="u-sticky u-col1" data-val="Arista Networks, Inc." style="font-size:0.82em;white-space:nowrap">Arista Networks, Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>170.22</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="19.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.7</td>
@@ -1022,12 +1026,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="AMGN"><strong>AMGN</strong></td>
           <td class="u-sticky u-col1" data-val="Amgen Inc." style="font-size:0.82em;white-space:nowrap">Amgen Inc.</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>329.59</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="25.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>25.3</td>
@@ -1040,12 +1044,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="AXP"><strong>AXP</strong></td>
           <td class="u-sticky u-col1" data-val="American Express Company" style="font-size:0.82em;white-space:nowrap">American Express Company</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>315.95</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="22.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.0</td>
@@ -1058,12 +1062,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="APH"><strong>APH</strong></td>
           <td class="u-sticky u-col1" data-val="Amphenol Corporation" style="font-size:0.82em;white-space:nowrap">Amphenol Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>136.69</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="24.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.5</td>
@@ -1076,12 +1080,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="ETN"><strong>ETN</strong></td>
           <td class="u-sticky u-col1" data-val="Eaton Corporation plc" style="font-size:0.82em;white-space:nowrap">Eaton Corporation plc</td>
           <td class="u-sticky u-col2" data-val="Industrials" style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>410.86</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="24.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.6</td>
@@ -1094,12 +1098,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="GILD"><strong>GILD</strong></td>
           <td class="u-sticky u-col1" data-val="Gilead Sciences, Inc." style="font-size:0.82em;white-space:nowrap">Gilead Sciences, Inc.</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>133.48</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="19.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.1</td>
@@ -1112,12 +1116,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="BLK"><strong>BLK</strong></td>
           <td class="u-sticky u-col1" data-val="BlackRock, Inc." style="font-size:0.82em;white-space:nowrap">BlackRock, Inc.</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1048.91</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="19.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.0</td>
@@ -1130,12 +1134,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="SCHW"><strong>SCHW</strong></td>
           <td class="u-sticky u-col1" data-val="The Charles Schwab Corporation" style="font-size:0.82em;white-space:nowrap">The Charles Schwab Corporation</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>92.4</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="18.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.1</td>
@@ -1148,12 +1152,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="WDC"><strong>WDC</strong></td>
           <td class="u-sticky u-col1" data-val="Western Digital Corporation" style="font-size:0.82em;white-space:nowrap">Western Digital Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>465.26</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="66.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>66.1</td>
@@ -1166,12 +1170,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="APP"><strong>APP</strong></td>
           <td class="u-sticky u-col1" data-val="AppLovin Corporation" style="font-size:0.82em;white-space:nowrap">AppLovin Corporation</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>478.11</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="21.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.0</td>
@@ -1184,12 +1188,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">5/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="AMZN"><strong>AMZN</strong></td>
           <td class="u-sticky u-col1" data-val="Amazon.com, Inc." style="font-size:0.82em;white-space:nowrap">Amazon.com, Inc.</td>
           <td class="u-sticky u-col2" data-val="Consumer Cyclical" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>273.55</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="21.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.4</td>
@@ -1202,12 +1206,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="TSLA"><strong>TSLA</strong></td>
           <td class="u-sticky u-col1" data-val="Tesla, Inc." style="font-size:0.82em;white-space:nowrap">Tesla, Inc.</td>
           <td class="u-sticky u-col2" data-val="Consumer Cyclical" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>389.37</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="18.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.1</td>
@@ -1220,12 +1224,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="PG"><strong>PG</strong></td>
           <td class="u-sticky u-col1" data-val="The Procter & Gamble Company" style="font-size:0.82em;white-space:nowrap">The Procter & Gamble Company</td>
           <td class="u-sticky u-col2" data-val="Consumer Defensive" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Defensive</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>144.9</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="16.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.8</td>
@@ -1238,12 +1242,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="PLTR"><strong>PLTR</strong></td>
           <td class="u-sticky u-col1" data-val="Palantir Technologies Inc." style="font-size:0.82em;white-space:nowrap">Palantir Technologies Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>135.91</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="24.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.4</td>
@@ -1256,12 +1260,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="AMAT"><strong>AMAT</strong></td>
           <td class="u-sticky u-col1" data-val="Applied Materials, Inc." style="font-size:0.82em;white-space:nowrap">Applied Materials, Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>410.82</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="37.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.8</td>
@@ -1274,12 +1278,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="GE"><strong>GE</strong></td>
           <td class="u-sticky u-col1" data-val="GE Aerospace" style="font-size:0.82em;white-space:nowrap">GE Aerospace</td>
           <td class="u-sticky u-col2" data-val="Industrials" style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>286.68</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="25.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>25.6</td>
@@ -1292,12 +1296,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="QCOM"><strong>QCOM</strong></td>
           <td class="u-sticky u-col1" data-val="QUALCOMM Incorporated" style="font-size:0.82em;white-space:nowrap">QUALCOMM Incorporated</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>186.55</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="24.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.7</td>
@@ -1310,12 +1314,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="DIS"><strong>DIS</strong></td>
           <td class="u-sticky u-col1" data-val="The Walt Disney Company" style="font-size:0.82em;white-space:nowrap">The Walt Disney Company</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>100.48</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="17.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.4</td>
@@ -1328,12 +1332,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="UBER"><strong>UBER</strong></td>
           <td class="u-sticky u-col1" data-val="Uber Technologies, Inc." style="font-size:0.82em;white-space:nowrap">Uber Technologies, Inc.</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>72.95</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="16.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.4</td>
@@ -1346,12 +1350,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="TMUS"><strong>TMUS</strong></td>
           <td class="u-sticky u-col1" data-val="T-Mobile US, Inc." style="font-size:0.82em;white-space:nowrap">T-Mobile US, Inc.</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>194.31</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="20.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>20.0</td>
@@ -1364,12 +1368,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">4/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="MA"><strong>MA</strong></td>
           <td class="u-sticky u-col1" data-val="Mastercard Incorporated" style="font-size:0.82em;white-space:nowrap">Mastercard Incorporated</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>497.08</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="19.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.1</td>
@@ -1382,12 +1386,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">3/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="NFLX"><strong>NFLX</strong></td>
           <td class="u-sticky u-col1" data-val="Netflix, Inc." style="font-size:0.82em;white-space:nowrap">Netflix, Inc.</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>87.89</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="24.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.4</td>
@@ -1400,12 +1404,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">3/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="ORCL"><strong>ORCL</strong></td>
           <td class="u-sticky u-col1" data-val="Oracle Corporation" style="font-size:0.82em;white-space:nowrap">Oracle Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>185.35</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="21.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.7</td>
@@ -1418,12 +1422,12 @@
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">3/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="WFC"><strong>WFC</strong></td>
           <td class="u-sticky u-col1" data-val="Wells Fargo & Company" style="font-size:0.82em;white-space:nowrap">Wells Fargo & Company</td>
           <td class="u-sticky u-col2" data-val="Financial Services" style="font-size:0.78em;color:#555;white-space:nowrap">Financial Services</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>79.89</td>
           <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="16.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.6</td>
@@ -1436,12 +1440,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">3/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="RTX"><strong>RTX</strong></td>
           <td class="u-sticky u-col1" data-val="RTX Corporation" style="font-size:0.82em;white-space:nowrap">RTX Corporation</td>
           <td class="u-sticky u-col2" data-val="Industrials" style="font-size:0.78em;color:#555;white-space:nowrap">Industrials</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>172.87</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="33.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>33.3</td>
@@ -1454,12 +1458,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">3/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="ABT"><strong>ABT</strong></td>
           <td class="u-sticky u-col1" data-val="Abbott Laboratories" style="font-size:0.82em;white-space:nowrap">Abbott Laboratories</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>87.17</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="37.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.5</td>
@@ -1472,12 +1476,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">3/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="MCD"><strong>MCD</strong></td>
           <td class="u-sticky u-col1" data-val="McDonald's Corporation" style="font-size:0.82em;white-space:nowrap">McDonald's Corporation</td>
           <td class="u-sticky u-col2" data-val="Consumer Cyclical" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td data-val="2" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">2/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>285.17</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="19.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.3</td>
@@ -1490,12 +1494,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="2" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">2/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="ISRG"><strong>ISRG</strong></td>
           <td class="u-sticky u-col1" data-val="Intuitive Surgical, Inc." style="font-size:0.82em;white-space:nowrap">Intuitive Surgical, Inc.</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="2" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">2/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>451.38</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="28.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>28.1</td>
@@ -1508,12 +1512,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="2" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">2/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="META"><strong>META</strong></td>
           <td class="u-sticky u-col1" data-val="Meta Platforms, Inc." style="font-size:0.82em;white-space:nowrap">Meta Platforms, Inc.</td>
           <td class="u-sticky u-col2" data-val="Communication Services" style="font-size:0.78em;color:#555;white-space:nowrap">Communication Services</td>
+          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">1/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>604.96</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="13.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>13.7</td>
@@ -1526,12 +1530,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">1/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="HD"><strong>HD</strong></td>
           <td class="u-sticky u-col1" data-val="The Home Depot, Inc." style="font-size:0.82em;white-space:nowrap">The Home Depot, Inc.</td>
           <td class="u-sticky u-col2" data-val="Consumer Cyclical" style="font-size:0.78em;color:#555;white-space:nowrap">Consumer Cyclical</td>
+          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">1/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>315.42</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="23.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>23.6</td>
@@ -1544,12 +1548,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">1/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="IBM"><strong>IBM</strong></td>
           <td class="u-sticky u-col1" data-val="International Business Machines Corporation" style="font-size:0.82em;white-space:nowrap">International Business Machines Corporation</td>
           <td class="u-sticky u-col2" data-val="Technology" style="font-size:0.78em;color:#555;white-space:nowrap">Technology</td>
+          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">1/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>229.03</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="29.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>29.5</td>
@@ -1562,12 +1566,12 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">1/12</td>
         </tr><tr>
           <td class="u-sticky u-col0" data-val="TMO"><strong>TMO</strong></td>
           <td class="u-sticky u-col1" data-val="Thermo Fisher Scientific Inc." style="font-size:0.82em;white-space:nowrap">Thermo Fisher Scientific Inc.</td>
           <td class="u-sticky u-col2" data-val="Healthcare" style="font-size:0.78em;color:#555;white-space:nowrap">Healthcare</td>
+          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">1/12</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>466.76</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
           <td data-val="24.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.5</td>
@@ -1580,8 +1584,6 @@
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
           <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
-          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:#fadbd8;color:#922b21">1/12</td>
         </tr></tbody>
   </table>
   </div>
@@ -1589,7 +1591,7 @@
 
 <script>
 (function() {
-  var _sortCol = 15, _sortAsc = false;  // Standard: Erfüllt absteigend
+  var _sortCol = 3, _sortAsc = false;  // Standard: Erfüllt absteigend
 
   window.univSort = function(col) {
     var tbl  = document.getElementById('univ-tbl');
