@@ -442,6 +442,8 @@ def _section_universe_overview(universe_all: list[dict], company_info: dict) -> 
           <td class="u-sticky u-col0" data-val="{ticker}"><strong>{ticker}</strong></td>
           <td class="u-sticky u-col1" data-val="{name}" style="font-size:0.82em;white-space:nowrap">{name}</td>
           <td class="u-sticky u-col2" data-val="{sector}" style="font-size:0.78em;color:#555;white-space:nowrap">{sector}</td>
+          <td data-val="{erfuellt}" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:{badge_bg};color:{badge_color}">{erfuellt}/12</td>
           {_cell(t["e1_ma200"],    f"&gt;MA200<br>{t['close']}",  str(int(t['e1_ma200'])))}
           {_cell(t["e1_ma50"],     f"&gt;MA50",                   str(int(t['e1_ma50'])))}
           {_cell(t["e1_adx"],      f"ADX<br>{t['adx_val']}",      str(t['adx_val']))}
@@ -454,8 +456,6 @@ def _section_universe_overview(universe_all: list[dict], company_info: dict) -> 
           {_cell(t["e3_macd"],     "MACD↑<br>" + ("✓" if t["e3_macd"]     else "✗"), str(int(t["e3_macd"])))}
           {_cell(t["e3_momentum"], "Mom↑<br>"  + ("✓" if t["e3_momentum"] else "✗"), str(int(t["e3_momentum"])))}
           {_cell(t["e3_volumen"],  "Vol↑<br>"  + ("✓" if t["e3_volumen"]  else "✗"), str(int(t["e3_volumen"])))}
-          <td data-val="{erfuellt}" style="text-align:center;font-weight:700;font-size:0.95em;
-              background:{badge_bg};color:{badge_color}">{erfuellt}/12</td>
         </tr>"""
 
     return f"""
@@ -497,19 +497,19 @@ def _section_universe_overview(universe_all: list[dict], company_info: dict) -> 
         <th class="u-sticky u-col0" onclick="univSort(0)">Ticker<span class="sort-icon">⇅</span></th>
         <th class="u-sticky u-col1" onclick="univSort(1)">Name<span class="sort-icon">⇅</span></th>
         <th class="u-sticky u-col2" onclick="univSort(2)">Sektor<span class="sort-icon">⇅</span></th>
-        <th title="Kurs über 40W-MA (≈200-Tage-MA)" onclick="univSort(3)">E1.1<br>&gt;MA200<span class="sort-icon">⇅</span></th>
-        <th title="Kurs über 10W-MA (≈50-Tage-MA)"  onclick="univSort(4)">E1.2<br>&gt;MA50<span class="sort-icon">⇅</span></th>
-        <th title="ADX ≥ 25 (Trendstärke)"           onclick="univSort(5)">E1.3<br>ADX<span class="sort-icon">⇅</span></th>
-        <th title="52-Wochen-Performance ≥ 0%"        onclick="univSort(6)">E1.4<br>52W%<span class="sort-icon">⇅</span></th>
-        <th title="Pullback 5–15% vom 3M-Hoch"        onclick="univSort(7)">E2.1<br>PB%<span class="sort-icon">⇅</span></th>
-        <th title="RSI 40–55"                         onclick="univSort(8)">E2.2<br>RSI<span class="sort-icon">⇅</span></th>
-        <th title="Williams %R −80 bis −60"           onclick="univSort(9)">E2.3<br>W%R<span class="sort-icon">⇅</span></th>
-        <th title="Hist. Volatilität 30T &lt; 25%"   onclick="univSort(10)">E2.4<br>HV30<span class="sort-icon">⇅</span></th>
-        <th title="Beta &lt; 0,9"                     onclick="univSort(11)">E2.5<br>Beta<span class="sort-icon">⇅</span></th>
-        <th title="MACD dreht nach oben"              onclick="univSort(12)">E3.1<br>MACD↑<span class="sort-icon">⇅</span></th>
-        <th title="Momentum-Wechsel positiv"          onclick="univSort(13)">E3.2<br>Mom↑<span class="sort-icon">⇅</span></th>
-        <th title="Bullische Kerze + Überdurchschn. Volumen" onclick="univSort(14)">E3.3<br>Vol↑<span class="sort-icon">⇅</span></th>
-        <th title="Anzahl erfüllter Kriterien"        onclick="univSort(15)">Erfüllt<span class="sort-icon">⇅</span></th>
+        <th title="Anzahl erfüllter Kriterien"        onclick="univSort(3)">Erfüllt<span class="sort-icon"> ▼</span></th>
+        <th title="Kurs über 40W-MA (≈200-Tage-MA)" onclick="univSort(4)">E1.1<br>&gt;MA200<span class="sort-icon">⇅</span></th>
+        <th title="Kurs über 10W-MA (≈50-Tage-MA)"  onclick="univSort(5)">E1.2<br>&gt;MA50<span class="sort-icon">⇅</span></th>
+        <th title="ADX ≥ 25 (Trendstärke)"           onclick="univSort(6)">E1.3<br>ADX<span class="sort-icon">⇅</span></th>
+        <th title="52-Wochen-Performance ≥ 0%"        onclick="univSort(7)">E1.4<br>52W%<span class="sort-icon">⇅</span></th>
+        <th title="Pullback 5–15% vom 3M-Hoch"        onclick="univSort(8)">E2.1<br>PB%<span class="sort-icon">⇅</span></th>
+        <th title="RSI 40–55"                         onclick="univSort(9)">E2.2<br>RSI<span class="sort-icon">⇅</span></th>
+        <th title="Williams %R −80 bis −60"           onclick="univSort(10)">E2.3<br>W%R<span class="sort-icon">⇅</span></th>
+        <th title="Hist. Volatilität 30T &lt; 25%"   onclick="univSort(11)">E2.4<br>HV30<span class="sort-icon">⇅</span></th>
+        <th title="Beta &lt; 0,9"                     onclick="univSort(12)">E2.5<br>Beta<span class="sort-icon">⇅</span></th>
+        <th title="MACD dreht nach oben"              onclick="univSort(13)">E3.1<br>MACD↑<span class="sort-icon">⇅</span></th>
+        <th title="Momentum-Wechsel positiv"          onclick="univSort(14)">E3.2<br>Mom↑<span class="sort-icon">⇅</span></th>
+        <th title="Bullische Kerze + Überdurchschn. Volumen" onclick="univSort(15)">E3.3<br>Vol↑<span class="sort-icon">⇅</span></th>
       </tr>
     </thead>
     <tbody>{rows}</tbody>
@@ -519,7 +519,7 @@ def _section_universe_overview(universe_all: list[dict], company_info: dict) -> 
 
 <script>
 (function() {{
-  var _sortCol = 15, _sortAsc = false;  // Standard: Erfüllt absteigend
+  var _sortCol = 3, _sortAsc = false;  // Standard: Erfüllt absteigend
 
   window.univSort = function(col) {{
     var tbl  = document.getElementById('univ-tbl');
