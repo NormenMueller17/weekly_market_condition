@@ -117,48 +117,8 @@ async function addVerkauf(request, db) {
 
 // ── DB Init ───────────────────────────────────────────────────────────────────
 async function initDb(db) {
-  // D1 exec() unterstützt nur ein Statement pro Aufruf — daher getrennt
-  await db.exec(`CREATE TABLE IF NOT EXISTS trades_open (
-    id                       TEXT PRIMARY KEY,
-    basiswert                TEXT NOT NULL,
-    company                  TEXT,
-    schein_isin              TEXT,
-    schein_name              TEXT,
-    kauf_datum               TEXT NOT NULL,
-    faelligkeitsdatum        TEXT,
-    kauf_kurs_schein         REAL NOT NULL,
-    kauf_kurs_basiswert      REAL,
-    anzahl                   INTEGER NOT NULL,
-    investiert               REAL NOT NULL,
-    strike                   REAL,
-    hebel_kauf               REAL,
-    restlaufzeit_kauf_monate INTEGER,
-    notizen                  TEXT
-  )`);
-  await db.exec(`CREATE TABLE IF NOT EXISTS trades_closed (
-    id                       TEXT PRIMARY KEY,
-    basiswert                TEXT NOT NULL,
-    company                  TEXT,
-    schein_isin              TEXT,
-    schein_name              TEXT,
-    kauf_datum               TEXT,
-    faelligkeitsdatum        TEXT,
-    kauf_kurs_schein         REAL,
-    kauf_kurs_basiswert      REAL,
-    anzahl                   INTEGER,
-    investiert               REAL,
-    strike                   REAL,
-    hebel_kauf               REAL,
-    restlaufzeit_kauf_monate INTEGER,
-    notizen                  TEXT,
-    verkauf_datum            TEXT,
-    verkauf_kurs_schein      REAL,
-    verkauf_kurs_basiswert   REAL,
-    verkauf_erloes           REAL,
-    gewinn_verlust           REAL,
-    gewinn_verlust_pct       REAL,
-    verkauf_grund            TEXT
-  )`);
+  await db.prepare("CREATE TABLE IF NOT EXISTS trades_open (id TEXT PRIMARY KEY, basiswert TEXT NOT NULL, company TEXT, schein_isin TEXT, schein_name TEXT, kauf_datum TEXT NOT NULL, faelligkeitsdatum TEXT, kauf_kurs_schein REAL NOT NULL, kauf_kurs_basiswert REAL, anzahl INTEGER NOT NULL, investiert REAL NOT NULL, strike REAL, hebel_kauf REAL, restlaufzeit_kauf_monate INTEGER, notizen TEXT)").run();
+  await db.prepare("CREATE TABLE IF NOT EXISTS trades_closed (id TEXT PRIMARY KEY, basiswert TEXT NOT NULL, company TEXT, schein_isin TEXT, schein_name TEXT, kauf_datum TEXT, faelligkeitsdatum TEXT, kauf_kurs_schein REAL, kauf_kurs_basiswert REAL, anzahl INTEGER, investiert REAL, strike REAL, hebel_kauf REAL, restlaufzeit_kauf_monate INTEGER, notizen TEXT, verkauf_datum TEXT, verkauf_kurs_schein REAL, verkauf_kurs_basiswert REAL, verkauf_erloes REAL, gewinn_verlust REAL, gewinn_verlust_pct REAL, verkauf_grund TEXT)").run();
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────
