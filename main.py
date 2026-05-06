@@ -595,6 +595,36 @@ def run():
         alpaca_positions = []
         print("[ALPACA] Nicht verbunden – Fallback auf account_equity aus Einstellungen")
 
+    # ── Sell-Order-Coverage: jede Position muss eine Stop-Sell-Order haben ──────
+    if alpaca_portfolio is not None:
+        coverage = alpaca_client.check_sell_order_coverage(alpaca_portfolio, dry_run=TEST_MODE)
+        missing  = [r for r in coverage if r["status"] not in ("covered",)]
+        if missing:
+            for r in missing:
+                sym    = r["symbol"]
+                status = r["status"]
+                stop   = r.get("stop_price", "–")
+                print(f"[COVERAGE] {'🔍 DRY-RUN' if 'dry_run' in status else ('✅' if status == 'placed' else '❌')}  {sym}: {status}  Stop @ {stop}")
+        else:
+            print(f"[COVERAGE] ✅ Alle {len(coverage)} Position(en) haben eine Stop-Sell-Order")
+
+        # ── Ablaufende Sell-Orders erneuern (>80 Tage alt → vor 90-Tage-Grenze) ─
+        refresh = alpaca_client.refresh_expiring_sell_orders(dry_run=TEST_MODE)
+        expiring = [r for r in refresh if r["status"] not in ("ok", "no_client")]
+        if expiring:
+            for r in expiring:
+                sym    = r.get("symbol", "?")
+                status = r["status"]
+                age    = r.get("age_days", "?")
+                stop   = r.get("stop_price", "–")
+                print(f"[REFRESH]  {sym}: {status}  ({age} Tage alt)  Stop @ {stop}")
+        else:
+            active_count = sum(1 for r in refresh if r["status"] == "ok")
+            if active_count:
+                print(f"[REFRESH] ✅ {active_count} Sell-Order(s) aktiv, keine ablaufenden")
+    else:
+        print("[COVERAGE] Kein Alpaca-Portfolio — Coverage-Check übersprungen")
+
     # ── Exit-Manager: MACD Bearish Cross auf offenen Positionen prüfen ──────────
     exit_results: list[dict] = []
     if alpaca_portfolio is not None:
