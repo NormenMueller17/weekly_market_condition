@@ -26,25 +26,26 @@
     input, select, textarea {
       border: 1px solid #ddd; border-radius: 4px; padding: 7px 10px;
       font-size: 0.9em; width: 100%; transition: border-color 0.2s; }
-    input:focus, select:focus, textarea:focus {
-      outline: none; border-color: #2980b9; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #2980b9; }
     .btn { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer;
            font-size: 0.88em; font-weight: 600; transition: opacity 0.2s; }
     .btn:hover { opacity: 0.85; }
     .btn-primary { background: #2980b9; color: white; }
     .btn-success { background: #27ae60; color: white; }
-    .btn-warning { background: #f39c12; color: white; }
     .btn-danger  { background: #e74c3c; color: white; }
     .btn-neutral { background: #ecf0f1; color: #2c3e50; }
-    .btn-sm { padding: 4px 10px; font-size: 0.8em; }
+    .btn-sm { padding: 5px 12px; font-size: 0.82em; }
+
+    /* Settings */
+    .settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .settings-row .full { grid-column: 1/-1; }
 
     /* Tabs */
     .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #ecf0f1; }
     .tab { padding: 8px 16px; cursor: pointer; border-radius: 6px 6px 0 0;
            font-weight: 600; font-size: 0.9em; color: #7f8c8d; border: 2px solid transparent;
            border-bottom: none; position: relative; top: 2px; }
-    .tab.active { background: white; border-color: #ecf0f1; color: #2c3e50;
-                  border-bottom-color: white; }
+    .tab.active { background: white; border-color: #ecf0f1; color: #2c3e50; border-bottom-color: white; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
@@ -56,8 +57,7 @@
     tr:last-child td { border-bottom: none; }
 
     /* Badges */
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px;
-             font-size: 0.78em; font-weight: 600; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
     .badge-gruen { background: #d5f5e3; color: #1e8449; }
     .badge-gelb  { background: #fef9e7; color: #9a7d0a; }
     .badge-rot   { background: #fadbd8; color: #922b21; }
@@ -68,28 +68,28 @@
     .form-actions { display: flex; gap: 8px; margin-top: 14px; }
 
     /* Status */
-    #status { padding: 10px 14px; border-radius: 6px; margin-top: 10px;
+    .status { padding: 10px 14px; border-radius: 6px; margin-top: 10px;
               font-size: 0.88em; display: none; }
-    #status.ok      { background: #d5f5e3; color: #1e8449; display: block; }
-    #status.err     { background: #fadbd8; color: #922b21; display: block; }
-    #status.loading { background: #fef9e7; color: #9a7d0a; display: block; }
+    .status.ok      { background: #d5f5e3; color: #1e8449; display: block; }
+    .status.err     { background: #fadbd8; color: #922b21; display: block; }
+    .status.loading { background: #fef9e7; color: #9a7d0a; display: block; }
 
     .pl-pos { color: #27ae60; font-weight: 600; }
     .pl-neg { color: #e74c3c; font-weight: 600; }
 
-    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-                    margin-bottom: 16px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
     .summary-card { background: #f8f9fa; border-radius: 6px; padding: 10px 14px; }
     .summary-card .label { font-size: 0.75em; color: #7f8c8d; margin-bottom: 2px; }
     .summary-card .value { font-size: 1.15em; font-weight: 700; }
 
-    .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-               padding: 10px 0; border-bottom: 1px solid #ecf0f1; margin-bottom: 14px; }
-    .toolbar .saved-hint { font-size: 0.78em; color: #95a5a6; margin-left: auto; }
+    .conn-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; }
+    .conn-badge.ok  { background: #d5f5e3; color: #1e8449; }
+    .conn-badge.err { background: #fadbd8; color: #922b21; }
+    .conn-badge.none { background: #ecf0f1; color: #7f8c8d; }
 
     @media (max-width: 640px) {
-      .form-grid, .summary-grid { grid-template-columns: 1fr; }
-      .form-grid .full { grid-column: 1; }
+      .form-grid, .summary-grid, .settings-row { grid-template-columns: 1fr; }
+      .form-grid .full, .settings-row .full { grid-column: 1; }
     }
   </style>
 </head>
@@ -104,19 +104,48 @@
     </nav>
   </header>
 
-  <!-- Kennzahlen -->
+  <!-- ── Verbindungseinstellungen ───────────────────────────────────────────── -->
+  <div class="card" id="settings-card">
+    <h2>
+      ⚙️ Verbindung
+      <span id="conn-badge" class="conn-badge none" style="margin-left:10px;font-size:0.75em">nicht verbunden</span>
+      <button class="btn btn-neutral btn-sm" style="margin-left:10px"
+              onclick="toggleSettings()">Einstellungen</button>
+    </h2>
+    <div id="settings-form" style="display:none;margin-top:12px">
+      <div class="settings-row">
+        <div class="field">
+          <label>Worker-URL</label>
+          <input id="cfg-url" placeholder="https://zertifikate-api.DEIN-NAME.workers.dev" />
+        </div>
+        <div class="field">
+          <label>API-Secret</label>
+          <input id="cfg-secret" type="password" placeholder="dein-api-secret" />
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="saveAndConnect()">Verbinden &amp; speichern</button>
+        <span style="font-size:0.78em;color:#95a5a6">
+          URL und Secret werden nur in diesem Browser gespeichert.
+        </span>
+      </div>
+      <div id="status-conn" class="status"></div>
+    </div>
+  </div>
+
+  <!-- ── Kennzahlen ─────────────────────────────────────────────────────────── -->
   <div class="summary-grid">
     <div class="summary-card">
       <div class="label">Offene Positionen</div>
-      <div class="value" id="s-open">0</div>
+      <div class="value" id="s-open">—</div>
     </div>
     <div class="summary-card">
       <div class="label">Investiert gesamt</div>
-      <div class="value" id="s-invested">0,00 €</div>
+      <div class="value" id="s-invested">—</div>
     </div>
     <div class="summary-card">
       <div class="label">Realisierter G/V</div>
-      <div class="value" id="s-pl">0,00 €</div>
+      <div class="value" id="s-pl">—</div>
     </div>
     <div class="summary-card">
       <div class="label">Win-Rate</div>
@@ -124,17 +153,8 @@
     </div>
   </div>
 
-  <!-- Tabs -->
+  <!-- ── Tabs ───────────────────────────────────────────────────────────────── -->
   <div class="card">
-    <div class="toolbar">
-      <button class="btn btn-primary btn-sm" onclick="exportJson()">⬇ Export JSON</button>
-      <label class="btn btn-neutral btn-sm" style="cursor:pointer;display:inline-block">
-        ⬆ Import JSON
-        <input type="file" accept=".json" style="display:none" onchange="importJson(event)">
-      </label>
-      <span class="saved-hint" id="saved-hint"></span>
-    </div>
-
     <div class="tabs">
       <div class="tab active" onclick="switchTab('open')">Offene Positionen</div>
       <div class="tab" onclick="switchTab('closed')">Geschlossene Trades</div>
@@ -144,102 +164,65 @@
 
     <!-- TAB: Offene Positionen -->
     <div id="tab-open" class="tab-content active">
-      <div id="open-table"><p style="color:#7f8c8d;font-style:italic">Keine offenen Positionen. Kauf erfassen →</p></div>
+      <div id="open-table"><p style="color:#7f8c8d;font-style:italic">Bitte zuerst verbinden.</p></div>
     </div>
 
     <!-- TAB: Geschlossene Trades -->
     <div id="tab-closed" class="tab-content">
-      <div id="closed-table"><p style="color:#7f8c8d;font-style:italic">Noch keine geschlossenen Trades.</p></div>
+      <div id="closed-table"><p style="color:#7f8c8d;font-style:italic">Bitte zuerst verbinden.</p></div>
     </div>
 
     <!-- TAB: Kauf erfassen -->
     <div id="tab-add" class="tab-content">
       <h2 style="margin-bottom:14px">Neuen Kauf erfassen</h2>
       <div class="form-grid">
-        <div class="field">
-          <label>Basiswert (Ticker)</label>
-          <input id="f-basiswert" placeholder="z.B. NVDA" />
-        </div>
-        <div class="field">
-          <label>Unternehmen</label>
-          <input id="f-company" placeholder="z.B. NVIDIA Corp" />
-        </div>
-        <div class="field">
-          <label>Schein ISIN</label>
-          <input id="f-isin" placeholder="z.B. DE000XS123456" />
-        </div>
-        <div class="field">
-          <label>Schein-Name / Produktbezeichnung</label>
-          <input id="f-name" placeholder="z.B. NVDA Call OS 200 12/2027" />
-        </div>
-        <div class="field">
-          <label>Kaufdatum</label>
-          <input id="f-kauf-datum" type="date" />
-        </div>
-        <div class="field">
-          <label>Fälligkeitsdatum (des OS)</label>
-          <input id="f-faelligkeit" type="date" />
-        </div>
-        <div class="field">
-          <label>Kaufkurs Optionsschein (€)</label>
-          <input id="f-kurs-schein" type="number" step="0.01" placeholder="2.45" />
-        </div>
-        <div class="field">
-          <label>Kurs Basiswert am Kauftag (€/$)</label>
-          <input id="f-kurs-basis" type="number" step="0.01" placeholder="135.20" />
-        </div>
-        <div class="field">
-          <label>Anzahl Optionsscheine</label>
-          <input id="f-anzahl" type="number" step="1" placeholder="1000" />
-        </div>
-        <div class="field">
-          <label>Strike des OS</label>
-          <input id="f-strike" type="number" step="0.01" placeholder="100.00" />
-        </div>
-        <div class="field">
-          <label>Hebel zum Kaufzeitpunkt (ca.)</label>
-          <input id="f-hebel" type="number" step="0.1" placeholder="3.0" />
-        </div>
-        <div class="field">
-          <label>Restlaufzeit in Monaten (zum Kauf)</label>
-          <input id="f-laufzeit" type="number" step="1" placeholder="18" />
-        </div>
-        <div class="field full">
-          <label>Notizen</label>
-          <textarea id="f-notizen" rows="2" placeholder="Optional: Einstiegsgrund, Scanner-Score, etc."></textarea>
-        </div>
+        <div class="field"><label>Basiswert (Ticker)</label>
+          <input id="f-basiswert" placeholder="z.B. NVDA" /></div>
+        <div class="field"><label>Unternehmen</label>
+          <input id="f-company" placeholder="z.B. NVIDIA Corp" /></div>
+        <div class="field"><label>Schein ISIN</label>
+          <input id="f-isin" placeholder="z.B. DE000XS123456" /></div>
+        <div class="field"><label>Schein-Name / Produktbezeichnung</label>
+          <input id="f-name" placeholder="z.B. NVDA Call OS 200 12/2027" /></div>
+        <div class="field"><label>Kaufdatum</label>
+          <input id="f-kauf-datum" type="date" /></div>
+        <div class="field"><label>Fälligkeitsdatum (des OS)</label>
+          <input id="f-faelligkeit" type="date" /></div>
+        <div class="field"><label>Kaufkurs Optionsschein (€)</label>
+          <input id="f-kurs-schein" type="number" step="0.01" placeholder="2.45" /></div>
+        <div class="field"><label>Kurs Basiswert am Kauftag (€/$)</label>
+          <input id="f-kurs-basis" type="number" step="0.01" placeholder="135.20" /></div>
+        <div class="field"><label>Anzahl Optionsscheine</label>
+          <input id="f-anzahl" type="number" step="1" placeholder="1000" /></div>
+        <div class="field"><label>Strike des OS</label>
+          <input id="f-strike" type="number" step="0.01" placeholder="100.00" /></div>
+        <div class="field"><label>Hebel zum Kaufzeitpunkt (ca.)</label>
+          <input id="f-hebel" type="number" step="0.1" placeholder="3.0" /></div>
+        <div class="field"><label>Restlaufzeit in Monaten (zum Kauf)</label>
+          <input id="f-laufzeit" type="number" step="1" placeholder="18" /></div>
+        <div class="field full"><label>Notizen</label>
+          <textarea id="f-notizen" rows="2" placeholder="Optional: Einstiegsgrund, Scanner-Score, etc."></textarea></div>
       </div>
       <div class="form-actions">
         <button class="btn btn-success" onclick="addKauf()">✅ Kauf speichern</button>
         <button class="btn btn-neutral" onclick="resetKaufForm()">Zurücksetzen</button>
       </div>
-      <div id="status"></div>
+      <div id="status-add" class="status"></div>
     </div>
 
     <!-- TAB: Verkauf / Rollen -->
     <div id="tab-sell" class="tab-content">
       <h2 style="margin-bottom:14px">Verkauf oder Roll erfassen</h2>
       <div class="form-grid">
-        <div class="field full">
-          <label>Position auswählen</label>
-          <select id="s-position">
-            <option value="">— Position auswählen —</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Verkaufsdatum</label>
-          <input id="s-datum" type="date" />
-        </div>
-        <div class="field">
-          <label>Verkaufskurs Optionsschein (€)</label>
-          <input id="s-kurs-schein" type="number" step="0.01" placeholder="3.80" />
-        </div>
-        <div class="field">
-          <label>Kurs Basiswert am Verkaufstag</label>
-          <input id="s-kurs-basis" type="number" step="0.01" placeholder="210.00" />
-        </div>
-        <div class="field">
-          <label>Verkaufsgrund</label>
+        <div class="field full"><label>Position auswählen</label>
+          <select id="s-position"><option value="">— Position auswählen —</option></select></div>
+        <div class="field"><label>Verkaufsdatum</label>
+          <input id="s-datum" type="date" /></div>
+        <div class="field"><label>Verkaufskurs Optionsschein (€)</label>
+          <input id="s-kurs-schein" type="number" step="0.01" placeholder="3.80" /></div>
+        <div class="field"><label>Kurs Basiswert am Verkaufstag</label>
+          <input id="s-kurs-basis" type="number" step="0.01" placeholder="210.00" /></div>
+        <div class="field"><label>Verkaufsgrund</label>
           <select id="s-grund">
             <option>Zeitwert-Rollen</option>
             <option>Gewinn-Rollen</option>
@@ -250,8 +233,7 @@
             <option>MACD Kreuz unter Null</option>
             <option>Fundamentaler Bruch</option>
             <option>Manuell</option>
-          </select>
-        </div>
+          </select></div>
         <div class="field" id="s-pl-preview" style="display:none">
           <label>Vorschau G/V</label>
           <div id="s-pl-value" style="font-size:1.2em;font-weight:700;padding-top:6px">—</div>
@@ -261,71 +243,81 @@
         <button class="btn btn-danger" onclick="addVerkauf()">📤 Verkauf speichern</button>
         <button class="btn btn-neutral" onclick="resetVerkaufForm()">Zurücksetzen</button>
       </div>
-      <div id="status-sell"></div>
+      <div id="status-sell" class="status"></div>
     </div>
 
   </div><!-- /card -->
-
 </div><!-- /container -->
 
 <script>
-// ── State ────────────────────────────────────────────────────────────────────
-let portfolio = { version: 1, last_updated: "", open: [], closed: [] };
+// ── State ─────────────────────────────────────────────────────────────────────
+let openTrades   = [];
+let closedTrades = [];
 
-const STORAGE_KEY = "zertifikate_portfolio_v1";
-
-// ── Persistenz: localStorage ──────────────────────────────────────────────────
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) portfolio = JSON.parse(raw);
-  } catch (e) {
-    console.error("Fehler beim Laden aus localStorage:", e);
-  }
-}
-
-function saveToStorage() {
-  portfolio.last_updated = new Date().toISOString().split("T")[0];
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
-    const hint = document.getElementById("saved-hint");
-    hint.textContent = "Gespeichert " + new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  } catch (e) {
-    console.error("Fehler beim Speichern in localStorage:", e);
-  }
-}
-
-// ── Export / Import ────────────────────────────────────────────────────────────
-function exportJson() {
-  const date = new Date().toISOString().split("T")[0];
-  const blob = new Blob([JSON.stringify(portfolio, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `zertifikate_portfolio_${date}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-function importJson(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!Array.isArray(data.open) || !Array.isArray(data.closed)) {
-        throw new Error("Ungültiges Portfolio-Format");
-      }
-      portfolio = data;
-      saveToStorage();
-      renderAll();
-      setStatus("Portfolio importiert: " + portfolio.open.length + " offene, " + portfolio.closed.length + " geschlossene Positionen.", "ok", "status");
-    } catch (err) {
-      setStatus("Import fehlgeschlagen: " + err.message, "err", "status");
-    }
+// ── Config (localStorage) ─────────────────────────────────────────────────────
+function getCfg() {
+  return {
+    url:    localStorage.getItem("cf_worker_url")    || "",
+    secret: localStorage.getItem("cf_worker_secret") || "",
   };
-  reader.readAsText(file);
-  event.target.value = "";
+}
+function saveCfg(url, secret) {
+  localStorage.setItem("cf_worker_url",    url);
+  localStorage.setItem("cf_worker_secret", secret);
+}
+
+// ── API calls ─────────────────────────────────────────────────────────────────
+async function api(path, method = "GET", body = null) {
+  const { url, secret } = getCfg();
+  if (!url || !secret) throw new Error("Bitte zuerst Worker-URL und API-Secret eingeben.");
+  const opts = {
+    method,
+    headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch(url + path, opts);
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+  return data;
+}
+
+// ── Settings UI ───────────────────────────────────────────────────────────────
+function toggleSettings() {
+  const form = document.getElementById("settings-form");
+  form.style.display = form.style.display === "none" ? "block" : "none";
+}
+
+async function saveAndConnect() {
+  const url    = document.getElementById("cfg-url").value.trim().replace(/\/$/, "");
+  const secret = document.getElementById("cfg-secret").value.trim();
+  if (!url || !secret) {
+    setStatus("status-conn", "Bitte URL und Secret eingeben.", "err");
+    return;
+  }
+  saveCfg(url, secret);
+  setStatus("status-conn", "Verbinde …", "loading");
+  try {
+    await loadPortfolio();
+    setBadge("ok", "verbunden");
+    document.getElementById("settings-form").style.display = "none";
+  } catch (e) {
+    setBadge("err", "Fehler");
+    setStatus("status-conn", "Verbindung fehlgeschlagen: " + e.message, "err");
+  }
+}
+
+function setBadge(type, text) {
+  const el = document.getElementById("conn-badge");
+  el.textContent = text;
+  el.className = "conn-badge " + type;
+}
+
+// ── Portfolio laden ───────────────────────────────────────────────────────────
+async function loadPortfolio() {
+  const data = await api("/api/portfolio");
+  openTrades   = data.open   || [];
+  closedTrades = data.closed || [];
+  renderAll();
 }
 
 // ── Rendern ───────────────────────────────────────────────────────────────────
@@ -337,97 +329,87 @@ function renderAll() {
 }
 
 function renderSummary() {
-  const invested = portfolio.open.reduce((s, p) => s + (p.investiert || 0), 0);
-  const closed   = portfolio.closed;
-  const pl       = closed.reduce((s, p) => s + (p.gewinn_verlust || 0), 0);
-  const wins     = closed.filter(p => (p.gewinn_verlust || 0) > 0).length;
-  const winrate  = closed.length > 0 ? (wins / closed.length * 100).toFixed(0) : "—";
+  const invested = openTrades.reduce((s, p) => s + (p.investiert || 0), 0);
+  const pl       = closedTrades.reduce((s, p) => s + (p.gewinn_verlust || 0), 0);
+  const wins     = closedTrades.filter(p => (p.gewinn_verlust || 0) > 0).length;
+  const winrate  = closedTrades.length > 0 ? (wins / closedTrades.length * 100).toFixed(0) + "%" : "—";
 
-  document.getElementById("s-open").textContent     = portfolio.open.length;
+  document.getElementById("s-open").textContent     = openTrades.length;
   document.getElementById("s-invested").textContent = fmtEur(invested);
   const plEl = document.getElementById("s-pl");
   plEl.textContent = fmtEur(pl);
   plEl.className = "value " + (pl >= 0 ? "pl-pos" : "pl-neg");
-  document.getElementById("s-winrate").textContent = closed.length > 0 ? winrate + "%" : "—";
+  document.getElementById("s-winrate").textContent = winrate;
 }
 
 function renderOpen() {
   const el = document.getElementById("open-table");
-  if (!portfolio.open.length) {
-    el.innerHTML = '<p style="color:#7f8c8d;font-style:italic">Keine offenen Positionen. Kauf erfassen →</p>';
+  if (!openTrades.length) {
+    el.innerHTML = '<p style="color:#7f8c8d;font-style:italic">Keine offenen Positionen.</p>';
     return;
   }
-  const rows = portfolio.open.map(p => {
-    const restMonate = restlaufzeit(p.faelligkeitsdatum);
-    const zeitBadge  = restMonate >= 9 ? "gruen" : restMonate >= 5 ? "gelb" : "rot";
-    const zeitLabel  = restMonate >= 9 ? "🟢 OK"  : restMonate >= 5 ? "🟡 Prüfen" : "🔴 Rollen";
+  const rows = openTrades.map(p => {
+    const rm = restlaufzeit(p.faelligkeitsdatum);
+    const badge = rm >= 9 ? "gruen" : rm >= 5 ? "gelb" : "rot";
+    const label = rm >= 9 ? "🟢 OK" : rm >= 5 ? "🟡 Prüfen" : "🔴 Rollen";
     return `<tr>
       <td><strong>${esc(p.basiswert)}</strong></td>
-      <td style="font-size:0.82em">${esc(p.schein_name || "—")}</td>
-      <td style="font-size:0.82em">${esc(p.schein_isin || "—")}</td>
-      <td>${p.kauf_datum || "—"}</td>
+      <td style="font-size:.82em">${esc(p.schein_name||"—")}</td>
+      <td style="font-size:.82em">${esc(p.schein_isin||"—")}</td>
+      <td>${p.kauf_datum||"—"}</td>
       <td>${fmtEur(p.kauf_kurs_schein)}</td>
-      <td>${(p.anzahl || 0).toLocaleString()}</td>
+      <td>${(p.anzahl||0).toLocaleString()}</td>
       <td>${fmtEur(p.investiert)}</td>
-      <td>${p.faelligkeitsdatum || "—"}</td>
-      <td><span class="badge badge-${zeitBadge}">${zeitLabel}</span> (${restMonate.toFixed(1)} M)</td>
-      <td>${p.hebel_kauf || "—"}x</td>
-      <td style="font-size:0.8em;color:#7f8c8d">${esc(p.notizen || "")}</td>
+      <td>${p.faelligkeitsdatum||"—"}</td>
+      <td><span class="badge badge-${badge}">${label}</span> (${rm.toFixed(1)} M)</td>
+      <td>${p.hebel_kauf||"—"}x</td>
+      <td style="font-size:.8em;color:#7f8c8d">${esc(p.notizen||"")}</td>
     </tr>`;
   }).join("");
-
   el.innerHTML = `<div style="overflow-x:auto"><table>
-    <thead><tr>
-      <th>Basiswert</th><th>Schein</th><th>ISIN</th><th>Kauf</th>
-      <th>Kurs OS</th><th>Anzahl</th><th>Investiert</th>
-      <th>Fälligkeit</th><th>Zeitampel</th><th>Hebel</th><th>Notizen</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
+    <thead><tr><th>Basiswert</th><th>Schein</th><th>ISIN</th><th>Kauf</th>
+    <th>Kurs OS</th><th>Anzahl</th><th>Investiert</th>
+    <th>Fälligkeit</th><th>Zeitampel</th><th>Hebel</th><th>Notizen</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function renderClosed() {
   const el = document.getElementById("closed-table");
-  if (!portfolio.closed.length) {
+  if (!closedTrades.length) {
     el.innerHTML = '<p style="color:#7f8c8d;font-style:italic">Noch keine geschlossenen Trades.</p>';
     return;
   }
-  const rows = portfolio.closed.slice().reverse().map(p => {
+  const rows = closedTrades.map(p => {
     const pl    = p.gewinn_verlust || 0;
     const plPct = p.gewinn_verlust_pct || 0;
-    const plClass = pl >= 0 ? "pl-pos" : "pl-neg";
+    const cls   = pl >= 0 ? "pl-pos" : "pl-neg";
     const sign  = pl >= 0 ? "+" : "";
     return `<tr>
       <td><strong>${esc(p.basiswert)}</strong></td>
-      <td style="font-size:0.82em">${esc(p.schein_name || "—")}</td>
-      <td>${p.kauf_datum || "—"}</td>
-      <td>${p.verkauf_datum || "—"}</td>
+      <td style="font-size:.82em">${esc(p.schein_name||"—")}</td>
+      <td>${p.kauf_datum||"—"}</td><td>${p.verkauf_datum||"—"}</td>
       <td>${fmtEur(p.kauf_kurs_schein)}</td>
       <td>${fmtEur(p.verkauf_kurs_schein)}</td>
-      <td>${(p.anzahl || 0).toLocaleString()}</td>
-      <td class="${plClass}">${sign}${fmtEur(pl)}</td>
-      <td class="${plClass}">${sign}${plPct.toFixed(1)}%</td>
-      <td style="font-size:0.82em">${esc(p.verkauf_grund || "—")}</td>
+      <td>${(p.anzahl||0).toLocaleString()}</td>
+      <td class="${cls}">${sign}${fmtEur(pl)}</td>
+      <td class="${cls}">${sign}${plPct.toFixed(1)}%</td>
+      <td style="font-size:.82em">${esc(p.verkauf_grund||"—")}</td>
     </tr>`;
   }).join("");
-
   el.innerHTML = `<div style="overflow-x:auto"><table>
-    <thead><tr>
-      <th>Basiswert</th><th>Schein</th><th>Kauf</th><th>Verkauf</th>
-      <th>Kurs Kauf</th><th>Kurs Verk.</th><th>Anzahl</th>
-      <th>G/V €</th><th>G/V %</th><th>Grund</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
+    <thead><tr><th>Basiswert</th><th>Schein</th><th>Kauf</th><th>Verkauf</th>
+    <th>Kurs Kauf</th><th>Kurs Verk.</th><th>Anzahl</th>
+    <th>G/V €</th><th>G/V %</th><th>Grund</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function renderSellSelect() {
   const sel = document.getElementById("s-position");
   sel.innerHTML = '<option value="">— Position auswählen —</option>';
-  portfolio.open.forEach((p, i) => {
+  openTrades.forEach((p, i) => {
     const opt = document.createElement("option");
     opt.value = i;
-    opt.textContent = `${p.basiswert} | ${p.schein_name || p.schein_isin} | Kauf: ${p.kauf_datum}`;
+    opt.textContent = `${p.basiswert} | ${p.schein_name||p.schein_isin} | Kauf: ${p.kauf_datum}`;
     sel.appendChild(opt);
   });
   sel.onchange = updatePlPreview;
@@ -435,95 +417,91 @@ function renderSellSelect() {
 }
 
 function updatePlPreview() {
-  const idx  = parseInt(document.getElementById("s-position").value);
+  const idx   = parseInt(document.getElementById("s-position").value);
   const kursV = parseFloat(document.getElementById("s-kurs-schein").value);
-  if (isNaN(idx) || isNaN(kursV)) {
-    document.getElementById("s-pl-preview").style.display = "none";
-    return;
-  }
-  const pos = portfolio.open[idx];
+  const preview = document.getElementById("s-pl-preview");
+  if (isNaN(idx) || isNaN(kursV)) { preview.style.display = "none"; return; }
+  const pos  = openTrades[idx];
   if (!pos) return;
-  const erloes = kursV * (pos.anzahl || 0);
-  const pl     = erloes - (pos.investiert || 0);
-  const plPct  = pos.investiert ? pl / pos.investiert * 100 : 0;
-  const sign   = pl >= 0 ? "+" : "";
+  const pl    = kursV * pos.anzahl - pos.investiert;
+  const plPct = pos.investiert ? pl / pos.investiert * 100 : 0;
+  const sign  = pl >= 0 ? "+" : "";
   document.getElementById("s-pl-value").textContent =
     `${sign}${fmtEur(pl)} (${sign}${plPct.toFixed(1)}%)`;
   document.getElementById("s-pl-value").className = pl >= 0 ? "pl-pos" : "pl-neg";
-  document.getElementById("s-pl-preview").style.display = "block";
+  preview.style.display = "block";
 }
 
 // ── Kauf speichern ────────────────────────────────────────────────────────────
-function addKauf() {
+async function addKauf() {
   const g = id => document.getElementById(id).value.trim();
   const basiswert = g("f-basiswert").toUpperCase();
   if (!basiswert || !g("f-kauf-datum") || !g("f-kurs-schein") || !g("f-anzahl")) {
-    setStatus("Bitte Pflichtfelder ausfüllen: Basiswert, Kaufdatum, Kurs, Anzahl.", "err", "status");
+    setStatus("status-add", "Bitte Pflichtfelder ausfüllen: Basiswert, Kaufdatum, Kurs, Anzahl.", "err");
     return;
   }
   const kursSchein = parseFloat(g("f-kurs-schein"));
   const anzahl     = parseInt(g("f-anzahl"));
-
-  portfolio.open.push({
+  const trade = {
     id:                       uuid(),
     basiswert,
-    company:                  g("f-company"),
-    schein_isin:              g("f-isin"),
-    schein_name:              g("f-name"),
+    company:                  g("f-company") || null,
+    schein_isin:              g("f-isin")    || null,
+    schein_name:              g("f-name")    || null,
     kauf_datum:               g("f-kauf-datum"),
-    faelligkeitsdatum:        g("f-faelligkeit"),
+    faelligkeitsdatum:        g("f-faelligkeit") || null,
     kauf_kurs_schein:         kursSchein,
     kauf_kurs_basiswert:      parseFloat(g("f-kurs-basis")) || null,
     anzahl,
     investiert:               Math.round(kursSchein * anzahl * 100) / 100,
-    strike:                   parseFloat(g("f-strike")) || null,
-    hebel_kauf:               parseFloat(g("f-hebel")) || null,
-    restlaufzeit_kauf_monate: parseInt(g("f-laufzeit")) || null,
-    notizen:                  g("f-notizen"),
-  });
-
-  saveToStorage();
-  renderAll();
-  resetKaufForm();
-  setStatus(`✅ Kauf von ${basiswert} gespeichert.`, "ok", "status");
-  switchTab("open");
+    strike:                   parseFloat(g("f-strike"))  || null,
+    hebel_kauf:               parseFloat(g("f-hebel"))   || null,
+    restlaufzeit_kauf_monate: parseInt(g("f-laufzeit"))  || null,
+    notizen:                  g("f-notizen") || null,
+  };
+  setStatus("status-add", "Speichere …", "loading");
+  try {
+    await api("/api/kauf", "POST", trade);
+    await loadPortfolio();
+    resetKaufForm();
+    setStatus("status-add", `✅ Kauf von ${basiswert} gespeichert.`, "ok");
+    switchTab("open");
+  } catch (e) {
+    setStatus("status-add", "Fehler: " + e.message, "err");
+  }
 }
 
 // ── Verkauf speichern ─────────────────────────────────────────────────────────
-function addVerkauf() {
+async function addVerkauf() {
   const idx   = parseInt(document.getElementById("s-position").value);
   const datum = document.getElementById("s-datum").value;
   const kursV = parseFloat(document.getElementById("s-kurs-schein").value);
   const kursB = parseFloat(document.getElementById("s-kurs-basis").value) || null;
   const grund = document.getElementById("s-grund").value;
-
   if (isNaN(idx) || !datum || isNaN(kursV)) {
-    setStatus("Bitte Position, Datum und Verkaufskurs angeben.", "err", "status-sell");
+    setStatus("status-sell", "Bitte Position, Datum und Verkaufskurs angeben.", "err");
     return;
   }
-
-  const pos    = portfolio.open[idx];
-  const erloes = Math.round(kursV * pos.anzahl * 100) / 100;
-  const pl     = Math.round((erloes - pos.investiert) * 100) / 100;
-  const plPct  = Math.round(pl / pos.investiert * 10000) / 100;
-
-  portfolio.open.splice(idx, 1);
-  portfolio.closed.push({
-    ...pos,
-    verkauf_datum:           datum,
-    verkauf_kurs_schein:     kursV,
-    verkauf_kurs_basiswert:  kursB,
-    verkauf_erloes:          erloes,
-    gewinn_verlust:          pl,
-    gewinn_verlust_pct:      plPct,
-    verkauf_grund:           grund,
-  });
-
-  saveToStorage();
-  renderAll();
-  resetVerkaufForm();
-  setStatus(`✅ Verkauf von ${pos.basiswert} gespeichert. G/V: ${pl >= 0 ? "+" : ""}${pl.toFixed(2)} €.`, "ok", "status-sell");
-  switchTab("closed");
+  const pos = openTrades[idx];
+  setStatus("status-sell", "Speichere …", "loading");
+  try {
+    const result = await api("/api/verkauf", "POST", {
+      id: pos.id,
+      verkauf_datum:          datum,
+      verkauf_kurs_schein:    kursV,
+      verkauf_kurs_basiswert: kursB,
+      verkauf_grund:          grund,
+    });
+    await loadPortfolio();
+    resetVerkaufForm();
+    const pl   = result.gewinn_verlust || 0;
+    const sign = pl >= 0 ? "+" : "";
+    setStatus("status-sell",
+      `✅ Verkauf von ${pos.basiswert} gespeichert. G/V: ${sign}${pl.toFixed(2)} €`, "ok");
+    switchTab("closed");
+  } catch (e) {
+    setStatus("status-sell", "Fehler: " + e.message, "err");
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -535,73 +513,75 @@ function switchTab(name) {
   document.getElementById(`tab-${name}`).classList.add("active");
 }
 
-function setStatus(msg, type, elemId) {
-  const el = document.getElementById(elemId || "status");
+function setStatus(id, msg, type) {
+  const el = document.getElementById(id);
   if (!el) return;
   el.textContent = msg;
-  el.className = type;
-  el.style.display = "block";
+  el.className = "status " + type;
 }
 
 function resetKaufForm() {
   ["f-basiswert","f-company","f-isin","f-name","f-kauf-datum","f-faelligkeit",
    "f-kurs-schein","f-kurs-basis","f-anzahl","f-strike","f-hebel","f-laufzeit","f-notizen"]
-    .forEach(id => document.getElementById(id).value = "");
+    .forEach(id => { document.getElementById(id).value = ""; });
   const today = new Date().toISOString().split("T")[0];
   document.getElementById("f-kauf-datum").value = today;
-  const future = new Date();
-  future.setMonth(future.getMonth() + 18);
+  const future = new Date(); future.setMonth(future.getMonth() + 18);
   document.getElementById("f-faelligkeit").value = future.toISOString().split("T")[0];
   document.getElementById("f-laufzeit").value = 18;
 }
 
 function resetVerkaufForm() {
-  ["s-position","s-datum","s-kurs-schein","s-kurs-basis"].forEach(id => {
-    document.getElementById(id).value = "";
-  });
+  ["s-position","s-datum","s-kurs-schein","s-kurs-basis"]
+    .forEach(id => { document.getElementById(id).value = ""; });
   document.getElementById("s-grund").selectedIndex = 0;
   document.getElementById("s-pl-preview").style.display = "none";
 }
 
-function restlaufzeit(datumStr) {
-  if (!datumStr) return 0;
-  return Math.max(0, (new Date(datumStr) - new Date()) / (1000 * 60 * 60 * 24 * 30.44));
+function restlaufzeit(d) {
+  if (!d) return 0;
+  return Math.max(0, (new Date(d) - new Date()) / (1000*60*60*24*30.44));
 }
 
 function fmtEur(val) {
   if (val == null || isNaN(val)) return "—";
-  return val.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  return val.toLocaleString("de-DE", { minimumFractionDigits:2, maximumFractionDigits:2 }) + " €";
 }
 
 function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
 function uuid() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    const r = Math.random()*16|0;
+    return (c==="x"?r:(r&0x3|0x8)).toString(16);
   });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  loadFromStorage();
-  renderAll();
+  const { url, secret } = getCfg();
+  if (url)    document.getElementById("cfg-url").value    = url;
+  if (secret) document.getElementById("cfg-secret").value = secret;
 
   const today = new Date().toISOString().split("T")[0];
   document.getElementById("f-kauf-datum").value = today;
   document.getElementById("s-datum").value = today;
-  const future = new Date();
-  future.setMonth(future.getMonth() + 18);
+  const future = new Date(); future.setMonth(future.getMonth() + 18);
   document.getElementById("f-faelligkeit").value = future.toISOString().split("T")[0];
   document.getElementById("f-laufzeit").value = 18;
 
-  if (portfolio.last_updated) {
-    document.getElementById("saved-hint").textContent =
-      "Zuletzt gespeichert: " + portfolio.last_updated;
+  if (url && secret) {
+    loadPortfolio()
+      .then(() => setBadge("ok", "verbunden"))
+      .catch(() => {
+        setBadge("err", "Verbindungsfehler");
+        document.getElementById("settings-form").style.display = "block";
+      });
+  } else {
+    document.getElementById("settings-form").style.display = "block";
   }
 });
 </script>
