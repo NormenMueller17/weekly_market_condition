@@ -21,8 +21,6 @@
     .card h2 { font-size: 1.05em; margin-bottom: 14px; padding-bottom: 8px;
                border-bottom: 2px solid #ecf0f1; }
 
-    /* Settings */
-    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .field { display: flex; flex-direction: column; gap: 4px; }
     .field label { font-size: 0.8em; color: #7f8c8d; font-weight: 600; }
     input, select, textarea {
@@ -37,6 +35,7 @@
     .btn-success { background: #27ae60; color: white; }
     .btn-warning { background: #f39c12; color: white; }
     .btn-danger  { background: #e74c3c; color: white; }
+    .btn-neutral { background: #ecf0f1; color: #2c3e50; }
     .btn-sm { padding: 4px 10px; font-size: 0.8em; }
 
     /* Tabs */
@@ -71,22 +70,25 @@
     /* Status */
     #status { padding: 10px 14px; border-radius: 6px; margin-top: 10px;
               font-size: 0.88em; display: none; }
-    #status.ok  { background: #d5f5e3; color: #1e8449; display: block; }
-    #status.err { background: #fadbd8; color: #922b21; display: block; }
+    #status.ok      { background: #d5f5e3; color: #1e8449; display: block; }
+    #status.err     { background: #fadbd8; color: #922b21; display: block; }
     #status.loading { background: #fef9e7; color: #9a7d0a; display: block; }
 
     .pl-pos { color: #27ae60; font-weight: 600; }
     .pl-neg { color: #e74c3c; font-weight: 600; }
 
-    .hint { font-size: 0.8em; color: #7f8c8d; margin-top: 6px; }
     .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
                     margin-bottom: 16px; }
     .summary-card { background: #f8f9fa; border-radius: 6px; padding: 10px 14px; }
     .summary-card .label { font-size: 0.75em; color: #7f8c8d; margin-bottom: 2px; }
     .summary-card .value { font-size: 1.15em; font-weight: 700; }
 
+    .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+               padding: 10px 0; border-bottom: 1px solid #ecf0f1; margin-bottom: 14px; }
+    .toolbar .saved-hint { font-size: 0.78em; color: #95a5a6; margin-left: auto; }
+
     @media (max-width: 640px) {
-      .settings-grid, .form-grid, .summary-grid { grid-template-columns: 1fr; }
+      .form-grid, .summary-grid { grid-template-columns: 1fr; }
       .form-grid .full { grid-column: 1; }
     }
   </style>
@@ -102,47 +104,19 @@
     </nav>
   </header>
 
-  <!-- GitHub-Verbindung -->
-  <div class="card" id="setup-card">
-    <h2>⚙️ GitHub-Verbindung</h2>
-    <div class="settings-grid">
-      <div class="field">
-        <label>GitHub Owner (Benutzername oder Org)</label>
-        <input id="gh-owner" placeholder="dein-username" />
-      </div>
-      <div class="field">
-        <label>Repository-Name</label>
-        <input id="gh-repo" placeholder="weekly_market_condition" />
-      </div>
-      <div class="field" style="grid-column:1/-1">
-        <label>Personal Access Token (wird nur lokal gespeichert)</label>
-        <input id="gh-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxx" />
-        <p class="hint">
-          Token erstellen: GitHub → Settings → Developer settings → Personal access tokens →
-          Fine-grained tokens → Repository permissions → Contents: Read and write.
-        </p>
-      </div>
-    </div>
-    <div style="margin-top:12px;display:flex;gap:8px">
-      <button class="btn btn-primary" onclick="saveSettings()">Verbindung speichern</button>
-      <button class="btn btn-warning" onclick="loadPortfolio()">Portfolio laden</button>
-    </div>
-    <div id="status"></div>
-  </div>
-
   <!-- Kennzahlen -->
-  <div class="summary-grid" id="summary" style="display:none">
+  <div class="summary-grid">
     <div class="summary-card">
       <div class="label">Offene Positionen</div>
-      <div class="value" id="s-open">—</div>
+      <div class="value" id="s-open">0</div>
     </div>
     <div class="summary-card">
       <div class="label">Investiert gesamt</div>
-      <div class="value" id="s-invested">—</div>
+      <div class="value" id="s-invested">0,00 €</div>
     </div>
     <div class="summary-card">
       <div class="label">Realisierter G/V</div>
-      <div class="value" id="s-pl">—</div>
+      <div class="value" id="s-pl">0,00 €</div>
     </div>
     <div class="summary-card">
       <div class="label">Win-Rate</div>
@@ -152,6 +126,15 @@
 
   <!-- Tabs -->
   <div class="card">
+    <div class="toolbar">
+      <button class="btn btn-primary btn-sm" onclick="exportJson()">⬇ Export JSON</button>
+      <label class="btn btn-neutral btn-sm" style="cursor:pointer;display:inline-block">
+        ⬆ Import JSON
+        <input type="file" accept=".json" style="display:none" onchange="importJson(event)">
+      </label>
+      <span class="saved-hint" id="saved-hint"></span>
+    </div>
+
     <div class="tabs">
       <div class="tab active" onclick="switchTab('open')">Offene Positionen</div>
       <div class="tab" onclick="switchTab('closed')">Geschlossene Trades</div>
@@ -161,12 +144,12 @@
 
     <!-- TAB: Offene Positionen -->
     <div id="tab-open" class="tab-content active">
-      <div id="open-table"><p style="color:#7f8c8d;font-style:italic">Portfolio noch nicht geladen.</p></div>
+      <div id="open-table"><p style="color:#7f8c8d;font-style:italic">Keine offenen Positionen. Kauf erfassen →</p></div>
     </div>
 
     <!-- TAB: Geschlossene Trades -->
     <div id="tab-closed" class="tab-content">
-      <div id="closed-table"><p style="color:#7f8c8d;font-style:italic">Portfolio noch nicht geladen.</p></div>
+      <div id="closed-table"><p style="color:#7f8c8d;font-style:italic">Noch keine geschlossenen Trades.</p></div>
     </div>
 
     <!-- TAB: Kauf erfassen -->
@@ -228,8 +211,9 @@
       </div>
       <div class="form-actions">
         <button class="btn btn-success" onclick="addKauf()">✅ Kauf speichern</button>
-        <button class="btn" onclick="resetKaufForm()" style="background:#ecf0f1">Zurücksetzen</button>
+        <button class="btn btn-neutral" onclick="resetKaufForm()">Zurücksetzen</button>
       </div>
+      <div id="status"></div>
     </div>
 
     <!-- TAB: Verkauf / Rollen -->
@@ -239,7 +223,7 @@
         <div class="field full">
           <label>Position auswählen</label>
           <select id="s-position">
-            <option value="">— bitte laden —</option>
+            <option value="">— Position auswählen —</option>
           </select>
         </div>
         <div class="field">
@@ -275,8 +259,9 @@
       </div>
       <div class="form-actions">
         <button class="btn btn-danger" onclick="addVerkauf()">📤 Verkauf speichern</button>
-        <button class="btn" onclick="resetVerkaufForm()" style="background:#ecf0f1">Zurücksetzen</button>
+        <button class="btn btn-neutral" onclick="resetVerkaufForm()">Zurücksetzen</button>
       </div>
+      <div id="status-sell"></div>
     </div>
 
   </div><!-- /card -->
@@ -286,102 +271,61 @@
 <script>
 // ── State ────────────────────────────────────────────────────────────────────
 let portfolio = { version: 1, last_updated: "", open: [], closed: [] };
-let fileSha = null;
 
-const FILE_PATH = "docs/data/zertifikate_trades.json";
+const STORAGE_KEY = "zertifikate_portfolio_v1";
 
-// ── Settings ─────────────────────────────────────────────────────────────────
-function saveSettings() {
-  localStorage.setItem("gh_owner", document.getElementById("gh-owner").value.trim());
-  localStorage.setItem("gh_repo",  document.getElementById("gh-repo").value.trim());
-  localStorage.setItem("gh_token", document.getElementById("gh-token").value.trim());
-  setStatus("Einstellungen gespeichert.", "ok");
-}
-
-function loadSettings() {
-  document.getElementById("gh-owner").value = localStorage.getItem("gh_owner") || "";
-  document.getElementById("gh-repo").value  = localStorage.getItem("gh_repo")  || "weekly_market_condition";
-  document.getElementById("gh-token").value = localStorage.getItem("gh_token") || "";
-}
-
-function getSettings() {
-  return {
-    owner: localStorage.getItem("gh_owner") || "",
-    repo:  localStorage.getItem("gh_repo")  || "",
-    token: localStorage.getItem("gh_token") || "",
-  };
-}
-
-// ── GitHub API ────────────────────────────────────────────────────────────────
-async function apiGet(path) {
-  const { owner, repo, token } = getSettings();
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const resp = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }
-  });
-  if (!resp.ok) throw new Error(`GET ${path}: ${resp.status} ${resp.statusText}`);
-  return resp.json();
-}
-
-async function apiPut(path, content, sha, message) {
-  const { owner, repo, token } = getSettings();
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const body = JSON.stringify({
-    message,
-    content: btoa(unescape(encodeURIComponent(content))),
-    sha,
-  });
-  const resp = await fetch(url, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "Content-Type": "application/json",
-    },
-    body,
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(`PUT ${path}: ${resp.status} — ${err.message || resp.statusText}`);
-  }
-  return resp.json();
-}
-
-// ── Portfolio laden ───────────────────────────────────────────────────────────
-async function loadPortfolio() {
-  setStatus("Lade Portfolio …", "loading");
+// ── Persistenz: localStorage ──────────────────────────────────────────────────
+function loadFromStorage() {
   try {
-    const data = await apiGet(FILE_PATH);
-    fileSha = data.sha;
-    const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ""))));
-    portfolio = JSON.parse(decoded);
-    renderAll();
-    setStatus(`Portfolio geladen (${portfolio.open.length} offene Positionen, ${portfolio.closed.length} geschlossene Trades).`, "ok");
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) portfolio = JSON.parse(raw);
   } catch (e) {
-    // Datei existiert noch nicht → leeres Portfolio
-    if (e.message.includes("404")) {
-      portfolio = { version: 1, last_updated: "", open: [], closed: [] };
-      fileSha = null;
-      renderAll();
-      setStatus("Keine Portfolio-Datei gefunden — wird beim ersten Kauf erstellt.", "ok");
-    } else {
-      setStatus("Fehler: " + e.message, "err");
-    }
+    console.error("Fehler beim Laden aus localStorage:", e);
   }
 }
 
-// ── Portfolio speichern ───────────────────────────────────────────────────────
-async function savePortfolio(message) {
+function saveToStorage() {
   portfolio.last_updated = new Date().toISOString().split("T")[0];
-  const content = JSON.stringify(portfolio, null, 2);
   try {
-    const result = await apiPut(FILE_PATH, content, fileSha, message);
-    fileSha = result.content.sha;
-    return true;
-  } catch(e) {
-    setStatus("Fehler beim Speichern: " + e.message, "err");
-    return false;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
+    const hint = document.getElementById("saved-hint");
+    hint.textContent = "Gespeichert " + new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  } catch (e) {
+    console.error("Fehler beim Speichern in localStorage:", e);
   }
+}
+
+// ── Export / Import ────────────────────────────────────────────────────────────
+function exportJson() {
+  const date = new Date().toISOString().split("T")[0];
+  const blob = new Blob([JSON.stringify(portfolio, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `zertifikate_portfolio_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data.open) || !Array.isArray(data.closed)) {
+        throw new Error("Ungültiges Portfolio-Format");
+      }
+      portfolio = data;
+      saveToStorage();
+      renderAll();
+      setStatus("Portfolio importiert: " + portfolio.open.length + " offene, " + portfolio.closed.length + " geschlossene Positionen.", "ok", "status");
+    } catch (err) {
+      setStatus("Import fehlgeschlagen: " + err.message, "err", "status");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
 }
 
 // ── Rendern ───────────────────────────────────────────────────────────────────
@@ -390,17 +334,16 @@ function renderAll() {
   renderOpen();
   renderClosed();
   renderSellSelect();
-  document.getElementById("summary").style.display = "grid";
 }
 
 function renderSummary() {
   const invested = portfolio.open.reduce((s, p) => s + (p.investiert || 0), 0);
-  const closed = portfolio.closed;
-  const pl = closed.reduce((s, p) => s + (p.gewinn_verlust || 0), 0);
-  const wins = closed.filter(p => (p.gewinn_verlust || 0) > 0).length;
-  const winrate = closed.length > 0 ? (wins / closed.length * 100).toFixed(0) : "—";
+  const closed   = portfolio.closed;
+  const pl       = closed.reduce((s, p) => s + (p.gewinn_verlust || 0), 0);
+  const wins     = closed.filter(p => (p.gewinn_verlust || 0) > 0).length;
+  const winrate  = closed.length > 0 ? (wins / closed.length * 100).toFixed(0) : "—";
 
-  document.getElementById("s-open").textContent = portfolio.open.length;
+  document.getElementById("s-open").textContent     = portfolio.open.length;
   document.getElementById("s-invested").textContent = fmtEur(invested);
   const plEl = document.getElementById("s-pl");
   plEl.textContent = fmtEur(pl);
@@ -416,8 +359,8 @@ function renderOpen() {
   }
   const rows = portfolio.open.map(p => {
     const restMonate = restlaufzeit(p.faelligkeitsdatum);
-    const zeitBadge = restMonate >= 9 ? "gruen" : restMonate >= 5 ? "gelb" : "rot";
-    const zeitLabel = restMonate >= 9 ? "🟢 OK" : restMonate >= 5 ? "🟡 Prüfen" : "🔴 Rollen";
+    const zeitBadge  = restMonate >= 9 ? "gruen" : restMonate >= 5 ? "gelb" : "rot";
+    const zeitLabel  = restMonate >= 9 ? "🟢 OK"  : restMonate >= 5 ? "🟡 Prüfen" : "🔴 Rollen";
     return `<tr>
       <td><strong>${esc(p.basiswert)}</strong></td>
       <td style="font-size:0.82em">${esc(p.schein_name || "—")}</td>
@@ -450,10 +393,10 @@ function renderClosed() {
     return;
   }
   const rows = portfolio.closed.slice().reverse().map(p => {
-    const pl = p.gewinn_verlust || 0;
+    const pl    = p.gewinn_verlust || 0;
     const plPct = p.gewinn_verlust_pct || 0;
     const plClass = pl >= 0 ? "pl-pos" : "pl-neg";
-    const sign = pl >= 0 ? "+" : "";
+    const sign  = pl >= 0 ? "+" : "";
     return `<tr>
       <td><strong>${esc(p.basiswert)}</strong></td>
       <td style="font-size:0.82em">${esc(p.schein_name || "—")}</td>
@@ -492,7 +435,7 @@ function renderSellSelect() {
 }
 
 function updatePlPreview() {
-  const idx = parseInt(document.getElementById("s-position").value);
+  const idx  = parseInt(document.getElementById("s-position").value);
   const kursV = parseFloat(document.getElementById("s-kurs-schein").value);
   if (isNaN(idx) || isNaN(kursV)) {
     document.getElementById("s-pl-preview").style.display = "none";
@@ -501,9 +444,9 @@ function updatePlPreview() {
   const pos = portfolio.open[idx];
   if (!pos) return;
   const erloes = kursV * (pos.anzahl || 0);
-  const pl = erloes - (pos.investiert || 0);
-  const plPct = pos.investiert ? pl / pos.investiert * 100 : 0;
-  const sign = pl >= 0 ? "+" : "";
+  const pl     = erloes - (pos.investiert || 0);
+  const plPct  = pos.investiert ? pl / pos.investiert * 100 : 0;
+  const sign   = pl >= 0 ? "+" : "";
   document.getElementById("s-pl-value").textContent =
     `${sign}${fmtEur(pl)} (${sign}${plPct.toFixed(1)}%)`;
   document.getElementById("s-pl-value").className = pl >= 0 ? "pl-pos" : "pl-neg";
@@ -511,47 +454,43 @@ function updatePlPreview() {
 }
 
 // ── Kauf speichern ────────────────────────────────────────────────────────────
-async function addKauf() {
+function addKauf() {
   const g = id => document.getElementById(id).value.trim();
   const basiswert = g("f-basiswert").toUpperCase();
   if (!basiswert || !g("f-kauf-datum") || !g("f-kurs-schein") || !g("f-anzahl")) {
-    setStatus("Bitte Pflichtfelder ausfüllen: Basiswert, Kaufdatum, Kurs, Anzahl.", "err");
+    setStatus("Bitte Pflichtfelder ausfüllen: Basiswert, Kaufdatum, Kurs, Anzahl.", "err", "status");
     return;
   }
   const kursSchein = parseFloat(g("f-kurs-schein"));
   const anzahl     = parseInt(g("f-anzahl"));
 
-  const trade = {
-    id:                   uuid(),
+  portfolio.open.push({
+    id:                       uuid(),
     basiswert,
-    company:              g("f-company"),
-    schein_isin:          g("f-isin"),
-    schein_name:          g("f-name"),
-    kauf_datum:           g("f-kauf-datum"),
-    faelligkeitsdatum:    g("f-faelligkeit"),
-    kauf_kurs_schein:     kursSchein,
-    kauf_kurs_basiswert:  parseFloat(g("f-kurs-basis")) || null,
+    company:                  g("f-company"),
+    schein_isin:              g("f-isin"),
+    schein_name:              g("f-name"),
+    kauf_datum:               g("f-kauf-datum"),
+    faelligkeitsdatum:        g("f-faelligkeit"),
+    kauf_kurs_schein:         kursSchein,
+    kauf_kurs_basiswert:      parseFloat(g("f-kurs-basis")) || null,
     anzahl,
-    investiert:           Math.round(kursSchein * anzahl * 100) / 100,
-    strike:               parseFloat(g("f-strike")) || null,
-    hebel_kauf:           parseFloat(g("f-hebel")) || null,
+    investiert:               Math.round(kursSchein * anzahl * 100) / 100,
+    strike:                   parseFloat(g("f-strike")) || null,
+    hebel_kauf:               parseFloat(g("f-hebel")) || null,
     restlaufzeit_kauf_monate: parseInt(g("f-laufzeit")) || null,
-    notizen:              g("f-notizen"),
-  };
+    notizen:                  g("f-notizen"),
+  });
 
-  portfolio.open.push(trade);
-  setStatus("Speichere …", "loading");
-  const ok = await savePortfolio(`portfolio: Kauf ${basiswert} am ${trade.kauf_datum}`);
-  if (ok) {
-    renderAll();
-    resetKaufForm();
-    setStatus(`✅ Kauf von ${basiswert} gespeichert.`, "ok");
-    switchTab("open");
-  }
+  saveToStorage();
+  renderAll();
+  resetKaufForm();
+  setStatus(`✅ Kauf von ${basiswert} gespeichert.`, "ok", "status");
+  switchTab("open");
 }
 
 // ── Verkauf speichern ─────────────────────────────────────────────────────────
-async function addVerkauf() {
+function addVerkauf() {
   const idx   = parseInt(document.getElementById("s-position").value);
   const datum = document.getElementById("s-datum").value;
   const kursV = parseFloat(document.getElementById("s-kurs-schein").value);
@@ -559,7 +498,7 @@ async function addVerkauf() {
   const grund = document.getElementById("s-grund").value;
 
   if (isNaN(idx) || !datum || isNaN(kursV)) {
-    setStatus("Bitte Position, Datum und Verkaufskurs angeben.", "err");
+    setStatus("Bitte Position, Datum und Verkaufskurs angeben.", "err", "status-sell");
     return;
   }
 
@@ -568,7 +507,8 @@ async function addVerkauf() {
   const pl     = Math.round((erloes - pos.investiert) * 100) / 100;
   const plPct  = Math.round(pl / pos.investiert * 10000) / 100;
 
-  const closed = {
+  portfolio.open.splice(idx, 1);
+  portfolio.closed.push({
     ...pos,
     verkauf_datum:           datum,
     verkauf_kurs_schein:     kursV,
@@ -577,41 +517,42 @@ async function addVerkauf() {
     gewinn_verlust:          pl,
     gewinn_verlust_pct:      plPct,
     verkauf_grund:           grund,
-  };
+  });
 
-  portfolio.open.splice(idx, 1);
-  portfolio.closed.push(closed);
-
-  setStatus("Speichere …", "loading");
-  const ok = await savePortfolio(`portfolio: Verkauf ${pos.basiswert} am ${datum} (${pl >= 0 ? "+" : ""}${pl}€)`);
-  if (ok) {
-    renderAll();
-    resetVerkaufForm();
-    setStatus(`✅ Verkauf von ${pos.basiswert} gespeichert. G/V: ${pl >= 0 ? "+" : ""}${pl.toFixed(2)} €.`, "ok");
-    switchTab("closed");
-  }
+  saveToStorage();
+  renderAll();
+  resetVerkaufForm();
+  setStatus(`✅ Verkauf von ${pos.basiswert} gespeichert. G/V: ${pl >= 0 ? "+" : ""}${pl.toFixed(2)} €.`, "ok", "status-sell");
+  switchTab("closed");
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll(".tab").forEach((t, i) => {
-    const names = ["open", "closed", "add", "sell"];
-    t.classList.toggle("active", names[i] === name);
+    t.classList.toggle("active", ["open","closed","add","sell"][i] === name);
   });
   document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
   document.getElementById(`tab-${name}`).classList.add("active");
 }
 
-function setStatus(msg, type) {
-  const el = document.getElementById("status");
+function setStatus(msg, type, elemId) {
+  const el = document.getElementById(elemId || "status");
+  if (!el) return;
   el.textContent = msg;
   el.className = type;
+  el.style.display = "block";
 }
 
 function resetKaufForm() {
   ["f-basiswert","f-company","f-isin","f-name","f-kauf-datum","f-faelligkeit",
    "f-kurs-schein","f-kurs-basis","f-anzahl","f-strike","f-hebel","f-laufzeit","f-notizen"]
     .forEach(id => document.getElementById(id).value = "");
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("f-kauf-datum").value = today;
+  const future = new Date();
+  future.setMonth(future.getMonth() + 18);
+  document.getElementById("f-faelligkeit").value = future.toISOString().split("T")[0];
+  document.getElementById("f-laufzeit").value = 18;
 }
 
 function resetVerkaufForm() {
@@ -624,8 +565,7 @@ function resetVerkaufForm() {
 
 function restlaufzeit(datumStr) {
   if (!datumStr) return 0;
-  const diff = new Date(datumStr) - new Date();
-  return Math.max(0, diff / (1000 * 60 * 60 * 24 * 30.44));
+  return Math.max(0, (new Date(datumStr) - new Date()) / (1000 * 60 * 60 * 24 * 30.44));
 }
 
 function fmtEur(val) {
@@ -648,20 +588,20 @@ function uuid() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  loadSettings();
-  // Datum-Felder vorbelegen
+  loadFromStorage();
+  renderAll();
+
   const today = new Date().toISOString().split("T")[0];
   document.getElementById("f-kauf-datum").value = today;
   document.getElementById("s-datum").value = today;
-  // Laufzeit vorbelegen: heute + 18 Monate
   const future = new Date();
   future.setMonth(future.getMonth() + 18);
   document.getElementById("f-faelligkeit").value = future.toISOString().split("T")[0];
   document.getElementById("f-laufzeit").value = 18;
 
-  // Auto-load wenn Token vorhanden
-  if (localStorage.getItem("gh_token")) {
-    loadPortfolio();
+  if (portfolio.last_updated) {
+    document.getElementById("saved-hint").textContent =
+      "Zuletzt gespeichert: " + portfolio.last_updated;
   }
 });
 </script>
