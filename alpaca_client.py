@@ -285,6 +285,206 @@ def get_portfolio_history(period: str = "1A") -> Optional[dict]:
         return None
 
 
+def _find_open_stop_sell(client, symbol: str):
+    """Return the open stop-sell order for *symbol*, or None."""
+    try:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import QueryOrderStatus, OrderSide
+        orders = client.get_orders(GetOrdersRequest(
+            status  = QueryOrderStatus.OPEN,
+            side    = OrderSide.SELL,
+            symbols = [symbol],
+        ))
+        for o in orders:
+            if str(getattr(o, "type", "")).lower() in ("stop", "stop_limit", "stop_market"):
+                return o
+        return orders[0] if orders else None
+    except Exception as e:
+        print(f"[COVERAGE] _find_open_stop_sell({symbol}): {e}")
+        return None
+
+
+def check_sell_order_coverage(portfolio: Optional[dict], dry_run: bool = False) -> list[dict]:
+    """Prüfe für jede offene Position ob eine aktive Stop-Sell-Order existiert.
+
+    Fehlt eine Order, wird sie automatisch aus dem Trade-Journal angelegt.
+    Stop-Preis: current_stop → initial_stop → 8%-Fallback unter Einstandspreis.
+
+    Returns list of result dicts per position:
+      symbol, status, stop_price, [qty, order_id]
+    """
+    import json
+    from pathlib import Path
+
+    if portfolio is None or not portfolio.get("positions"):
+        return []
+
+    client = _get_trading_client()
+    if client is None:
+        return [{"symbol": p["symbol"], "status": "no_client"} for p in portfolio["positions"]]
+
+    # Stop-Levels aus Trade-Journal laden
+    trades_file = Path("docs/data/trades.json")
+    journal_stops: dict[str, float] = {}
+    if trades_file.exists():
+        try:
+            data = json.loads(trades_file.read_text(encoding="utf-8"))
+            for trade in data.get("open", []):
+                sym  = trade["symbol"]
+                stop = trade.get("current_stop") or trade.get("initial_stop")
+                if stop:
+                    journal_stops[sym] = float(stop)
+        except Exception:
+            pass
+
+    results: list[dict] = []
+    for pos in portfolio["positions"]:
+        symbol      = pos["symbol"]
+        qty         = float(pos["qty"])
+        entry_price = float(pos["avg_entry_price"])
+
+        stop_order = _find_open_stop_sell(client, symbol)
+
+        if stop_order is not None:
+            existing_stop = float(getattr(stop_order, "stop_price", 0) or 0)
+            results.append({"symbol": symbol, "status": "covered", "stop_price": existing_stop})
+            continue
+
+        # Keine Sell-Order — Stop-Preis bestimmen
+        stop_price = journal_stops.get(symbol)
+        if stop_price is None:
+            stop_price = round(entry_price * 0.92, 2)  # 8%-Fallback
+            print(f"[COVERAGE] ⚠️  {symbol}: kein Journal-Stop → Fallback 8% unter Entry ({stop_price:.2f})")
+
+        result: dict = {"symbol": symbol, "qty": qty, "stop_price": stop_price}
+
+        if dry_run:
+            result["status"] = "missing_dry_run"
+            print(f"[COVERAGE] ⚠️  {symbol}: KEINE Sell-Order!  DRY-RUN — würde Stop @ {stop_price:.2f} anlegen")
+            results.append(result)
+            continue
+
+        try:
+            from alpaca.trading.requests import StopOrderRequest
+            from alpaca.trading.enums import OrderSide, TimeInForce
+            order = client.submit_order(StopOrderRequest(
+                symbol        = symbol,
+                qty           = int(qty),
+                side          = OrderSide.SELL,
+                time_in_force = TimeInForce.GTC,
+                stop_price    = round(stop_price, 2),
+            ))
+            result["status"]   = "placed"
+            result["order_id"] = str(order.id)
+            print(f"[COVERAGE] ✅ {symbol}: Stop-Sell angelegt @ {stop_price:.2f}  (Qty {int(qty)})")
+        except Exception as e:
+            result["status"] = f"error: {e}"
+            print(f"[COVERAGE] ❌ {symbol}: Stop-Sell konnte nicht angelegt werden: {e}")
+
+        results.append(result)
+
+    return results
+
+
+def refresh_expiring_sell_orders(dry_run: bool = False, warn_days: int = 80) -> list[dict]:
+    """Erneuere GTC-Sell-Orders, die älter als *warn_days* Tage sind.
+
+    Alpaca löscht GTC-Orders stillschweigend nach 90 Tagen. Diese Funktion
+    findet ablaufende Stop-Sell-Orders, storniert sie und legt neue mit
+    demselben Stop-Preis und derselben Menge an.
+
+    Returns list of result dicts per order:
+      symbol, age_days, stop_price, status, [order_id, new_order_id]
+    """
+    import datetime
+
+    client = _get_trading_client()
+    if client is None:
+        return [{"status": "no_client"}]
+
+    try:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import QueryOrderStatus, OrderSide
+        open_sells = client.get_orders(GetOrdersRequest(
+            status = QueryOrderStatus.OPEN,
+            side   = OrderSide.SELL,
+        ))
+    except Exception as e:
+        print(f"[REFRESH] Fehler beim Laden der Sell-Orders: {e}")
+        return [{"status": f"error: {e}"}]
+
+    now     = datetime.datetime.now(datetime.timezone.utc)
+    results: list[dict] = []
+
+    for order in (open_sells or []):
+        symbol     = order.symbol
+        created_at = getattr(order, "created_at", None)
+        stop_price = float(getattr(order, "stop_price", 0) or 0)
+        qty        = float(getattr(order, "qty", 0) or 0)
+
+        if created_at is None:
+            results.append({"symbol": symbol, "status": "no_created_at"})
+            continue
+
+        if isinstance(created_at, str):
+            try:
+                created_at = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            except Exception:
+                results.append({"symbol": symbol, "status": "invalid_date"})
+                continue
+
+        age_days = (now - created_at).days
+
+        if age_days < warn_days:
+            results.append({"symbol": symbol, "status": "ok", "age_days": age_days, "stop_price": stop_price})
+            continue
+
+        result: dict = {
+            "symbol":     symbol,
+            "age_days":   age_days,
+            "stop_price": stop_price,
+            "qty":        qty,
+            "order_id":   str(order.id),
+        }
+
+        if dry_run:
+            result["status"] = "expiring_dry_run"
+            print(f"[REFRESH] ⚠️  {symbol}: Sell-Order {age_days} Tage alt — DRY-RUN würde erneuern @ {stop_price:.2f}")
+            results.append(result)
+            continue
+
+        # 1. Alte Order stornieren
+        try:
+            client.cancel_order_by_id(str(order.id))
+        except Exception as e:
+            result["status"] = f"cancel_error: {e}"
+            print(f"[REFRESH] ❌ {symbol}: Stornierung fehlgeschlagen: {e}")
+            results.append(result)
+            continue
+
+        # 2. Neue Order mit gleicher Konfiguration anlegen
+        try:
+            from alpaca.trading.requests import StopOrderRequest
+            from alpaca.trading.enums import OrderSide, TimeInForce
+            new_order = client.submit_order(StopOrderRequest(
+                symbol        = symbol,
+                qty           = int(qty),
+                side          = OrderSide.SELL,
+                time_in_force = TimeInForce.GTC,
+                stop_price    = round(stop_price, 2),
+            ))
+            result["status"]       = "renewed"
+            result["new_order_id"] = str(new_order.id)
+            print(f"[REFRESH] ✅ {symbol}: Stop-Sell erneuert @ {stop_price:.2f}  (war {age_days} Tage alt)")
+        except Exception as e:
+            result["status"] = f"place_error: {e}"
+            print(f"[REFRESH] ❌ {symbol}: Neue Order konnte nicht angelegt werden: {e}")
+
+        results.append(result)
+
+    return results
+
+
 def cancel_open_orders() -> int:
     """Cancel unfired BUY-stop orders from the previous week.
 

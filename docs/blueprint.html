@@ -226,6 +226,8 @@
       <a href="#s6"  class="nav-h2">Schritt 6 — Marktampel</a>
       <a href="#s7"  class="nav-h2">Schritt 7 — Orders stornieren</a>
       <a href="#s8"  class="nav-h2">Schritt 8 — Portfolio-Daten</a>
+      <a href="#s8a" class="nav-h2">Schritt 8a — Sell-Order-Coverage</a>
+      <a href="#s8b" class="nav-h2">Schritt 8b — Ablaufende Orders erneuern</a>
       <a href="#s9"  class="nav-h2">Schritt 9 — MACD Bearish Cross</a>
       <a href="#s10" class="nav-h2">Schritt 10 — Trade Journal</a>
       <a href="#s11" class="nav-h2">Schritt 11 — Gewinnmitnahme</a>
@@ -315,6 +317,50 @@
 
     <h2 id="s8">Schritt 8 — Portfolio-Daten abrufen</h2>
     <p>Das System holt den aktuellen Stand des Portfolios vom Broker: das verfügbare Bargeld, den Gesamtdepotwert sowie alle Details zu aktuell gehaltenen Positionen (Einstiegspreis, Anzahl Aktien, aktueller Kurs, unrealisierter Gewinn/Verlust).</p>
+
+    <h2 id="s8a">Schritt 8a — Sell-Order-Coverage-Prüfung</h2>
+    <p>Grundregel des Systems: Zu jeder gehaltenen Position muss jederzeit eine aktive Stop-Sell-Order beim Broker hinterlegt sein. In Schritt 17 wird diese Order automatisch als Teil der OTO-Kauforder angelegt. Dennoch kann eine Schutzorder fehlen — z.&nbsp;B. weil die Kinderorder einer OTO-Order nicht übertragen wurde oder eine Order manuell gelöscht wurde.</p>
+    <p>Das System prüft deshalb bei jedem Wochenrun für jede offene Position, ob eine aktive Stop-Sell-Order beim Broker existiert. Fehlt sie, wird sie automatisch nachgezogen.</p>
+
+    <span class="sub-bold">Stop-Preis-Bestimmung bei fehlender Order</span>
+    <p>Das System bestimmt den Stop-Preis in drei Stufen (erste verfügbare Quelle gewinnt):</p>
+    <ul>
+      <li><strong>1. Trade Journal — current_stop:</strong> Der zuletzt gültige, ggf. bereits angehobene Stop aus dem Journal.</li>
+      <li><strong>2. Trade Journal — initial_stop:</strong> Der ursprüngliche Stop-Wert aus dem Kaufsignal.</li>
+      <li><strong>3. Fallback:</strong> 8 % unter dem Einstandspreis (Notfallwert, falls kein Journal-Eintrag existiert).</li>
+    </ul>
+    <div class="example">
+      <strong>Beispiel:</strong> Position AAPL, Entry 180 $, current_stop im Journal = 168 $.<br>
+      Keine aktive Sell-Order beim Broker gefunden.<br>
+      → System legt automatisch eine Stop-Market-Sell-GTC-Order bei 168 $ an.
+    </div>
+    <div class="warning">
+      Im Test-Modus (alle Wochentage außer Samstag) wird keine echte Order platziert. Das System meldet die fehlende Order als <em>DRY-RUN</em> im Protokoll.
+    </div>
+
+    <h2 id="s8b">Schritt 8b — Ablaufende Sell-Orders erneuern</h2>
+    <p>Alpaca löscht GTC-Orders (Good Till Cancelled) nach 90 Tagen stillschweigend. Eine abgelaufene Stop-Sell-Order wird nicht ausgelöst — die Position wäre schutzlos offen.</p>
+    <p>Das System prüft deshalb bei jedem Wochenrun das Erstellungsdatum aller offenen Stop-Sell-Orders. Orders, die älter als <strong>80 Tage</strong> sind (10 Tage Puffer vor der 90-Tage-Grenze), werden automatisch storniert und mit identischem Stop-Preis und identischer Menge neu angelegt.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Bedeutung</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ok</code></td><td>Order ist jünger als 80 Tage — keine Aktion nötig</td></tr>
+          <tr><td><code>expiring_dry_run</code></td><td>Order wäre zu erneuern, aber Test-Modus aktiv</td></tr>
+          <tr><td><code>renewed</code></td><td>Alte Order storniert, neue Order erfolgreich platziert</td></tr>
+          <tr><td><code>cancel_error</code></td><td>Stornierung fehlgeschlagen — manuelle Prüfung erforderlich</td></tr>
+          <tr><td><code>place_error</code></td><td>Neue Order konnte nicht angelegt werden — manuelle Prüfung erforderlich</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="example">
+      <strong>Beispiel:</strong> Stop-Sell-Order für NVDA, angelegt vor 83 Tagen, Stop = 420 $, Qty 10.<br>
+      → System storniert die alte Order und legt sofort eine neue Stop-Market-Sell-GTC bei 420 $ (Qty 10) an.<br>
+      → Die neue Order hat wieder 90 Tage Laufzeit.
+    </div>
 
     <h2 id="s9">Schritt 9 — Exit-Manager: MACD Bearish Cross</h2>
     <p>Für jede aktuell gehaltene Position prüft das System, ob ein sogenannter Bearish MACD Cross aufgetreten ist. Das ist ein technisches Signal, das auf nachlassendes Momentum hindeutet:</p>
