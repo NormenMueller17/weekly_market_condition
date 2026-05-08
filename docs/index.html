@@ -6,36 +6,162 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Weekly Market Report &amp; Growth Stock Portfolio</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 700px; margin: 2em auto; padding: 0 1em; color: #333; }
-    h1   { color: #003d99; }
-    .btn { display:block; padding:12px 28px; background:#003d99; color:white;
-             text-decoration:none; border-radius:6px; font-weight:bold; font-size:1em;
-             margin-bottom:.8em; text-align:center; width:260px; }
-    ul   { padding-left: 1.2em; }
-    li a { color: #003d99; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f0f3fa; color: #333; }
+
+    /* ── Globale Navigation ─────────────────────────────────────────── */
+    .g-nav { background: #003d99; display: flex; align-items: center;
+              padding: 0 1.5em; box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }
+    .g-brand { font-weight: bold; color: #fff; text-decoration: none;
+                padding: .72em 1.1em .72em 0; margin-right: .5em;
+                border-right: 1px solid rgba(255,255,255,.25); white-space: nowrap; font-size: .95em; }
+    .g-nav a { color: rgba(255,255,255,.82); text-decoration: none;
+                padding: .72em .85em; font-size: .84em; white-space: nowrap; }
+    .g-nav a:hover  { color: #fff; background: rgba(255,255,255,.12); }
+    .g-nav a.active { color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }
+
+    /* ── Seite ──────────────────────────────────────────────────────── */
+    .page { max-width: 960px; margin: 0 auto; padding: 2em 1em 3em; }
+
+    .page-title { color: #003d99; font-size: 1.65em; margin: 0 0 .2em; }
+    .page-sub   { color: #888; font-size: .88em; margin: 0 0 1.8em; }
+
+    /* ── Dashboard KPIs ─────────────────────────────────────────────── */
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+                gap: .9em; margin-bottom: 2.2em; }
+    .kpi-card { background: #fff; border-radius: 8px; padding: 1em 1.3em;
+                 box-shadow: 0 1px 4px rgba(0,0,0,.08); border-top: 3px solid #003d99; }
+    .kc-lbl { font-size: .71em; color: #aaa; text-transform: uppercase;
+               letter-spacing: .06em; margin-bottom: .3em; }
+    .kc-val { font-size: 1.45em; font-weight: bold; color: #003d99; line-height: 1.2; }
+    .kc-sub { font-size: .75em; color: #bbb; margin-top: .25em; }
+    .kpi-card.kc-green { border-top-color: #1a8a1a; }
+    .kpi-card.kc-green .kc-val { color: #1a8a1a; }
+    .kpi-card.kc-red   { border-top-color: #cc2222; }
+    .kpi-card.kc-red   .kc-val { color: #cc2222; }
+
+    /* ── Bereichs-Karten ────────────────────────────────────────────── */
+    .section-h { color: #003d99; font-size: .78em; text-transform: uppercase;
+                  letter-spacing: .08em; margin: 0 0 .75em;
+                  padding-bottom: .35em; border-bottom: 2px solid #003d99; }
+    .nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+                 gap: .85em; margin-bottom: 2.2em; }
+    .nav-card { background: #fff; border-radius: 8px; padding: 1em 1.2em;
+                 box-shadow: 0 1px 4px rgba(0,0,0,.08); text-decoration: none; color: inherit;
+                 border-left: 4px solid #003d99; display: block;
+                 transition: box-shadow .15s, transform .12s; }
+    .nav-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.13); transform: translateY(-1px); }
+    .nc-title { font-weight: bold; color: #003d99; font-size: .95em; margin-bottom: .25em; }
+    .nc-desc  { font-size: .79em; color: #999; line-height: 1.45; }
+    .nav-card.nc-green { border-left-color: #1a8a1a; }
+    .nav-card.nc-green .nc-title { color: #1a8a1a; }
+    .nav-card.nc-gray  { border-left-color: #888; }
+    .nav-card.nc-gray  .nc-title { color: #666; }
+
+    /* ── Archiv ─────────────────────────────────────────────────────── */
+    details { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    summary { cursor: pointer; font-weight: bold; color: #003d99; font-size: .92em;
+               padding: .9em 1.2em; display: flex; align-items: center; gap: .5em;
+               list-style: none; user-select: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary::before { content: '▶'; font-size: .65em; transition: transform .2s; flex-shrink: 0; }
+    details[open] summary::before { transform: rotate(90deg); }
+    .archive-divider { height: 1px; background: #e8ecf4; margin: 0 1.2em; }
+    .archive-list { list-style: none; padding: .3em 1.2em 1em; margin: 0;
+                     display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+                     gap: .25em .8em; }
+    .archive-list a { color: #003d99; text-decoration: none; font-size: .86em;
+                       display: block; padding: .2em 0; }
+    .archive-list a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .kpi-row  { grid-template-columns: 1fr 1fr; }
+      .nav-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <h1>📈 Weekly Market Report &amp; Growth Stock Portfolio</h1>
-  <p>Automatically generated weekly market report and fully automated growth stock portfolio.</p>
-  <a href="https://weekly-market-condition.pages.dev/reports/2026-05-02.html" class="btn">Open Current Report →</a>
-  <a href="trades.html" class="btn" style="background:#1a6bb5;">Trade Journal →</a>
-  <a href="performance.html" class="btn" style="background:#3a8fd1;">Performance Dashboard →</a>
-  <a href="zertifikate/index.html" class="btn" style="background:#27ae60;">📊 Zertifikate-Scanner →</a>
-  <a href="blueprint.html" class="btn" style="background:#555;">📋 System-Blueprint →</a>
-  <h2>Archiv</h2>
-  <ul>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-05-02.html" style="color:#003d99;font-weight:bold">02. May 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-05-01.html" style="color:#003d99;font-weight:bold">01. May 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-30.html" style="color:#003d99;font-weight:bold">30. April 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-25.html" style="color:#003d99;font-weight:bold">25. April 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-24.html" style="color:#003d99;font-weight:bold">24. April 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-23.html" style="color:#003d99;font-weight:bold">23. April 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-22.html" style="color:#003d99;font-weight:bold">22. April 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-21.html" style="color:#003d99;font-weight:bold">21. April 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-19.html" style="color:#003d99;font-weight:bold">19. April 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-18.html" style="color:#003d99;font-weight:bold">18. April 2026</a></li>
-<li style="margin-bottom:8px"><a href="https://weekly-market-condition.pages.dev/reports/2026-04-17.html" style="color:#003d99;font-weight:bold">17. April 2026</a></li>
-  </ul>
+  <nav class="g-nav">
+    <a href="index.html" class="g-brand active">📈 Weekly Screener</a>
+    <a href="reports/2026-05-02.html">Aktueller Report</a>
+    <a href="trades.html">Trade Journal</a>
+    <a href="performance.html">Performance</a>
+    <a href="zertifikate/index.html">Zertifikate</a>
+    <a href="blueprint.html">Blueprint</a>
+  </nav>
+
+  <div class="page">
+    <h1 class="page-title">📈 Weekly Market Report &amp; Growth Stock Portfolio</h1>
+    <p class="page-sub">Vollautomatisiertes wöchentliches US-Aktien-Screening &amp; Portfolio-Management · Stand: 2026-05-02</p>
+
+    <!-- Dashboard KPIs -->
+    <div class="kpi-row">
+      <div class="kpi-card kc-green">
+        <div class="kc-lbl">Marktampel</div>
+        <div class="kc-val">🟢 Bullish</div>
+        <div class="kc-sub">6 von 6 Kriterien erfüllt</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kc-lbl">Depot-Equity</div>
+        <div class="kc-val">104.636 $</div>
+        <div class="kc-sub">Startkapital: 100.000 $</div>
+      </div>
+      <div class="kpi-card kc-green">
+        <div class="kc-lbl">Unrealized P&amp;L</div>
+        <div class="kc-val">+6.467 $</div>
+        <div class="kc-sub">6 offene Positionen</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kc-lbl">CAGR (ann.)</div>
+        <div class="kc-val">+226 %</div>
+        <div class="kc-sub">seit 18. April 2026</div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <h2 class="section-h">Bereiche</h2>
+    <div class="nav-grid">
+      <a href="reports/2026-05-02.html" class="nav-card">
+        <div class="nc-title">📄 Aktueller Report</div>
+        <div class="nc-desc">Wochenreport 02. Mai 2026 — Signale, Marktbreite &amp; Sektoranalyse</div>
+      </a>
+      <a href="trades.html" class="nav-card">
+        <div class="nc-title">📒 Trade Journal</div>
+        <div class="nc-desc">6 offene Positionen · 1 abgeschlossener Trade · Realized P&amp;L −1.831 $</div>
+      </a>
+      <a href="performance.html" class="nav-card">
+        <div class="nc-title">📊 Performance Dashboard</div>
+        <div class="nc-desc">Equity-Kurve, P&amp;L nach Sektor &amp; Handelsstatistik</div>
+      </a>
+      <a href="zertifikate/index.html" class="nav-card nc-green">
+        <div class="nc-title">📊 Zertifikate-Scanner</div>
+        <div class="nc-desc">Low-Vol Momentum Screener für Hebelprodukte</div>
+      </a>
+      <a href="blueprint.html" class="nav-card nc-gray">
+        <div class="nc-title">📋 System-Blueprint</div>
+        <div class="nc-desc">Vollständige Systembeschreibung &amp; Regelwerk in 18 Schritten</div>
+      </a>
+    </div>
+
+    <!-- Archiv -->
+    <h2 class="section-h">Archiv</h2>
+    <details>
+      <summary>Alle Wochenreports anzeigen (11 Einträge)</summary>
+      <div class="archive-divider"></div>
+      <ul class="archive-list">
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-05-02.html">02. Mai 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-05-01.html">01. Mai 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-30.html">30. April 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-25.html">25. April 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-24.html">24. April 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-23.html">23. April 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-22.html">22. April 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-21.html">21. April 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-19.html">19. April 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-18.html">18. April 2026</a></li>
+<li><a href="https://weekly-market-condition.pages.dev/reports/2026-04-17.html">17. April 2026</a></li>
+      </ul>
+    </details>
+  </div>
 </body>
 </html>
