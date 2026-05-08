@@ -37,7 +37,18 @@ HTML_TMPL = """
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body    { font-family: Arial, sans-serif; margin: 2em; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body    { font-family: Arial, sans-serif; margin: 0; }
+        .g-nav   { background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
+                   box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }
+        .g-brand { font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
+                   margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
+                   white-space: nowrap; font-size: .95em; }
+        .g-nav a { color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+                   font-size: .84em; white-space: nowrap; }
+        .g-nav a:hover  { color: #fff; background: rgba(255,255,255,.12); }
+        .g-nav a.active { color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }
+        .page   { max-width: 1200px; margin: 0 auto; padding: 2em 1em 3em; }
         table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; }
         th, td  { border: 1px solid #d0d5e8; padding: 0.45em 0.9em; text-align: right; }
         th      { background: #eef2fa; color: #003d99; font-weight: 600; white-space: nowrap; }
@@ -171,7 +182,14 @@ HTML_TMPL = """
     </script>
 </head>
 <body>
-    <a href="../index.html" style="display:inline-block;margin-bottom:1.2em;color:#003d99;text-decoration:none;font-size:.9em;">← Back to Overview</a>
+  <nav class="g-nav">
+    <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="../trades.html">Trade Journal</a>
+    <a href="../performance.html">Performance</a>
+    <a href="../zertifikate/index.html">Zertifikate</a>
+    <a href="../blueprint.html">Blueprint</a>
+  </nav>
+  <div class="page">
     {% if test_mode %}
     <div style="background:#b30000;color:#fff;font-weight:bold;font-size:1.1em;padding:10px 16px;border-radius:6px;margin-bottom:1em;letter-spacing:.03em;">
       ⚠️ TEST-MODUS — Keine Orders wurden platziert oder storniert
@@ -781,7 +799,7 @@ HTML_TMPL = """
 
     {% endif %}
 
-
+  </div><!-- .page -->
 </body>
 </html>
 """
@@ -1190,30 +1208,73 @@ def heuristic_verdict(breadth: pd.DataFrame, idx_rows: List[Tuple[str, dict]]) -
         return "Distribution/Schutzmodus: Risiko reduzieren, Stops nachziehen, Neuzukäufe selektiv."
     return "Neutral: Selektiv vorgehen, auf Bestätigungen warten."
 
-def build_index_page(reports_dir, base_url: str) -> str:
-    """Erzeugt das Dashboard (docs/index.html) mit einer Liste aller Reports."""
+def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
+    """Erzeugt das Dashboard (docs/index.html) mit Mini-KPIs, Nav-Karten und Report-Archiv."""
     from pathlib import Path
     import datetime
 
-    reports_dir = Path(reports_dir)
-    report_files = sorted(reports_dir.glob("*.html"), reverse=True)
+    reports_dir  = Path(reports_dir)
+    report_files = sorted(reports_dir.glob("????-??-??.html"), reverse=True)
+    latest_rpt   = f"reports/{report_files[0].name}" if report_files else "reports/"
 
-    rows_html = ""
-    for f in report_files:
-        date_str = f.stem          # z.B. "2026-04-19"
+    # ── KPI data from portfolio_performance ──────────────────────────────────────
+    try:
+        import portfolio_performance as pp
+        _tm = pp._trade_metrics(pp._load_trades())
+        _em = pp._equity_metrics(pp._load_equity_history(), pp._load_trades())
+
+        def _fm(v, plus=False):
+            if v is None: return "–"
+            s = ("+" if v > 0 else "") if plus else ""
+            return f"{s}{v:,.0f} $"
+
+        eq_str   = _fm(_em["current_equity"])
+        upl      = _tm["unrealized_pl"]
+        upl_str  = _fm(upl, plus=True)
+        upl_col  = "#1a8a1a" if upl and upl > 0 else "#cc2222" if upl and upl < 0 else "#333"
+        cagr     = _em["cagr"]
+        cagr_str = (f"+{cagr:.1f}%" if cagr > 0 else f"{cagr:.1f}%") if cagr is not None else "–"
+        cagr_col = "#1a8a1a" if cagr and cagr > 0 else "#cc2222" if cagr and cagr < 0 else "#333"
+    except Exception:
+        eq_str = upl_str = cagr_str = "–"
+        upl_col = cagr_col = "#333"
+
+    # ── Ampel KPI ────────────────────────────────────────────────────────────────
+    if ampel:
+        ampel_text  = f"{ampel['emoji']} {ampel['label']}"
+        ampel_style = f"color:{ampel['color']};background:{ampel['bg']};border-radius:6px;padding:.1em .5em"
+        ampel_sub   = f"Score {ampel['score']}/6"
+    else:
+        ampel_text  = "–"
+        ampel_style = "color:#333"
+        ampel_sub   = "Nicht berechnet"
+
+    # ── Archive list ─────────────────────────────────────────────────────────────
+    _WD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+    _MO = ["", "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+           "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+
+    def _human(stem):
         try:
-            d = datetime.date.fromisoformat(date_str)
-            label = d.strftime("%d. %B %Y")
-        except ValueError:
-            label = date_str
-        url = f"{base_url}/reports/{f.name}"
-        rows_html += (
-            f'<li style="margin-bottom:8px">'
-            f'<a href="{url}" style="color:#003d99;font-weight:bold">{label}</a>'
-            f'</li>\n'
-        )
+            d = datetime.date.fromisoformat(stem)
+            return f"{_WD[d.weekday()]}, {d.day:02d}. {_MO[d.month]} {d.year}"
+        except Exception:
+            return stem
 
-    latest_url = f"{base_url}/reports/{report_files[0].name}" if report_files else "#"
+    latest_stem  = report_files[0].stem if report_files else "–"
+    latest_human = _human(latest_stem)
+
+    archive_items = ""
+    for f in report_files[1:]:
+        archive_items += f"""
+      <li class="report-item">
+        <div>
+          <a href="reports/{f.name}">{f.stem}</a>
+          <div class="ri-meta">{_human(f.stem)}</div>
+        </div>
+      </li>"""
+
+    older_count = max(0, len(report_files) - 1)
 
     return f"""<!DOCTYPE html>
 <html lang="de">
@@ -1221,27 +1282,141 @@ def build_index_page(reports_dir, base_url: str) -> str:
   <meta charset="UTF-8">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Weekly Market Report &amp; Growth Stock Portfolio</title>
+  <title>Weekly Screener – Dashboard</title>
   <style>
-    body {{ font-family: Arial, sans-serif; max-width: 700px; margin: 2em auto; padding: 0 1em; color: #333; }}
-    h1   {{ color: #003d99; }}
-    .btn {{ display:block; padding:12px 28px; background:#003d99; color:white;
-             text-decoration:none; border-radius:6px; font-weight:bold; font-size:1em;
-             margin-bottom:.8em; text-align:center; width:260px; }}
-    ul   {{ padding-left: 1.2em; }}
-    li a {{ color: #003d99; }}
+    *, *::before, *::after {{ box-sizing: border-box; }}
+    body {{ font-family: Arial, sans-serif; margin: 0; background: #f0f3fa; color: #333; }}
+    .g-nav   {{ background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
+                box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }}
+    .g-brand {{ font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
+                margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
+                white-space: nowrap; font-size: .95em; }}
+    .g-nav a {{ color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+                font-size: .84em; white-space: nowrap; }}
+    .g-nav a:hover  {{ color: #fff; background: rgba(255,255,255,.12); }}
+    .g-nav a.active {{ color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }}
+    .page {{ max-width: 900px; margin: 0 auto; padding: 2em 1em 3em; }}
+    .page-title {{ color: #003d99; font-size: 1.6em; margin: 0 0 .15em; }}
+    .page-sub   {{ color: #888; font-size: .88em; margin: 0 0 1.8em; }}
+    .section-h  {{ color: #003d99; font-size: .78em; text-transform: uppercase;
+                   letter-spacing: .08em; margin: 0 0 .75em;
+                   padding-bottom: .35em; border-bottom: 2px solid #003d99; }}
+    .kpi-row {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: .85em; margin-bottom: 2.2em; }}
+    .kpi-card {{ background: #fff; border-radius: 8px; padding: .9em 1.1em;
+                 box-shadow: 0 1px 4px rgba(0,0,0,.07); border-top: 3px solid #003d99; }}
+    .kc-label {{ font-size: .72em; text-transform: uppercase; letter-spacing: .06em; color: #888; margin-bottom: .3em; }}
+    .kc-val   {{ font-size: 1.3em; font-weight: bold; color: #003d99; }}
+    .kc-sub   {{ font-size: .75em; color: #aaa; margin-top: .2em; }}
+    .nav-row  {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: .85em; margin-bottom: 2.2em; }}
+    .nav-card {{ background: #fff; border-radius: 8px; padding: 1em 1.2em;
+                 box-shadow: 0 1px 4px rgba(0,0,0,.08); text-decoration: none; color: inherit;
+                 border-left: 4px solid #003d99; display: block;
+                 transition: box-shadow .15s, transform .12s; }}
+    .nav-card:hover {{ box-shadow: 0 4px 14px rgba(0,0,0,.13); transform: translateY(-1px); }}
+    .nc-title {{ font-weight: bold; color: #003d99; font-size: .92em; margin-bottom: .2em; }}
+    .nc-desc  {{ font-size: .79em; color: #999; }}
+    .nav-card.nc-green  {{ border-left-color: #27ae60; }}
+    .nav-card.nc-green  .nc-title {{ color: #27ae60; }}
+    .nav-card.nc-teal   {{ border-left-color: #16a085; }}
+    .nav-card.nc-teal   .nc-title {{ color: #16a085; }}
+    .nav-card.nc-orange {{ border-left-color: #e67e22; }}
+    .nav-card.nc-orange .nc-title {{ color: #e67e22; }}
+    .nav-card.nc-purple {{ border-left-color: #8e44ad; }}
+    .nav-card.nc-purple .nc-title {{ color: #8e44ad; }}
+    .report-list {{ list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5em; }}
+    .report-item {{ background: #fff; border-radius: 8px; padding: .8em 1.1em;
+                    box-shadow: 0 1px 4px rgba(0,0,0,.07); }}
+    .report-item a {{ color: #003d99; text-decoration: none; font-weight: 600; font-size: .95em; }}
+    .report-item a:hover {{ text-decoration: underline; }}
+    .ri-meta {{ font-size: .78em; color: #aaa; margin-top: .15em; }}
+    details summary {{ cursor: pointer; color: #003d99; font-size: .88em; padding: .4em 0; }}
+    details summary:hover {{ text-decoration: underline; }}
+    @media (max-width: 680px) {{
+      .kpi-row {{ grid-template-columns: 1fr 1fr; }}
+      .nav-row {{ grid-template-columns: 1fr 1fr; }}
+    }}
+    @media (max-width: 420px) {{
+      .kpi-row {{ grid-template-columns: 1fr; }}
+      .nav-row {{ grid-template-columns: 1fr; }}
+    }}
   </style>
 </head>
 <body>
-  <h1>📈 Weekly Market Report &amp; Growth Stock Portfolio</h1>
-  <p>Automatically generated weekly market report and fully automated growth stock portfolio.</p>
-  <a href="{latest_url}" class="btn">Open Current Report →</a>
-  <a href="trades.html" class="btn" style="background:#1a6bb5;">Trade Journal →</a>
-  <a href="performance.html" class="btn" style="background:#3a8fd1;">Performance Dashboard →</a>
-  <a href="zertifikate/index.html" class="btn" style="background:#27ae60;">📊 Zertifikate-Scanner →</a>
-  <h2>Archiv</h2>
-  <ul>
-{rows_html}  </ul>
+  <nav class="g-nav">
+    <a href="index.html" class="g-brand active">📈 Weekly Screener</a>
+    <a href="{latest_rpt}">Aktueller Report</a>
+    <a href="trades.html">Trade Journal</a>
+    <a href="performance.html">Performance</a>
+    <a href="zertifikate/index.html">Zertifikate</a>
+    <a href="blueprint.html">Blueprint</a>
+  </nav>
+  <div class="page">
+    <h1 class="page-title">📈 Weekly Screener</h1>
+    <p class="page-sub">Growth Stock Portfolio — automatischer Wochenreport</p>
+
+    <h2 class="section-h">Depot-Überblick</h2>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kc-label">Marktampel</div>
+        <div class="kc-val" style="{ampel_style}">{ampel_text}</div>
+        <div class="kc-sub">{ampel_sub}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kc-label">Depot-Equity</div>
+        <div class="kc-val">{eq_str}</div>
+        <div class="kc-sub">Aktuell</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kc-label">Unrealized P&amp;L</div>
+        <div class="kc-val" style="color:{upl_col}">{upl_str}</div>
+        <div class="kc-sub">Offene Positionen</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kc-label">CAGR (ann.)</div>
+        <div class="kc-val" style="color:{cagr_col}">{cagr_str}</div>
+        <div class="kc-sub">Annualisiert</div>
+      </div>
+    </div>
+
+    <h2 class="section-h">Navigation</h2>
+    <div class="nav-row">
+      <a href="{latest_rpt}" class="nav-card">
+        <div class="nc-title">📋 Aktueller Report</div>
+        <div class="nc-desc">Wöchentliche Marktanalyse &amp; Signale</div>
+      </a>
+      <a href="trades.html" class="nav-card nc-green">
+        <div class="nc-title">📒 Trade Journal</div>
+        <div class="nc-desc">Offene &amp; abgeschlossene Positionen</div>
+      </a>
+      <a href="performance.html" class="nav-card nc-teal">
+        <div class="nc-title">📊 Performance</div>
+        <div class="nc-desc">Equity-Kurve, KPIs &amp; Analyse</div>
+      </a>
+      <a href="zertifikate/index.html" class="nav-card nc-orange">
+        <div class="nc-title">🏷️ Zertifikate-Scanner</div>
+        <div class="nc-desc">Low-Vol Momentum Screener</div>
+      </a>
+      <a href="blueprint.html" class="nav-card nc-purple">
+        <div class="nc-title">📐 Blueprint</div>
+        <div class="nc-desc">Regelwerk &amp; Handelssystem</div>
+      </a>
+    </div>
+
+    <h2 class="section-h">Aktueller Report</h2>
+    <ul class="report-list">
+      <li class="report-item">
+        <div>
+          <a href="{latest_rpt}" style="color:#27ae60">{latest_stem}</a>
+          <div class="ri-meta">{latest_human} — Aktuellster Report</div>
+        </div>
+      </li>
+    </ul>
+    <details style="margin-top:.8em">
+      <summary>Ältere Reports anzeigen ({older_count} weitere)</summary>
+      <ul class="report-list" style="margin-top:.6em">{archive_items}
+      </ul>
+    </details>
+  </div>
 </body>
 </html>
 """

@@ -117,19 +117,19 @@ def _wrap_html(body: str, report_date: str) -> str:
   {_css()}
 </head>
 <body>
+  <nav class="g-nav">
+    <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="../trades.html">Trade Journal</a>
+    <a href="../performance.html">Performance</a>
+    <a href="index.html" class="active">Zertifikate</a>
+    <a href="portfolio.html">Portfolio</a>
+    <a href="regelwerk.html">Regelwerk</a>
+    <a href="../blueprint.html">Blueprint</a>
+  </nav>
   <div class="container">
     <header>
       <h1>📊 Zertifikate-Scanner</h1>
       <p class="subtitle">Wochenbericht {report_date} &mdash; Low-Vol Momentum Screener</p>
-      <nav>
-        <a href="index.html">← Alle Reports</a>
-        &nbsp;|&nbsp;
-        <a href="../zertifikate/portfolio.html">Portfolio verwalten</a>
-        &nbsp;|&nbsp;
-        <a href="../index.html">Hauptreport</a>
-        &nbsp;|&nbsp;
-        <a href="regelwerk.html">📋 Regelwerk</a>
-      </nav>
     </header>
     {body}
   </div>
@@ -142,13 +142,20 @@ def _css() -> str:
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
            background: #f5f6fa; color: #2c3e50; font-size: 14px; }
+    .g-nav   { background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
+               box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }
+    .g-brand { font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
+               margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
+               white-space: nowrap; font-size: .95em; }
+    .g-nav a { color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+               font-size: .84em; white-space: nowrap; }
+    .g-nav a:hover  { color: #fff; background: rgba(255,255,255,.12); }
+    .g-nav a.active { color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }
     .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
     header { background: #2c3e50; color: white; padding: 20px 24px;
              border-radius: 8px; margin-bottom: 20px; }
     header h1 { font-size: 1.6em; margin-bottom: 4px; }
-    header .subtitle { opacity: 0.8; font-size: 0.9em; margin-bottom: 8px; }
-    header nav a { color: #7fb3d3; text-decoration: none; font-size: 0.85em; }
-    header nav a:hover { color: white; }
+    header .subtitle { opacity: 0.8; font-size: 0.9em; }
     .section { background: white; border-radius: 8px; padding: 20px;
                margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
     .section h2 { font-size: 1.1em; margin-bottom: 14px; padding-bottom: 8px;
@@ -794,42 +801,130 @@ def save_regelwerk(html: str, output_dir: str = "docs/zertifikate") -> None:
 
 # ── Index-Seite ────────────────────────────────────────────────────────────────
 
+def _ampel_badge(report_file: Path) -> str:
+    """Extract ampel status from a generated report HTML file and return a badge."""
+    try:
+        content = report_file.read_text(encoding="utf-8")
+        if "ampel-gruen" in content:
+            return '<span class="badge badge-green">🟢 Bullish</span>'
+        if "ampel-rot" in content:
+            return '<span class="badge badge-red">🔴 Bearish</span>'
+        if "ampel-gelb" in content:
+            return '<span class="badge badge-yellow">🟡 Neutral</span>'
+    except Exception:
+        pass
+    return ""
+
+
 def _update_index(report_date: str, out_dir: Path) -> None:
     index_path = out_dir / "index.html"
-    reports = sorted(
-        [f.stem for f in out_dir.glob("????-??-??.html")],
-        reverse=True,
-    )
+    report_files = sorted(out_dir.glob("????-??-??.html"), reverse=True)
 
-    links = "\n".join(
-        f'    <li><a href="{r}.html">{r}</a></li>'
-        for r in reports
-    )
+    # weekday names in German
+    _WD = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
+    _MO = ["", "Januar", "Februar", "März", "April", "Mai", "Juni",
+           "Juli", "August", "September", "Oktober", "November", "Dezember"]
+
+    def _human_date(stem: str) -> str:
+        try:
+            import datetime as dt
+            d = dt.date.fromisoformat(stem)
+            return f"{_WD[d.weekday()]}, {d.day:02d}. {_MO[d.month]} {d.year}"
+        except Exception:
+            return stem
+
+    report_items = ""
+    for f in report_files:
+        r = f.stem
+        badge = _ampel_badge(f)
+        human = _human_date(r)
+        badge_html = f'\n        {badge}' if badge else ""
+        report_items += f"""
+      <li class="report-item">
+        <div>
+          <a href="{r}.html">{r}</a>
+          <div class="ri-meta">{human}</div>
+        </div>{badge_html}
+      </li>"""
 
     html = f"""<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zertifikate-Scanner — Alle Reports</title>
   <style>
-    body {{ font-family: -apple-system, sans-serif; max-width: 600px;
-            margin: 40px auto; padding: 20px; color: #2c3e50; }}
-    h1 {{ margin-bottom: 16px; }}
-    ul {{ list-style: none; padding: 0; }}
-    li {{ margin-bottom: 8px; }}
-    a {{ color: #2980b9; text-decoration: none; }}
-    a:hover {{ text-decoration: underline; }}
-    nav {{ margin-bottom: 20px; font-size: 0.9em; }}
+    *, *::before, *::after {{ box-sizing: border-box; }}
+    body {{ font-family: Arial, sans-serif; margin: 0; background: #f0f3fa; color: #333; }}
+    .g-nav   {{ background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
+                box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }}
+    .g-brand {{ font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
+                margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
+                white-space: nowrap; font-size: .95em; }}
+    .g-nav a {{ color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+                font-size: .84em; white-space: nowrap; }}
+    .g-nav a:hover  {{ color: #fff; background: rgba(255,255,255,.12); }}
+    .g-nav a.active {{ color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }}
+    .page {{ max-width: 800px; margin: 0 auto; padding: 2em 1em 3em; }}
+    .page-title {{ color: #003d99; font-size: 1.5em; margin: 0 0 .2em; }}
+    .page-sub   {{ color: #888; font-size: .88em; margin: 0 0 1.8em; }}
+    .section-h {{ color: #003d99; font-size: .78em; text-transform: uppercase;
+                  letter-spacing: .08em; margin: 0 0 .75em;
+                  padding-bottom: .35em; border-bottom: 2px solid #003d99; }}
+    .quick-row {{ display: grid; grid-template-columns: 1fr 1fr; gap: .85em; margin-bottom: 2.2em; }}
+    .quick-card {{ background: #fff; border-radius: 8px; padding: .9em 1.1em;
+                   box-shadow: 0 1px 4px rgba(0,0,0,.08); text-decoration: none; color: inherit;
+                   border-left: 4px solid #27ae60; display: block;
+                   transition: box-shadow .15s, transform .12s; }}
+    .quick-card:hover {{ box-shadow: 0 4px 14px rgba(0,0,0,.13); transform: translateY(-1px); }}
+    .qc-title {{ font-weight: bold; color: #27ae60; font-size: .92em; margin-bottom: .2em; }}
+    .qc-desc  {{ font-size: .79em; color: #999; }}
+    .quick-card.qc-blue {{ border-left-color: #2980b9; }}
+    .quick-card.qc-blue .qc-title {{ color: #2980b9; }}
+    .report-list {{ list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5em; }}
+    .report-item {{ background: #fff; border-radius: 8px; padding: .8em 1.1em;
+                    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+                    display: flex; align-items: center; justify-content: space-between; gap: 1em; }}
+    .report-item a {{ color: #003d99; text-decoration: none; font-weight: 600; font-size: .95em; }}
+    .report-item a:hover {{ text-decoration: underline; }}
+    .report-item .ri-meta {{ font-size: .78em; color: #aaa; margin-top: .15em; }}
+    .badge {{ display: inline-flex; align-items: center; gap: .35em; padding: .25em .75em;
+              border-radius: 20px; font-size: .78em; font-weight: 600; white-space: nowrap; }}
+    .badge-green  {{ background: #d5f5e3; color: #1e8449; }}
+    .badge-yellow {{ background: #fef9e7; color: #9a7d0a; }}
+    .badge-red    {{ background: #fadbd8; color: #922b21; }}
+    @media (max-width: 500px) {{ .quick-row {{ grid-template-columns: 1fr; }} }}
   </style>
 </head>
 <body>
-  <nav><a href="../index.html">← Hauptreport</a> &nbsp;|&nbsp;
-       <a href="portfolio.html">Portfolio verwalten</a></nav>
-  <h1>📊 Zertifikate-Scanner</h1>
-  <p>Alle wöchentlichen Reports:</p>
-  <ul>
-{links}
-  </ul>
+  <nav class="g-nav">
+    <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="../trades.html">Trade Journal</a>
+    <a href="../performance.html">Performance</a>
+    <a href="index.html" class="active">Zertifikate</a>
+    <a href="../blueprint.html">Blueprint</a>
+  </nav>
+
+  <div class="page">
+    <h1 class="page-title">📊 Zertifikate-Scanner</h1>
+    <p class="page-sub">Low-Vol Momentum Screener für Hebelprodukte &amp; Zertifikate</p>
+
+    <h2 class="section-h">Schnellzugriff</h2>
+    <div class="quick-row">
+      <a href="portfolio.html" class="quick-card">
+        <div class="qc-title">📁 Portfolio verwalten</div>
+        <div class="qc-desc">Positionen, Einstellungen &amp; Transaktionen</div>
+      </a>
+      <a href="regelwerk.html" class="quick-card qc-blue">
+        <div class="qc-title">📋 Regelwerk</div>
+        <div class="qc-desc">Einstiegskriterien &amp; Ampel-Logik</div>
+      </a>
+    </div>
+
+    <h2 class="section-h">Wochenreports</h2>
+    <ul class="report-list">{report_items}
+    </ul>
+  </div>
 </body>
 </html>"""
 

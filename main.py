@@ -33,6 +33,7 @@ from report_builder import (
     build_risk_rows,
     build_sector_rows,
     heuristic_verdict,
+    compute_ampel,
 )
 from signal_generator import generate_signals, is_market_bullish, save_signals_json
 import alpaca_client
@@ -837,9 +838,11 @@ def run():
 
     # Index-Seite aktualisieren
     from report_builder import build_index_page
+    _breadth_snap = compute_breadth_snapshots(weekly, offsets=[0, 1, 4])
+    _ampel_result = compute_ampel(_breadth_snap, idx_df)
     index_path = Path("docs/index.html")
     index_path.write_text(
-        build_index_page(docs_reports_dir, PAGES_BASE_URL),
+        build_index_page(docs_reports_dir, PAGES_BASE_URL, ampel=_ampel_result),
         encoding="utf-8",
     )
     print(f"[PAGES] Index aktualisiert → {index_path}")

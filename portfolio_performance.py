@@ -232,6 +232,15 @@ def _bar_chart_data(by_dict: dict) -> tuple[list, list, list]:
 
 # ── HTML builder ──────────────────────────────────────────────────────────────
 
+def _latest_report_link() -> str:
+    reports_dir = Path("docs/reports")
+    if reports_dir.exists():
+        htmls = sorted(reports_dir.glob("????-??-??.html"), reverse=True)
+        if htmls:
+            return f"reports/{htmls[0].name}"
+    return "reports/"
+
+
 def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     today = datetime.date.today().isoformat()
 
@@ -254,8 +263,9 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     cagr_str = _fmt(em["cagr"], "%", 1, plus=True)
     eq_str   = _fmt_money(em["current_equity"])
 
-    rpl_color = _color(tm["total_realized_pl"])
-    upl_color = _color(tm["unrealized_pl"])
+    rpl_color     = _color(tm["total_realized_pl"])
+    upl_color     = _color(tm["unrealized_pl"])
+    latest_report = _latest_report_link()
 
     # ── Equity chart ──────────────────────────────────────────────────────────
     eq_labels = json.dumps(em["chart_labels"])
@@ -293,7 +303,17 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after {{ box-sizing: border-box; }}
-    body     {{ font-family: Arial, sans-serif; max-width: 1200px; margin: 2em auto; padding: 0 1em; color: #333; }}
+    body     {{ font-family: Arial, sans-serif; margin: 0; color: #333; }}
+    .g-nav   {{ background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
+                box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }}
+    .g-brand {{ font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
+                margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
+                white-space: nowrap; font-size: .95em; }}
+    .g-nav a {{ color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+                font-size: .84em; white-space: nowrap; }}
+    .g-nav a:hover  {{ color: #fff; background: rgba(255,255,255,.12); }}
+    .g-nav a.active {{ color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }}
+    .page    {{ max-width: 1200px; margin: 0 auto; padding: 2em 1em 3em; }}
     h1       {{ color: #003d99; margin-bottom: .15em; }}
     h2       {{ color: #003d99; margin: 1.8em 0 .5em; border-bottom: 2px solid #003d99; padding-bottom: .2em; }}
     .meta    {{ color: #888; font-size: .85em; margin-bottom: 1.5em; }}
@@ -307,14 +327,19 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     .chart-box h3 {{ margin: 0 0 .6em; color: #003d99; font-size: .95em; }}
     .empty-note {{ color:#aaa; font-size:.85em; text-align:center; padding:2em 0; }}
     canvas   {{ max-height: 260px; }}
-    .back    {{ display:inline-block; margin-bottom:1.5em; color:#003d99;
-                text-decoration:none; font-size:.9em; }}
-    .back:hover {{ text-decoration:underline; }}
     @media(max-width:700px) {{ .charts2 {{ grid-template-columns: 1fr; }} }}
   </style>
 </head>
 <body>
-  <a href="index.html" class="back">← Back to Overview</a>
+  <nav class="g-nav">
+    <a href="index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="{latest_report}">Aktueller Report</a>
+    <a href="trades.html">Trade Journal</a>
+    <a href="performance.html" class="active">Performance</a>
+    <a href="zertifikate/index.html">Zertifikate</a>
+    <a href="blueprint.html">Blueprint</a>
+  </nav>
+  <div class="page">
   <h1>Portfolio Performance</h1>
   <p class="meta">Stand: {today} &nbsp;|&nbsp; {tm['total_trades']} abgeschlossene Trades &nbsp;|&nbsp; {tm['open_count']} offene Positionen</p>
 
@@ -447,6 +472,7 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     makeBarChart('chartSector',  'emptySector',  {sec_labels_js}, {sec_values_js}, {sec_colors_js});
     makeBarChart('chartPattern', 'emptyPattern', {pat_labels_js}, {pat_values_js}, {pat_colors_js});
   </script>
+  </div><!-- .page -->
 </body>
 </html>"""
 

@@ -385,6 +385,16 @@ def _exit_reason_label(r):
     return {"stop_hit": "Stop Hit", "manual": "Manuell",
             "manual_market": "Manuell"}.get(r, r or "–")
 
+def _latest_report_link() -> str:
+    """Return relative path to the most recent weekly report, or 'reports/' as fallback."""
+    reports_dir = Path("docs/reports")
+    if reports_dir.exists():
+        htmls = sorted(reports_dir.glob("????-??-??.html"), reverse=True)
+        if htmls:
+            return f"reports/{htmls[0].name}"
+    return "reports/"
+
+
 def _pt_status(t: dict) -> str:
     parts = []
     if t.get("pt_is_fast_mover"):
@@ -408,10 +418,14 @@ def build_html(data: dict) -> str:
     closed_t = data.get("closed", [])
 
     # ── Summary bar ──────────────────────────────────────────────────────────
-    wr_str  = f"{stats['win_rate']:.0f}%" if stats["win_rate"] is not None else "–"
-    pl_str  = _fmt_money(stats["total_pl"])
-    aw_str  = _fmt_pct(stats["avg_win"])
-    al_str  = _fmt_pct(stats["avg_loss"])
+    wr_str        = f"{stats['win_rate']:.0f}%" if stats["win_rate"] is not None else "–"
+    pl_str        = _fmt_money(stats["total_pl"])
+    aw_str        = _fmt_pct(stats["avg_win"])
+    al_str        = _fmt_pct(stats["avg_loss"])
+    unrealized_pl = sum(t.get("unrealized_pl") or 0 for t in open_t)
+    upl_str       = _fmt_money(unrealized_pl)
+    upl_color     = _color(unrealized_pl)
+    latest_report = _latest_report_link()
 
     # ── Open positions rows ───────────────────────────────────────────────────
     open_rows = ""
@@ -482,7 +496,18 @@ def build_html(data: dict) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradetagebuch</title>
   <style>
-    body      {{ font-family: Arial, sans-serif; max-width: 1200px; margin: 2em auto; padding: 0 1em; color: #333; }}
+    *, *::before, *::after {{ box-sizing: border-box; }}
+    body      {{ font-family: Arial, sans-serif; margin: 0; color: #333; }}
+    .g-nav    {{ background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
+                 box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }}
+    .g-brand  {{ font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
+                 margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
+                 white-space: nowrap; font-size: .95em; }}
+    .g-nav a  {{ color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+                 font-size: .84em; white-space: nowrap; }}
+    .g-nav a:hover  {{ color: #fff; background: rgba(255,255,255,.12); }}
+    .g-nav a.active {{ color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }}
+    .page     {{ max-width: 1200px; margin: 0 auto; padding: 2em 1em 3em; }}
     h1        {{ color: #003d99; margin-bottom: .2em; }}
     h2        {{ color: #003d99; margin-top: 2em; border-bottom: 2px solid #003d99; padding-bottom: .2em; }}
     .meta     {{ color: #888; font-size: .85em; margin-bottom: 1.5em; }}
@@ -496,8 +521,6 @@ def build_html(data: dict) -> str:
     th        {{ background: #f0f3fa; color: #003d99; font-weight: 600; text-align: center; }}
     td.left   {{ text-align: left; }}
     tr:hover  {{ background: #f8f9ff; }}
-    .back     {{ display:inline-block; margin-bottom:1.5em; color:#003d99; text-decoration:none; font-size:.9em; }}
-    .back:hover {{ text-decoration:underline; }}
     .section-header {{ display:flex; align-items:center; justify-content:space-between; margin-top:2em; }}
     .section-header h2 {{ margin:0; border-bottom:none; flex:1; }}
     .section-header::after {{ content:""; display:block; height:2px; background:#003d99; margin-top:.2em; }}
@@ -520,7 +543,15 @@ def build_html(data: dict) -> str:
   </script>
 </head>
 <body>
-  <a href="index.html" class="back">← Back to Overview</a>
+  <nav class="g-nav">
+    <a href="index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="{latest_report}">Aktueller Report</a>
+    <a href="trades.html" class="active">Trade Journal</a>
+    <a href="performance.html">Performance</a>
+    <a href="zertifikate/index.html">Zertifikate</a>
+    <a href="blueprint.html">Blueprint</a>
+  </nav>
+  <div class="page">
   <h1>Tradetagebuch</h1>
   <p class="meta">Stand: {today} &nbsp;|&nbsp; {stats['count']} abgeschlossene Trades &nbsp;|&nbsp; {len(open_t)} offene Position{'en' if len(open_t) != 1 else ''}</p>
 
@@ -528,6 +559,7 @@ def build_html(data: dict) -> str:
     <div class="kpi"><div class="val">{stats['wins']}/{stats['count']}</div><div class="lbl">Wins / Gesamt</div></div>
     <div class="kpi"><div class="val">{wr_str}</div><div class="lbl">Win Rate</div></div>
     <div class="kpi"><div class="val" style="{'color:#1a8a1a' if stats['total_pl'] > 0 else 'color:#cc2222'}">{pl_str} $</div><div class="lbl">Realized P&amp;L</div></div>
+    <div class="kpi"><div class="val" style="{upl_color}">{upl_str} $</div><div class="lbl">Unrealized P&amp;L</div></div>
     <div class="kpi"><div class="val" style="color:#1a8a1a">{aw_str}</div><div class="lbl">Ø Gewinner</div></div>
     <div class="kpi"><div class="val" style="color:#cc2222">{al_str}</div><div class="lbl">Ø Verlierer</div></div>
   </div>
@@ -580,6 +612,7 @@ def build_html(data: dict) -> str:
     {closed_rows}
   </table>
   </div>
+  </div><!-- .page -->
 </body>
 </html>"""
 
