@@ -289,10 +289,16 @@ def _screen_single(
 
     score = _compute_score(e2_result["score"], e3_result["confirmed"], s_rules)
 
+    rsi_min  = float(e2.get("rsi_min", 40))
+    rsi_max  = float(e2.get("rsi_max", 65))
+    wr_min   = float(e2.get("williams_r_min", -80))
+    wr_max   = float(e2.get("williams_r_max", -60))
+    beta_max = float(e2.get("beta_max", 0.9))
+
     return {
         "ticker":          ticker,
         "score":           score,
-        # Ebene-1-Details
+        # Ebene-1-Details (alle immer True für Kandidaten)
         "close":           round(float(close.iloc[-1]), 2),
         "ma50":            round(float(close.rolling(50).mean().iloc[-1]), 2),
         "ma200":           round(float(close.rolling(200).mean().iloc[-1]), 2),
@@ -305,6 +311,10 @@ def _screen_single(
         "hv30":            round(e2_result["hv30"], 1),
         "beta":            round(e2_result["beta"], 2),
         "e2_score":        round(e2_result["score"], 1),
+        # Optimal-Range-Flags (für Grün-Einfärbung im Report)
+        "e2_rsi_ok":       rsi_min <= e2_result["rsi"] <= rsi_max,
+        "e2_williams_ok":  wr_min  <= e2_result["williams_r"] <= wr_max,
+        "e2_beta_ok":      not np.isnan(e2_result["beta"]) and e2_result["beta"] < beta_max,
         # Ebene-3-Details
         "e3_confirmed":    e3_result["confirmed"],
         "e3_macd_dreht":   e3_result["macd_dreht"],

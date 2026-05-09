@@ -266,28 +266,36 @@ def _section_kandidaten(kandidaten: list[dict], markt: MarktampelResult) -> str:
     if markt.status == Ampel.GELB:
         markt_hinweis = '<div class="warnung" style="margin-bottom:12px">⚠️ Marktampel GELB — Kandidaten mit Vorsicht handeln. Stopps enger setzen, keine Aufstockung bestehender Positionen.</div>'
 
+    _G = "background:#d5f5e3;color:#1e8449"  # grün
+    _N = ""                                   # neutral (kein Hintergrund)
+
+    def _td(ok: bool, content: str) -> str:
+        style = _G if ok else _N
+        return f'<td style="{style}">{content}</td>'
+
     rows = ""
     for k in kandidaten:
         score = k.get("score", 0)
         bar_w = min(int(score), 100)
-        e3 = k.get("e3_confirmed", 0)
-        e3_icons = ("✅" if k.get("e3_macd_dreht")    else "·") + \
-                   ("✅" if k.get("e3_momentum_pos")  else "·") + \
-                   ("✅" if k.get("e3_volumen_ok")    else "·")
+        e3    = k.get("e3_confirmed", 0)
+
+        e3_icons = ("✅" if k.get("e3_macd_dreht")   else "·") + \
+                   ("✅" if k.get("e3_momentum_pos") else "·") + \
+                   ("✅" if k.get("e3_volumen_ok")   else "·")
 
         os_emp = k.get("os_empfehlung", {})
 
         rows += f"""<tr>
           <td><strong>{k['ticker']}</strong></td>
-          <td>{k.get('close', '—')}</td>
-          <td>{k.get('ma50', '—')}</td>
-          <td>{k.get('perf_52w_pct', '—')}%</td>
-          <td>{k.get('adx', '—')}</td>
-          <td>{k.get('pullback_pct', '—')}%</td>
-          <td>{k.get('rsi', '—')}</td>
-          <td>{k.get('williams_r', '—')}</td>
-          <td>{k.get('hv30', '—')}%</td>
-          <td>{k.get('beta', '—')}</td>
+          {_td(True,  k.get('close', '—'))}
+          {_td(True,  k.get('ma50',  '—'))}
+          {_td(True,  f"{k.get('perf_52w_pct','—')}%")}
+          {_td(True,  k.get('adx',   '—'))}
+          {_td(True,  f"{k.get('pullback_pct','—')}%")}
+          {_td(k.get('e2_rsi_ok',      False), k.get('rsi',       '—'))}
+          {_td(k.get('e2_williams_ok', False), k.get('williams_r', '—'))}
+          {_td(True,  f"{k.get('hv30','—')}%")}
+          {_td(k.get('e2_beta_ok',     False), k.get('beta',       '—'))}
           <td><span style="font-size:1.1em">{e3_icons}</span> ({e3}/3)</td>
           <td>
             <span class="score-bar" style="width:{bar_w}px"></span>
