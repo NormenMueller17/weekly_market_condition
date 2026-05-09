@@ -168,15 +168,19 @@ def _screen_single_full(
     e3 = e_rules.get("ebene3", {})
 
     e1_r = _check_ebene1(close, high, low, e1)
-    e2_r = _check_ebene2_full(close, high, low, spy_weekly, e2)
+    e2_r = _check_ebene2_full(close, high, low, spy_weekly, e2, e1_rules=e1)
     e3_r = _check_ebene3(close, high, low, vol, e3)
+
+    # E2 gilt als bestanden wenn entweder Pullback-Pfad ODER Recovery-Pfad aktiv
+    e2_pullback_ok = e2_r["pullback_ok"] and e2_r["hv_ok"]
+    e2_ok = e2_pullback_ok or e2_r["e2_recovery"]
 
     flags = [
         e1_r["ueber_ma200"],
         e1_r["ueber_ma50"],
         e1_r["adx_ok"],
         e1_r["perf_ok"],
-        e2_r["pullback_ok"],
+        e2_ok,
         e2_r["rsi_ok"],
         e2_r["williams_ok"],
         e2_r["hv_ok"],
@@ -196,11 +200,12 @@ def _screen_single_full(
         "e1_perf":     e1_r["perf_ok"],
         "adx_val":     round(e1_r["adx"], 1),
         "perf_52w":    round(e1_r["perf_52w_pct"], 1),
-        "e2_pullback": e2_r["pullback_ok"],
+        "e2_pullback": e2_ok,
         "e2_rsi":      e2_r["rsi_ok"],
         "e2_williams": e2_r["williams_ok"],
         "e2_hv":       e2_r["hv_ok"],
         "e2_beta":     e2_r["beta_ok"],
+        "e2_recovery": e2_r["e2_recovery"],
         "pullback_pct": round(e2_r["pullback_pct"], 1),
         "rsi_val":     round(e2_r["rsi"], 1),
         "williams_val": round(e2_r["williams_r"], 1),
@@ -218,16 +223,19 @@ def _check_ebene2_full(
     low: pd.Series,
     spy_close: pd.Series,
     rules: dict,
+    e1_rules: dict | None = None,
 ) -> dict:
     """Wie _check_ebene2, aber ohne Early-Return — liefert immer alle Flags."""
     pb_min   = float(rules.get("pullback_min_pct", 5))
     pb_max   = float(rules.get("pullback_max_pct", 15))
     rsi_min  = float(rules.get("rsi_min", 40))
-    rsi_max  = float(rules.get("rsi_max", 55))
+    rsi_max  = float(rules.get("rsi_max", 65))
     wr_min   = float(rules.get("williams_r_min", -80))
     wr_max   = float(rules.get("williams_r_max", -60))
     hv_max   = float(rules.get("hv30_max", 25))
     beta_max = float(rules.get("beta_max", 0.9))
+    rec_weeks  = int(rules.get("recovery_ma_cross_weeks", 8))
+    ma_long_w  = int((e1_rules or {}).get("ma_long", 40))
 
     current      = float(close.iloc[-1])
     recent_high  = float(high.tail(13).max())
@@ -238,12 +246,25 @@ def _check_ebene2_full(
     hv30    = float(hv(close, 30).iloc[-1]) if not np.isnan(hv(close, 30).iloc[-1]) else 99.0
     b_val   = beta(close, spy_close, 52) if len(spy_close) >= 10 else np.nan
 
+    # Recovery-Pfad prüfen
+    e2_recovery = False
+    if len(close) >= ma_long_w + rec_weeks:
+        ma_series    = close.rolling(ma_long_w).mean()
+        window_close = close.iloc[-(rec_weeks + 1):]
+        window_ma    = ma_series.iloc[-(rec_weeks + 1):]
+        for i in range(len(window_close) - 1):
+            if (float(window_close.iloc[i]) < float(window_ma.iloc[i])
+                    and float(window_close.iloc[i + 1]) >= float(window_ma.iloc[i + 1])):
+                e2_recovery = True
+                break
+
     return {
         "pullback_ok": pb_min <= pullback_pct <= pb_max,
         "rsi_ok":      rsi_min <= rsi_val <= rsi_max,
         "williams_ok": wr_min <= wr_val <= wr_max,
         "hv_ok":       hv30 < hv_max,
         "beta_ok":     (not np.isnan(b_val)) and float(b_val) < beta_max,
+        "e2_recovery": e2_recovery,
         "pullback_pct": pullback_pct,
         "rsi":          rsi_val,
         "williams_r":   wr_val,
@@ -276,7 +297,7 @@ def _screen_single(
 
     # ── Ebene 2: Pullback-Erkennung (Score 0-100) ────────────────────────────
     e2 = e_rules.get("ebene2", {})
-    e2_result = _check_ebene2(close, high, low, spy_weekly, e2)
+    e2_result = _check_ebene2(close, high, low, spy_weekly, e2, e1_rules=e1)
     if e2_result["score"] == 0:
         return None
 
@@ -315,6 +336,8 @@ def _screen_single(
         "e2_rsi_ok":       rsi_min <= e2_result["rsi"] <= rsi_max,
         "e2_williams_ok":  wr_min  <= e2_result["williams_r"] <= wr_max,
         "e2_beta_ok":      not np.isnan(e2_result["beta"]) and e2_result["beta"] < beta_max,
+        # Ebene-2-Modus
+        "e2_mode":         e2_result.get("mode", "pullback"),
         # Ebene-3-Details
         "e3_confirmed":    e3_result["confirmed"],
         "e3_macd_dreht":   e3_result["macd_dreht"],
@@ -372,25 +395,31 @@ def _check_ebene2(
     low: pd.Series,
     spy_close: pd.Series,
     rules: dict,
+    e1_rules: dict | None = None,
 ) -> dict:
     """
-    Ebene 2 — Pullback-Erkennung.
-    Gibt Score 0-100 zurück. Score 0 bedeutet: Ebene 2 nicht bestanden.
-
-    Erweiterung: neues Kriterium als weiteren Subscore (0-100) hinzufügen
-    und in `sub_scores` eintragen. Gewichtung in _compute_subscore_avg.
+    Ebene 2 — Entweder/Oder:
+      Pfad A (Pullback): Kurs 5–15% unter 3M-Hoch + W%R ≤ -50 + HV30 < 25%
+      Pfad B (Recovery): Kurs hat den 40W-MA in den letzten N Wochen von unten
+                         durchbrochen (MA-Kreuz nach marktbedingtem Rückgang)
+    Mindestens einer der Pfade muss True sein.
     """
     pb_min  = float(rules.get("pullback_min_pct", 5))
     pb_max  = float(rules.get("pullback_max_pct", 15))
     rsi_min = float(rules.get("rsi_min", 40))
-    rsi_max = float(rules.get("rsi_max", 55))
+    rsi_max = float(rules.get("rsi_max", 65))
     wr_min  = float(rules.get("williams_r_min", -80))
     wr_max  = float(rules.get("williams_r_max", -60))
     hv_max  = float(rules.get("hv30_max", 25))
     beta_max = float(rules.get("beta_max", 0.9))
+    wr_hard_max   = float(rules.get("williams_r_hard_max", -50))
+    rec_weeks     = int(rules.get("recovery_ma_cross_weeks", 8))
+    recovery_score_val = float(rules.get("recovery_score", 60))
+
+    ma_long_w = int((e1_rules or {}).get("ma_long", 40))
 
     current = float(close.iloc[-1])
-    recent_high = float(high.tail(13).max())  # ~3 Monate
+    recent_high = float(high.tail(13).max())
     pullback_pct = (recent_high - current) / recent_high * 100 if recent_high > 0 else 0.0
 
     rsi_val = float(rsi(close).iloc[-1])
@@ -398,26 +427,43 @@ def _check_ebene2(
     hv30    = float(hv(close, 30).iloc[-1]) if not np.isnan(hv(close, 30).iloc[-1]) else 99.0
     b_val   = beta(close, spy_close, 52) if len(spy_close) >= 10 else np.nan
 
-    wr_hard_max = float(rules.get("williams_r_hard_max", -50))
+    def _base(score=0, mode="none"):
+        return {
+            "score": score, "mode": mode,
+            "pullback_pct": pullback_pct, "rsi": rsi_val,
+            "williams_r": wr_val, "hv30": hv30,
+            "beta": float(b_val) if not np.isnan(b_val) else 99.0,
+        }
 
-    def _early(score=0):
-        return {"score": score, "pullback_pct": pullback_pct, "rsi": rsi_val,
-                "williams_r": wr_val, "hv30": hv30,
-                "beta": float(b_val) if not np.isnan(b_val) else 99.0}
+    # ── Pfad A: klassischer Pullback ─────────────────────────────────────────
+    pullback_ok = pb_min <= pullback_pct <= pb_max
+    wr_ok       = wr_val <= wr_hard_max
+    hv_ok       = hv30 < hv_max
+    path_a      = pullback_ok and wr_ok and hv_ok
 
-    # Hartfilter 1: Pullback im Zielbereich
-    if not (pb_min <= pullback_pct <= pb_max):
-        return _early()
+    # ── Pfad B: Recovery nach marktbedingtem Rückgang ────────────────────────
+    path_b = False
+    if len(close) >= ma_long_w + rec_weeks:
+        ma_series = close.rolling(ma_long_w).mean()
+        window_close = close.iloc[-(rec_weeks + 1):]
+        window_ma    = ma_series.iloc[-(rec_weeks + 1):]
+        for i in range(len(window_close) - 1):
+            below_before = float(window_close.iloc[i]) < float(window_ma.iloc[i])
+            above_now    = float(window_close.iloc[i + 1]) >= float(window_ma.iloc[i + 1])
+            if below_before and above_now:
+                path_b = True
+                break
 
-    # Hartfilter 2: W%R – muss echter Pullback in Momentum sein
-    if wr_val > wr_hard_max:
-        return _early()
+    if not path_a and not path_b:
+        return _base()
 
-    # Hartfilter 3: HV30 – hohe Vola = teures Zeitwertpremium
-    if hv30 >= hv_max:
-        return _early()
+    # Pfad B hat Vorrang beim Modus; wenn beide, läuft A-Scoring
+    mode = "pullback" if path_a else "recovery"
 
-    # Sub-Scores (je 0-100)
+    if mode == "recovery":
+        return _base(score=recovery_score_val, mode="recovery")
+
+    # Pfad A — Sub-Scores
     sub_scores = {
         "pullback": _score_in_range(pullback_pct, pb_min, pb_max, ideal=(pb_min + pb_max) / 2),
         "rsi":      _score_in_range(rsi_val, rsi_min, rsi_max, ideal=(rsi_min + rsi_max) / 2),
@@ -425,11 +471,11 @@ def _check_ebene2(
         "hv30":     max(0, (1 - hv30 / hv_max) * 100) if hv30 < hv_max * 1.5 else 0,
         "beta":     max(0, (1 - b_val / beta_max) * 100) if not np.isnan(b_val) and b_val < beta_max * 1.5 else 50,
     }
-
     score = sum(sub_scores.values()) / len(sub_scores)
 
     return {
         "score":       score,
+        "mode":        "pullback",
         "sub_scores":  sub_scores,
         "pullback_pct": pullback_pct,
         "rsi":          rsi_val,

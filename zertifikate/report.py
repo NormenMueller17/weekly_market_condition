@@ -285,13 +285,20 @@ def _section_kandidaten(kandidaten: list[dict], markt: MarktampelResult) -> str:
 
         os_emp = k.get("os_empfehlung", {})
 
+        is_recovery = k.get("e2_mode") == "recovery"
+        mode_badge  = (' <span title="Recovery: 40W-MA-Kreuz von unten" '
+                       'style="background:#e8f4fd;color:#1a5276;border:1px solid #aed6f1;'
+                       'border-radius:3px;padding:1px 5px;font-size:0.75em">🔄 Recovery</span>'
+                       if is_recovery else "")
+        pb_label = "MA-Kreuz" if is_recovery else f"{k.get('pullback_pct','—')}%"
+
         rows += f"""<tr>
-          <td><strong>{k['ticker']}</strong></td>
+          <td><strong>{k['ticker']}</strong>{mode_badge}</td>
           {_td(True,  k.get('close', '—'))}
           {_td(True,  k.get('ma50',  '—'))}
           {_td(True,  f"{k.get('perf_52w_pct','—')}%")}
           {_td(True,  k.get('adx',   '—'))}
-          {_td(True,  f"{k.get('pullback_pct','—')}%")}
+          {_td(True,  pb_label)}
           {_td(k.get('e2_rsi_ok',      False), k.get('rsi',       '—'))}
           {_td(k.get('e2_williams_ok', False), k.get('williams_r', '—'))}
           {_td(True,  f"{k.get('hv30','—')}%")}
@@ -599,6 +606,8 @@ def build_regelwerk_page(rules: dict) -> str:
     wr_hard_max = e2.get("williams_r_hard_max", -50)
     hv_max      = e2.get("hv30_max", 25)
     beta_max    = e2.get("beta_max", 0.9)
+    rec_weeks   = e2.get("recovery_ma_cross_weeks", 8)
+    rec_score   = e2.get("recovery_score", 60)
     w_e2      = int(rules.get("scoring", {}).get("ebene2_weight", 0.6) * 100)
     w_e3      = int(rules.get("scoring", {}).get("ebene3_weight", 0.4) * 100)
 
@@ -662,11 +671,16 @@ def build_regelwerk_page(rules: dict) -> str:
     )
 
     e2_rows = (
-        _row("E2.1 &nbsp; Pullback vom 3M-Hoch",
-             f"{pb_min} % – {pb_max} %",
-             f"Die Aktie hat sich vom Hoch der letzten 13 Wochen um {pb_min}–{pb_max}% zurückgezogen. "
-             f"Zu wenig Pullback (&lt;{pb_min}%) = zu teuer für Einstieg; "
-             f"zu viel (&gt;{pb_max}%) = mögliche Trendumkehr.") +
+        _row("E2.1 &nbsp; Einstiegs-Profil (Entweder/Oder)",
+             f"Pfad A: Pullback {pb_min}–{pb_max}% &nbsp;|&nbsp; Pfad B: 🔄 Recovery",
+             f"<strong>Pfad A — Klassischer Pullback:</strong> Die Aktie hat sich vom Hoch der letzten "
+             f"13 Wochen um {pb_min}–{pb_max}% zurückgezogen. Hartfilter: W%R &gt; {wr_hard_max} oder "
+             f"HV30 ≥ {hv_max}% disqualifizieren (zu teures Optionsschein-Prämium). "
+             f"<br><strong>Pfad B — Recovery nach Marktrückgang:</strong> Die Aktie hat den "
+             f"{ma_long_w}W-MA (≈{ma_long_w * 5}T) in den letzten {rec_weeks} Wochen von unten "
+             f"durchbrochen. Tritt nach marktbedingten Einbrüchen auf. Fest-Score: {rec_score}/100. "
+             f"W%R- und HV30-Hartfilter werden auf diesem Pfad <em>nicht</em> angewendet. "
+             f"Mindestens einer der beiden Pfade muss erfüllt sein.") +
         _row("E2.2 &nbsp; RSI",
              f"{rsi_min} – {rsi_max}",
              f"Relative Strength Index (14 Perioden). Werte von {rsi_min}–{rsi_max} zeigen "
@@ -695,13 +709,14 @@ def build_regelwerk_page(rules: dict) -> str:
     e2_scoring = f"""
 <div style="background:#fef9e7;border-radius:6px;padding:12px 16px;margin-top:14px;
             font-size:0.88em;color:#7d6608">
-  <strong>Hartfilter (führen sofort zu Score 0 / Ausschluss):</strong>
+  <strong>Hartfilter auf Pfad A (Pullback) — führen sofort zu Score 0:</strong>
   <ul style="margin:.4em 0 .6em 1.2em;line-height:1.7">
     <li>Pullback außerhalb {pb_min}–{pb_max}%</li>
     <li>Williams %R &gt; {wr_hard_max} (kein echter Momentum-Pullback)</li>
     <li>HV30 ≥ {hv_max}% (zu teures Zeitwertpremium)</li>
   </ul>
-  <strong>Score-Berechnung:</strong> RSI, W%R (Optimalbereich), HV30, Beta und Pullback
+  <strong>Pfad B (Recovery) überspringt diese Hartfilter</strong> — erhält direkt Score {rec_score}/100.<br>
+  <strong>Score-Berechnung (Pfad A):</strong> RSI, W%R (Optimalbereich), HV30, Beta und Pullback
   liefern je einen Teilscore 0–100 (100 = perfekt in der Mitte des Idealbereichs).
   Der E2-Gesamtscore ist der Durchschnitt dieser 5 Teilscores.
   <br>Gewichtung im Gesamtscore: E2 = {w_e2}%, E3 = {w_e3}%.

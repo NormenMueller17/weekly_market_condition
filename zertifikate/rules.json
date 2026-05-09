@@ -49,7 +49,9 @@
       "williams_r_max": -60,
       "williams_r_hard_max": -50,
       "hv30_max": 25,
-      "beta_max": 0.9
+      "beta_max": 0.9,
+      "recovery_ma_cross_weeks": 8,
+      "recovery_score": 60
     },
     "ebene3": {
       "min_confirmed": 2,
