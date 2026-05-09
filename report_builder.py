@@ -1220,8 +1220,12 @@ def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
     # ── KPI data from portfolio_performance ──────────────────────────────────────
     try:
         import portfolio_performance as pp
-        _tm = pp._trade_metrics(pp._load_trades())
-        _em = pp._equity_metrics(pp._load_equity_history(), pp._load_trades())
+        _trades = pp._load_trades()
+        _all    = _trades.get("closed", []) + _trades.get("open", [])
+        _dates  = [t["entry_date"] for t in _all if t.get("entry_date")]
+        _trim   = min(_dates) if _dates else None
+        _tm = pp._trade_metrics(_trades.get("closed", []), _trades.get("open", []))
+        _em = pp._equity_metrics(pp._load_equity_history(), trim_from=_trim)
 
         def _fm(v, plus=False):
             if v is None: return "–"
