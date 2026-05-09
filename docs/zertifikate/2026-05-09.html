@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zertifikate-Scanner 2026-05-09</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #f5f6fa; color: #2c3e50; font-size: 14px; }
+    .g-nav   { background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
+               box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }
+    .g-brand { font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
+               margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
+               white-space: nowrap; font-size: .95em; }
+    .g-nav a { color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+               font-size: .84em; white-space: nowrap; }
+    .g-nav a:hover  { color: #fff; background: rgba(255,255,255,.12); }
+    .g-nav a.active { color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    header { background: #2c3e50; color: white; padding: 20px 24px;
+             border-radius: 8px; margin-bottom: 20px; }
+    header h1 { font-size: 1.6em; margin-bottom: 4px; }
+    header .subtitle { opacity: 0.8; font-size: 0.9em; }
+    .section { background: white; border-radius: 8px; padding: 20px;
+               margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .section h2 { font-size: 1.1em; margin-bottom: 14px; padding-bottom: 8px;
+                  border-bottom: 2px solid #ecf0f1; color: #2c3e50; }
+    .ampel-box { border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; }
+    .ampel-gruen { background: #d5f5e3; border-left: 5px solid #27ae60; }
+    .ampel-gelb  { background: #fef9e7; border-left: 5px solid #f39c12; }
+    .ampel-rot   { background: #fadbd8; border-left: 5px solid #e74c3c; }
+    .ampel-status { font-size: 1.3em; font-weight: 700; margin-bottom: 4px; }
+    .ampel-aktion { font-size: 0.9em; opacity: 0.85; }
+    .ampel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .ampel-card { border-radius: 6px; padding: 12px; text-align: center; }
+    .ampel-card .label { font-size: 0.75em; text-transform: uppercase;
+                         letter-spacing: 0.05em; opacity: 0.7; margin-bottom: 4px; }
+    .ampel-card .value { font-size: 1.05em; font-weight: 600; }
+    .warnung { background: #fadbd8; border: 2px solid #e74c3c; border-radius: 8px;
+               padding: 16px; font-weight: 600; color: #922b21; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
+    th { background: #2c3e50; color: white; padding: 8px 10px;
+         text-align: left; font-weight: 600; white-space: nowrap; }
+    td { padding: 7px 10px; border-bottom: 1px solid #ecf0f1; vertical-align: middle; }
+    tr:hover td { background: #f8f9fa; }
+    tr:last-child td { border-bottom: none; }
+    .score-bar { display: inline-block; height: 8px; border-radius: 4px;
+                 background: #27ae60; vertical-align: middle; margin-right: 6px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px;
+             font-size: 0.78em; font-weight: 600; }
+    .badge-gruen { background: #d5f5e3; color: #1e8449; }
+    .badge-gelb  { background: #fef9e7; color: #9a7d0a; }
+    .badge-rot   { background: #fadbd8; color: #922b21; }
+    .badge-grau  { background: #eaecee; color: #555; }
+    .os-empfehlung { font-size: 0.82em; color: #2980b9; font-style: italic; }
+    .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+                 margin-bottom: 16px; }
+    .info-card { background: #f8f9fa; border-radius: 6px; padding: 10px 14px; }
+    .info-card .label { font-size: 0.75em; color: #7f8c8d; margin-bottom: 2px; }
+    .info-card .value { font-size: 1.1em; font-weight: 700; }
+    .keine { color: #7f8c8d; font-style: italic; padding: 8px 0; }
+    .footer { text-align: center; color: #95a5a6; font-size: 0.8em; padding: 16px 0 8px; }
+    @media (max-width: 700px) {
+      .ampel-grid, .info-grid { grid-template-columns: 1fr 1fr; }
+      table { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="g-nav">
+    <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="../trades.html">Trade Journal</a>
+    <a href="../performance.html">Performance</a>
+    <a href="index.html" class="active">Zertifikate</a>
+    <a href="portfolio.html">Portfolio</a>
+    <a href="regelwerk.html">Regelwerk</a>
+    <a href="../blueprint.html">Blueprint</a>
+  </nav>
+  <div class="container">
+    <header>
+      <h1>📊 Zertifikate-Scanner</h1>
+      <p class="subtitle">Wochenbericht 2026-05-09 &mdash; Low-Vol Momentum Screener</p>
+    </header>
+    
+<div class="section">
+  <h2>Ampel 1 — Marktampel</h2>
+  <div class="ampel-box ampel-gruen">
+    <div class="ampel-status">🟢 GRÜN — Neue Longs erlaubt</div>
+    <div class="ampel-aktion">
+      ✅ 10W-EMA über 50W-EMA
+      &nbsp;<span style="opacity:0.7;font-size:0.9em">(10W: 7003.29 / 50W: 6623.47 / Abstand: 5.7%)</span>
+      &nbsp;|&nbsp;
+      ✅ S&amp;P 500 über 200W-MA &nbsp;|&nbsp;
+      ✅ VIX: 17.2
+    </div>
+  </div>
+  <div class="ampel-grid">
+    <div class="ampel-card" style="background:#d5f5e3">
+      <div class="label">S&amp;P 500</div>
+      <div class="value">7398.93</div>
+    </div>
+    <div class="ampel-card" style="background:#d5f5e3">
+      <div class="label">200-MA</div>
+      <div class="value">5285.0</div>
+    </div>
+    <div class="ampel-card" style="background:#d5f5e3">
+      <div class="label">VIX</div>
+      <div class="value">17.2</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Neue Kaufkandidaten (1)</h2>
+  
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th><th>Kurs</th><th>MA50</th><th>52W%</th>
+        <th>ADX</th><th>Pullback%</th><th>RSI</th><th>Will.%R</th>
+        <th>HV30</th><th>Beta</th><th>E3</th><th>Score</th>
+        <th>OS-Empfehlung</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+          <td><strong>GLW</strong></td>
+          <td>186.94</td>
+          <td>94.81</td>
+          <td>287.7%</td>
+          <td>59.3</td>
+          <td>5.7%</td>
+          <td>71.4</td>
+          <td>-11.9</td>
+          <td>57.1%</td>
+          <td>0.79</td>
+          <td><span style="font-size:1.1em">✅·✅</span> (2/3)</td>
+          <td>
+            <span class="score-bar" style="width:29px"></span>
+            <strong>29.9</strong>
+          </td>
+          <td class="os-empfehlung">Call OS auf 186.94 — Strike ~200.03 (+7%), Laufzeit ~Nov 2027, Hebel ~3, Delta 0,60-0,70</td>
+        </tr></tbody>
+  </table>
+  </div>
+  <p style="margin-top:10px;font-size:0.82em;color:#7f8c8d">
+    E3: MACD dreht / Momentum+ / Volumen-Bestätigung &nbsp;|&nbsp;
+    OS-Empfehlung: Strike, Laufzeit und Hebel sind Richtwerte — bitte im Broker-Tool verifizieren.
+  </p>
+</div>
+
+<style>
+  #univ-wrap { overflow-x: auto; }
+  #univ-tbl  { border-collapse: collapse; min-width: 100%; }
+  #univ-tbl th, #univ-tbl td { padding: 7px 10px; border-bottom: 1px solid #ecf0f1;
+      white-space: nowrap; vertical-align: middle; }
+  #univ-tbl thead th { background: #2c3e50; color: #fff; font-size: 0.83em;
+      font-weight: 600; text-align: center; cursor: pointer; user-select: none; }
+  #univ-tbl thead th:hover { background: #3d5370; }
+  #univ-tbl tbody tr:hover td { background: #f0f4f8 !important; }
+  #univ-tbl tbody tr:hover td.u-sticky { background: #f0f4f8 !important; }
+  .u-sticky { position: sticky; z-index: 1; background: #fff; }
+  #univ-tbl thead th.u-sticky { background: #2c3e50; z-index: 2; }
+  #univ-tbl thead th.u-sticky:hover { background: #3d5370; }
+  .u-col0 { left: 0;     min-width: 68px;  max-width: 68px;  }
+  .u-col1 { left: 68px;  min-width: 180px; max-width: 180px;
+             box-shadow: none; overflow: hidden; text-overflow: ellipsis; }
+  .u-col2 { left: 248px; min-width: 120px; max-width: 140px;
+             box-shadow: 3px 0 6px -2px rgba(0,0,0,0.15); }
+  .sort-icon { font-size: 0.75em; opacity: 0.6; margin-left: 3px; }
+</style>
+
+<div class="section" style="max-width:100%">
+  <h2>Universum-Übersicht — 80 Large-/Mega-Caps &nbsp;|&nbsp; 12 Kriterien</h2>
+  <p style="margin-bottom:10px;font-size:0.85em;color:#555">
+    Auf Spalten-Header klicken zum Sortieren &nbsp;·&nbsp;
+    <strong style="color:#1e8449">Grün</strong> = Kriterium erfüllt &nbsp;|&nbsp;
+    <strong style="color:#922b21">Rot</strong> = nicht erfüllt.<br>
+    <span style="opacity:0.8">E1: Trendqualität (alle 4 Pflicht) &nbsp;·&nbsp;
+    E2: Pullback-Profil (5 Kriterien) &nbsp;·&nbsp;
+    E3: Wiederanlauf-Signale (mind. 2/3 für Kandidaten)</span>
+  </p>
+  <div id="univ-wrap">
+  <table id="univ-tbl">
+    <thead>
+      <tr>
+        <th class="u-sticky u-col0" onclick="univSort(0)">Ticker<span class="sort-icon">⇅</span></th>
+        <th class="u-sticky u-col1" onclick="univSort(1)">Name<span class="sort-icon">⇅</span></th>
+        <th class="u-sticky u-col2" onclick="univSort(2)">Sektor<span class="sort-icon">⇅</span></th>
+        <th title="Anzahl erfüllter Kriterien"        onclick="univSort(3)">Erfüllt<span class="sort-icon"> ▼</span></th>
+        <th title="Kurs über 40W-MA (≈200-Tage-MA)" onclick="univSort(4)">E1.1<br>&gt;MA200<span class="sort-icon">⇅</span></th>
+        <th title="Kurs über 10W-MA (≈50-Tage-MA)"  onclick="univSort(5)">E1.2<br>&gt;MA50<span class="sort-icon">⇅</span></th>
+        <th title="ADX ≥ 25 (Trendstärke)"           onclick="univSort(6)">E1.3<br>ADX<span class="sort-icon">⇅</span></th>
+        <th title="52-Wochen-Performance ≥ 0%"        onclick="univSort(7)">E1.4<br>52W%<span class="sort-icon">⇅</span></th>
+        <th title="Pullback 5–15% vom 3M-Hoch"        onclick="univSort(8)">E2.1<br>PB%<span class="sort-icon">⇅</span></th>
+        <th title="RSI 40–55"                         onclick="univSort(9)">E2.2<br>RSI<span class="sort-icon">⇅</span></th>
+        <th title="Williams %R −80 bis −60"           onclick="univSort(10)">E2.3<br>W%R<span class="sort-icon">⇅</span></th>
+        <th title="Hist. Volatilität 30T &lt; 25%"   onclick="univSort(11)">E2.4<br>HV30<span class="sort-icon">⇅</span></th>
+        <th title="Beta &lt; 0,9"                     onclick="univSort(12)">E2.5<br>Beta<span class="sort-icon">⇅</span></th>
+        <th title="MACD dreht nach oben"              onclick="univSort(13)">E3.1<br>MACD↑<span class="sort-icon">⇅</span></th>
+        <th title="Momentum-Wechsel positiv"          onclick="univSort(14)">E3.2<br>Mom↑<span class="sort-icon">⇅</span></th>
+        <th title="Bullische Kerze + Überdurchschn. Volumen" onclick="univSort(15)">E3.3<br>Vol↑<span class="sort-icon">⇅</span></th>
+      </tr>
+    </thead>
+    <tbody><tr>
+          <td class="u-sticky u-col0" data-val="TJX"><strong>TJX</strong></td>
+          <td class="u-sticky u-col1" data-val="TJX" style="font-size:0.82em;white-space:nowrap">TJX</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="8" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">8/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>153.36</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="35.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>35.6</td>
+          <td data-val="15.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>15.0%</td>
+          <td data-val="7.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>7.5%</td>
+          <td data-val="54.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>54.9</td>
+          <td data-val="-73.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-73.0</td>
+          <td data-val="14.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>14.7%</td>
+          <td data-val="0.38" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.38</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="GLW"><strong>GLW</strong></td>
+          <td class="u-sticky u-col1" data-val="GLW" style="font-size:0.82em;white-space:nowrap">GLW</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="8" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">8/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>186.94</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="59.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>59.3</td>
+          <td data-val="287.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>287.7%</td>
+          <td data-val="5.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.7%</td>
+          <td data-val="71.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>71.4</td>
+          <td data-val="-11.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-11.9</td>
+          <td data-val="57.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>57.1%</td>
+          <td data-val="0.79" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.79</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="LLY"><strong>LLY</strong></td>
+          <td class="u-sticky u-col1" data-val="LLY" style="font-size:0.82em;white-space:nowrap">LLY</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>948.45</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="20.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>20.6</td>
+          <td data-val="25.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>25.2%</td>
+          <td data-val="14.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>14.3%</td>
+          <td data-val="41.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>41.1</td>
+          <td data-val="-62.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-62.8</td>
+          <td data-val="32.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>32.1%</td>
+          <td data-val="0.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.5</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="V"><strong>V</strong></td>
+          <td class="u-sticky u-col1" data-val="V" style="font-size:0.82em;white-space:nowrap">V</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>318.79</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="25.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>25.7</td>
+          <td data-val="-12.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-12.7%</td>
+          <td data-val="6.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>6.8%</td>
+          <td data-val="48.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>48.7</td>
+          <td data-val="-48.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-48.2</td>
+          <td data-val="20.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>20.0%</td>
+          <td data-val="0.87" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.87</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="JNJ"><strong>JNJ</strong></td>
+          <td class="u-sticky u-col1" data-val="JNJ" style="font-size:0.82em;white-space:nowrap">JNJ</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>221.32</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="38.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>38.0</td>
+          <td data-val="46.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>46.2%</td>
+          <td data-val="12.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>12.1%</td>
+          <td data-val="45.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>45.6</td>
+          <td data-val="-97.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-97.8</td>
+          <td data-val="19.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>19.7%</td>
+          <td data-val="-0.13" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.13</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="CVX"><strong>CVX</strong></td>
+          <td class="u-sticky u-col1" data-val="CVX" style="font-size:0.82em;white-space:nowrap">CVX</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>181.62</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="41.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>41.2</td>
+          <td data-val="27.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>27.8%</td>
+          <td data-val="15.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>15.4%</td>
+          <td data-val="53.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>53.1</td>
+          <td data-val="-78.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-78.7</td>
+          <td data-val="21.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>21.6%</td>
+          <td data-val="-0.21" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.21</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="GEV"><strong>GEV</strong></td>
+          <td class="u-sticky u-col1" data-val="GEV" style="font-size:0.82em;white-space:nowrap">GEV</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1040.15</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="53.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>53.6</td>
+          <td data-val="143.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>143.0%</td>
+          <td data-val="12.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>12.0%</td>
+          <td data-val="72.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>72.4</td>
+          <td data-val="-30.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-30.0</td>
+          <td data-val="41.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>41.1%</td>
+          <td data-val="0.47" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.47</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="MRK"><strong>MRK</strong></td>
+          <td class="u-sticky u-col1" data-val="MRK" style="font-size:0.82em;white-space:nowrap">MRK</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>111.38</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="39.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>39.0</td>
+          <td data-val="46.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>46.4%</td>
+          <td data-val="11.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>11.0%</td>
+          <td data-val="51.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>51.3</td>
+          <td data-val="-79.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-79.8</td>
+          <td data-val="27.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>27.3%</td>
+          <td data-val="0.35" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.35</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="GS"><strong>GS</strong></td>
+          <td class="u-sticky u-col1" data-val="GS" style="font-size:0.82em;white-space:nowrap">GS</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>936.48</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="27.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.3</td>
+          <td data-val="51.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>51.3%</td>
+          <td data-val="3.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>3.3%</td>
+          <td data-val="50.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>50.1</td>
+          <td data-val="-17.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-17.0</td>
+          <td data-val="24.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.3%</td>
+          <td data-val="1.27" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.27</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="PM"><strong>PM</strong></td>
+          <td class="u-sticky u-col1" data-val="PM" style="font-size:0.82em;white-space:nowrap">PM</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>170.99</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="18.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.8</td>
+          <td data-val="0.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>0.3%</td>
+          <td data-val="10.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>10.6%</td>
+          <td data-val="44.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>44.2</td>
+          <td data-val="-51.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-51.2</td>
+          <td data-val="28.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>28.3%</td>
+          <td data-val="-0.22" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.22</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="VZ"><strong>VZ</strong></td>
+          <td class="u-sticky u-col1" data-val="VZ" style="font-size:0.82em;white-space:nowrap">VZ</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>47.22</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="26.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>26.6</td>
+          <td data-val="7.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>7.3%</td>
+          <td data-val="8.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>8.6%</td>
+          <td data-val="58.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>58.4</td>
+          <td data-val="-57.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-57.2</td>
+          <td data-val="24.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.5%</td>
+          <td data-val="0.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.1</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="NEE"><strong>NEE</strong></td>
+          <td class="u-sticky u-col1" data-val="NEE" style="font-size:0.82em;white-space:nowrap">NEE</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="7" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">7/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>93.1</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="37.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.7</td>
+          <td data-val="24.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>24.1%</td>
+          <td data-val="5.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.7%</td>
+          <td data-val="58.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>58.0</td>
+          <td data-val="-45.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-45.5</td>
+          <td data-val="18.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>18.8%</td>
+          <td data-val="0.35" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.35</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="AAPL"><strong>AAPL</strong></td>
+          <td class="u-sticky u-col1" data-val="AAPL" style="font-size:0.82em;white-space:nowrap">AAPL</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>293.32</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="23.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>23.2</td>
+          <td data-val="38.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>38.8%</td>
+          <td data-val="0.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.5%</td>
+          <td data-val="65.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>65.1</td>
+          <td data-val="-2.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-2.9</td>
+          <td data-val="22.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>22.7%</td>
+          <td data-val="1.21" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.21</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="MU"><strong>MU</strong></td>
+          <td class="u-sticky u-col1" data-val="MU" style="font-size:0.82em;white-space:nowrap">MU</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>746.81</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="42.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>42.1</td>
+          <td data-val="662.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>662.1%</td>
+          <td data-val="0.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.1%</td>
+          <td data-val="76.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>76.5</td>
+          <td data-val="-0.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-0.1</td>
+          <td data-val="68.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>68.5%</td>
+          <td data-val="2.57" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.57</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="AMD"><strong>AMD</strong></td>
+          <td class="u-sticky u-col1" data-val="AMD" style="font-size:0.82em;white-space:nowrap">AMD</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>455.19</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="29.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>29.7</td>
+          <td data-val="288.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>288.5%</td>
+          <td data-val="0.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.2%</td>
+          <td data-val="85.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>85.6</td>
+          <td data-val="-0.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-0.4</td>
+          <td data-val="68.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>68.3%</td>
+          <td data-val="1.54" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.54</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="XOM"><strong>XOM</strong></td>
+          <td class="u-sticky u-col1" data-val="XOM" style="font-size:0.82em;white-space:nowrap">XOM</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>144.57</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="51.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>51.6</td>
+          <td data-val="33.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>33.6%</td>
+          <td data-val="18.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>18.0%</td>
+          <td data-val="52.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>52.1</td>
+          <td data-val="-83.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-83.0</td>
+          <td data-val="23.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>23.3%</td>
+          <td data-val="-0.61" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.61</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="INTC"><strong>INTC</strong></td>
+          <td class="u-sticky u-col1" data-val="INTC" style="font-size:0.82em;white-space:nowrap">INTC</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>124.92</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="53.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>53.1</td>
+          <td data-val="476.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>476.7%</td>
+          <td data-val="4.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>4.3%</td>
+          <td data-val="88.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>88.8</td>
+          <td data-val="-6.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-6.3</td>
+          <td data-val="67.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>67.4%</td>
+          <td data-val="2.29" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.29</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="CSCO"><strong>CSCO</strong></td>
+          <td class="u-sticky u-col1" data-val="CSCO" style="font-size:0.82em;white-space:nowrap">CSCO</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>96.57</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="36.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>36.5</td>
+          <td data-val="51.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>51.8%</td>
+          <td data-val="0.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.5%</td>
+          <td data-val="73.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>73.0</td>
+          <td data-val="-1.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.9</td>
+          <td data-val="26.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>26.6%</td>
+          <td data-val="0.79" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.79</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="KO"><strong>KO</strong></td>
+          <td class="u-sticky u-col1" data-val="KO" style="font-size:0.82em;white-space:nowrap">KO</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>78.42</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="22.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.2</td>
+          <td data-val="8.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>8.9%</td>
+          <td data-val="4.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>4.4%</td>
+          <td data-val="58.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>58.1</td>
+          <td data-val="-45.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-45.1</td>
+          <td data-val="16.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>16.7%</td>
+          <td data-val="0.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.2</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="TXN"><strong>TXN</strong></td>
+          <td class="u-sticky u-col1" data-val="TXN" style="font-size:0.82em;white-space:nowrap">TXN</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>287.8</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="27.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.6</td>
+          <td data-val="52.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>52.7%</td>
+          <td data-val="1.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.7%</td>
+          <td data-val="74.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>74.1</td>
+          <td data-val="-4.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-4.5</td>
+          <td data-val="39.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>39.3%</td>
+          <td data-val="1.23" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.23</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="KLAC"><strong>KLAC</strong></td>
+          <td class="u-sticky u-col1" data-val="KLAC" style="font-size:0.82em;white-space:nowrap">KLAC</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1869.19</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="39.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>39.5</td>
+          <td data-val="136.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>136.3%</td>
+          <td data-val="3.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>3.6%</td>
+          <td data-val="66.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>66.6</td>
+          <td data-val="-10.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-10.7</td>
+          <td data-val="45.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>45.5%</td>
+          <td data-val="1.76" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.76</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="C"><strong>C</strong></td>
+          <td class="u-sticky u-col1" data-val="C" style="font-size:0.82em;white-space:nowrap">C</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>125.55</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="31.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>31.1</td>
+          <td data-val="65.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>65.8%</td>
+          <td data-val="7.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>7.2%</td>
+          <td data-val="56.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>56.9</td>
+          <td data-val="-29.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-29.3</td>
+          <td data-val="29.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>29.4%</td>
+          <td data-val="1.39" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.39</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="QCOM"><strong>QCOM</strong></td>
+          <td class="u-sticky u-col1" data-val="QCOM" style="font-size:0.82em;white-space:nowrap">QCOM</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>219.09</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="26.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>26.1</td>
+          <td data-val="43.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>43.7%</td>
+          <td data-val="3.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>3.9%</td>
+          <td data-val="76.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>76.3</td>
+          <td data-val="-8.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-8.4</td>
+          <td data-val="48.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>48.8%</td>
+          <td data-val="1.65" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.65</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="PEP"><strong>PEP</strong></td>
+          <td class="u-sticky u-col1" data-val="PEP" style="font-size:0.82em;white-space:nowrap">PEP</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>154.62</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="18.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.0</td>
+          <td data-val="17.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>17.2%</td>
+          <td data-val="9.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.8%</td>
+          <td data-val="50.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>50.8</td>
+          <td data-val="-75.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-75.1</td>
+          <td data-val="25.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>25.0%</td>
+          <td data-val="0.28" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.28</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="SNDK"><strong>SNDK</strong></td>
+          <td class="u-sticky u-col1" data-val="SNDK" style="font-size:0.82em;white-space:nowrap">SNDK</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1562.34</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="60.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>60.1</td>
+          <td data-val="3763.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>3763.4%</td>
+          <td data-val="0.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.1%</td>
+          <td data-val="84.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>84.7</td>
+          <td data-val="-0.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-0.2</td>
+          <td data-val="94.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>94.6%</td>
+          <td data-val="2.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.7</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="AMGN"><strong>AMGN</strong></td>
+          <td class="u-sticky u-col1" data-val="AMGN" style="font-size:0.82em;white-space:nowrap">AMGN</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>331.7</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="25.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>25.0</td>
+          <td data-val="21.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>21.8%</td>
+          <td data-val="15.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>15.2%</td>
+          <td data-val="46.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>46.7</td>
+          <td data-val="-84.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-84.2</td>
+          <td data-val="27.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>27.3%</td>
+          <td data-val="0.37" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.37</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="UNP"><strong>UNP</strong></td>
+          <td class="u-sticky u-col1" data-val="UNP" style="font-size:0.82em;white-space:nowrap">UNP</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>264.65</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="19.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.6</td>
+          <td data-val="14.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>14.4%</td>
+          <td data-val="3.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>3.7%</td>
+          <td data-val="64.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>64.8</td>
+          <td data-val="-23.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-23.0</td>
+          <td data-val="19.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>19.8%</td>
+          <td data-val="0.59" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.59</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="ETN"><strong>ETN</strong></td>
+          <td class="u-sticky u-col1" data-val="ETN" style="font-size:0.82em;white-space:nowrap">ETN</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>401.51</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="24.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.5</td>
+          <td data-val="22.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>22.0%</td>
+          <td data-val="7.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>7.8%</td>
+          <td data-val="63.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>63.4</td>
+          <td data-val="-34.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-34.9</td>
+          <td data-val="30.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>30.6%</td>
+          <td data-val="0.84" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.84</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="WELL"><strong>WELL</strong></td>
+          <td class="u-sticky u-col1" data-val="WELL" style="font-size:0.82em;white-space:nowrap">WELL</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>214.63</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="24.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.4</td>
+          <td data-val="44.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>44.3%</td>
+          <td data-val="2.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.3%</td>
+          <td data-val="68.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>68.4</td>
+          <td data-val="-13.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-13.0</td>
+          <td data-val="24.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.3%</td>
+          <td data-val="0.26" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.26</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="DE"><strong>DE</strong></td>
+          <td class="u-sticky u-col1" data-val="DE" style="font-size:0.82em;white-space:nowrap">DE</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>574.84</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="34.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>34.5</td>
+          <td data-val="8.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>8.2%</td>
+          <td data-val="14.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>14.7%</td>
+          <td data-val="56.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>56.8</td>
+          <td data-val="-65.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-65.4</td>
+          <td data-val="28.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>28.5%</td>
+          <td data-val="0.54" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.54</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="APP"><strong>APP</strong></td>
+          <td class="u-sticky u-col1" data-val="APP" style="font-size:0.82em;white-space:nowrap">APP</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="6" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fef9e7;color:#9a7d0a">6/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>468.55</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="21.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.1</td>
+          <td data-val="29.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>29.3%</td>
+          <td data-val="10.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>10.0%</td>
+          <td data-val="49.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>49.5</td>
+          <td data-val="-32.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-32.1</td>
+          <td data-val="67.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>67.2%</td>
+          <td data-val="2.75" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.75</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="GOOGL"><strong>GOOGL</strong></td>
+          <td class="u-sticky u-col1" data-val="GOOGL" style="font-size:0.82em;white-space:nowrap">GOOGL</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>400.8</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="32.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>32.1</td>
+          <td data-val="141.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>141.2%</td>
+          <td data-val="0.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.3%</td>
+          <td data-val="64.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>64.5</td>
+          <td data-val="-0.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-0.9</td>
+          <td data-val="34.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>34.2%</td>
+          <td data-val="1.56" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.56</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="GOOG"><strong>GOOG</strong></td>
+          <td class="u-sticky u-col1" data-val="GOOG" style="font-size:0.82em;white-space:nowrap">GOOG</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>397.05</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="32.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>32.7</td>
+          <td data-val="137.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>137.1%</td>
+          <td data-val="0.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.3%</td>
+          <td data-val="63.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>63.8</td>
+          <td data-val="-1.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.0</td>
+          <td data-val="33.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>33.6%</td>
+          <td data-val="1.54" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.54</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="TSLA"><strong>TSLA</strong></td>
+          <td class="u-sticky u-col1" data-val="TSLA" style="font-size:0.82em;white-space:nowrap">TSLA</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>428.35</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="18.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.1</td>
+          <td data-val="22.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>22.4%</td>
+          <td data-val="1.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.8%</td>
+          <td data-val="49.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>49.5</td>
+          <td data-val="-8.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-8.1</td>
+          <td data-val="38.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>38.0%</td>
+          <td data-val="1.64" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.64</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="JPM"><strong>JPM</strong></td>
+          <td class="u-sticky u-col1" data-val="JPM" style="font-size:0.82em;white-space:nowrap">JPM</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>302.1</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="15.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>15.8</td>
+          <td data-val="12.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>12.9%</td>
+          <td data-val="7.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>7.4%</td>
+          <td data-val="48.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>48.5</td>
+          <td data-val="-51.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-51.4</td>
+          <td data-val="22.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>22.8%</td>
+          <td data-val="0.92" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.92</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="WMT"><strong>WMT</strong></td>
+          <td class="u-sticky u-col1" data-val="WMT" style="font-size:0.82em;white-space:nowrap">WMT</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>130.43</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="38.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>38.2</td>
+          <td data-val="32.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>32.8%</td>
+          <td data-val="3.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>3.2%</td>
+          <td data-val="59.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>59.6</td>
+          <td data-val="-25.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-25.6</td>
+          <td data-val="26.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>26.2%</td>
+          <td data-val="0.23" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.23</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="COST"><strong>COST</strong></td>
+          <td class="u-sticky u-col1" data-val="COST" style="font-size:0.82em;white-space:nowrap">COST</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1008.79</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="17.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.8</td>
+          <td data-val="-1.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-1.7%</td>
+          <td data-val="2.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.6%</td>
+          <td data-val="62.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>62.6</td>
+          <td data-val="-25.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-25.9</td>
+          <td data-val="20.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>20.5%</td>
+          <td data-val="0.22" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.22</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="CAT"><strong>CAT</strong></td>
+          <td class="u-sticky u-col1" data-val="CAT" style="font-size:0.82em;white-space:nowrap">CAT</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>897.45</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="51.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>51.9</td>
+          <td data-val="153.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>153.8%</td>
+          <td data-val="3.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>3.6%</td>
+          <td data-val="76.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>76.5</td>
+          <td data-val="-12.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-12.4</td>
+          <td data-val="32.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>32.1%</td>
+          <td data-val="0.97" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.97</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="LRCX"><strong>LRCX</strong></td>
+          <td class="u-sticky u-col1" data-val="LRCX" style="font-size:0.82em;white-space:nowrap">LRCX</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>294.05</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="40.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>40.9</td>
+          <td data-val="248.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>248.3%</td>
+          <td data-val="1.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.3%</td>
+          <td data-val="64.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>64.2</td>
+          <td data-val="-3.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-3.8</td>
+          <td data-val="51.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>51.5%</td>
+          <td data-val="2.07" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.07</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="ABBV"><strong>ABBV</strong></td>
+          <td class="u-sticky u-col1" data-val="ABBV" style="font-size:0.82em;white-space:nowrap">ABBV</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>201.55</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="21.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.7</td>
+          <td data-val="9.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>9.5%</td>
+          <td data-val="15.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>15.0%</td>
+          <td data-val="36.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>36.3</td>
+          <td data-val="-76.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-76.7</td>
+          <td data-val="21.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>21.3%</td>
+          <td data-val="-0.02" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.02</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="PG"><strong>PG</strong></td>
+          <td class="u-sticky u-col1" data-val="PG" style="font-size:0.82em;white-space:nowrap">PG</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>146.42</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="13.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>13.9</td>
+          <td data-val="-10.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-10.3%</td>
+          <td data-val="12.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>12.5%</td>
+          <td data-val="44.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>44.3</td>
+          <td data-val="-78.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-78.6</td>
+          <td data-val="18.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>18.5%</td>
+          <td data-val="0.44" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.44</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="UNH"><strong>UNH</strong></td>
+          <td class="u-sticky u-col1" data-val="UNH" style="font-size:0.82em;white-space:nowrap">UNH</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>379.98</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="19.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.8</td>
+          <td data-val="30.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>30.2%</td>
+          <td data-val="0.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.0%</td>
+          <td data-val="74.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>74.7</td>
+          <td data-val="-0.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-0.0</td>
+          <td data-val="42.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>42.9%</td>
+          <td data-val="0.62" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.62</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="AMAT"><strong>AMAT</strong></td>
+          <td class="u-sticky u-col1" data-val="AMAT" style="font-size:0.82em;white-space:nowrap">AMAT</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>435.44</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="36.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>36.7</td>
+          <td data-val="163.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>163.0%</td>
+          <td data-val="0.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.6%</td>
+          <td data-val="67.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>67.9</td>
+          <td data-val="-1.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.7</td>
+          <td data-val="43.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>43.8%</td>
+          <td data-val="1.43" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.43</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="GE"><strong>GE</strong></td>
+          <td class="u-sticky u-col1" data-val="GE" style="font-size:0.82em;white-space:nowrap">GE</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>297.15</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="24.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.5</td>
+          <td data-val="28.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>28.2%</td>
+          <td data-val="14.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>14.7%</td>
+          <td data-val="47.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>47.2</td>
+          <td data-val="-64.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-64.5</td>
+          <td data-val="33.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>33.0%</td>
+          <td data-val="1.14" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.14</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="LIN"><strong>LIN</strong></td>
+          <td class="u-sticky u-col1" data-val="LIN" style="font-size:0.82em;white-space:nowrap">LIN</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>493.16</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="17.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.3</td>
+          <td data-val="7.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>7.7%</td>
+          <td data-val="5.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>5.4%</td>
+          <td data-val="60.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>60.8</td>
+          <td data-val="-36.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-36.4</td>
+          <td data-val="20.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>20.1%</td>
+          <td data-val="0.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.2</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="MS"><strong>MS</strong></td>
+          <td class="u-sticky u-col1" data-val="MS" style="font-size:0.82em;white-space:nowrap">MS</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>193.09</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="27.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.7</td>
+          <td data-val="46.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>46.1%</td>
+          <td data-val="0.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.9%</td>
+          <td data-val="56.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>56.2</td>
+          <td data-val="-4.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-4.1</td>
+          <td data-val="25.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>25.4%</td>
+          <td data-val="1.47" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.47</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="ADI"><strong>ADI</strong></td>
+          <td class="u-sticky u-col1" data-val="ADI" style="font-size:0.82em;white-space:nowrap">ADI</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>416.52</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="34.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>34.5</td>
+          <td data-val="83.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>83.4%</td>
+          <td data-val="0.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.5%</td>
+          <td data-val="74.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>74.8</td>
+          <td data-val="-1.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.9</td>
+          <td data-val="35.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>35.2%</td>
+          <td data-val="1.61" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.61</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="DIS"><strong>DIS</strong></td>
+          <td class="u-sticky u-col1" data-val="DIS" style="font-size:0.82em;white-space:nowrap">DIS</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>108.02</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="17.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.8</td>
+          <td data-val="-4.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-4.8%</td>
+          <td data-val="2.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.8%</td>
+          <td data-val="44.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>44.7</td>
+          <td data-val="-16.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-16.3</td>
+          <td data-val="23.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>23.7%</td>
+          <td data-val="1.11" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.11</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="BA"><strong>BA</strong></td>
+          <td class="u-sticky u-col1" data-val="BA" style="font-size:0.82em;white-space:nowrap">BA</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>237.36</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="17.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.5</td>
+          <td data-val="15.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>15.3%</td>
+          <td data-val="4.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>4.2%</td>
+          <td data-val="51.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>51.4</td>
+          <td data-val="-17.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-17.5</td>
+          <td data-val="36.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>36.3%</td>
+          <td data-val="1.22" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.22</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="AXP"><strong>AXP</strong></td>
+          <td class="u-sticky u-col1" data-val="AXP" style="font-size:0.82em;white-space:nowrap">AXP</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>316.03</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="22.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.0</td>
+          <td data-val="5.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>5.4%</td>
+          <td data-val="14.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>14.5%</td>
+          <td data-val="38.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>38.5</td>
+          <td data-val="-68.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-68.1</td>
+          <td data-val="28.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>28.1%</td>
+          <td data-val="1.25" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.25</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="BLK"><strong>BLK</strong></td>
+          <td class="u-sticky u-col1" data-val="BLK" style="font-size:0.82em;white-space:nowrap">BLK</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>1084.83</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="19.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.1</td>
+          <td data-val="9.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>9.6%</td>
+          <td data-val="2.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.6%</td>
+          <td data-val="46.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>46.5</td>
+          <td data-val="-19.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-19.1</td>
+          <td data-val="26.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>26.6%</td>
+          <td data-val="1.16" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.16</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="WDC"><strong>WDC</strong></td>
+          <td class="u-sticky u-col1" data-val="WDC" style="font-size:0.82em;white-space:nowrap">WDC</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>480.0</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="66.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>66.1</td>
+          <td data-val="860.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>860.2%</td>
+          <td data-val="0.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.8%</td>
+          <td data-val="83.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>83.0</td>
+          <td data-val="-1.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-1.6</td>
+          <td data-val="51.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>51.6%</td>
+          <td data-val="1.75" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.75</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="UBER"><strong>UBER</strong></td>
+          <td class="u-sticky u-col1" data-val="UBER" style="font-size:0.82em;white-space:nowrap">UBER</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>75.45</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="16.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>16.6</td>
+          <td data-val="-17.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-17.8%</td>
+          <td data-val="6.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>6.7%</td>
+          <td data-val="43.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>43.7</td>
+          <td data-val="-48.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-48.0</td>
+          <td data-val="31.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>31.5%</td>
+          <td data-val="1.62" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.62</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="DELL"><strong>DELL</strong></td>
+          <td class="u-sticky u-col1" data-val="DELL" style="font-size:0.82em;white-space:nowrap">DELL</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>260.46</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="36.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>36.9</td>
+          <td data-val="128.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>128.1%</td>
+          <td data-val="1.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.3%</td>
+          <td data-val="93.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>93.4</td>
+          <td data-val="-2.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-2.3</td>
+          <td data-val="53.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>53.4%</td>
+          <td data-val="1.45" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.45</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="SCCO"><strong>SCCO</strong></td>
+          <td class="u-sticky u-col1" data-val="SCCO" style="font-size:0.82em;white-space:nowrap">SCCO</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="5" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">5/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>185.29</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="40.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>40.7</td>
+          <td data-val="109.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>109.4%</td>
+          <td data-val="17.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>17.2%</td>
+          <td data-val="49.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>49.0</td>
+          <td data-val="-53.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-53.2</td>
+          <td data-val="48.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>48.1%</td>
+          <td data-val="1.61" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.61</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="NVDA"><strong>NVDA</strong></td>
+          <td class="u-sticky u-col1" data-val="NVDA" style="font-size:0.82em;white-space:nowrap">NVDA</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>215.2</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="18.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.9</td>
+          <td data-val="58.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>58.9%</td>
+          <td data-val="1.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.2%</td>
+          <td data-val="60.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>60.8</td>
+          <td data-val="-4.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-4.9</td>
+          <td data-val="31.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>31.3%</td>
+          <td data-val="1.69" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.69</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="MSFT"><strong>MSFT</strong></td>
+          <td class="u-sticky u-col1" data-val="MSFT" style="font-size:0.82em;white-space:nowrap">MSFT</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>415.12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="37.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>37.2</td>
+          <td data-val="-8.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-8.6%</td>
+          <td data-val="4.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>4.3%</td>
+          <td data-val="46.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>46.0</td>
+          <td data-val="-24.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-24.0</td>
+          <td data-val="30.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>30.8%</td>
+          <td data-val="1.09" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.09</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="AMZN"><strong>AMZN</strong></td>
+          <td class="u-sticky u-col1" data-val="AMZN" style="font-size:0.82em;white-space:nowrap">AMZN</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>272.68</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="21.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>21.6</td>
+          <td data-val="32.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>32.6%</td>
+          <td data-val="2.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.1%</td>
+          <td data-val="61.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>61.7</td>
+          <td data-val="-7.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-7.1</td>
+          <td data-val="37.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>37.2%</td>
+          <td data-val="1.64" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.64</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="AVGO"><strong>AVGO</strong></td>
+          <td class="u-sticky u-col1" data-val="AVGO" style="font-size:0.82em;white-space:nowrap">AVGO</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>430.0</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="24.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.5</td>
+          <td data-val="88.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>88.1%</td>
+          <td data-val="1.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>1.8%</td>
+          <td data-val="74.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>74.3</td>
+          <td data-val="-5.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-5.2</td>
+          <td data-val="43.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>43.7%</td>
+          <td data-val="2.08" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>2.08</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="BAC"><strong>BAC</strong></td>
+          <td class="u-sticky u-col1" data-val="BAC" style="font-size:0.82em;white-space:nowrap">BAC</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>51.31</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="19.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.3</td>
+          <td data-val="14.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>14.8%</td>
+          <td data-val="9.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.7%</td>
+          <td data-val="46.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>46.5</td>
+          <td data-val="-51.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-51.7</td>
+          <td data-val="25.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>25.5%</td>
+          <td data-val="1.16" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.16</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="PLTR"><strong>PLTR</strong></td>
+          <td class="u-sticky u-col1" data-val="PLTR" style="font-size:0.82em;white-space:nowrap">PLTR</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>137.8</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="24.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.9</td>
+          <td data-val="6.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>6.4%</td>
+          <td data-val="15.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>15.1%</td>
+          <td data-val="46.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>46.0</td>
+          <td data-val="-64.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-64.3</td>
+          <td data-val="54.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>54.4%</td>
+          <td data-val="1.39" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.39</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="T"><strong>T</strong></td>
+          <td class="u-sticky u-col1" data-val="T" style="font-size:0.82em;white-space:nowrap">T</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>25.16</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="22.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.0</td>
+          <td data-val="-9.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-9.2%</td>
+          <td data-val="14.5" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>14.5%</td>
+          <td data-val="44.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>44.8</td>
+          <td data-val="-95.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-95.1</td>
+          <td data-val="24.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.3%</td>
+          <td data-val="-0.18" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>-0.18</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="GILD"><strong>GILD</strong></td>
+          <td class="u-sticky u-col1" data-val="GILD" style="font-size:0.82em;white-space:nowrap">GILD</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>131.33</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="18.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.7</td>
+          <td data-val="28.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>28.1%</td>
+          <td data-val="16.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>16.5%</td>
+          <td data-val="39.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>39.8</td>
+          <td data-val="-87.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-87.6</td>
+          <td data-val="24.6" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.6%</td>
+          <td data-val="0.35" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.35</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="PANW"><strong>PANW</strong></td>
+          <td class="u-sticky u-col1" data-val="PANW" style="font-size:0.82em;white-space:nowrap">PANW</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>207.88</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="23.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>23.1</td>
+          <td data-val="7.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>7.7%</td>
+          <td data-val="0.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>0.1%</td>
+          <td data-val="59.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>59.8</td>
+          <td data-val="-0.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-0.3</td>
+          <td data-val="46.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>46.6%</td>
+          <td data-val="1.39" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.39</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="TMUS"><strong>TMUS</strong></td>
+          <td class="u-sticky u-col1" data-val="TMUS" style="font-size:0.82em;white-space:nowrap">TMUS</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>193.63</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="19.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.7</td>
+          <td data-val="-20.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-20.2%</td>
+          <td data-val="13.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>13.8%</td>
+          <td data-val="47.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>47.8</td>
+          <td data-val="-72.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-72.8</td>
+          <td data-val="27.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>27.1%</td>
+          <td data-val="0.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.2</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="BX"><strong>BX</strong></td>
+          <td class="u-sticky u-col1" data-val="BX" style="font-size:0.82em;white-space:nowrap">BX</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="4" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">4/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>123.77</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="29.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>29.1</td>
+          <td data-val="-15.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-15.6%</td>
+          <td data-val="9.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.3%</td>
+          <td data-val="38.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>38.0</td>
+          <td data-val="-46.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-46.9</td>
+          <td data-val="32.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>32.8%</td>
+          <td data-val="1.34" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.34</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="MA"><strong>MA</strong></td>
+          <td class="u-sticky u-col1" data-val="MA" style="font-size:0.82em;white-space:nowrap">MA</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>495.48</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="19.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.1</td>
+          <td data-val="-15.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-15.1%</td>
+          <td data-val="9.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>9.4%</td>
+          <td data-val="36.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>36.8</td>
+          <td data-val="-81.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-81.6</td>
+          <td data-val="20.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>20.1%</td>
+          <td data-val="0.91" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.91</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✓</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="NFLX"><strong>NFLX</strong></td>
+          <td class="u-sticky u-col1" data-val="NFLX" style="font-size:0.82em;white-space:nowrap">NFLX</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>87.49</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="24.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.3</td>
+          <td data-val="-26.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-26.6%</td>
+          <td data-val="19.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>19.7%</td>
+          <td data-val="53.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>53.2</td>
+          <td data-val="-63.2" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-63.2</td>
+          <td data-val="39.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>39.1%</td>
+          <td data-val="0.39" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.39</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="ORCL"><strong>ORCL</strong></td>
+          <td class="u-sticky u-col1" data-val="ORCL" style="font-size:0.82em;white-space:nowrap">ORCL</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>195.95</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="22.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>22.3</td>
+          <td data-val="22.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>22.1%</td>
+          <td data-val="2.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>2.1%</td>
+          <td data-val="59.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>59.9</td>
+          <td data-val="-6.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-6.4</td>
+          <td data-val="59.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>59.0%</td>
+          <td data-val="1.75" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.75</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✓</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="RTX"><strong>RTX</strong></td>
+          <td class="u-sticky u-col1" data-val="RTX" style="font-size:0.82em;white-space:nowrap">RTX</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>176.09</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="33.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>33.1</td>
+          <td data-val="30.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>30.0%</td>
+          <td data-val="17.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>17.9%</td>
+          <td data-val="34.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>34.4</td>
+          <td data-val="-88.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-88.7</td>
+          <td data-val="29.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>29.7%</td>
+          <td data-val="0.59" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.59</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="APH"><strong>APH</strong></td>
+          <td class="u-sticky u-col1" data-val="APH" style="font-size:0.82em;white-space:nowrap">APH</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>128.03</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="24.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.0</td>
+          <td data-val="47.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>47.4%</td>
+          <td data-val="17.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>17.6%</td>
+          <td data-val="42.3" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>42.3</td>
+          <td data-val="-73.7" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-73.7</td>
+          <td data-val="39.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>39.6%</td>
+          <td data-val="1.27" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.27</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="ANET"><strong>ANET</strong></td>
+          <td class="u-sticky u-col1" data-val="ANET" style="font-size:0.82em;white-space:nowrap">ANET</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="3" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">3/12</td>
+          <td data-val="1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>141.77</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="17.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.7</td>
+          <td data-val="47.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>47.0%</td>
+          <td data-val="21.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>21.2%</td>
+          <td data-val="50.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>50.0</td>
+          <td data-val="-59.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-59.1</td>
+          <td data-val="55.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>55.8%</td>
+          <td data-val="1.87" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.87</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="MCD"><strong>MCD</strong></td>
+          <td class="u-sticky u-col1" data-val="MCD" style="font-size:0.82em;white-space:nowrap">MCD</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="2" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">2/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>275.75</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="19.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>19.5</td>
+          <td data-val="-13.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-13.5%</td>
+          <td data-val="19.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>19.3%</td>
+          <td data-val="31.3" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>31.3</td>
+          <td data-val="-98.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-98.6</td>
+          <td data-val="17.4" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>17.4%</td>
+          <td data-val="0.22" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.22</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="ISRG"><strong>ISRG</strong></td>
+          <td class="u-sticky u-col1" data-val="ISRG" style="font-size:0.82em;white-space:nowrap">ISRG</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="2" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">2/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>450.06</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="27.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>27.8</td>
+          <td data-val="-20.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-20.1%</td>
+          <td data-val="12.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>12.1%</td>
+          <td data-val="33.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>33.6</td>
+          <td data-val="-88.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-88.4</td>
+          <td data-val="37.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>37.6%</td>
+          <td data-val="1.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.0</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="SCHW"><strong>SCHW</strong></td>
+          <td class="u-sticky u-col1" data-val="SCHW" style="font-size:0.82em;white-space:nowrap">SCHW</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="2" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">2/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>88.61</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="18.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>18.1</td>
+          <td data-val="-0.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-0.1%</td>
+          <td data-val="17.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>17.6%</td>
+          <td data-val="28.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>28.0</td>
+          <td data-val="-96.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-96.1</td>
+          <td data-val="22.1" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>22.1%</td>
+          <td data-val="0.47" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>0.47</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="META"><strong>META</strong></td>
+          <td class="u-sticky u-col1" data-val="META" style="font-size:0.82em;white-space:nowrap">META</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">1/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>609.63</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="13.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>13.8</td>
+          <td data-val="-4.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-4.8%</td>
+          <td data-val="11.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>11.8%</td>
+          <td data-val="38.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>38.5</td>
+          <td data-val="-55.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-55.5</td>
+          <td data-val="43.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>43.9%</td>
+          <td data-val="1.66" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.66</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="HD"><strong>HD</strong></td>
+          <td class="u-sticky u-col1" data-val="HD" style="font-size:0.82em;white-space:nowrap">HD</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">1/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>317.45</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="23.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>23.5</td>
+          <td data-val="-16.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-16.6%</td>
+          <td data-val="20.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>20.2%</td>
+          <td data-val="30.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>30.6</td>
+          <td data-val="-91.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-91.9</td>
+          <td data-val="24.9" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>24.9%</td>
+          <td data-val="1.12" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="IBM"><strong>IBM</strong></td>
+          <td class="u-sticky u-col1" data-val="IBM" style="font-size:0.82em;white-space:nowrap">IBM</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">1/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>229.76</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="30.0" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>30.0</td>
+          <td data-val="-13.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-13.9%</td>
+          <td data-val="22.8" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>22.8%</td>
+          <td data-val="29.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>29.1</td>
+          <td data-val="-90.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-90.6</td>
+          <td data-val="36.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>36.5%</td>
+          <td data-val="1.01" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.01</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="TMO"><strong>TMO</strong></td>
+          <td class="u-sticky u-col1" data-val="TMO" style="font-size:0.82em;white-space:nowrap">TMO</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="1" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">1/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>465.0</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="24.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>24.6</td>
+          <td data-val="12.8" style="background:#d5f5e3;color:#1e8449;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>12.8%</td>
+          <td data-val="15.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>15.6%</td>
+          <td data-val="29.2" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>29.2</td>
+          <td data-val="-92.9" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-92.9</td>
+          <td data-val="30.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>30.1%</td>
+          <td data-val="1.0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.0</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr><tr>
+          <td class="u-sticky u-col0" data-val="WFC"><strong>WFC</strong></td>
+          <td class="u-sticky u-col1" data-val="WFC" style="font-size:0.82em;white-space:nowrap">WFC</td>
+          <td class="u-sticky u-col2" data-val="n/a" style="font-size:0.78em;color:#555;white-space:nowrap">n/a</td>
+          <td data-val="0" style="text-align:center;font-weight:700;font-size:0.95em;
+              background:#fadbd8;color:#922b21">0/12</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA200<br>75.64</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">&gt;MA50</td>
+          <td data-val="17.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">ADX<br>17.4</td>
+          <td data-val="-0.7" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">52W<br>-0.7%</td>
+          <td data-val="20.5" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">PB%<br>20.5%</td>
+          <td data-val="35.6" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">RSI<br>35.6</td>
+          <td data-val="-92.4" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">W%R<br>-92.4</td>
+          <td data-val="32.1" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">HV30<br>32.1%</td>
+          <td data-val="1.01" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Beta<br>1.01</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">MACD↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Mom↑<br>✗</td>
+          <td data-val="0" style="background:#fadbd8;color:#922b21;text-align:center;white-space:nowrap;font-size:0.82em">Vol↑<br>✗</td>
+        </tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+(function() {
+  var _sortCol = 3, _sortAsc = false;  // Standard: Erfüllt absteigend
+
+  window.univSort = function(col) {
+    var tbl  = document.getElementById('univ-tbl');
+    var tbody = tbl.querySelector('tbody');
+    var rows  = Array.from(tbody.querySelectorAll('tr'));
+    var ths   = tbl.querySelectorAll('thead th');
+
+    _sortAsc = (col === _sortCol) ? !_sortAsc : true;
+    _sortCol = col;
+
+    // Sort-Icons zurücksetzen
+    ths.forEach(function(th) {
+      th.querySelector('.sort-icon').textContent = '⇅';
+    });
+    ths[col].querySelector('.sort-icon').textContent = _sortAsc ? ' ▲' : ' ▼';
+
+    rows.sort(function(a, b) {
+      var av = a.cells[col].dataset.val || '';
+      var bv = b.cells[col].dataset.val || '';
+      var an = parseFloat(av), bn = parseFloat(bv);
+      var cmp = (!isNaN(an) && !isNaN(bn))
+                ? an - bn
+                : av.localeCompare(bv, 'de', {sensitivity: 'base'});
+      return _sortAsc ? cmp : -cmp;
+    });
+
+    rows.forEach(function(r) { tbody.appendChild(r); });
+  };
+})();
+</script>
+
+<div class="footer">
+  Generiert am 2026-05-09 &mdash; Zertifikate-Scanner &mdash;
+  Alle Angaben ohne Gewähr. Keine Anlageberatung.
+</div>
+  </div>
+</body>
+</html>
