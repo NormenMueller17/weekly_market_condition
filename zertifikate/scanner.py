@@ -235,8 +235,10 @@ def _check_ebene2_full(
     wr_max   = float(rules.get("williams_r_max", -60))
     hv_max   = float(rules.get("hv30_max", 25))
     beta_max = float(rules.get("beta_max", 0.9))
-    rec_weeks  = int(rules.get("recovery_ma_cross_weeks", 8))
-    ma_long_w  = int((e1_rules or {}).get("ma_long", 40))
+    rec_weeks    = int(rules.get("recovery_ma_cross_weeks", 8))
+    max_dist_pct = float(rules.get("max_distance_from_ma_pct", 20))
+    hv_max_rec   = float(rules.get("hv30_max_recovery", 40))
+    ma_long_w    = int((e1_rules or {}).get("ma_long", 40))
 
     current      = float(close.iloc[-1])
     recent_high  = float(high.tail(13).max())
@@ -247,7 +249,7 @@ def _check_ebene2_full(
     hv30    = float(hv(close, 30).iloc[-1]) if not np.isnan(hv(close, 30).iloc[-1]) else 99.0
     b_val   = beta(close, spy_close, 52) if len(spy_close) >= 10 else np.nan
 
-    # Recovery-Pfad prüfen
+    # Recovery-Pfad prüfen (inkl. Hartfilter Abstand + HV)
     e2_recovery = False
     if len(close) >= ma_long_w + rec_weeks:
         ma_series    = close.rolling(ma_long_w).mean()
@@ -258,6 +260,11 @@ def _check_ebene2_full(
                     and float(window_close.iloc[i + 1]) >= float(window_ma.iloc[i + 1])):
                 e2_recovery = True
                 break
+        if e2_recovery:
+            ma_now   = float(close.rolling(ma_long_w).mean().iloc[-1])
+            dist_pct = (current - ma_now) / ma_now * 100 if ma_now > 0 else 999.0
+            if dist_pct > max_dist_pct or hv30 >= hv_max_rec:
+                e2_recovery = False
 
     return {
         "pullback_ok": pb_min <= pullback_pct <= pb_max,
@@ -441,9 +448,11 @@ def _check_ebene2(
     wr_max  = float(rules.get("williams_r_max", -60))
     hv_max  = float(rules.get("hv30_max", 25))
     beta_max = float(rules.get("beta_max", 0.9))
-    wr_hard_max   = float(rules.get("williams_r_hard_max", -50))
-    rec_weeks     = int(rules.get("recovery_ma_cross_weeks", 8))
+    wr_hard_max        = float(rules.get("williams_r_hard_max", -50))
+    rec_weeks          = int(rules.get("recovery_ma_cross_weeks", 8))
     recovery_score_val = float(rules.get("recovery_score", 60))
+    max_dist_pct       = float(rules.get("max_distance_from_ma_pct", 20))
+    hv_max_rec         = float(rules.get("hv30_max_recovery", 40))
 
     ma_long_w = int((e1_rules or {}).get("ma_long", 40))
 
@@ -473,7 +482,7 @@ def _check_ebene2(
     # ── Pfad B: Recovery nach marktbedingtem Rückgang ────────────────────────
     path_b = False
     if len(close) >= ma_long_w + rec_weeks:
-        ma_series = close.rolling(ma_long_w).mean()
+        ma_series    = close.rolling(ma_long_w).mean()
         window_close = close.iloc[-(rec_weeks + 1):]
         window_ma    = ma_series.iloc[-(rec_weeks + 1):]
         for i in range(len(window_close) - 1):
@@ -482,6 +491,13 @@ def _check_ebene2(
             if below_before and above_now:
                 path_b = True
                 break
+
+    # Pfad-B-Hartfilter: zu weit vom MA entfernt oder HV zu hoch
+    if path_b:
+        ma_now   = float(close.rolling(ma_long_w).mean().iloc[-1])
+        dist_pct = (current - ma_now) / ma_now * 100 if ma_now > 0 else 999.0
+        if dist_pct > max_dist_pct or hv30 >= hv_max_rec:
+            path_b = False
 
     if not path_a and not path_b:
         return _base()

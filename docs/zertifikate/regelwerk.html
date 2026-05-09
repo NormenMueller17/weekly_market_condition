@@ -102,7 +102,7 @@
     <tbody><tr>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.1 &nbsp; Einstiegs-Profil (Entweder/Oder)</td>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Pfad A: Pullback 5–15% &nbsp;|&nbsp; Pfad B: 🔄 Recovery</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em"><strong>Pfad A — Klassischer Pullback:</strong> Die Aktie hat sich vom Hoch der letzten 13 Wochen um 5–15% zurückgezogen. Hartfilter: W%R &gt; -50 oder HV30 ≥ 25% disqualifizieren (zu teures Optionsschein-Prämium). <br><strong>Pfad B — Recovery nach Marktrückgang:</strong> Die Aktie hat den 40W-MA (≈200T) in den letzten 8 Wochen von unten durchbrochen. Tritt nach marktbedingten Einbrüchen auf. Fest-Score: 60/100. W%R- und HV30-Hartfilter werden auf diesem Pfad <em>nicht</em> angewendet. Mindestens einer der beiden Pfade muss erfüllt sein.</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em"><strong>Pfad A — Klassischer Pullback:</strong> Die Aktie hat sich vom Hoch der letzten 13 Wochen um 5–15% zurückgezogen. Hartfilter: W%R &gt; -50 oder HV30 ≥ 25% disqualifizieren (zu teures Optionsschein-Prämium). <br><strong>Pfad B — Recovery nach Marktrückgang:</strong> Die Aktie hat den 40W-MA (≈200T) in den letzten 8 Wochen von unten durchbrochen. Tritt nach marktbedingten Einbrüchen auf. Fest-Score: 60/100. <br><strong>Pfad-B-Hartfilter:</strong> (1) Kurs darf maximal 20% über dem 40W-MA liegen — sonst ist der Einstiegszeitpunkt verpasst. (2) HV30 &lt; 40% — bei höherer Volatilität ist das Optionsschein-Zeitwertpremium zu teuer (W%R-Hartfilter entfällt weiterhin auf Pfad B). Mindestens einer der beiden Pfade muss erfüllt sein.</td>
         </tr><tr>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.2 &nbsp; RSI</td>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">40 – 65</td>
@@ -128,7 +128,8 @@
     <li>Williams %R &gt; -50 (kein echter Momentum-Pullback)</li>
     <li>HV30 ≥ 25% (zu teures Zeitwertpremium)</li>
   </ul>
-  <strong>Pfad B (Recovery) überspringt diese Hartfilter</strong> — erhält direkt Score 60/100.<br>
+  <strong>Pfad B (Recovery)</strong> überspringt den W%R-Hartfilter, hat aber eigene Hartfilter:
+  Kurs ≤ 20% über 40W-MA &amp; HV30 &lt; 40% — erhält dann direkt Score 60/100.<br>
   <strong>Score-Berechnung (Pfad A):</strong> RSI, W%R (Optimalbereich), HV30, Beta und Pullback
   liefern je einen Teilscore 0–100 (100 = perfekt in der Mitte des Idealbereichs).
   Der E2-Gesamtscore ist der Durchschnitt dieser 5 Teilscores.
