@@ -665,9 +665,13 @@ def build_regelwerk_page(rules: dict) -> str:
              f"Average Directional Index: Misst die Stärke des Trends unabhängig von seiner Richtung. "
              f"Werte &lt; 20 = Seitwärts, ≥ {adx_min} = klarer Trend. Verhindert Fehlsignale in trendlosen Märkten.") +
         _row("E1.4 &nbsp; 52-Wochen-Performance",
-             f"Perf ≥ {perf_min} %",
-             "Die Aktie darf in den letzten 52 Wochen nicht gefallen sein. "
-             "Relative Stärke gegenüber dem Markt ist ein zentrales Minervini-Kriterium.")
+             f"Perf ≥ {perf_min} % &nbsp;(Ausnahme: 🔄 Recovery)",
+             f"Die Aktie darf in den letzten 52 Wochen nicht gefallen sein. "
+             "Relative Stärke gegenüber dem Markt ist ein zentrales Minervini-Kriterium. "
+             "<strong>Ausnahme:</strong> Wird für Pfad B (Recovery) übersprungen — nach einem "
+             "marktbedingten Crash ist die 52W-Performance systembedingt negativ, obwohl der "
+             "Titel fundamental intakt ist. E1.1 und E1.2 (MA-Bedingungen) bleiben auch auf "
+             "Pfad B verpflichtend.")
     )
 
     e2_rows = (
