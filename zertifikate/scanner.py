@@ -167,7 +167,8 @@ def _screen_single_full(
     e2 = e_rules.get("ebene2", {})
     e3 = e_rules.get("ebene3", {})
 
-    e1_r = _check_ebene1(close, high, low, e1)
+    is_recovery = _has_recovery_path(close, e1, e2)
+    e1_r = _check_ebene1(close, high, low, e1, skip_perf=is_recovery)
     e2_r = _check_ebene2_full(close, high, low, spy_weekly, e2, e1_rules=e1)
     e3_r = _check_ebene3(close, high, low, vol, e3)
 
@@ -291,12 +292,14 @@ def _screen_single(
 
     # ── Ebene 1: Trendqualität (alle müssen passen) ──────────────────────────
     e1 = e_rules.get("ebene1", {})
-    e1_result = _check_ebene1(close, high, low, e1)
+    e2 = e_rules.get("ebene2", {})
+    # Pre-Check Pfad B: Recovery-Kandidaten dürfen negative 52W-Perf haben
+    is_recovery_candidate = _has_recovery_path(close, e1, e2)
+    e1_result = _check_ebene1(close, high, low, e1, skip_perf=is_recovery_candidate)
     if not e1_result["bestanden"]:
         return None
 
     # ── Ebene 2: Pullback-Erkennung (Score 0-100) ────────────────────────────
-    e2 = e_rules.get("ebene2", {})
     e2_result = _check_ebene2(close, high, low, spy_weekly, e2, e1_rules=e1)
     if e2_result["score"] == 0:
         return None
@@ -348,14 +351,40 @@ def _screen_single(
     }
 
 
+def _has_recovery_path(
+    close: pd.Series,
+    e1_rules: dict,
+    e2_rules: dict,
+) -> bool:
+    """
+    Schnell-Check: hat der Titel den langen MA in den letzten N Wochen von unten
+    durchbrochen? Wird vor E1 aufgerufen, um E1.4 für Recovery-Kandidaten zu überspringen.
+    """
+    ma_long_w = int(e1_rules.get("ma_long", 40))
+    rec_weeks = int(e2_rules.get("recovery_ma_cross_weeks", 8))
+    if len(close) < ma_long_w + rec_weeks:
+        return False
+    ma_series    = close.rolling(ma_long_w).mean()
+    window_close = close.iloc[-(rec_weeks + 1):]
+    window_ma    = ma_series.iloc[-(rec_weeks + 1):]
+    for i in range(len(window_close) - 1):
+        if (float(window_close.iloc[i]) < float(window_ma.iloc[i])
+                and float(window_close.iloc[i + 1]) >= float(window_ma.iloc[i + 1])):
+            return True
+    return False
+
+
 def _check_ebene1(
-    close: pd.Series, high: pd.Series, low: pd.Series, rules: dict
+    close: pd.Series,
+    high: pd.Series,
+    low: pd.Series,
+    rules: dict,
+    skip_perf: bool = False,
 ) -> dict:
     """
     Ebene 1 — Trendqualität: alle müssen bestehen.
-
-    Erweiterung: neue Pflichtbedingungen hier als weiteres Flag hinzufügen
-    und in `bestanden` UND-verknüpfen.
+    skip_perf=True: E1.4 (52W-Performance) wird für Recovery-Kandidaten übersprungen,
+    da nach einem Crash die 52W-Performance systembedingt negativ ist.
     """
     ma_long = int(rules.get("ma_long", 200))
     ma_mid  = int(rules.get("ma_mid", 50))
@@ -374,7 +403,7 @@ def _check_ebene1(
     adx_ok  = not np.isnan(adx_val) and adx_val >= adx_min
 
     perf_52w = (current / float(close.iloc[-52]) - 1) * 100 if len(close) >= 52 else 0.0
-    perf_ok  = perf_52w >= perf_min
+    perf_ok  = True if skip_perf else perf_52w >= perf_min
 
     bestanden = ueber_ma200 and ueber_ma50 and adx_ok and perf_ok
 
