@@ -44,9 +44,10 @@
       "pullback_min_pct": 5,
       "pullback_max_pct": 15,
       "rsi_min": 40,
-      "rsi_max": 55,
+      "rsi_max": 65,
       "williams_r_min": -80,
       "williams_r_max": -60,
+      "williams_r_hard_max": -50,
       "hv30_max": 25,
       "beta_max": 0.9
     },

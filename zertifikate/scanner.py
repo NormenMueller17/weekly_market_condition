@@ -388,11 +388,24 @@ def _check_ebene2(
     hv30    = float(hv(close, 30).iloc[-1]) if not np.isnan(hv(close, 30).iloc[-1]) else 99.0
     b_val   = beta(close, spy_close, 52) if len(spy_close) >= 10 else np.nan
 
-    # Pullback in gewünschtem Bereich?
-    pullback_ok = pb_min <= pullback_pct <= pb_max
-    if not pullback_ok:
-        return {"score": 0, "pullback_pct": pullback_pct, "rsi": rsi_val,
-                "williams_r": wr_val, "hv30": hv30, "beta": float(b_val) if not np.isnan(b_val) else 99.0}
+    wr_hard_max = float(rules.get("williams_r_hard_max", -50))
+
+    def _early(score=0):
+        return {"score": score, "pullback_pct": pullback_pct, "rsi": rsi_val,
+                "williams_r": wr_val, "hv30": hv30,
+                "beta": float(b_val) if not np.isnan(b_val) else 99.0}
+
+    # Hartfilter 1: Pullback im Zielbereich
+    if not (pb_min <= pullback_pct <= pb_max):
+        return _early()
+
+    # Hartfilter 2: W%R – muss echter Pullback in Momentum sein
+    if wr_val > wr_hard_max:
+        return _early()
+
+    # Hartfilter 3: HV30 – hohe Vola = teures Zeitwertpremium
+    if hv30 >= hv_max:
+        return _early()
 
     # Sub-Scores (je 0-100)
     sub_scores = {
