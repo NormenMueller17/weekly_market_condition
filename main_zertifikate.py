@@ -62,7 +62,7 @@ def run(dry_run: bool = False) -> None:
 
     # ── 1. Universe laden ─────────────────────────────────────────────────────
     print("[1/7] Lade Universum …")
-    tickers = load_large_cap_universe(rules["universe"])
+    tickers, csv_company_info = load_large_cap_universe(rules["universe"])
 
     # ── 2. Marktdaten (^GSPC + ^VIX) wöchentlich ─────────────────────────────
     print("[2/7] Lade Marktdaten (^GSPC, ^VIX, SPY) …")
@@ -124,7 +124,10 @@ def run(dry_run: bool = False) -> None:
     print(f"  → {len(universe_all)} Titel ausgewertet.")
 
     print("[6c] Lade Company-Info (Name, Sektor) …")
-    company_info = fetch_company_info([t["ticker"] for t in universe_all])
+    company_info = fetch_company_info(
+        [t["ticker"] for t in universe_all],
+        seed_info=csv_company_info,
+    )
     print(f"  → {len(company_info)} Titel mit Info.")
 
     # ── 7. Report + Regelwerk generieren ─────────────────────────────────────

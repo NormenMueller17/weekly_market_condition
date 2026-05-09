@@ -43,33 +43,36 @@ _HEADERS = {
 _BLACKLIST = {"BRK/B", "BRK.B", "BF/B", "BF.B"}
 
 
-def fetch_company_info(tickers: List[str]) -> dict:
+def fetch_company_info(tickers: List[str], seed_info: dict | None = None) -> dict:
     """
     Holt Name und Sektor für eine Liste von Tickern.
     Rückgabe: {ticker: {"name": str, "sector": str}}
 
     Strategie:
-      1. Lese lokalen JSON-Cache (zertifikate/company_info_cache.json)
-      2. Fehlende Ticker via yfinance .info nachladen
-      3. Nur Einträge mit echtem Namen im Cache speichern
-         (verhindert, dass beschädigte HTTP-Cache-Antworten persistiert werden)
+      1. seed_info (aus iShares-CSV) als Basis verwenden
+      2. Lokalen JSON-Cache lesen (zertifikate/company_info_cache.json)
+      3. Nur noch wirklich fehlende Ticker via yfinance .info nachladen
+      4. Cache aktualisieren
     """
-    # ── 1. Lokalen Cache laden ────────────────────────────────────────────────
-    cached: dict = {}
+    # ── 1. seed_info (iShares-CSV) als Basis ─────────────────────────────────
+    cached: dict = dict(seed_info) if seed_info else {}
+
+    # ── 2. Lokalen Cache laden und mit seed_info zusammenführen ──────────────
     if _COMPANY_INFO_CACHE_PATH.exists():
         try:
-            cached = json.loads(_COMPANY_INFO_CACHE_PATH.read_text(encoding="utf-8"))
+            disk = json.loads(_COMPANY_INFO_CACHE_PATH.read_text(encoding="utf-8"))
+            # Disk-Cache hat Vorrang gegenüber seed_info (manuell gepflegt / yfinance-Daten)
+            for t, v in disk.items():
+                if v.get("name") and v["name"] != t:  # nur echte Namen
+                    cached[t] = v
         except Exception:
-            cached = {}
+            pass
 
-    # ── 2. Fehlende oder ungültige Ticker nachladen ───────────────────────────
-    missing = [
-        t for t in tickers
-        if t not in cached or cached[t].get("name") == t  # Fallback-Einträge erneuern
-    ]
+    # ── 3. Fehlende Ticker via yfinance nachladen ─────────────────────────────
+    missing = [t for t in tickers if t not in cached or cached[t].get("name") == t]
 
     if missing:
-        print(f"[INFO] Lade Company-Info für {len(missing)} Ticker nach …")
+        print(f"[INFO] Lade Company-Info für {len(missing)} Ticker via yfinance …")
         updated = False
         for t in missing:
             try:
@@ -80,14 +83,13 @@ def fetch_company_info(tickers: List[str]) -> dict:
                     cached[t] = {"name": name, "sector": sector or "n/a"}
                     updated = True
                 else:
-                    # Echte Antwort ohne Name → nicht cachen, Fallback verwenden
                     cached.setdefault(t, {"name": t, "sector": "n/a"})
             except Exception as exc:
                 print(f"[INFO] fetch_company_info: {t} fehlgeschlagen ({exc})")
                 cached.setdefault(t, {"name": t, "sector": "n/a"})
             time.sleep(0.1)
 
-        # ── 3. Cache nur bei echten Daten persistieren ────────────────────────
+        # ── 4. Cache nur bei echten Daten persistieren ────────────────────────
         if updated:
             try:
                 _COMPANY_INFO_CACHE_PATH.write_text(
@@ -101,58 +103,64 @@ def fetch_company_info(tickers: List[str]) -> dict:
     return {t: cached.get(t, {"name": t, "sector": "n/a"}) for t in tickers}
 
 
-def load_large_cap_universe(rules: dict) -> List[str]:
+def load_large_cap_universe(rules: dict) -> tuple[List[str], dict]:
     """
-    Gibt eine Liste von Ticker-Symbolen zurück (US Large Caps > min_market_cap_b).
+    Gibt (tickers, company_info) zurück.
+    tickers     : Liste von Ticker-Symbolen (US Large Caps > min_market_cap_b)
+    company_info: {ticker: {"name": str, "sector": str}} — direkt aus iShares-CSV
 
     Strategie:
       1. IWB (Russell 1000) laden und auf Market Cap >= min_cap filtern
       2. Falls IWB nicht erreichbar: IWV (Russell 3000) + Filter
-      3. Letzter Fallback: hardcodierte S&P-100-Auswahl
+      3. Letzter Fallback: hardcodierte S&P-100-Auswahl (ohne company_info)
     """
     min_cap = rules.get("min_market_cap_b", 150)
 
-    tickers = _fetch_ishares("IWB")
+    tickers, csv_info = _fetch_ishares("IWB")
 
     if not tickers:
         print("[UNIVERSE] IWB fehlgeschlagen, versuche IWV ...")
-        tickers = _fetch_ishares("IWV")
+        tickers, csv_info = _fetch_ishares("IWV")
 
     if tickers and min_cap > 0:
         tickers = _filter_by_market_cap(tickers, min_cap)
+        csv_info = {t: v for t, v in csv_info.items() if t in tickers}
 
     if not tickers:
         print("[UNIVERSE] iShares nicht erreichbar -- nutze eingebettete Fallback-Liste.")
-        tickers = _fallback_large_caps()
+        tickers  = _fallback_large_caps()
+        csv_info = {}
 
-    print(f"[UNIVERSE] {len(tickers)} Titel geladen (min_cap={min_cap}B).")
-    return tickers
+    print(f"[UNIVERSE] {len(tickers)} Titel geladen (min_cap={min_cap}B), "
+          f"{len(csv_info)} mit Name/Sektor aus CSV.")
+    return tickers, csv_info
 
 
-def _fetch_ishares(etf: str) -> List[str]:
+def _fetch_ishares(etf: str) -> tuple[List[str], dict]:
     url = _ISHARES_URLS.get(etf)
     if not url:
         print(f"[UNIVERSE] Unbekannter ETF: {etf}")
-        return []
+        return [], {}
 
     for attempt in range(3):
         try:
             resp = requests.get(url, headers=_HEADERS, timeout=30)
             resp.raise_for_status()
-            tickers = _parse_ishares_csv(resp.text)
+            tickers, company_info = _parse_ishares_csv(resp.text)
             if tickers:
-                return tickers
+                return tickers, company_info
         except Exception as exc:
             print(f"[UNIVERSE] {etf} Attempt {attempt + 1}/3: {exc}")
             time.sleep(2 ** attempt)
 
-    return []
+    return [], {}
 
 
-def _parse_ishares_csv(raw: str) -> List[str]:
+def _parse_ishares_csv(raw: str) -> tuple[List[str], dict]:
     """
-    BlackRock-CSVs haben einen Metadaten-Header (erste ~9 Zeilen).
-    Die eigentliche Tabelle beginnt mit der Zeile, die "Ticker" enthält.
+    Parst BlackRock-CSV (Metadaten-Header übersprungen).
+    Gibt (tickers, company_info) zurück.
+    company_info: {ticker: {"name": str, "sector": str}}
     """
     lines = raw.splitlines()
     header_idx = None
@@ -163,36 +171,48 @@ def _parse_ishares_csv(raw: str) -> List[str]:
 
     if header_idx is None:
         print("[UNIVERSE] CSV-Header 'Ticker' nicht gefunden.")
-        return []
+        return [], {}
 
     csv_block = "\n".join(lines[header_idx:])
     try:
         df = pd.read_csv(io.StringIO(csv_block))
     except Exception as exc:
         print(f"[UNIVERSE] CSV-Parse-Fehler: {exc}")
-        return []
+        return [], {}
 
-    # Spaltenname normalisieren (manchmal "Ticker", manchmal "TICKER")
-    col_map = {c: c.strip() for c in df.columns}
-    df.rename(columns=col_map, inplace=True)
+    # Spaltennamen normalisieren
+    df.rename(columns={c: c.strip() for c in df.columns}, inplace=True)
 
     ticker_col = next((c for c in df.columns if c.strip().lower() == "ticker"), None)
+    name_col   = next((c for c in df.columns if c.strip().lower() == "name"),   None)
+    sector_col = next((c for c in df.columns if c.strip().lower() == "sector"), None)
+
     if ticker_col is None:
         print(f"[UNIVERSE] Keine Ticker-Spalte gefunden. Spalten: {list(df.columns)}")
-        return []
+        return [], {}
 
-    tickers = (
-        df[ticker_col]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .replace("-", pd.NA)        # Zeilen ohne Ticker (Cash, etc.)
-        .dropna()
-        .tolist()
+    df[ticker_col] = df[ticker_col].astype(str).str.strip()
+    mask = (
+        df[ticker_col].notna()
+        & (df[ticker_col] != "-")
+        & (df[ticker_col] != "nan")
+        & ~df[ticker_col].str.contains("/", na=False)
+        & ~df[ticker_col].isin(_BLACKLIST)
     )
-    # Bereinigen: Nur valide US-Ticker (keine Sonderzeichen außer .)
-    tickers = [t for t in tickers if t and t not in _BLACKLIST and "/" not in t]
-    return tickers
+    df = df[mask]
+
+    tickers = df[ticker_col].tolist()
+
+    # Name + Sektor direkt aus CSV befüllen
+    company_info: dict = {}
+    for _, row in df.iterrows():
+        t = row[ticker_col]
+        name   = str(row[name_col]).strip()   if name_col   and pd.notna(row[name_col])   else ""
+        sector = str(row[sector_col]).strip() if sector_col and pd.notna(row[sector_col]) else "n/a"
+        if name and name != t and name.lower() not in ("nan", "-", ""):
+            company_info[t] = {"name": name, "sector": sector or "n/a"}
+
+    return tickers, company_info
 
 
 def _filter_by_market_cap(tickers: List[str], min_cap_b: float) -> List[str]:
