@@ -109,12 +109,12 @@
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Relative Strength Index (14 Perioden). Werte von 40–65 zeigen eine abgekühlte, aber noch nicht überverkaufte Situation — idealer Einstiegsbereich nach einem Pullback in einem intakten Aufwärtstrend.</td>
         </tr><tr>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.3 &nbsp; Williams %R</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">-80 bis -60</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Misst die Position des Kurses relativ zum Hoch-Tief-Bereich der letzten 14 Wochen. Bereich -80 bis -60 = Aktie hat sich deutlich vom Hoch entfernt, aber ohne extremen Verkaufsdruck — günstiger Wiedereinstiegsbereich.</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">≤ -50 (Hartfilter) · Optimal: -80 bis -60</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Misst die Position des Kurses relativ zum Hoch-Tief-Bereich der letzten 14 Wochen. <strong>Hartfilter:</strong> W%R &gt; -50 disqualifiziert sofort (kein echter Momentum-Pullback — Aktie zu nah am Hoch). Optimalbereich -80 bis -60: Aktie hat sich deutlich vom Hoch entfernt, aber ohne extremen Verkaufsdruck — günstiger Wiedereinstiegsbereich.</td>
         </tr><tr>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.4 &nbsp; Historische Volatilität (HV30)</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">&lt; 25 %</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Annualisierte Standardabweichung der Wochenrenditen der letzten 30 Wochen. Niedrige Volatilität (&lt;25%) hält die Optionsschein-Prämie (Zeitwert) gering und reduziert das Verlustrisiko bei stagnierendem Kurs.</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">&lt; 25 % (Hartfilter)</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Annualisierte Standardabweichung der Wochenrenditen der letzten 30 Wochen. <strong>Hartfilter:</strong> HV30 ≥ 25% disqualifiziert sofort — hohe Volatilität treibt die Optionsschein-Prämie (Zeitwert) in die Höhe und erhöht das Verlustrisiko bei stagnierendem Kurs erheblich.</td>
         </tr><tr>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.5 &nbsp; Beta</td>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">&lt; 0.9</td>
@@ -122,10 +122,15 @@
         </tr>
 <div style="background:#fef9e7;border-radius:6px;padding:12px 16px;margin-top:14px;
             font-size:0.88em;color:#7d6608">
-  <strong>Score-Berechnung:</strong> Jedes E2-Kriterium liefert einen Teilscore 0–100
-  (100 = perfekt in der Mitte des Idealbereichs, 0 = außerhalb). Der E2-Gesamtscore
-  ist der Durchschnitt der 5 Teilscores. Ein Pullback außerhalb des Bereichs
-  5–15% führt sofort zu Score 0 (Ebene 2 nicht bestanden).
+  <strong>Hartfilter (führen sofort zu Score 0 / Ausschluss):</strong>
+  <ul style="margin:.4em 0 .6em 1.2em;line-height:1.7">
+    <li>Pullback außerhalb 5–15%</li>
+    <li>Williams %R &gt; -50 (kein echter Momentum-Pullback)</li>
+    <li>HV30 ≥ 25% (zu teures Zeitwertpremium)</li>
+  </ul>
+  <strong>Score-Berechnung:</strong> RSI, W%R (Optimalbereich), HV30, Beta und Pullback
+  liefern je einen Teilscore 0–100 (100 = perfekt in der Mitte des Idealbereichs).
+  Der E2-Gesamtscore ist der Durchschnitt dieser 5 Teilscores.
   <br>Gewichtung im Gesamtscore: E2 = 60%, E3 = 40%.
 </div></tbody>
   </table>

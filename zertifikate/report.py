@@ -590,14 +590,15 @@ def build_regelwerk_page(rules: dict) -> str:
     adx_min   = e1.get("adx_min", 25)
     perf_min  = e1.get("performance_52w_min_pct", 0)
 
-    pb_min    = e2.get("pullback_min_pct", 5)
-    pb_max    = e2.get("pullback_max_pct", 15)
-    rsi_min   = e2.get("rsi_min", 40)
-    rsi_max   = e2.get("rsi_max", 55)
-    wr_min    = e2.get("williams_r_min", -80)
-    wr_max    = e2.get("williams_r_max", -60)
-    hv_max    = e2.get("hv30_max", 25)
-    beta_max  = e2.get("beta_max", 0.9)
+    pb_min      = e2.get("pullback_min_pct", 5)
+    pb_max      = e2.get("pullback_max_pct", 15)
+    rsi_min     = e2.get("rsi_min", 40)
+    rsi_max     = e2.get("rsi_max", 65)
+    wr_min      = e2.get("williams_r_min", -80)
+    wr_max      = e2.get("williams_r_max", -60)
+    wr_hard_max = e2.get("williams_r_hard_max", -50)
+    hv_max      = e2.get("hv30_max", 25)
+    beta_max    = e2.get("beta_max", 0.9)
     w_e2      = int(rules.get("scoring", {}).get("ebene2_weight", 0.6) * 100)
     w_e3      = int(rules.get("scoring", {}).get("ebene3_weight", 0.4) * 100)
 
@@ -672,15 +673,18 @@ def build_regelwerk_page(rules: dict) -> str:
              "eine abgekühlte, aber noch nicht überverkaufte Situation — idealer Einstiegsbereich "
              "nach einem Pullback in einem intakten Aufwärtstrend.") +
         _row("E2.3 &nbsp; Williams %R",
-             f"{wr_min} bis {wr_max}",
+             f"≤ {wr_hard_max} (Hartfilter) · Optimal: {wr_min} bis {wr_max}",
              f"Misst die Position des Kurses relativ zum Hoch-Tief-Bereich der letzten 14 Wochen. "
-             f"Bereich {wr_min} bis {wr_max} = Aktie hat sich deutlich vom Hoch entfernt, "
+             f"<strong>Hartfilter:</strong> W%R &gt; {wr_hard_max} disqualifiziert sofort "
+             f"(kein echter Momentum-Pullback — Aktie zu nah am Hoch). "
+             f"Optimalbereich {wr_min} bis {wr_max}: Aktie hat sich deutlich vom Hoch entfernt, "
              "aber ohne extremen Verkaufsdruck — günstiger Wiedereinstiegsbereich.") +
         _row("E2.4 &nbsp; Historische Volatilität (HV30)",
-             f"&lt; {hv_max} %",
+             f"&lt; {hv_max} % (Hartfilter)",
              f"Annualisierte Standardabweichung der Wochenrenditen der letzten 30 Wochen. "
-             f"Niedrige Volatilität (&lt;{hv_max}%) hält die Optionsschein-Prämie (Zeitwert) gering "
-             "und reduziert das Verlustrisiko bei stagnierendem Kurs.") +
+             f"<strong>Hartfilter:</strong> HV30 ≥ {hv_max}% disqualifiziert sofort — "
+             "hohe Volatilität treibt die Optionsschein-Prämie (Zeitwert) in die Höhe "
+             "und erhöht das Verlustrisiko bei stagnierendem Kurs erheblich.") +
         _row("E2.5 &nbsp; Beta",
              f"&lt; {beta_max}",
              f"Korrelation zur Marktbewegung (SPY, 52 Wochen). Beta &lt; {beta_max} bedeutet: "
@@ -691,10 +695,15 @@ def build_regelwerk_page(rules: dict) -> str:
     e2_scoring = f"""
 <div style="background:#fef9e7;border-radius:6px;padding:12px 16px;margin-top:14px;
             font-size:0.88em;color:#7d6608">
-  <strong>Score-Berechnung:</strong> Jedes E2-Kriterium liefert einen Teilscore 0–100
-  (100 = perfekt in der Mitte des Idealbereichs, 0 = außerhalb). Der E2-Gesamtscore
-  ist der Durchschnitt der 5 Teilscores. Ein Pullback außerhalb des Bereichs
-  {pb_min}–{pb_max}% führt sofort zu Score 0 (Ebene 2 nicht bestanden).
+  <strong>Hartfilter (führen sofort zu Score 0 / Ausschluss):</strong>
+  <ul style="margin:.4em 0 .6em 1.2em;line-height:1.7">
+    <li>Pullback außerhalb {pb_min}–{pb_max}%</li>
+    <li>Williams %R &gt; {wr_hard_max} (kein echter Momentum-Pullback)</li>
+    <li>HV30 ≥ {hv_max}% (zu teures Zeitwertpremium)</li>
+  </ul>
+  <strong>Score-Berechnung:</strong> RSI, W%R (Optimalbereich), HV30, Beta und Pullback
+  liefern je einen Teilscore 0–100 (100 = perfekt in der Mitte des Idealbereichs).
+  Der E2-Gesamtscore ist der Durchschnitt dieser 5 Teilscores.
   <br>Gewichtung im Gesamtscore: E2 = {w_e2}%, E3 = {w_e3}%.
 </div>"""
 
