@@ -185,15 +185,16 @@ def compute_marktampel(
     vix_high = current_vix >= vix_r
 
     # ── Ampel-Logik ──────────────────────────────────────────────────────────
-    # ROT: EMA10 unter EMA50, Index unter 200-MA, VIX >= 25
-    if not ema_above and not above_200 and vix_high:
+    # ROT: mindestens 2 von 3 negativen Signalen (EMA-Kreuz negativ, Index unter 200MA, VIX hoch)
+    rot_signale = sum([not ema_above, not above_200, vix_high])
+    if rot_signale >= 2:
         status = Ampel.ROT
-    # GELB: Signale gemischt oder EMA-Abstand < 1%
-    elif (not ema_above or not above_200 or not vix_low) or ema_dist_pct < ema_yellow_pct:
-        status = Ampel.GELB
-    # GRUEN: alle drei Bedingungen erfüllt
-    else:
+    # GRUEN: alle drei Bedingungen erfüllt und EMA-Abstand ausreichend
+    elif ema_above and above_200 and vix_low and ema_dist_pct >= ema_yellow_pct:
         status = Ampel.GRUEN
+    # GELB: Signale gemischt
+    else:
+        status = Ampel.GELB
 
     return MarktampelResult(
         status=status,

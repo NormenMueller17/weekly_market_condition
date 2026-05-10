@@ -69,7 +69,7 @@ def build_report(
         _section_marktampel(markt),
     ]
 
-    if markt.status == Ampel.ROT:
+    if markt.status in (Ampel.ROT, Ampel.GELB):
         sections.append(_section_markt_warnung(markt))
     else:
         if kandidaten:
@@ -252,12 +252,21 @@ def _section_marktampel(markt: MarktampelResult) -> str:
 
 
 def _section_markt_warnung(markt: MarktampelResult) -> str:
+    if markt.status == Ampel.ROT:
+        msg = (
+            "⛔ Marktampel ROT — Keine neuen Kaufkandidaten. "
+            "Bestehende Positionen mit engem Stopp halten. "
+            "Bei gleichzeitiger Rot-Einzelampel sofort aussteigen."
+        )
+    else:
+        msg = (
+            "⚠️ Marktampel GELB — Keine neuen Kaufkandidaten. "
+            "Signale gemischt: Stopps enger setzen, keine Aufstockung bestehender Positionen. "
+            "Neue Longs erst wieder bei GRÜNER Marktampel."
+        )
     return f"""
 <div class="section">
-  <div class="warnung">
-    ⛔ Marktampel ROT — Keine neuen Kaufkandidaten werden angezeigt.<br>
-    Bestehende Positionen mit engem Stopp halten. Bei gleichzeitiger Rot-Einzelampel sofort aussteigen.
-  </div>
+  <div class="warnung">{msg}</div>
 </div>"""
 
 

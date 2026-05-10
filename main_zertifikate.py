@@ -108,15 +108,16 @@ def run(dry_run: bool = False) -> None:
     print(f"  → {stats['offene_positionen']} offene Positionen, "
           f"{len(roll_kandidaten)} Roll-Kandidaten.")
 
-    # ── 6. Screenen (nur wenn Markt nicht ROT) ────────────────────────────────
+    # ── 6. Screenen (nur wenn Marktampel GRÜN) ───────────────────────────────
+    # GELB und ROT blockieren Neukäufe — in beiden Fällen kein Screening.
     spy_series = spy_close if spy_close is not None and not spy_close.empty else pd.Series(dtype=float)
     kandidaten: list[dict] = []
-    if markt.status != Ampel.ROT:
+    if markt.status == Ampel.GRUEN:
         print(f"[6/7] Screene Kandidaten (Markt {markt.status.label}) …")
         kandidaten = screen_kandidaten(weekly_data, spy_series, rules)
         print(f"  → {len(kandidaten)} Kandidaten nach Drei-Ebenen-Filter.")
     else:
-        print("[6/7] Marktampel ROT — kein Screening.")
+        print(f"[6/7] Marktampel {markt.status.label} — kein Screening.")
 
     # ── 6b. Universum-Übersicht: alle Titel mit 12 Metriken ─────────────────
     print("[6b] Berechne Universum-Übersicht (alle Large-/Mega-Caps) …")
