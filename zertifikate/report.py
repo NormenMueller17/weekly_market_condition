@@ -598,6 +598,7 @@ def build_regelwerk_page(rules: dict) -> str:
     e1 = rules.get("einstieg", {}).get("ebene1", {})
     e2 = rules.get("einstieg", {}).get("ebene2", {})
     e3 = rules.get("einstieg", {}).get("ebene3", {})
+    ma = rules.get("marktampel", {})
 
     ma_long_w = e1.get("ma_long", 40)
     ma_mid_w  = e1.get("ma_mid",  10)
@@ -786,7 +787,79 @@ def build_regelwerk_page(rules: dict) -> str:
   </p>
 </div>"""
 
+    ma_index    = ma.get("index", "^GSPC")
+    ma_ema_fast = ma.get("ema_fast", 10)
+    ma_ema_slow = ma.get("ema_slow", 50)
+    ma_long_ma  = ma.get("ma_long", 200)
+    vix_green   = ma.get("vix_green_max", 20)
+    vix_red     = ma.get("vix_red_min", 25)
+
+    marktampel_box = f"""
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #2c3e50">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🚦 Vorgelagerter Filter — Marktampel</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:16px">
+    Die Marktampel ist der <strong>Türsteher</strong> des Screeners: Sie wird
+    <em>vor</em> allen Einzeltitel-Ebenen geprüft. Nur bei <strong>GRÜNER</strong>
+    Marktampel werden Kaufkandidaten angezeigt. GELB und ROT sperren Neukäufe —
+    unabhängig davon, wie gut ein Einzeltitel in E1–E3 abschneidet.
+    Die Universum-Übersicht (alle Scores) bleibt in jedem Marktregime sichtbar.
+  </p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f8f9fa">
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Status</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Bedingung</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;font-weight:600;text-spacing:.04em">Aktion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:700;color:#1e8449">🟢 GRÜN</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:600">
+          {ma_ema_fast}W-EMA &gt; {ma_ema_slow}W-EMA &nbsp;&amp;&amp;&nbsp;
+          {ma_index} &gt; {ma_long_ma}W-MA &nbsp;&amp;&amp;&nbsp;
+          VIX &lt; {vix_green}
+        </td>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">
+          Neue Longs erlaubt — Kaufkandidaten werden angezeigt.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:700;color:#9a7d0a">🟡 GELB</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:600">
+          Signale gemischt: weniger als 2 negative Signale, aber nicht alle 3 grün
+        </td>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">
+          <strong>Keine Neukäufe.</strong> Bestehende Positionen halten,
+          Stopps enger setzen, keine Aufstockung.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;font-weight:700;color:#922b21">🔴 ROT</td>
+        <td style="padding:10px 14px;color:#2980b9;font-weight:600">
+          Mindestens 2 von 3 negativen Signalen:<br>
+          {ma_ema_fast}W-EMA &lt; {ma_ema_slow}W-EMA &nbsp;/&nbsp;
+          {ma_index} &lt; {ma_long_ma}W-MA &nbsp;/&nbsp;
+          VIX &ge; {vix_red}
+        </td>
+        <td style="padding:10px 14px;color:#555;font-size:0.88em">
+          <strong>Keine Neukäufe.</strong> Bestand mit engem Stopp überwachen.
+          Bei gleichzeitiger Rot-Einzelampel: sofort aussteigen.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="background:#fef9e7;border-radius:6px;padding:12px 16px;margin-top:14px;font-size:0.88em;color:#7d6608">
+    <strong>Warum GELB = keine Neukäufe?</strong> Bei Optionsscheinen mit Hebel ~3 genügt
+    eine moderate Marktkorrektur, um auch technisch saubere Einzeltitel-Setups
+    zu 50–70% im Wert zu halbieren. Ein gemischtes Marktbild ist kein akzeptables
+    Umfeld für neue Hebelpositionen.
+  </div>
+</div>"""
+
     body = (
+        marktampel_box +
         universe_box +
         _section("Ebene 1 — Trendqualität", "#27ae60", "🟢",
                  e1_rows,
