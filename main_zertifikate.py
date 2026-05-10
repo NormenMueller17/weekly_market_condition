@@ -102,6 +102,7 @@ def run(dry_run: bool = False) -> None:
         ampel_rules=rules["einzelampel"],
         zeit_rules=rules["zeitampel"],
         ausstieg_rules=rules["ausstieg"],
+        roll_rules=rules["rollen"],
     )
     roll_kandidaten = [p for p in positionen if p.get("roll_pruefen")]
     stats = portfolio_stats(portfolio)

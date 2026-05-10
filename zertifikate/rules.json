@@ -79,7 +79,9 @@
     "delta_target_high": 0.7,
     "gewinn_rollen_min_pct": 50,
     "ziel_laufzeit_monate": 18,
-    "ziel_hebel": 3
+    "ziel_hebel": 3,
+    "tp_halb_pct": 40,
+    "tp_empfohlen_pct": 60
   },
 
   "scoring": {

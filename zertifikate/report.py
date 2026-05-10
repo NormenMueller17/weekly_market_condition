@@ -368,16 +368,37 @@ def _section_portfolio(positionen: list[dict]) -> str:
         e_badge = f'<span class="badge badge-{e_s}">{Ampel(e_s).emoji if e_s in ("gruen","gelb","rot") else "?"} {e_s.upper()}</span>' if e_s in ("gruen","gelb","rot") else f'<span class="badge badge-grau">{e_s}</span>'
         z_badge = f'<span class="badge badge-{z_s}">{Ampel(z_s).emoji if z_s in ("gruen","gelb","rot") else "?"} {z_s.upper()}</span>' if z_s in ("gruen","gelb","rot") else f'<span class="badge badge-grau">{z_s}</span>'
 
-        details = p.get("einzel_details", {})
+        details  = p.get("einzel_details", {})
         ausstieg = p.get("ausstieg", {})
         ausstieg_hinweis = ausstieg.get("empfehlung", "—")
-        ausstieg_style = 'color:#e74c3c;font-weight:700' if "Sofort" in ausstieg_hinweis else ''
+        ausstieg_style   = 'color:#e74c3c;font-weight:700' if "Sofort" in ausstieg_hinweis else ''
+
+        tp        = p.get("tp_signal", {})
+        tp_text   = tp.get("aktion", "—")
+        basis_pct = tp.get("basis_perf_pct")
+        tp_style  = ''
+        if "Teilverkauf" in tp_text:
+            tp_style = 'color:#1e8449;font-weight:700'
+        elif "Hälfte" in tp_text:
+            tp_style = 'color:#117a65;font-weight:600'
+        elif "Verlust" in tp_text:
+            tp_style = 'color:#e74c3c'
+
+        hebel_est = p.get("hebel_aktuell_est")
+        strike_roll = p.get("strike_roll_signal", False)
+        hebel_text  = f"{hebel_est}×" if hebel_est is not None else "—"
+        hebel_style = 'color:#e74c3c;font-weight:700' if strike_roll else ''
+
+        basis_text = f"{basis_pct:+.1f}%" if basis_pct is not None else "—"
 
         rows += f"""<tr>
           <td><strong>{p.get('basiswert','—')}</strong></td>
           <td style="font-size:0.82em">{p.get('schein_name','—')}</td>
           <td>{p.get('kauf_datum','—')}</td>
           <td>{p.get('kauf_kurs_schein','—')}</td>
+          <td style="text-align:center">{basis_text}</td>
+          <td style="{tp_style};font-size:0.85em">{tp_text}</td>
+          <td style="{hebel_style};text-align:center">{hebel_text}</td>
           <td>{p.get('restlaufzeit_monate','—')} Monate</td>
           <td>{e_badge}<br><span style="font-size:0.78em;color:#555">ADX:{details.get('adx','—')} RSI:{details.get('rsi','—')}</span></td>
           <td>{z_badge}</td>
@@ -392,46 +413,71 @@ def _section_portfolio(positionen: list[dict]) -> str:
     <thead>
       <tr>
         <th>Basiswert</th><th>Schein</th><th>Kauf</th><th>Kauf-Kurs</th>
-        <th>Restlaufzeit</th><th>Einzelampel</th><th>Zeitampel</th><th>Signal</th>
+        <th>Basis Δ</th><th>Schein-Gewinn est.</th><th>Hebel est.</th>
+        <th>Restlaufzeit</th><th>Einzelampel</th><th>Zeitampel</th><th>Stopp-Signal</th>
       </tr>
     </thead>
     <tbody>{rows}</tbody>
   </table>
   </div>
+  <p style="margin-top:8px;font-size:0.8em;color:#7f8c8d">
+    Schein-Gewinn est. = Basiswert-Performance × Hebel (Kaufzeitpunkt) — Näherung ohne Theta/Vega.
+    Hebel est. = Hebel<sub>kauf</sub> × Kurs<sub>kauf</sub> / Kurs<sub>aktuell</sub>.
+    Rot = Strike-Roll prüfen (Hebel &lt; 2).
+  </p>
 </div>"""
 
 
 def _section_roll(roll_kandidaten: list[dict]) -> str:
     rows = ""
     for p in roll_kandidaten:
-        z_s = p.get("zeitampel", "?")
-        dringlichkeit = "🔴 Dringend" if z_s == "rot" else "🟡 Prüfen"
+        z_s         = p.get("zeitampel", "?")
+        strike_roll = p.get("strike_roll_signal", False)
+        hebel_est   = p.get("hebel_aktuell_est")
+
+        if strike_roll and z_s in ("gelb", "rot"):
+            grund = "🔴 Strike + Zeit"
+        elif strike_roll:
+            grund = "🟠 Strike-Roll (Hebel gesunken)"
+        elif z_s == "rot":
+            grund = "🔴 Zeitwert dringend"
+        else:
+            grund = "🟡 Zeitwert prüfen"
+
+        if strike_roll:
+            empfehlung = (
+                f"Hebel est. {hebel_est}× — unter Mindestschwelle. "
+                f"Neuen Call OS: Strike höher setzen, Laufzeit +18 Monate, Ziel-Hebel ~3."
+            )
+        else:
+            empfehlung = (
+                f"Restlaufzeit {p.get('restlaufzeit_monate','—')} Monate. "
+                f"Neuen Call OS: gleiche Parameter, Laufzeit +18 Monate, Hebel ~{p.get('hebel_kauf', 3)}."
+            )
+
         rows += f"""<tr>
           <td><strong>{p.get('basiswert','—')}</strong></td>
           <td style="font-size:0.82em">{p.get('schein_name','—')}</td>
           <td>{p.get('faelligkeitsdatum','—')}</td>
-          <td>{p.get('restlaufzeit_monate','—')} Monate</td>
-          <td>{dringlichkeit}</td>
-          <td style="font-size:0.82em;color:#2980b9">
-            Neuen Call OS kaufen: gleiche Parameter, Laufzeit +18 Monate,
-            Hebel ~{p.get('hebel_kauf', 3)}
-          </td>
+          <td style="text-align:center">{p.get('restlaufzeit_monate','—')} M</td>
+          <td>{grund}</td>
+          <td style="font-size:0.82em;color:#2980b9">{empfehlung}</td>
         </tr>"""
 
     return f"""
 <div class="section">
   <h2>Roll-Kandidaten ({len(roll_kandidaten)})</h2>
   <p style="margin-bottom:10px;font-size:0.88em;color:#555">
-    Zeitwert-Ampel GELB oder ROT bei intaktem Einzeltrend.
-    Empfehlung: neuen Schein mit gleichen Parametern kaufen (Laufzeit +18 Monate, Hebel ~3),
-    alten Schein verkaufen.
+    Zeitwert-Roll: Restlaufzeit &lt; 6 Monate bei intaktem Trend. &nbsp;|&nbsp;
+    Strike-Roll: Hebel durch Kursanstieg unter 2 gesunken.
+    Empfehlung: neuen Schein kaufen, alten Schein verkaufen.
   </p>
   <div style="overflow-x:auto">
   <table>
     <thead>
       <tr>
         <th>Basiswert</th><th>Schein</th><th>Fälligkeit</th>
-        <th>Restlaufzeit</th><th>Dringlichkeit</th><th>Empfehlung</th>
+        <th>Restlaufzeit</th><th>Grund</th><th>Empfehlung</th>
       </tr>
     </thead>
     <tbody>{rows}</tbody>
@@ -858,6 +904,63 @@ def build_regelwerk_page(rules: dict) -> str:
   </div>
 </div>"""
 
+    r = rules.get("rollen", {})
+    a = rules.get("ausstieg", {})
+    ma_exit      = a.get("ma_exit", 50)
+    rsi_ob       = a.get("rsi_overbought", 70)
+    wr_ob        = a.get("williams_r_overbought", -20)
+    hebel_min_r  = r.get("hebel_min", 2)
+    tp_halb      = r.get("tp_halb_pct", 40)
+    tp_empf      = r.get("tp_empfohlen_pct", 60)
+    ziel_laufz   = r.get("ziel_laufzeit_monate", 18)
+    ziel_hebel   = r.get("ziel_hebel", 3)
+    zeit_roll_m  = r.get("zeitwert_min_restlaufzeit_monate", 6)
+
+    exit_rows = (
+        _row("Stop-Loss — Sofortausstieg",
+             f"Wochenschlusskurs unter {ma_exit}W-MA<br>+ MACD-Kreuz unter Signallinie",
+             "Beide Bedingungen zusammen lösen sofortigen Ausstieg aus. "
+             "Der wöchentliche Schlusskurs ist maßgeblich — Intraday-Ausreißer ignorieren.") +
+        _row("Stop-Loss — Früh-Signal",
+             f"Kurs unter {ma_exit}W-MA ODER MACD unter Nulllinie",
+             "Erste Warnstufe: Stopp enger setzen, Position beobachten. "
+             "Noch kein zwingender Ausstieg, aber Handlungsbereitschaft herstellen.") +
+        _row("Gewinnmitnahme — Teilverkauf",
+             f"Schein-Gewinn est. ≥ {tp_halb}% → Hälfte nehmen<br>"
+             f"Schein-Gewinn est. ≥ {tp_empf}% → Teilverkauf empfohlen",
+             f"Proxy-Berechnung: Basiswert-Performance × Hebel (Kaufzeitpunkt). "
+             f"Kein exaktes Options-Pricing — Theta und Vega werden nicht modelliert. "
+             f"Bei ≥ {tp_halb}%: Hälfte realisieren, Rest laufen lassen. "
+             f"Bei ≥ {tp_empf}%: aktiv Teilverkauf prüfen.") +
+        _row("Gewinnmitnahme — Überkauft-Signal",
+             f"RSI &gt; {rsi_ob} &amp;&amp; Williams %R &gt; {wr_ob}",
+             "Beide Indikatoren zeigen überkaufte Zone — kurzfristige Gegenreaktion möglich. "
+             "Nicht zwingend aussteigen, aber Gewinnmitnahme erwägen.")
+    )
+
+    roll_rows = (
+        _row("Zeitwert-Roll",
+             f"Restlaufzeit &lt; {zeit_roll_m} Monate bei intaktem Trend",
+             f"Ab {zeit_roll_m} Monaten Restlaufzeit beschleunigt sich der Theta-Verlust. "
+             f"Empfehlung: neuen Call OS mit Laufzeit +{ziel_laufz} Monate und Hebel ~{ziel_hebel} kaufen, "
+             "alten Schein verkaufen. Trend muss intakt sein (Einzelampel GRÜN).") +
+        _row("Strike-Roll",
+             f"Hebel est. &lt; {hebel_min_r}×",
+             f"Wenn der Basiswert stark gestiegen ist, sinkt der effektive Hebel. "
+             f"Unter {hebel_min_r}× lohnt sich der Hebel-Effekt nicht mehr. "
+             f"Empfehlung: neuen Call OS mit höherem Strike kaufen (Ziel-Hebel ~{ziel_hebel}), "
+             "alten Schein mit Gewinn verkaufen.")
+    )
+
+    exit_note = f"""
+<div style="background:#fadbd8;border-radius:6px;padding:12px 16px;margin-top:14px;
+            font-size:0.88em;color:#922b21">
+  <strong>Disclaimer:</strong> Schein-Gewinn-Schätzungen sind Näherungswerte ohne
+  vollständiges Options-Pricing (kein Delta/Theta/Vega-Modell). Sie dienen als
+  Orientierung, nicht als exaktes Verkaufssignal.
+  Maßgeblich ist immer der tatsächliche Schein-Kurs im Broker-System.
+</div>"""
+
     body = (
         marktampel_box +
         universe_box +
@@ -871,7 +974,13 @@ def build_regelwerk_page(rules: dict) -> str:
                  "Ein Pullback außerhalb des Bereichs 5–15 % führt direkt zum Ausschluss.") +
         _section("Ebene 3 — Wiederanlauf-Bestätigung", "#2980b9", "🔵",
                  e3_rows + e3_note,
-                 f"Mind. {min_conf} von 3 Signalen müssen vorliegen, um einen Wiedereinstieg zu bestätigen.")
+                 f"Mind. {min_conf} von 3 Signalen müssen vorliegen, um einen Wiedereinstieg zu bestätigen.") +
+        _section("Ausstiegs-Regelwerk", "#e74c3c", "🔴",
+                 exit_rows + exit_note,
+                 "Stop-Loss und Gewinnmitnahme-Regeln für offene Optionsschein-Positionen.") +
+        _section("Roll-Regelwerk", "#8e44ad", "🟣",
+                 roll_rows,
+                 "Wann und wie ein Optionsschein gerollt wird (Zeitwert-Roll oder Strike-Roll).")
     )
 
     return f"""<!DOCTYPE html>
