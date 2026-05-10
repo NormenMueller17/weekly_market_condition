@@ -119,6 +119,17 @@ RANK_WEIGHTS = {
     "industry":  _w.get("industry",  0.10),
 }
 
+# ── Fundamental score weights ─────────────────────────────────────────────────
+# Not yet part of the composite score — computed for informational ranking only.
+# Integrate into RANK_WEIGHTS when ready (see rules.json → fundamental_weights).
+_fw = _RULES_JSON.get("fundamental_weights", {})
+FUNDAMENTAL_WEIGHTS = {
+    "revenue_growth": _fw.get("revenue_growth", 0.40),
+    "op_margin":      _fw.get("op_margin",      0.30),
+    "debt_to_equity": _fw.get("debt_to_equity", 0.20),  # inverted: lower D/E → higher score
+    "eps_growth":     _fw.get("eps_growth",     0.10),
+}
+
 # ── Portfolio / sizing defaults from rules.json ───────────────────────────────
 _p = _RULES_JSON.get("portfolio", {})
 _s = _RULES_JSON.get("sizing", {})
@@ -188,6 +199,56 @@ def _stop_vcp(breakout_level: float, atr_pct: float) -> Optional[float]:
 def _stop_default(entry: float, pct: float = 0.10) -> float:
     """Fallback: fixed percentage below entry (Blueprint average ≈ 10 %)."""
     return entry * (1.0 - pct)
+
+
+# ── Fundamental score helpers ─────────────────────────────────────────────────
+
+def _percentile_ranks(values: list[float | None]) -> list[float]:
+    """Map a list of values to percentile ranks 0–100 within the list.
+
+    None entries receive a neutral score of 50.0.
+    Handles ties by averaging the tied ranks.
+    """
+    n = len(values)
+    result = [50.0] * n
+    indexed = [(v, i) for i, v in enumerate(values) if v is not None]
+    if len(indexed) < 2:
+        return result
+    sorted_vals = sorted(v for v, _ in indexed)
+    m = len(sorted_vals)
+    for val, idx in indexed:
+        # average rank for ties
+        lo = sorted_vals.index(val)
+        hi = m - 1 - sorted_vals[::-1].index(val)
+        result[idx] = ((lo + hi) / 2.0) / (m - 1) * 100.0
+    return result
+
+
+def _compute_fundamental_scores(signals: list["TradeSignal"]) -> None:
+    """Compute fundamental_score (0-100) for each signal, in-place.
+
+    Scores are percentile-ranked within the current signal set so the best
+    candidate always scores near 100 and the weakest near 0.  Debt-to-Equity
+    is inverted (lower = better balance sheet).
+
+    Weights are read from rules.json → fundamental_weights.
+    """
+    if not signals:
+        return
+    rev_ranks  = _percentile_ranks([s.revenue_growth    for s in signals])
+    mar_ranks  = _percentile_ranks([s.op_margin         for s in signals])
+    d2e_ranks  = _percentile_ranks([s.debt_to_equity    for s in signals])
+    eps_ranks  = _percentile_ranks([s.eps_growth_last_q for s in signals])
+
+    for i, sig in enumerate(signals):
+        d2e_score = 100.0 - d2e_ranks[i]  # lower debt → better
+        sig.fundamental_score = round(
+            rev_ranks[i] * FUNDAMENTAL_WEIGHTS["revenue_growth"] +
+            mar_ranks[i] * FUNDAMENTAL_WEIGHTS["op_margin"]      +
+            d2e_score    * FUNDAMENTAL_WEIGHTS["debt_to_equity"] +
+            eps_ranks[i] * FUNDAMENTAL_WEIGHTS["eps_growth"],
+            2,
+        )
 
 
 # ── Composite ranking ─────────────────────────────────────────────────────────
@@ -315,9 +376,16 @@ class TradeSignal:
     risk_value:         float           # amount at risk per trade
     risk_on_equity_pct: float           # e.g. 0.015  →  1.5 % of total equity
 
+    # Extended fundamentals (populated from leaders DataFrame)
+    fcf_margin:         Optional[float] = None
+    debt_to_equity:     Optional[float] = None
+
     # Industry (used for ranking)
     industry_ranking:   Optional[int]   = None   # lower = stronger industry
     industry_score:     Optional[float] = None   # 0–100 composite
+
+    # Fundamental score (0-100, percentile-based within signal set; not yet in composite)
+    fundamental_score:  Optional[float] = None
 
     # Ranking (filled by rank_signals())
     rank:               int             = 0
@@ -550,6 +618,8 @@ def generate_signals(
             op_margin          = _safe_float(row.get("Operating Margin (%)")),
             revenue_growth     = _safe_float(row.get("Revenue Wachstum TTM YoY (%)")),
             eps_growth_last_q  = _safe_float(row.get("EPS Wachstum letztes Q YoY (%)")),
+            fcf_margin         = _safe_float(row.get("FCF Margin (%)")),
+            debt_to_equity     = _safe_float(row.get("Debt to Equity")),
             rs_score           = _safe_float(row.get("RS (O'Neil)")),
             rs_delta_4w        = _safe_float(row.get("ΔRS 4W")),
             atr_pct            = round(atr_pct, 2),
@@ -564,6 +634,9 @@ def generate_signals(
             market_regime      = market_regime,
             sa_link            = str(row.get("SA", "")),
         ))
+
+    # ── Fundamental scores (percentile-based within this signal set) ─────────
+    _compute_fundamental_scores(signals)
 
     # ── Rank and flag top picks ───────────────────────────────────────────────
     signals = rank_signals(signals, max_positions=remaining_slots)

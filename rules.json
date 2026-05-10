@@ -90,5 +90,13 @@
     "pattern":                0.20,
     "tightness":              0.15,
     "industry":               0.10
+  },
+
+  "fundamental_weights": {
+    "_comment": "Gewichte für den Fundamentaldaten-Score (0-100, Percentile-basiert). Noch NICHT im Composite Score aktiv — nur zur Information. Müssen sich zu 1.0 addieren.",
+    "revenue_growth":         0.40,
+    "op_margin":              0.30,
+    "debt_to_equity":         0.20,
+    "eps_growth":             0.10
   }
 }
