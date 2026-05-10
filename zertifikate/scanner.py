@@ -307,7 +307,7 @@ def _screen_single(
         return None
 
     # ── Ebene 2: Pullback-Erkennung (Score 0-100) ────────────────────────────
-    e2_result = _check_ebene2(close, high, low, spy_weekly, e2, e1_rules=e1)
+    e2_result = _check_ebene2(close, high, low, spy_weekly, e2, e1_rules=e1, vol=vol)
     if e2_result["score"] == 0:
         return None
 
@@ -432,31 +432,34 @@ def _check_ebene2(
     spy_close: pd.Series,
     rules: dict,
     e1_rules: dict | None = None,
+    vol: pd.Series | None = None,
 ) -> dict:
     """
     Ebene 2 — Entweder/Oder:
       Pfad A (Pullback): Kurs 5–15% unter 3M-Hoch + W%R ≤ -50 + HV30 < 25%
       Pfad B (Recovery): Kurs hat den 40W-MA in den letzten N Wochen von unten
-                         durchbrochen (MA-Kreuz nach marktbedingtem Rückgang)
+                         durchbrochen — Score dynamisch: Basis + Volumen- + MACD-Bonus
     Mindestens einer der Pfade muss True sein.
     """
-    pb_min  = float(rules.get("pullback_min_pct", 5))
-    pb_max  = float(rules.get("pullback_max_pct", 15))
-    rsi_min = float(rules.get("rsi_min", 40))
-    rsi_max = float(rules.get("rsi_max", 65))
-    wr_min  = float(rules.get("williams_r_min", -80))
-    wr_max  = float(rules.get("williams_r_max", -60))
-    hv_max  = float(rules.get("hv30_max", 25))
+    pb_min   = float(rules.get("pullback_min_pct", 5))
+    pb_max   = float(rules.get("pullback_max_pct", 15))
+    rsi_min  = float(rules.get("rsi_min", 40))
+    rsi_max  = float(rules.get("rsi_max", 65))
+    wr_min   = float(rules.get("williams_r_min", -80))
+    wr_max   = float(rules.get("williams_r_max", -60))
+    hv_max   = float(rules.get("hv30_max", 25))
     beta_max = float(rules.get("beta_max", 0.9))
-    wr_hard_max        = float(rules.get("williams_r_hard_max", -50))
-    rec_weeks          = int(rules.get("recovery_ma_cross_weeks", 8))
-    recovery_score_val = float(rules.get("recovery_score", 60))
-    max_dist_pct       = float(rules.get("max_distance_from_ma_pct", 20))
-    hv_max_rec         = float(rules.get("hv30_max_recovery", 40))
+    wr_hard_max          = float(rules.get("williams_r_hard_max", -50))
+    rec_weeks            = int(rules.get("recovery_ma_cross_weeks", 8))
+    rec_base             = float(rules.get("recovery_score_base", 50))
+    rec_vol_bonus_max    = float(rules.get("recovery_vol_bonus_max", 10))
+    rec_macd_bonus_max   = float(rules.get("recovery_macd_bonus_max", 10))
+    max_dist_pct         = float(rules.get("max_distance_from_ma_pct", 20))
+    hv_max_rec           = float(rules.get("hv30_max_recovery", 40))
 
     ma_long_w = int((e1_rules or {}).get("ma_long", 40))
 
-    current = float(close.iloc[-1])
+    current     = float(close.iloc[-1])
     recent_high = float(high.tail(13).max())
     pullback_pct = (recent_high - current) / recent_high * 100 if recent_high > 0 else 0.0
 
@@ -465,9 +468,10 @@ def _check_ebene2(
     hv30    = float(hv(close, 30).iloc[-1]) if not np.isnan(hv(close, 30).iloc[-1]) else 99.0
     b_val   = beta(close, spy_close, 52) if len(spy_close) >= 10 else np.nan
 
-    def _base(score=0, mode="none"):
+    def _base(score=0, mode="none", sub_scores=None):
         return {
             "score": score, "mode": mode,
+            "sub_scores": sub_scores or {},
             "pullback_pct": pullback_pct, "rsi": rsi_val,
             "williams_r": wr_val, "hv30": hv30,
             "beta": float(b_val) if not np.isnan(b_val) else 99.0,
@@ -502,11 +506,40 @@ def _check_ebene2(
     if not path_a and not path_b:
         return _base()
 
-    # Pfad B hat Vorrang beim Modus; wenn beide, läuft A-Scoring
+    # Pfad B hat Vorrang beim Modus; wenn beide aktiv, läuft Pfad-A-Scoring
     mode = "pullback" if path_a else "recovery"
 
     if mode == "recovery":
-        return _base(score=recovery_score_val, mode="recovery")
+        # ── Pfad B — dynamischer Score ────────────────────────────────────────
+        # Volumen-Bonus: hohes Volumen in der Breakout-Woche = Überzeugung
+        vol_bonus = 0.0
+        if vol is not None and len(vol) >= 20:
+            vol_avg = float(vol.rolling(20).mean().iloc[-1])
+            if vol_avg > 0:
+                ratio = float(vol.iloc[-1]) / vol_avg
+                if ratio >= 1.5:
+                    vol_bonus = rec_vol_bonus_max
+                elif ratio >= 1.3:
+                    vol_bonus = rec_vol_bonus_max * 0.5
+
+        # MACD-Bonus: dreht MACD nach oben und liegt über Signal?
+        macd_bonus = 0.0
+        macd_line, signal_line, _ = macd(close)
+        if len(macd_line) >= 2:
+            macd_rising       = float(macd_line.iloc[-1]) > float(macd_line.iloc[-2])
+            macd_above_signal = float(macd_line.iloc[-1]) > float(signal_line.iloc[-1])
+            if macd_rising and macd_above_signal:
+                macd_bonus = rec_macd_bonus_max
+            elif macd_rising:
+                macd_bonus = rec_macd_bonus_max * 0.5
+
+        rec_score   = rec_base + vol_bonus + macd_bonus
+        rec_subscores = {
+            "basis":       rec_base,
+            "vol_bonus":   round(vol_bonus, 1),
+            "macd_bonus":  round(macd_bonus, 1),
+        }
+        return _base(score=rec_score, mode="recovery", sub_scores=rec_subscores)
 
     # Pfad A — Sub-Scores
     sub_scores = {
@@ -519,9 +552,9 @@ def _check_ebene2(
     score = sum(sub_scores.values()) / len(sub_scores)
 
     return {
-        "score":       score,
-        "mode":        "pullback",
-        "sub_scores":  sub_scores,
+        "score":        score,
+        "mode":         "pullback",
+        "sub_scores":   sub_scores,
         "pullback_pct": pullback_pct,
         "rsi":          rsi_val,
         "williams_r":   wr_val,

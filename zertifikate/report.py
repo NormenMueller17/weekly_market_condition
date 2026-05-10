@@ -662,9 +662,11 @@ def build_regelwerk_page(rules: dict) -> str:
     wr_hard_max = e2.get("williams_r_hard_max", -50)
     hv_max      = e2.get("hv30_max", 25)
     beta_max    = e2.get("beta_max", 0.9)
-    rec_weeks    = e2.get("recovery_ma_cross_weeks", 8)
-    rec_score    = e2.get("recovery_score", 60)
-    max_dist_pct = e2.get("max_distance_from_ma_pct", 20)
+    rec_weeks         = e2.get("recovery_ma_cross_weeks", 8)
+    rec_score_base    = e2.get("recovery_score_base", 50)
+    rec_vol_bonus     = e2.get("recovery_vol_bonus_max", 10)
+    rec_macd_bonus    = e2.get("recovery_macd_bonus_max", 10)
+    max_dist_pct      = e2.get("max_distance_from_ma_pct", 20)
     hv_max_rec   = e2.get("hv30_max_recovery", 40)
     w_e2      = int(rules.get("scoring", {}).get("ebene2_weight", 0.6) * 100)
     w_e3      = int(rules.get("scoring", {}).get("ebene3_weight", 0.4) * 100)
@@ -740,7 +742,12 @@ def build_regelwerk_page(rules: dict) -> str:
              f"HV30 ≥ {hv_max}% disqualifizieren (zu teures Optionsschein-Prämium). "
              f"<br><strong>Pfad B — Recovery nach Marktrückgang:</strong> Die Aktie hat den "
              f"{ma_long_w}W-MA (≈{ma_long_w * 5}T) in den letzten {rec_weeks} Wochen von unten "
-             f"durchbrochen. Tritt nach marktbedingten Einbrüchen auf. Fest-Score: {rec_score}/100. "
+             f"durchbrochen. Tritt nach marktbedingten Einbrüchen auf. "
+             f"<strong>Dynamischer Score:</strong> Basis {rec_score_base} "
+             f"+ bis zu {rec_vol_bonus} Punkte Volumen-Bonus (≥1.3× Ø-Vol) "
+             f"+ bis zu {rec_macd_bonus} Punkte MACD-Bonus (dreht aufwärts + über Signal). "
+             f"Max. Score Pfad B: {rec_score_base + rec_vol_bonus + rec_macd_bonus}/100 "
+             f"(bewusst unter Pfad-A-Maximum, um Qualitätsunterschied abzubilden). "
              f"<br><strong>Pfad-B-Hartfilter:</strong> "
              f"(1) Kurs darf maximal {max_dist_pct}% über dem {ma_long_w}W-MA liegen — sonst ist der "
              f"Einstiegszeitpunkt verpasst. "
@@ -782,7 +789,7 @@ def build_regelwerk_page(rules: dict) -> str:
     <li>HV30 ≥ {hv_max}% (zu teures Zeitwertpremium)</li>
   </ul>
   <strong>Pfad B (Recovery)</strong> überspringt den W%R-Hartfilter, hat aber eigene Hartfilter:
-  Kurs ≤ {max_dist_pct}% über {ma_long_w}W-MA &amp; HV30 &lt; {hv_max_rec}% — erhält dann direkt Score {rec_score}/100.<br>
+  Kurs ≤ {max_dist_pct}% über {ma_long_w}W-MA &amp; HV30 &lt; {hv_max_rec}% — dynamischer Score: Basis {rec_score_base} + Volumen- + MACD-Bonus (max. {rec_score_base + rec_vol_bonus + rec_macd_bonus}).<br>
   <strong>Score-Berechnung (Pfad A):</strong> RSI, W%R (Optimalbereich), HV30, Beta und Pullback
   liefern je einen Teilscore 0–100 (100 = perfekt in der Mitte des Idealbereichs).
   Der E2-Gesamtscore ist der Durchschnitt dieser 5 Teilscores.
