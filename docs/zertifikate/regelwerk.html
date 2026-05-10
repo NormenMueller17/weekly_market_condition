@@ -34,6 +34,68 @@
 
     
 <div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #2c3e50">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🚦 Vorgelagerter Filter — Marktampel</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:16px">
+    Die Marktampel ist der <strong>Türsteher</strong> des Screeners: Sie wird
+    <em>vor</em> allen Einzeltitel-Ebenen geprüft. Nur bei <strong>GRÜNER</strong>
+    Marktampel werden Kaufkandidaten angezeigt. GELB und ROT sperren Neukäufe —
+    unabhängig davon, wie gut ein Einzeltitel in E1–E3 abschneidet.
+    Die Universum-Übersicht (alle Scores) bleibt in jedem Marktregime sichtbar.
+  </p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f8f9fa">
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Status</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Bedingung</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;font-weight:600;text-spacing:.04em">Aktion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:700;color:#1e8449">🟢 GRÜN</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:600">
+          10W-EMA &gt; 50W-EMA &nbsp;&amp;&amp;&nbsp;
+          ^GSPC &gt; 200W-MA &nbsp;&amp;&amp;&nbsp;
+          VIX &lt; 20
+        </td>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">
+          Neue Longs erlaubt — Kaufkandidaten werden angezeigt.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:700;color:#9a7d0a">🟡 GELB</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:600">
+          Signale gemischt: weniger als 2 negative Signale, aber nicht alle 3 grün
+        </td>
+        <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">
+          <strong>Keine Neukäufe.</strong> Bestehende Positionen halten,
+          Stopps enger setzen, keine Aufstockung.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;font-weight:700;color:#922b21">🔴 ROT</td>
+        <td style="padding:10px 14px;color:#2980b9;font-weight:600">
+          Mindestens 2 von 3 negativen Signalen:<br>
+          10W-EMA &lt; 50W-EMA &nbsp;/&nbsp;
+          ^GSPC &lt; 200W-MA &nbsp;/&nbsp;
+          VIX &ge; 25
+        </td>
+        <td style="padding:10px 14px;color:#555;font-size:0.88em">
+          <strong>Keine Neukäufe.</strong> Bestand mit engem Stopp überwachen.
+          Bei gleichzeitiger Rot-Einzelampel: sofort aussteigen.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="background:#fef9e7;border-radius:6px;padding:12px 16px;margin-top:14px;font-size:0.88em;color:#7d6608">
+    <strong>Warum GELB = keine Neukäufe?</strong> Bei Optionsscheinen mit Hebel ~3 genügt
+    eine moderate Marktkorrektur, um auch technisch saubere Einzeltitel-Setups
+    zu 50–70% im Wert zu halbieren. Ein gemischtes Marktbild ist kein akzeptables
+    Umfeld für neue Hebelpositionen.
+  </div>
+</div>
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
             box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #7f8c8d">
   <h2 style="margin-bottom:6px;color:#2c3e50">🌍 Universum</h2>
   <p style="color:#555;font-size:0.9em;margin-bottom:12px">
@@ -102,7 +164,7 @@
     <tbody><tr>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.1 &nbsp; Einstiegs-Profil (Entweder/Oder)</td>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Pfad A: Pullback 5–15% &nbsp;|&nbsp; Pfad B: 🔄 Recovery</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em"><strong>Pfad A — Klassischer Pullback:</strong> Die Aktie hat sich vom Hoch der letzten 13 Wochen um 5–15% zurückgezogen. Hartfilter: W%R &gt; -50 oder HV30 ≥ 25% disqualifizieren (zu teures Optionsschein-Prämium). <br><strong>Pfad B — Recovery nach Marktrückgang:</strong> Die Aktie hat den 40W-MA (≈200T) in den letzten 8 Wochen von unten durchbrochen. Tritt nach marktbedingten Einbrüchen auf. Fest-Score: 60/100. <br><strong>Pfad-B-Hartfilter:</strong> (1) Kurs darf maximal 20% über dem 40W-MA liegen — sonst ist der Einstiegszeitpunkt verpasst. (2) HV30 &lt; 40% — bei höherer Volatilität ist das Optionsschein-Zeitwertpremium zu teuer (W%R-Hartfilter entfällt weiterhin auf Pfad B). Mindestens einer der beiden Pfade muss erfüllt sein.</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em"><strong>Pfad A — Klassischer Pullback:</strong> Die Aktie hat sich vom Hoch der letzten 13 Wochen um 5–15% zurückgezogen. Hartfilter: W%R &gt; -50 oder HV30 ≥ 25% disqualifizieren (zu teures Optionsschein-Prämium). <br><strong>Pfad B — Recovery nach Marktrückgang:</strong> Die Aktie hat den 40W-MA (≈200T) in den letzten 8 Wochen von unten durchbrochen. Tritt nach marktbedingten Einbrüchen auf. <strong>Dynamischer Score:</strong> Basis 50 + bis zu 10 Punkte Volumen-Bonus (≥1.3× Ø-Vol) + bis zu 10 Punkte MACD-Bonus (dreht aufwärts + über Signal). Max. Score Pfad B: 70/100 (bewusst unter Pfad-A-Maximum, um Qualitätsunterschied abzubilden). <br><strong>Pfad-B-Hartfilter:</strong> (1) Kurs darf maximal 20% über dem 40W-MA liegen — sonst ist der Einstiegszeitpunkt verpasst. (2) HV30 &lt; 40% — bei höherer Volatilität ist das Optionsschein-Zeitwertpremium zu teuer (W%R-Hartfilter entfällt weiterhin auf Pfad B). Mindestens einer der beiden Pfade muss erfüllt sein.</td>
         </tr><tr>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">E2.2 &nbsp; RSI</td>
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">40 – 65</td>
@@ -129,7 +191,7 @@
     <li>HV30 ≥ 25% (zu teures Zeitwertpremium)</li>
   </ul>
   <strong>Pfad B (Recovery)</strong> überspringt den W%R-Hartfilter, hat aber eigene Hartfilter:
-  Kurs ≤ 20% über 40W-MA &amp; HV30 &lt; 40% — erhält dann direkt Score 60/100.<br>
+  Kurs ≤ 20% über 40W-MA &amp; HV30 &lt; 40% — dynamischer Score: Basis 50 + Volumen- + MACD-Bonus (max. 70).<br>
   <strong>Score-Berechnung (Pfad A):</strong> RSI, W%R (Optimalbereich), HV30, Beta und Pullback
   liefern je einen Teilscore 0–100 (100 = perfekt in der Mitte des Idealbereichs).
   Der E2-Gesamtscore ist der Durchschnitt dieser 5 Teilscores.
@@ -173,8 +235,75 @@
 </div></tbody>
   </table>
 </div>
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #e74c3c">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🔴 Ausstiegs-Regelwerk</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:16px">Stop-Loss und Gewinnmitnahme-Regeln für offene Optionsschein-Positionen.</p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f8f9fa">
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Kriterium</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Schwellenwert</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Bedeutung</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">Stop-Loss — Sofortausstieg</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Wochenschlusskurs unter 50W-MA<br>+ MACD-Kreuz unter Signallinie</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Beide Bedingungen zusammen lösen sofortigen Ausstieg aus. Der wöchentliche Schlusskurs ist maßgeblich — Intraday-Ausreißer ignorieren.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">Stop-Loss — Früh-Signal</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Kurs unter 50W-MA ODER MACD unter Nulllinie</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Erste Warnstufe: Stopp enger setzen, Position beobachten. Noch kein zwingender Ausstieg, aber Handlungsbereitschaft herstellen.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">Gewinnmitnahme — Teilverkauf</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Schein-Gewinn est. ≥ 40% → Hälfte nehmen<br>Schein-Gewinn est. ≥ 60% → Teilverkauf empfohlen</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Proxy-Berechnung: Basiswert-Performance × Hebel (Kaufzeitpunkt). Kein exaktes Options-Pricing — Theta und Vega werden nicht modelliert. Bei ≥ 40%: Hälfte realisieren, Rest laufen lassen. Bei ≥ 60%: aktiv Teilverkauf prüfen.</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">Gewinnmitnahme — Überkauft-Signal</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">RSI &gt; 70 &amp;&amp; Williams %R &gt; -20</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Beide Indikatoren zeigen überkaufte Zone — kurzfristige Gegenreaktion möglich. Nicht zwingend aussteigen, aber Gewinnmitnahme erwägen.</td>
+        </tr>
+<div style="background:#fadbd8;border-radius:6px;padding:12px 16px;margin-top:14px;
+            font-size:0.88em;color:#922b21">
+  <strong>Disclaimer:</strong> Schein-Gewinn-Schätzungen sind Näherungswerte ohne
+  vollständiges Options-Pricing (kein Delta/Theta/Vega-Modell). Sie dienen als
+  Orientierung, nicht als exaktes Verkaufssignal.
+  Maßgeblich ist immer der tatsächliche Schein-Kurs im Broker-System.
+</div></tbody>
+  </table>
+</div>
+<div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #8e44ad">
+  <h2 style="margin-bottom:6px;color:#2c3e50">🟣 Roll-Regelwerk</h2>
+  <p style="color:#555;font-size:0.9em;margin-bottom:16px">Wann und wie ein Optionsschein gerollt wird (Zeitwert-Roll oder Strike-Roll).</p>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f8f9fa">
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Kriterium</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Schwellenwert</th>
+        <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
+                   font-weight:600;text-transform:uppercase;letter-spacing:.04em">Bedeutung</th>
+      </tr>
+    </thead>
+    <tbody><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">Zeitwert-Roll</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Restlaufzeit &lt; 6 Monate bei intaktem Trend</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Ab 6 Monaten Restlaufzeit beschleunigt sich der Theta-Verlust. Empfehlung: neuen Call OS mit Laufzeit +18 Monate und Hebel ~3 kaufen, alten Schein verkaufen. Trend muss intakt sein (Einzelampel GRÜN).</td>
+        </tr><tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;font-weight:600">Strike-Roll</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#2980b9;font-weight:700">Hebel est. &lt; 2×</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">Wenn der Basiswert stark gestiegen ist, sinkt der effektive Hebel. Unter 2× lohnt sich der Hebel-Effekt nicht mehr. Empfehlung: neuen Call OS mit höherem Strike kaufen (Ziel-Hebel ~3), alten Schein mit Gewinn verkaufen.</td>
+        </tr></tbody>
+  </table>
+</div>
 
-    <div class="footer">Generiert am 2026-05-09 &mdash; Alle Schwellenwerte aus zertifikate/rules.json</div>
+    <div class="footer">Generiert am 2026-05-10 &mdash; Alle Schwellenwerte aus zertifikate/rules.json</div>
   </div>
 </body>
 </html>
