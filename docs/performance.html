@@ -38,7 +38,7 @@
 <body>
   <nav class="g-nav">
     <a href="index.html" class="g-brand">📈 Weekly Screener</a>
-    <a href="reports/2026-05-09.html">Aktueller Report</a>
+    <a href="reports/2026-05-10.html">Aktueller Report</a>
     <a href="trades.html">Trade Journal</a>
     <a href="performance.html" class="active">Performance</a>
     <a href="zertifikate/index.html">Zertifikate</a>
@@ -46,7 +46,7 @@
   </nav>
   <div class="page">
   <h1>Portfolio Performance</h1>
-  <p class="meta">Stand: 2026-05-10 &nbsp;|&nbsp; 1 abgeschlossene Trades &nbsp;|&nbsp; 9 offene Positionen</p>
+  <p class="meta">Stand: 2026-05-16 &nbsp;|&nbsp; 1 abgeschlossene Trades &nbsp;|&nbsp; 12 offene Positionen</p>
 
   <!-- KPI Row 1: Trade-Metriken -->
   <h2>Trade-Statistik</h2>
@@ -62,10 +62,10 @@
   </div>
   <div class="kpis">
     <div class="kpi"><div class="val" style="color:#cc2222;font-weight:600">-1,831 $</div><div class="lbl">Realized P&amp;L</div></div>
-    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+12,539 $</div><div class="lbl">Unrealized P&amp;L (offen)</div></div>
-    <div class="kpi"><div class="val" style="">109,442 $</div><div class="lbl">Aktuelles Depot-Equity</div></div>
-    <div class="kpi"><div class="val" style="color:#cc2222">4.9%</div><div class="lbl">Max. Drawdown</div></div>
-    <div class="kpi"><div class="val" style="color:#1a8a1a">+380.3%</div><div class="lbl">CAGR (ann.)</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+11,906 $</div><div class="lbl">Unrealized P&amp;L (offen)</div></div>
+    <div class="kpi"><div class="val" style="">108,808 $</div><div class="lbl">Aktuelles Depot-Equity</div></div>
+    <div class="kpi"><div class="val" style="color:#cc2222">5.4%</div><div class="lbl">Max. Drawdown</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a">+200.8%</div><div class="lbl">CAGR (ann.)</div></div>
   </div>
 
   <!-- Equity Chart -->
@@ -95,9 +95,9 @@
     const fmtMoney = v => (v >= 0 ? '+' : '') + v.toLocaleString('de-DE', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' $';
 
     // ── Equity curve ─────────────────────────────────────────────────────────
-    const eqLabels = ["2026-04-18", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"];
-    const eqValues = [100000.0, 100898.56, 102561.27, 102792.9, 103488.63, 104950.41, 102767.35, 99789.19, 102307.36, 102977.14, 104635.85, 104635.85, 106339.83, 110476.67, 106210.57, 109441.73];
-    const spyValues = [null, 100000.0, 101012.67, 100620.67, 101400.41, 101400.41, 101080.84, 101065.22, 102070.78, 102353.43, 102353.43, 102796.56, 104225.37, 103905.81, 104763.66, 104763.66];
+    const eqLabels = ["2026-04-18", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16"];
+    const eqValues = [100000.0, 100898.56, 102561.27, 102792.9, 103488.63, 104950.41, 102767.35, 99789.19, 102307.36, 102977.14, 104635.85, 104635.85, 106339.83, 110476.67, 106210.57, 109441.73, 113581.54, 108487.83, 114912.65, 114975.52, 108808.44];
+    const spyValues = [null, 100000.0, 101012.67, 100620.67, 101400.41, 101400.41, 101080.84, 101065.22, 102070.78, 102353.43, 102353.43, 102796.56, 104225.37, 103905.81, 104763.66, 104763.66, 104843.2, 105429.78, 106262.07, 104983.8, 104983.8];
     const hasSpy = true;
     if (false) {
       document.getElementById('chartEquity').style.display = 'none';
@@ -139,7 +139,7 @@
             x: { ticks: { maxTicksLimit: 10 } },
             y: {
               min: 97793.41,
-              max: 112686.20,
+              max: 117275.03,
               ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k' },
             },
           },
