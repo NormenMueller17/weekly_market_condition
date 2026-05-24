@@ -300,11 +300,21 @@ def apply_profit_taking(data: dict, pt_results: list[dict]) -> dict:
             trade["pt_hold_until"]    = r.get("hold_until")
             print(f"[JOURNAL] 🚀 {sym}: Fast Mover — halten bis {r.get('hold_until')}")
 
-        if "breakeven" in actions:
+        # Breakeven-Stop: Journal immer aktualisieren wenn Intent gesetzt —
+        # unabhängig davon ob Alpaca-Replace erfolgreich war. Stop-Level-Updates
+        # sind idempotent; der nächste Wochenrun versucht Alpaca erneut.
+        if r.get("raise_breakeven") and not trade.get("pt_breakeven_done"):
             trade["pt_breakeven_done"] = True
             trade["current_stop"]      = r["breakeven_stop"]
             trade["stop_raised_date"]  = today
+            alpaca_ok = "breakeven" in actions
+            print(
+                f"[JOURNAL] ✅ {sym}: Breakeven-Stop @ {r['breakeven_stop']:.2f}"
+                + (" (Alpaca ✓)" if alpaca_ok else " (Alpaca ausstehend — manuell prüfen!)")
+            )
 
+        # Teilverkäufe: nur bei tatsächlich ausgeführter Order persistieren
+        # (Marktorder → Qty-Änderung; falsches Flag wäre schlimmer als kein Flag)
         if "partial_1" in actions:
             qty = r["partial_sell_1_qty"]
             trade["pt_partial_1_done"] = True
@@ -318,10 +328,19 @@ def apply_profit_taking(data: dict, pt_results: list[dict]) -> dict:
             trade["pt_partial_2_qty"]  = qty
             trade["pt_partial_2_date"] = today
 
-        if "trailing" in actions:
-            trade["pt_trailing_stop"]  = r["trailing_stop_level"]
-            trade["current_stop"]      = r["trailing_stop_level"]
-            trade["stop_raised_date"]  = today
+        # Trailing-Stop: ebenfalls immer schreiben wenn Intent gesetzt und
+        # der neue Level höher ist als der bisherige Stop
+        if r.get("trailing_stop") and r.get("trailing_stop_level"):
+            new_level = r["trailing_stop_level"]
+            if new_level > (trade.get("current_stop") or 0):
+                trade["pt_trailing_stop"] = new_level
+                trade["current_stop"]     = new_level
+                trade["stop_raised_date"] = today
+                alpaca_ok = "trailing" in actions
+                print(
+                    f"[JOURNAL] 📉 {sym}: Trailing-Stop @ {new_level:.2f}"
+                    + (" (Alpaca ✓)" if alpaca_ok else " (Alpaca ausstehend — manuell prüfen!)")
+                )
 
     save(data)
     return data

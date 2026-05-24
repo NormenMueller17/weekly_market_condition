@@ -125,20 +125,48 @@ def _trading_client():
 
 
 def _find_stop_order(client, symbol: str):
-    """Return the open stop-sell order for *symbol*, or None."""
+    """Return the open stop-sell order for *symbol*, or None.
+
+    Two-pass strategy:
+    1. Targeted query with symbols filter (fast path).
+    2. Fallback: scan ALL open sell orders and filter by symbol client-side.
+       This catches bracket/OTO child-legs that Alpaca's symbols filter sometimes
+       omits when the parent order already filled.
+    """
     try:
         from alpaca.trading.requests import GetOrdersRequest
         from alpaca.trading.enums   import QueryOrderStatus, OrderSide
+
+        def _best(orders):
+            """Prefer explicit stop types; fall back to first sell order."""
+            for o in orders:
+                if str(getattr(o, "type", "")).lower() in ("stop", "stop_limit", "stop_market"):
+                    return o
+            return orders[0] if orders else None
+
+        # Pass 1 — targeted
         orders = client.get_orders(GetOrdersRequest(
             status  = QueryOrderStatus.OPEN,
             side    = OrderSide.SELL,
             symbols = [symbol],
         ))
-        # Prefer explicit stop types; fall back to any sell order (covers bracket children)
-        for o in orders:
-            if str(getattr(o, "type", "")).lower() in ("stop", "stop_limit", "stop_market"):
-                return o
-        return orders[0] if orders else None
+        hit = _best(orders)
+        if hit is not None:
+            return hit
+
+        # Pass 2 — full scan (catches OTO/bracket child-legs missed by symbol filter)
+        print(f"[EXIT] _find_stop_order({symbol}): symbol-filter empty, scanning all open sell orders")
+        all_orders = client.get_orders(GetOrdersRequest(
+            status = QueryOrderStatus.OPEN,
+            side   = OrderSide.SELL,
+        ))
+        sym_orders = [o for o in all_orders
+                      if str(getattr(o, "symbol", "")).upper() == symbol.upper()]
+        hit = _best(sym_orders)
+        if hit is None:
+            print(f"[EXIT] _find_stop_order({symbol}): kein Stop-Order gefunden (auch nach Full-Scan)")
+        return hit
+
     except Exception as e:
         print(f"[EXIT] _find_stop_order({symbol}): {e}")
         return None
