@@ -158,6 +158,11 @@ def sync(
 
     open_symbols        = {p["symbol"] for p in portfolio["positions"]}
     journal_open_syms   = {t["symbol"] for t in data["open"]}
+    missing_from_alpaca = journal_open_syms - open_symbols
+    if missing_from_alpaca and not filled_sells:
+        print(f"[JOURNAL] ⚠️  WARNUNG: {len(missing_from_alpaca)} Positionen nicht in Alpaca "
+              f"({', '.join(sorted(missing_from_alpaca))}), aber filled_sells ist leer — "
+              f"get_filled_orders() ist möglicherweise fehlgeschlagen!")
 
     # 1. New positions: in Alpaca but not yet in journal
     for pos in portfolio["positions"]:

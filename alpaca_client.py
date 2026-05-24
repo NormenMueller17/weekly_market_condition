@@ -205,9 +205,10 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
                 "order_id":         str(o.id),
                 "order_type":       str(getattr(o,  "type",             "") or ""),
             })
+        print(f"[ALPACA] get_filled_orders({side}): {len(result)} gefüllte Orders gefunden")
         return result
     except Exception as e:
-        print(f"[ALPACA] get_filled_orders({side}): {e}")
+        print(f"[ALPACA] get_filled_orders({side}) FEHLER: {e}")
         return []
 
 
