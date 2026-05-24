@@ -207,10 +207,21 @@ def sync(
             continue
         exit_info = _exit_info_from_orders(sym, filled_sells)
         if exit_info is None:
-            # Position not found in Alpaca and no sell order — keep in open with a warning
-            print(f"[JOURNAL] ⚠️  {sym} nicht in Portfolio, kein Sell-Order gefunden — übersprungen")
-            still_open.append(trade)
-            continue
+            # No sell order found — use current_price as best estimate and close anyway.
+            # Keeping it "open" when it's gone from Alpaca causes permanent journal drift.
+            fallback_price = trade.get("current_price") or trade.get("entry_price") or 0
+            entry  = trade.get("entry_price") or 0
+            qty    = trade.get("qty") or 0
+            pl     = round((fallback_price - entry) * qty, 2)
+            pl_pct = round(((fallback_price / entry) - 1) * 100, 2) if entry else 0
+            exit_info = {
+                "exit_price":  fallback_price,
+                "exit_date":   datetime.date.today().isoformat(),
+                "exit_reason": "position_closed_unknown",
+                "exit_order_id": None,
+            }
+            print(f"[JOURNAL] ⚠️  {sym} nicht in Portfolio, kein Sell-Order gefunden — "
+                  f"schließe mit letztem bekannten Kurs {fallback_price:.2f} (P&L {pl:+.0f})")
         entry  = trade.get("entry_price") or 0
         ep     = exit_info["exit_price"]
         qty    = trade.get("qty") or 0
