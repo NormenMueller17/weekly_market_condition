@@ -83,7 +83,8 @@
       "pt_partial_2_done": false,
       "pt_partial_2_qty": 0,
       "pt_partial_2_date": null,
-      "pt_trailing_stop": null
+      "pt_trailing_stop": null,
+      "pt_breakeven_alpaca_confirmed": true
     },
     {
       "symbol": "VSH",
@@ -111,7 +112,8 @@
       "pt_partial_2_done": false,
       "pt_partial_2_qty": 0,
       "pt_partial_2_date": null,
-      "pt_trailing_stop": null
+      "pt_trailing_stop": null,
+      "pt_breakeven_alpaca_confirmed": true
     },
     {
       "symbol": "KALU",
@@ -223,7 +225,8 @@
       "pt_partial_2_done": false,
       "pt_partial_2_qty": 0,
       "pt_partial_2_date": null,
-      "pt_trailing_stop": null
+      "pt_trailing_stop": null,
+      "pt_breakeven_alpaca_confirmed": true
     },
     {
       "symbol": "TTMI",
@@ -251,7 +254,8 @@
       "pt_partial_2_done": false,
       "pt_partial_2_qty": 0,
       "pt_partial_2_date": null,
-      "pt_trailing_stop": null
+      "pt_trailing_stop": null,
+      "pt_breakeven_alpaca_confirmed": true
     },
     {
       "symbol": "AAON",
