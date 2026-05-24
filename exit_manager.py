@@ -313,7 +313,10 @@ def check_profit_taking(trade: dict) -> dict:
     # State flags already persisted in the journal
     is_fast_mover  = trade.get("pt_is_fast_mover",  False)
     hold_until     = trade.get("pt_hold_until")
-    breakeven_done = trade.get("pt_breakeven_done", False)
+    # pt_breakeven_alpaca_confirmed: Alpaca-Stop wurde wirklich angehoben.
+    # pt_breakeven_done allein reicht nicht — es wird sofort gesetzt (für den
+    # Report), auch wenn Alpaca noch nicht erfolgreich war.
+    breakeven_done = trade.get("pt_breakeven_alpaca_confirmed", False)
     partial_1_done = trade.get("pt_partial_1_done", False)
     partial_2_done = trade.get("pt_partial_2_done", False)
 
