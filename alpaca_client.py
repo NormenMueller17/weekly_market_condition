@@ -174,6 +174,11 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
 
     Returns list of dicts with keys:
       symbol, qty, filled_avg_price, filled_at (ISO str), order_id, order_type
+
+    Note: the side filter is intentionally NOT passed to the API request.
+    Alpaca's API silently drops OTO/bracket child-legs (e.g. auto-triggered
+    stop-sells) when side= is set server-side. Filtering client-side instead
+    ensures these orders are always captured.
     """
     import datetime
     client = _get_trading_client()
@@ -181,14 +186,13 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
         return []
     try:
         from alpaca.trading.requests import GetOrdersRequest
-        from alpaca.trading.enums   import QueryOrderStatus, OrderSide
+        from alpaca.trading.enums   import QueryOrderStatus
 
-        after     = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_back)
-        side_enum = OrderSide.BUY if side == "buy" else OrderSide.SELL
+        after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_back)
 
+        # No side= filter here — see docstring above.
         orders = client.get_orders(GetOrdersRequest(
             status = QueryOrderStatus.CLOSED,
-            side   = side_enum,
             after  = after,
             limit  = 500,
         ))
@@ -196,6 +200,9 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
         result = []
         for o in orders:
             if str(getattr(o, "status", "")) != "filled":
+                continue
+            order_side = str(getattr(o, "side", "")).lower()
+            if order_side != side:
                 continue
             result.append({
                 "symbol":           o.symbol,

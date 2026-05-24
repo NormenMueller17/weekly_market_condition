@@ -422,6 +422,12 @@ HTML_TMPL = """
     <p style="color:#888">Keine offenen Positionen.</p>
     {% endif %}
 
+    {% else %}
+    <h2>6) 💼 Alpaca Portfolio</h2>
+    <p style="color:#cc2222;font-weight:600">
+      ⚠️ Alpaca nicht erreichbar — Portfolio-Daten konnten nicht geladen werden.
+      Journal-Sync wurde übersprungen; offene Positionen wurden nicht aktualisiert.
+    </p>
     {% endif %}
 
     <h2>7) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
