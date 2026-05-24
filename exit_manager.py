@@ -176,8 +176,8 @@ def _replace_stop(client, order_id: str, new_stop: float) -> bool:
     """Replace an existing order's stop price. Returns True on success."""
     try:
         from alpaca.trading.requests import ReplaceOrderRequest
-        client.replace_order(
-            order_id_or_client_order_id = order_id,
+        client.replace_order_by_id(
+            order_id   = order_id,
             order_data = ReplaceOrderRequest(stop_price=round(new_stop, 2)),
         )
         return True

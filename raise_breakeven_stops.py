@@ -48,7 +48,9 @@ def main():
     # 4. Ergebnisse ins Journal schreiben
     journal_data = trade_journal.apply_profit_taking(journal_data, pt_results)
 
-    # 5. Zusammenfassung ausgeben
+    # 5. Zusammenfassung ausgeben — Kursdaten aus Journal-Map holen
+    trade_map = {t["symbol"]: t for t in journal_data.get("open", [])}
+
     print(f"\n{'─'*60}")
     print("  Ergebnis pro Position:")
     print(f"{'─'*60}")
@@ -56,9 +58,10 @@ def main():
     for r in pt_results:
         sym     = r["symbol"]
         actions = r.get("actions_taken", [])
-        gain    = ((r.get("current_price") or 0) / (r.get("entry_price") or 1) - 1) * 100 \
-                  if r.get("entry_price") else None
-
+        trade   = trade_map.get(sym, {})
+        entry   = trade.get("entry_price") or 0
+        current = trade.get("current_price") or 0
+        gain    = (current / entry - 1) * 100 if entry > 0 and current > 0 else None
         gain_str = f"{gain:+.1f}%" if gain is not None else "?"
 
         flags = []
