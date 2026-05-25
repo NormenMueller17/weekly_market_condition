@@ -244,6 +244,14 @@ def monday_execute() -> None:
 
     Run on Monday morning: python main.py --monday-execute
     """
+    # ── Feiertagscheck ────────────────────────────────────────────────────────
+    import datetime as _dt
+    today = _dt.date.today()
+    if not alpaca_client.is_trading_day(today):
+        print(f"[MONDAY] ⚠  {today} ist kein Handelstag (Feiertag o.ä.) – Abbruch.")
+        print("[MONDAY]    Der Job läuft morgen (Dienstag) automatisch erneut.")
+        return
+
     if not PENDING_ORDERS_PATH.exists():
         print("[MONDAY] Keine pending_orders.json gefunden – nichts zu tun.")
         return

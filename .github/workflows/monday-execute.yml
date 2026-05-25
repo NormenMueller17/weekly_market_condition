@@ -2,7 +2,8 @@ name: Monday Execute (Pending Orders)
 
 on:
   schedule:
-    - cron: '0 15 * * 1'   # 15:00 UTC = 11:00 Uhr EDT (Sommer) / 10:00 Uhr EST (Winter)
+    - cron: '0 15 * * 1'   # Montag   15:00 UTC = 11:00 EDT (Normallauf)
+    - cron: '0 15 * * 2'   # Dienstag 15:00 UTC = Fallback bei Feiertag-Montag
   workflow_dispatch:
 
 permissions:

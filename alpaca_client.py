@@ -493,6 +493,27 @@ def refresh_expiring_sell_orders(dry_run: bool = False, warn_days: int = 80) -> 
     return results
 
 
+def is_trading_day(date=None) -> bool:
+    """Return True if *date* (default: today UTC) is a NYSE trading day.
+
+    Uses the Alpaca market calendar. Falls back to True (assume trading day)
+    when the client is unavailable, so the caller can still proceed.
+    """
+    import datetime as _dt
+    if date is None:
+        date = _dt.date.today()
+    client = _get_trading_client()
+    if client is None:
+        return True  # kein Client → konservativ annehmen
+    try:
+        from alpaca.trading.requests import GetCalendarRequest
+        cal = client.get_calendar(GetCalendarRequest(start=str(date), end=str(date)))
+        return len(cal) > 0
+    except Exception as e:
+        print(f"[ALPACA] is_trading_day: {e}")
+        return True  # Fehler → konservativ annehmen
+
+
 def cancel_open_orders() -> int:
     """Cancel unfired BUY-stop orders from the previous week.
 
