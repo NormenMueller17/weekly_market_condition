@@ -1043,14 +1043,19 @@ def save_regelwerk(html: str, output_dir: str = "docs/zertifikate") -> None:
 # ── Index-Seite ────────────────────────────────────────────────────────────────
 
 def _ampel_badge(report_file: Path) -> str:
-    """Extract ampel status from a generated report HTML file and return a badge."""
+    """Extract ampel status from a generated report HTML file and return a badge.
+
+    Sucht nach dem Marktampel-Box-Div (ampel-box ampel-*), nicht nach den
+    CSS-Klassendefinitionen, die in jedem Report vorhanden sind.
+    """
     try:
         content = report_file.read_text(encoding="utf-8")
-        if "ampel-gruen" in content:
+        # Nur das konkrete <div class="ampel-box ampel-X"> treffen, nicht die CSS-Regel
+        if 'ampel-box ampel-gruen' in content:
             return '<span class="badge badge-green">🟢 Bullish</span>'
-        if "ampel-rot" in content:
+        if 'ampel-box ampel-rot' in content:
             return '<span class="badge badge-red">🔴 Bearish</span>'
-        if "ampel-gelb" in content:
+        if 'ampel-box ampel-gelb' in content:
             return '<span class="badge badge-yellow">🟡 Neutral</span>'
     except Exception:
         pass
