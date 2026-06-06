@@ -1,0 +1,2559 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body    { font-family: Arial, sans-serif; margin: 0; }
+        .g-nav   { background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
+                   box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }
+        .g-brand { font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
+                   margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
+                   white-space: nowrap; font-size: .95em; }
+        .g-nav a { color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+                   font-size: .84em; white-space: nowrap; }
+        .g-nav a:hover  { color: #fff; background: rgba(255,255,255,.12); }
+        .g-nav a.active { color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }
+        .page   { max-width: 1200px; margin: 0 auto; padding: 2em 1em 3em; }
+        table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; }
+        th, td  { border: 1px solid #d0d5e8; padding: 0.45em 0.9em; text-align: right; }
+        th      { background: #eef2fa; color: #003d99; font-weight: 600; white-space: nowrap; }
+        th.left, td.left { text-align: left; }
+        tr:hover td { background-color: #f6f8ff; }
+        tr:hover td[style] { filter: brightness(0.97); }
+        .pos    { color: #155724; }
+        .neg    { color: #721c24; }
+        .btn-sa {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: #0052cc;
+            color: #ffffff;
+            font-size: 0.8em;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .btn-sa:hover { background-color: #003d99; }
+        /* Leader cards */
+        .leader-grid { width: 100%; border-collapse: collapse; }
+        .leader-cell { width: 50%; padding: 5px; vertical-align: top; }
+        .leader-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            background: #fff;
+        }
+        /* Portfolio cards */
+        .portfolio-summary {
+            background: #f5f7fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 1em;
+            border-collapse: separate;
+            width: 100%;
+        }
+        .portfolio-summary td {
+            border: none;
+            text-align: center;
+            padding: 4px 12px;
+            font-size: 0.95em;
+        }
+        .portfolio-summary .summary-label {
+            font-size: 0.75em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .portfolio-summary .summary-value {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        @media only screen and (max-width: 600px) {
+            body { margin: 0.8em; }
+            .leader-cell { display: block !important; width: 100% !important; box-sizing: border-box; }
+            .portfolio-summary td { display: block !important; width: 100% !important; text-align: left; padding: 2px 0; }
+        }
+        th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        th.sortable:hover { background: #dde6f5; }
+        th.sortable::after { content: ' ⇅'; font-size: 0.75em; color: #aaa; }
+        th.sortable.asc::after  { content: ' ▲'; color: #333; }
+        th.sortable.desc::after { content: ' ▼'; color: #333; }
+        /* Marktampel */
+        .ampel-wrap { position: relative; display: inline-block; margin-bottom: 1.5em; }
+        .ampel-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; border-radius: 22px; font-weight: bold;
+            font-size: 1.05em; cursor: default; border: 1px solid rgba(0,0,0,0.1);
+            user-select: none;
+        }
+        .ampel-tooltip {
+            display: none; position: absolute; left: 0; top: 115%;
+            background: #fff; border: 1px solid #d0d5e8; border-radius: 8px;
+            padding: 10px 16px; min-width: 300px; z-index: 100;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.13); font-size: 0.88em;
+            white-space: nowrap;
+        }
+        .ampel-wrap:hover .ampel-tooltip { display: block; }
+        .ampel-tooltip table { border: none; margin: 4px 0 0 0; font-size: 1em; }
+        .ampel-tooltip td { border: none; padding: 3px 8px; }
+    </style>
+    <script>
+    function sortTable(th) {
+        var table = th.closest('table');
+        var tbody = table.querySelector('tbody') || table;
+        var col   = th.cellIndex;
+        var asc   = th.classList.toggle('asc');
+        if (!asc) th.classList.toggle('desc');
+        else th.classList.remove('desc');
+
+        // Collect sortable row-groups (data row + optional scorecard row)
+        var allRows = Array.from(tbody.querySelectorAll('tr')).slice(1); // skip header
+        var groups = [];
+        var i = 0;
+        while (i < allRows.length) {
+            var group = [allRows[i]];
+            // If next row is a scorecard row (has colspan), attach it to this group
+            if (allRows[i+1]) {
+                var cells = allRows[i+1].querySelectorAll('td');
+                if (cells.length === 1 && cells[0].colSpan > 1) {
+                    group.push(allRows[i+1]);
+                    i++;
+                }
+            }
+            groups.push(group);
+            i++;
+        }
+
+        var parse = function(txt) {
+            var s = txt.replace(/[+%$,]/g, '').trim();
+            var n = parseFloat(s);
+            return isNaN(n) ? s.toLowerCase() : n;
+        };
+
+        groups.sort(function(a, b) {
+            var ta = parse(a[0].cells[col] ? a[0].cells[col].innerText : '');
+            var tb = parse(b[0].cells[col] ? b[0].cells[col].innerText : '');
+            if (ta < tb) return asc ? -1 : 1;
+            if (ta > tb) return asc ? 1 : -1;
+            return 0;
+        });
+
+        // Clear header sort indicators on siblings
+        th.closest('tr').querySelectorAll('th').forEach(function(t) {
+            if (t !== th) { t.classList.remove('asc'); t.classList.remove('desc'); }
+        });
+
+        groups.forEach(function(g) { g.forEach(function(r) { tbody.appendChild(r); }); });
+    }
+    </script>
+</head>
+<body>
+  <nav class="g-nav">
+    <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="../trades.html">Trade Journal</a>
+    <a href="../performance.html">Performance</a>
+    <a href="../zertifikate/index.html">Zertifikate</a>
+    <a href="../blueprint.html">Blueprint</a>
+  </nav>
+  <div class="page">
+    
+    <h1>Weekly US Market Report</h1>
+    <p><strong>Report-Woche:</strong> 2026-06-06</p>
+
+    
+    <div class="ampel-wrap">
+      <div class="ampel-badge" style="background:#fff3cd;color:#856404">
+        🟡 Marktampel: <strong>Neutral</strong> &nbsp;(3/6)
+      </div>
+      <div class="ampel-tooltip">
+        <strong>Marktampel-Kriterien</strong>
+        <table>
+          
+          <tr>
+            <td>✅</td>
+            <td>SPY über 10W MA</td>
+            <td style="color:#888;padding-left:12px">+2.49%</td>
+          </tr>
+          
+          <tr>
+            <td>✅</td>
+            <td>QQQ über 10W MA</td>
+            <td style="color:#888;padding-left:12px">+4.24%</td>
+          </tr>
+          
+          <tr>
+            <td>❌</td>
+            <td>Marktbreite >55% über 10W EMA</td>
+            <td style="color:#888;padding-left:12px">50.4%</td>
+          </tr>
+          
+          <tr>
+            <td>❌</td>
+            <td>Wochenkursgewinner >55%</td>
+            <td style="color:#888;padding-left:12px">41.7%</td>
+          </tr>
+          
+          <tr>
+            <td>✅</td>
+            <td>New Highs > New Lows</td>
+            <td style="color:#888;padding-left:12px">NH=221, NL=154</td>
+          </tr>
+          
+          <tr>
+            <td>❌</td>
+            <td>SPY MACD-Momentum positiv</td>
+            <td style="color:#888;padding-left:12px">-1.2971</td>
+          </tr>
+          
+        </table>
+      </div>
+    </div>
+    
+
+    <h2>1) Marktbreite – Vergleich</h2>
+    <table>
+        <tr>
+            <th class="left"></th>
+            
+              <th class="left">Aktuelle Woche</th>
+            
+              <th class="left">Woche −1</th>
+            
+              <th class="left">Woche −4</th>
+            
+        </tr>
+        
+        <tr>
+            <td class="left">% über 10‑Wochen‑EMA</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">50.42%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>56.89%</td>
+              
+            
+              
+              
+              
+              
+                <td>60.49%</td>
+              
+            
+        </tr>
+        
+        <tr>
+            <td class="left">% über 21‑Wochen‑EMA</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">52.33%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>57.11%</td>
+              
+            
+              
+              
+              
+              
+                <td>57.88%</td>
+              
+            
+        </tr>
+        
+        <tr>
+            <td class="left">% über 50‑Wochen‑MA</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">53.91%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>56.23%</td>
+              
+            
+              
+              
+              
+              
+                <td>57.41%</td>
+              
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Neue 52W‑Hochs (Anzahl)</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">221</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>294</td>
+              
+            
+              
+              
+              
+              
+                <td>388</td>
+              
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Neue 52W‑Tiefs (Anzahl)</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">154</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>73</td>
+              
+            
+              
+              
+              
+              
+                <td>147</td>
+              
+            
+        </tr>
+        
+        <tr>
+            <td class="left">1W-Kursgewinner (%)</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">41.71%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>59.35%</td>
+              
+            
+              
+              
+              
+              
+                <td>51.38%</td>
+              
+            
+        </tr>
+        
+        <tr>
+            <td class="left">NH/(NH+NL) (%)</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">58.93%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>80.11%</td>
+              
+            
+              
+              
+              
+              
+                <td>72.52%</td>
+              
+            
+        </tr>
+        
+    </table>
+    
+    
+    <h2>1b) Sektor-Performance (Wochenbasis)</h2>
+    <table>
+      <tr>
+        <th class="left">Sektor</th>
+        <th class="left" style="color:#888">ETF</th>
+        <th>Performance Woche</th>
+      </tr>
+      
+      <tr>
+        <td class="left">Energy</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLE</td>
+        <td style="background-color:#d4edda;color:#155724;font-weight:bold">
+          +2.45%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Health Care</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLV</td>
+        <td style="background-color:#d4edda;color:#155724;font-weight:bold">
+          +2.37%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Real Estate</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLRE</td>
+        <td style="background-color:#d4edda;color:#155724;font-weight:bold">
+          +1.61%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Financials</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLF</td>
+        <td style="background-color:#d4edda;color:#155724;font-weight:bold">
+          +1.40%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Consumer Staples</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLP</td>
+        <td style="background-color:#d4edda;color:#155724;font-weight:bold">
+          +0.64%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Industrials</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLI</td>
+        <td style="background-color:#d4edda;color:#155724;font-weight:bold">
+          +0.61%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Utilities</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLU</td>
+        <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
+          -0.16%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Materials</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLB</td>
+        <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
+          -1.02%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Communication</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLC</td>
+        <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
+          -3.47%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Consumer Discret.</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLY</td>
+        <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
+          -4.97%
+        </td>
+      </tr>
+      
+      <tr>
+        <td class="left">Technology</td>
+        <td class="left" style="font-size:0.85em;color:#888">XLK</td>
+        <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
+          -5.61%
+        </td>
+      </tr>
+      
+    </table>
+    
+
+    <h2>2) Trend & Momentum (Weekly)</h2>
+    <table>
+        <tr>
+            <th class="left">Metrik</th>
+            
+                <th class="left">S&P 500 (SPY)</th>
+            
+                <th class="left">Nasdaq 100 (QQQ)</th>
+            
+                <th class="left">Russell 2000 (IWM)</th>
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Close</td>
+            
+                
+                
+                    <td>737.55</td>
+                
+            
+                
+                
+                    <td>705.06</td>
+                
+            
+                
+                
+                    <td>281.65</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Δ WoW</td>
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-2.50%</td>
+                
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-4.50%</td>
+                
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-3.02%</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">RSI(14)</td>
+            
+                
+                
+                    <td>63.3</td>
+                
+            
+                
+                
+                    <td>68.9</td>
+                
+            
+                
+                
+                    <td>61.3</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Δ RSI</td>
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-5.52%</td>
+                
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-9.65%</td>
+                
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-4.09%</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">MACD</td>
+            
+                
+                
+                    <td>20.84</td>
+                
+            
+                
+                
+                    <td>31.89</td>
+                
+            
+                
+                
+                    <td>10.26</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Signal</td>
+            
+                
+                
+                    <td>14.86</td>
+                
+            
+                
+                
+                    <td>21.31</td>
+                
+            
+                
+                
+                    <td>8.45</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Δ MACD</td>
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-1.30%</td>
+                
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-2.27%</td>
+                
+            
+                
+                
+                    <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">-0.58%</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">vs 10W MA</td>
+            
+                
+                
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">2.49%</td>
+                
+            
+                
+                
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">4.24%</td>
+                
+            
+                
+                
+                    <td style="background-color:#d4edda;color:#155724;font-weight:bold">1.93%</td>
+                
+            
+        </tr>
+        
+    </table>
+    <h3>Divergenzanalyse</h3>
+    <p>Keine auffälligen Divergenzen erkannt.</p>
+        
+    <h2>3) Risiko & Sentiment</h2>
+    <table>
+        <tr>
+            <th class="left">Metrik</th>
+            <th>Aktuell</th>
+            <th>Vorwoche</th>
+            <th>Δ</th>
+        </tr>
+        
+        
+        
+        
+        <tr>
+            <td class="left">Volatility Index (VIX)</td>
+            <td>21.51</td>
+            <td>15.32</td>
+            <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
+                40.40
+            </td>
+        </tr>
+        
+        
+        
+        
+        <tr>
+            <td class="left">10Y Interest Rate</td>
+            <td>4.54</td>
+            <td>4.45</td>
+            <td style="background-color:#d4edda;color:#155724;font-weight:bold">
+                1.86
+            </td>
+        </tr>
+        
+        
+        
+        
+        <tr>
+            <td class="left">US Dollar Index (UUP)</td>
+            <td>28.02</td>
+            <td>27.66</td>
+            <td style="background-color:#d4edda;color:#155724;font-weight:bold">
+                1.30
+            </td>
+        </tr>
+        
+    </table>
+
+    <h2>4) Fazit</h2>
+    <p>Neutral: Selektiv vorgehen, auf Bestätigungen warten.</p>
+
+    
+    <h2>5) 📋 Portfolio Trades – letzte Woche</h2>
+    <table>
+      <tr>
+        <th class="left">Symbol</th>
+        <th class="left">Unternehmen</th>
+        <th class="left">Muster</th>
+        <th>Entry</th>
+        <th>Exit</th>
+        <th>Entry $</th>
+        <th>Exit $</th>
+        <th>P&amp;L $</th>
+        <th>P&amp;L %</th>
+        <th class="left">Grund</th>
+      </tr>
+      
+      
+      <tr>
+        <td class="left"><strong style="color:#003d99">HLIT</strong></td>
+        <td class="left" style="font-size:0.85em;color:#555">Harmonic Inc.</td>
+        <td class="left" style="font-size:0.85em">–</td>
+        <td>2026-05-30</td>
+        <td>2026-06-06</td>
+        <td>$15.95</td>
+        <td>$15.11</td>
+        <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
+          $-694
+        </td>
+        <td style="background-color:#f8d7da;color:#721c24;font-weight:bold">
+          -5.3%
+        </td>
+        <td class="left" style="font-size:0.85em">position_closed_unknown</td>
+      </tr>
+      
+    </table>
+    
+
+    
+    <h2>6) 💼 Alpaca Portfolio</h2>
+
+    
+    
+    
+    <table class="portfolio-summary">
+      <tr>
+        <td>
+          <div class="summary-label">Cash</div>
+          <div class="summary-value">$19,432</div>
+        </td>
+        <td>
+          <div class="summary-label">Equity</div>
+          <div class="summary-value">$114,522</div>
+        </td>
+        <td>
+          <div class="summary-label">Unrealized P&amp;L</div>
+          <div class="summary-value pos">
+            +$27,370
+            &nbsp;(+31.4%)
+          </div>
+        </td>
+        <td>
+          <div class="summary-label">Positionen</div>
+          <div class="summary-value">10</div>
+        </td>
+      </tr>
+    </table>
+
+    
+    
+    
+    <table class="leader-grid">
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">VSH</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            578 Stk &nbsp;·&nbsp; Ø $26.47
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$57.20</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$17,762
+            &nbsp;&nbsp;
+            +116.1%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $33,062</div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">ON</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            180 Stk &nbsp;·&nbsp; Ø $83.14
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$117.26</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$6,142
+            &nbsp;&nbsp;
+            +41.0%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $21,107</div>
+        </div>
+      </td>
+      
+      </tr>
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">STX</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            20 Stk &nbsp;·&nbsp; Ø $738.18
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$847.47</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$2,186
+            &nbsp;&nbsp;
+            +14.8%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $16,949</div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">SANM</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            67 Stk &nbsp;·&nbsp; Ø $225.00
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$252.08</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$1,814
+            &nbsp;&nbsp;
+            +12.0%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $16,889</div>
+        </div>
+      </td>
+      
+      </tr>
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">TTMI</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            94 Stk &nbsp;·&nbsp; Ø $158.81
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$167.62</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$828
+            &nbsp;&nbsp;
+            +5.5%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $15,756</div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">AVNS</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            608 Stk &nbsp;·&nbsp; Ø $24.64
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$25.05</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$249
+            &nbsp;&nbsp;
+            +1.7%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $15,230</div>
+        </div>
+      </td>
+      
+      </tr>
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">SKYT</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            431 Stk &nbsp;·&nbsp; Ø $34.70
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$34.97</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$115
+            &nbsp;&nbsp;
+            +0.8%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $15,072</div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">NUE</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            59 Stk &nbsp;·&nbsp; Ø $250.60
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$254.39</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$224
+            &nbsp;&nbsp;
+            +1.5%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $15,009</div>
+        </div>
+      </td>
+      
+      </tr>
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">AAON</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            97 Stk &nbsp;·&nbsp; Ø $140.00
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$132.62</strong>
+          </div>
+          <div class="neg" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            $-716
+            &nbsp;&nbsp;
+            -5.3%
+            ▼
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $12,864</div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">CYTK</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            176 Stk &nbsp;·&nbsp; Ø $78.49
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$71.48</strong>
+          </div>
+          <div class="neg" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            $-1,234
+            &nbsp;&nbsp;
+            -8.9%
+            ▼
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $12,580</div>
+        </div>
+      </td>
+      
+      </tr>
+    
+    
+    </table>
+    
+
+    
+
+    <h2>7) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
+
+    
+    <p style="margin-bottom:0.8em">
+        <strong>Marktfilter:</strong> S&amp;P 500 10W EMA &gt; 20W EMA ✅
+        
+        &nbsp;|&nbsp;<strong>Marktbreite:</strong> 100.0% über 200d
+        ✅
+        
+        &nbsp;|&nbsp;
+        <strong>Position:</strong> 15.0% des Kapitals
+        (9,716 €/$) &nbsp;|&nbsp;
+        <strong>Kelly-Fraction:</strong> 1/3 &nbsp;|&nbsp;
+        <strong>Signale gesamt:</strong> 2
+        
+        &nbsp;|&nbsp;<strong>Alpaca Cash:</strong> $19,432
+        
+        &nbsp;|&nbsp;<strong>Offen (10):</strong> AAON, AVNS, CYTK, NUE, ON, SANM, SKYT, STX, TTMI, VSH
+        
+        
+    </p>
+
+    
+    
+    <table>
+      <tr>
+        <th class="sortable" onclick="sortTable(this)">Rang</th>
+        <th class="left sortable" onclick="sortTable(this)">Ticker</th>
+        <th class="left sortable" onclick="sortTable(this)">Unternehmen</th>
+        <th class="left sortable" onclick="sortTable(this)">Sektor / Branche</th>
+        <th class="left sortable" onclick="sortTable(this)">Muster</th>
+        <th class="sortable" onclick="sortTable(this)">Entry</th>
+        <th class="sortable" onclick="sortTable(this)">Buy-Stop</th>
+        <th class="sortable" onclick="sortTable(this)" title="Order verwerfen wenn Montag-Open über diesem Preis">Max. Gap</th>
+        <th class="sortable" onclick="sortTable(this)">Stop-Loss</th>
+        <th class="sortable" onclick="sortTable(this)">Stop %</th>
+        <th class="sortable" onclick="sortTable(this)">BO-Level</th>
+        <th class="sortable" onclick="sortTable(this)">Dist 52W H</th>
+        <th class="sortable" onclick="sortTable(this)">RS</th>
+        <th class="sortable" onclick="sortTable(this)">ΔRS 4W</th>
+        <th class="sortable" onclick="sortTable(this)">Industry<br>Rank</th>
+        <th class="sortable" onclick="sortTable(this)">ROE %</th>
+        <th class="sortable" onclick="sortTable(this)">Op.Margin</th>
+        <th class="sortable" onclick="sortTable(this)">EPS Growth Q</th>
+        <th class="sortable" onclick="sortTable(this)">Rev. Growth</th>
+        <th class="sortable" onclick="sortTable(this)" title="Wochenvolumen / Ø20T-Volumen">Vol Score</th>
+        <th class="sortable" onclick="sortTable(this)">Position</th>
+        <th class="sortable" onclick="sortTable(this)">Risiko / Equity</th>
+      </tr>
+      
+      
+      
+      
+      
+      <tr style="background-color:#fffbea">
+        <td style="text-align:center;font-weight:bold">
+          
+            <span style="background:#f5a623;color:white;padding:2px 7px;border-radius:10px;font-size:0.85em">
+              🏆 1
+            </span>
+          
+        </td>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/AGX" target="_blank"
+             style="font-weight:bold;color:#b35900">
+            AGX
+          </a>
+        </td>
+        <td class="left">Argan, Inc.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Industrials<br>Engineering & construction</td>
+        <td class="left" style="font-weight:bold;background-color:#e3f2fd">–</td>
+        <td><strong>694.72</strong></td>
+        <td style="background-color:#e8f4fd;font-weight:bold">695.41</td>
+        <td style="background-color:#fdecea;font-weight:bold" title="Order verwerfen wenn Montag-Open über diesem Preis">729.46</td>
+        <td style="background-color:#fff3e0">625.25</td>
+        <td style="background-color:#fff3e0">10.0%</td>
+        <td>–</td>
+        <td style="background-color:#d4edda">
+          10.8%</td>
+        <td style="background-color:#d4edda">
+          <strong>96</strong></td>
+        <td style="background-color:#f8d7da">
+          -0
+        </td>
+        <td style="text-align:center;background-color:#d4edda">
+          3</td>
+        <td>38.5%</td>
+        <td>15.6%</td>
+        <td style="background-color:#d4edda">
+          56%</td>
+        <td>50.2%</td>
+        <td style="background-color:#d4edda">
+          1.38</td>
+        <td>15.0%</td>
+        <td style="">
+          0.97%
+        </td>
+      </tr>
+      
+      
+      
+      <tr style="background-color:#fffbea">
+        <td colspan="22" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;SMA10W steigend
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;SMA30W steigend
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;SMA40W steigend
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;MA-Ordnung 10>30>40
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;52W Range OK
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;RS-Trend ↑
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;Vol-Breakout
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;Close > Vorwoche
+          </span>
+          
+          
+          
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;ATR 6.1% &lt;8%
+          </span>
+          
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      <tr style="background-color:#fffbea">
+        <td style="text-align:center;font-weight:bold">
+          
+            <span style="background:#f5a623;color:white;padding:2px 7px;border-radius:10px;font-size:0.85em">
+              🏆 2
+            </span>
+          
+        </td>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/QCRH" target="_blank"
+             style="font-weight:bold;color:#b35900">
+            QCRH
+          </a>
+        </td>
+        <td class="left">QCR Holdings, Inc.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Financial Services<br>Major banks</td>
+        <td class="left" style="font-weight:bold;background-color:#e3f2fd">–</td>
+        <td><strong>93.54</strong></td>
+        <td style="background-color:#e8f4fd;font-weight:bold">93.63</td>
+        <td style="background-color:#fdecea;font-weight:bold" title="Order verwerfen wenn Montag-Open über diesem Preis">98.22</td>
+        <td style="background-color:#fff3e0">84.19</td>
+        <td style="background-color:#fff3e0">10.0%</td>
+        <td>–</td>
+        <td style="background-color:#d4edda">
+          2.6%</td>
+        <td style="background-color:#d4edda">
+          <strong>71</strong></td>
+        <td style="background-color:#d4edda">
+          +6
+        </td>
+        <td style="text-align:center;background-color:#d4edda">
+          22</td>
+        <td>12.6%</td>
+        <td>43.7%</td>
+        <td style="background-color:#d4edda">
+          31%</td>
+        <td>21.1%</td>
+        <td style="background-color:#d4edda">
+          1.36</td>
+        <td>15.0%</td>
+        <td style="">
+          0.97%
+        </td>
+      </tr>
+      
+      
+      
+      <tr style="background-color:#fffbea">
+        <td colspan="22" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;SMA10W steigend
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;SMA30W steigend
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;SMA40W steigend
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;MA-Ordnung 10>30>40
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;52W Range OK
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;RS-Trend ↑
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;Vol-Breakout
+          </span>
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;Close > Vorwoche
+          </span>
+          
+          
+          
+          
+          <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
+                       font-size:0.76em;font-weight:bold;white-space:nowrap;
+                       background:#d4edda;
+                       color:#155724">
+            ✅&nbsp;ATR 2.3% &lt;8%
+          </span>
+          
+        </td>
+      </tr>
+      
+      
+    </table>
+    <p style="font-size:0.82em;color:#777;margin-top:0.3em">
+      Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%).
+      🏆 = Top-2 Kaufkandidaten.
+      🔵 Buy-Stop = Einstiegsorder (max(Entry, Pivot) +0.1%) &nbsp;|&nbsp;
+      🔴 Max. Gap = Order verwerfen wenn Montag-Open über diesem Preis (Pivot +5%) &nbsp;|&nbsp;
+      🟢/🔴 Scorecard = Minervini-Kriterien &nbsp;|&nbsp; Rot hinterlegt = Risiko/Equity &gt; 1.8%.
+    </p>
+    
+
+    
+
+    <h2>8) Marktführer nach Minervini (Score 8/8)</h2>
+
+    
+
+    
+    <table class="leader-grid">
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">ACNB</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/ACNB" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">54.88</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">ACNB Corporation</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Regional banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>69</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+10</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+43&nbsp;&nbsp;EPS:&nbsp;+11
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;1.4%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ RS&nbsp;&lt;&nbsp;70 · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">GIII</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/GIII" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">33.71</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">G-III Apparel Group, LTD.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Apparel/Footwear</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>62</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+5</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;-8&nbsp;&nbsp;EPS:&nbsp;+53
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;5.9%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ RS&nbsp;&lt;&nbsp;70 · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">AGX</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/AGX" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">694.72</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Argan, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Engineering & construction</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>96</strong></span>
+            <span style="font-size:0.87em;color:#c62828">
+              ΔRS&nbsp;<strong>-0</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+50&nbsp;&nbsp;EPS:&nbsp;+31
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;10.8%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#2e7d32">
+            ✅ Kaufkandidat
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">MGM</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/MGM" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">47.51</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">MGM Resorts International</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Casinos/Gaming</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>80</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+20</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+4&nbsp;&nbsp;EPS:&nbsp;+218
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;7.9%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">EBC</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/EBC" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">19.85</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Eastern Bankshares, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Regional banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>66</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+4</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;-0&nbsp;&nbsp;EPS:&nbsp;+20
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;12.1%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ MACD fällt · RS&nbsp;&lt;&nbsp;70 · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">CNO</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/CNO" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">47.91</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">CNO Financial Group, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Multi-line insurance</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>67</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+11</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+2&nbsp;&nbsp;EPS:&nbsp;+100
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;0.5%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ RS&nbsp;&lt;&nbsp;70 · Rev&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">VSCO</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/VSCO" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">74.60</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Victorias Secret & Co.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Apparel/Footwear retail</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>96</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+8</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+15&nbsp;&nbsp;EPS:&nbsp;+116
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;8.2%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">MANU</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/MANU" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">21.95</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Manchester</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Movies/Entertainment</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>82</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+11</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+18&nbsp;&nbsp;EPS:&nbsp;-205
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;9.4%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">EWTX</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/EWTX" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">35.59</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Edgewise Therapeutics, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Biotechnology</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>92</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+1</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;–&nbsp;&nbsp;EPS:&nbsp;+36
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;12.7%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ MACD fällt · Rev&nbsp;fehlt · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">TWLO</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/TWLO" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">225.99</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Twilio Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Packaged software</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>91</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+3</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+20&nbsp;&nbsp;EPS:&nbsp;+900
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;5.2%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#2e7d32">
+            ✅ Kaufkandidat
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">CENT</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/CENT" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">40.16</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Central Garden & Pet Company</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Consumer sundries</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>58</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+6</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+9&nbsp;&nbsp;EPS:&nbsp;+13
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;3.3%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ RS&nbsp;&lt;&nbsp;70 · Rev&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">VSH</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/VSH" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">57.20</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Vishay Intertechnology, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Electronic production equipment</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>98</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+3</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+17&nbsp;&nbsp;EPS:&nbsp;+15315
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;13.7%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ ATR&nbsp;&gt;&nbsp;8% · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">QCRH</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/QCRH" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">93.54</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">QCR Holdings, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Major banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>71</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+6</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+21&nbsp;&nbsp;EPS:&nbsp;+9
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;2.6%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#2e7d32">
+            ✅ Kaufkandidat
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">ADEA</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/ADEA" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">28.98</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Adeia Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Packaged software</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>94</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+2</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+20&nbsp;&nbsp;EPS:&nbsp;+42
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;15.6%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">HPE</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/HPE" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">49.20</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Hewlett Packard Enterprise Company</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Computer processing hardware</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>96</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+12</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+40&nbsp;&nbsp;EPS:&nbsp;+275
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;23.4%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">PEB</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/PEB" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">16.89</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Pebblebrook Hotel Trust</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Real estate investment trusts</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>87</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+8</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+8&nbsp;&nbsp;EPS:&nbsp;-55
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;1.8%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">STEL</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/STEL" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">37.59</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Stellar Bancorp, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Major banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>71</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+0</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+7&nbsp;&nbsp;EPS:&nbsp;+14
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;6.5%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ MACD fällt · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">HBNC</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/HBNC" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">18.75</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Horizon Bancorp, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Regional banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>65</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+7</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+8&nbsp;&nbsp;EPS:&nbsp;-168
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;1.7%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ RS&nbsp;&lt;&nbsp;70 · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">FMBH</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/FMBH" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">45.03</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">First Mid Bancshares, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Regional banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>65</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+7</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+14&nbsp;&nbsp;EPS:&nbsp;+24
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;0.7%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ RS&nbsp;&lt;&nbsp;70 · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">SMBC</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/SMBC" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">69.70</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Southern Missouri Bancorp, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Savings banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>71</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+3</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+6&nbsp;&nbsp;EPS:&nbsp;+13
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;1.6%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">OPY</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/OPY" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">97.33</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Oppenheimer Holdings, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Investment banks/Brokers</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>81</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+4</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+23&nbsp;&nbsp;EPS:&nbsp;-69
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;18.1%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ MACD fällt · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">HBIA</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/HBIA" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">99.01</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Hills Bancorporation</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Regional banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>70</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+16</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+34&nbsp;&nbsp;EPS:&nbsp;–
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;0.0%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#2e7d32">
+            ✅ Kaufkandidat
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">AVBP</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/AVBP" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">30.35</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">ArriVent BioPharma, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Pharmaceuticals: other</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>76</strong></span>
+            <span style="font-size:0.87em;color:#c62828">
+              ΔRS&nbsp;<strong>-5</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;–&nbsp;&nbsp;EPS:&nbsp;+3
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;9.7%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;fehlt
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">SMBK</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/SMBK" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">42.27</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">SmartFinancial, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Regional banks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>68</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+1</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+8&nbsp;&nbsp;EPS:&nbsp;+35
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;3.7%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ MACD fällt · RS&nbsp;&lt;&nbsp;70 · Rev&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">AVNS</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/AVNS" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">25.05</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Avanos Medical, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Medical specialties</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>93</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+2</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+9&nbsp;&nbsp;EPS:&nbsp;-178
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;1.7%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">MRVL</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/MRVL" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">263.47</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Marvell Technology, Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Semiconductors</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em">RS&nbsp;<strong>97</strong></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+3</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+28&nbsp;&nbsp;EPS:&nbsp;+113
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;18.7%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ ATR&nbsp;&gt;&nbsp;8% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+    
+    </table>
+
+    
+
+  </div><!-- .page -->
+</body>
+</html>
