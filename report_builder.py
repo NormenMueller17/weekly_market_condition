@@ -40,7 +40,8 @@ HTML_TMPL = """
         *, *::before, *::after { box-sizing: border-box; }
         body    { font-family: Arial, sans-serif; margin: 0; }
         .g-nav   { background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
-                   box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }
+                   box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap;
+                   position: sticky; top: 0; z-index: 100; }
         .g-brand { font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
                    margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
                    white-space: nowrap; font-size: .95em; }
@@ -1297,7 +1298,8 @@ def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
     *, *::before, *::after {{ box-sizing: border-box; }}
     body {{ font-family: Arial, sans-serif; margin: 0; background: #f0f3fa; color: #333; }}
     .g-nav   {{ background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
-                box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap; }}
+                box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap;
+                position: sticky; top: 0; z-index: 100; }}
     .g-brand {{ font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
                 margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
                 white-space: nowrap; font-size: .95em; }}
