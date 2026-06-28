@@ -213,6 +213,20 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
                 pass
 
 PENDING_ORDERS_PATH = Path("docs") / "data" / "pending_orders.json"
+PENDING_PROFIT_TAKING_PATH = Path("docs") / "data" / "pending_profit_taking.json"
+
+
+def _save_pending_profit_taking(planned: list[dict], generated_date: str) -> None:
+    """Persist deferred profit-taking market sells for Monday execution.
+
+    The weekly report runs Saturday (market closed), so partial market sells are
+    only planned here and executed by --monday-execute when the market is open.
+    """
+    PENDING_PROFIT_TAKING_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"generated_at": generated_date, "sells": planned}
+    PENDING_PROFIT_TAKING_PATH.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
 
 def _save_pending_orders(
@@ -239,6 +253,56 @@ def _save_pending_orders(
     )
 
 
+def _execute_pending_profit_taking(test_mode: bool) -> None:
+    """Execute profit-taking market sells deferred from the Saturday report.
+
+    The weekly report can only PLAN these (market closed on Saturday); they are
+    placed here on a trading day. Runs independently of pending buy orders.
+    """
+    if not PENDING_PROFIT_TAKING_PATH.exists():
+        return
+
+    import datetime as _dt
+    payload = json.loads(PENDING_PROFIT_TAKING_PATH.read_text(encoding="utf-8"))
+    planned = payload.get("sells", [])
+    if not planned:
+        PENDING_PROFIT_TAKING_PATH.unlink(missing_ok=True)
+        return
+
+    names = ", ".join(f"{p['symbol']}({p['leg']},{p['qty']})" for p in planned)
+    print(f"[MONDAY] 💰 {len(planned)} vorgemerkte(r) Teilverkauf(e) vom {payload.get('generated_at','?')}: {names}")
+
+    placed = exit_manager.execute_partial_sells(planned, dry_run=test_mode)
+
+    # Journal-Flags für erfolgreich platzierte Verkäufe setzen.
+    # Die Qty-Reduktion bestätigt der nächste reguläre sync() von Alpaca.
+    data  = trade_journal.load()
+    today = _dt.date.today().isoformat()
+    for p in placed:
+        if not p.get("placed"):
+            continue
+        trade = next((t for t in data.get("open", []) if t["symbol"] == p["symbol"]), None)
+        if not trade:
+            continue
+        if p["leg"] == "partial_1":
+            trade["pt_partial_1_done"] = True
+            trade["pt_partial_1_qty"]  = p["qty"]
+            trade["pt_partial_1_date"] = today
+        elif p["leg"] == "partial_2":
+            trade["pt_partial_2_done"] = True
+            trade["pt_partial_2_qty"]  = p["qty"]
+            trade["pt_partial_2_date"] = today
+    trade_journal.save(data)
+
+    failed = [p for p in placed if not p.get("placed")]
+    if failed and not test_mode:
+        # Nur fehlgeschlagene behalten → nächster Lauf versucht sie erneut
+        _save_pending_profit_taking(failed, payload.get("generated_at", today))
+        print(f"[MONDAY] ⚠  {len(failed)} Teilverkauf(e) fehlgeschlagen — bleiben vorgemerkt")
+    else:
+        PENDING_PROFIT_TAKING_PATH.unlink(missing_ok=True)
+
+
 def monday_execute() -> None:
     """Place pending buy orders after confirming that the prerequisite sell orders filled.
 
@@ -252,8 +316,11 @@ def monday_execute() -> None:
         print("[MONDAY]    Der Job läuft morgen (Dienstag) automatisch erneut.")
         return
 
+    # ── Vorgemerkte Profit-Taking-Verkäufe ausführen (unabhängig von Käufen) ───
+    _execute_pending_profit_taking(test_mode=TEST_MODE)
+
     if not PENDING_ORDERS_PATH.exists():
-        print("[MONDAY] Keine pending_orders.json gefunden – nichts zu tun.")
+        print("[MONDAY] Keine pending_orders.json gefunden – keine Käufe ausstehend.")
         return
 
     payload       = json.loads(PENDING_ORDERS_PATH.read_text(encoding="utf-8"))
@@ -665,10 +732,35 @@ def run():
             journal_data = trade_journal.apply_raised_stops(journal_data, exit_results)
 
         # ── Profit-Taking: Teilverkäufe und Stop-Nachzug ──────────────────────
-        pt_results   = exit_manager.run_profit_taking_checks(journal_data, dry_run=TEST_MODE)
+        # defer_sells=True: Market-Sells werden NICHT samstags platziert (Markt
+        # geschlossen → Alpaca lehnt ab). Stop-Anpassungen (Breakeven/Trailing)
+        # laufen sofort; die Teilverkäufe werden für --monday-execute vorgemerkt.
+        pt_results   = exit_manager.run_profit_taking_checks(
+            journal_data, dry_run=TEST_MODE, defer_sells=True
+        )
         journal_data = trade_journal.apply_profit_taking(journal_data, pt_results)
         if not any(r.get("actions_taken") for r in pt_results):
             print("[PROFIT] Keine Gewinnmitnahme-Aktionen diese Woche")
+
+        # Vorgemerkte Teilverkäufe für Montag persistieren
+        planned_sells: list[dict] = []
+        for r in pt_results:
+            acts = r.get("actions_taken", [])
+            if "partial_1_deferred" in acts:
+                planned_sells.append({
+                    "symbol": r["symbol"], "qty": r.get("partial_sell_1_qty", 0),
+                    "leg": "partial_1",
+                })
+            if "partial_2_deferred" in acts:
+                planned_sells.append({
+                    "symbol": r["symbol"], "qty": r.get("partial_sell_2_qty", 0),
+                    "leg": "partial_2",
+                })
+        if planned_sells and not TEST_MODE:
+            _save_pending_profit_taking(planned_sells, report_date)
+            names = ", ".join(f"{p['symbol']}({p['leg']},{p['qty']})" for p in planned_sells)
+            print(f"[PROFIT] ⏳ {len(planned_sells)} Teilverkauf(e) für Montag vorgemerkt: {names}")
+            print("[PROFIT]    Montag ausführen: python main.py --monday-execute")
 
         trades_html = trade_journal.build_and_save_html(journal_data)
         open_count   = len(journal_data.get("open",   []))
@@ -692,6 +784,8 @@ def run():
     sell_proceeds: float     = 0.0
     for r in pt_results:
         actions      = r.get("actions_taken", [])
+        # Teilverkäufe sind jetzt 'partial_X_deferred' (Ausführung Montag),
+        # zählen aber als erwartete Erlöse für die Positionsgrößen-Berechnung.
         real_actions = [a for a in actions if "dry" not in a]
         if not real_actions:
             continue
@@ -699,11 +793,11 @@ def run():
         trade = next((t for t in journal_data.get("open", []) if t["symbol"] == sym), None)
         if trade:
             price = float(trade.get("current_price") or 0.0)
-            if "partial_1" in real_actions:
+            if "partial_1" in real_actions or "partial_1_deferred" in real_actions:
                 sell_proceeds += r.get("partial_sell_1_qty", 0) * price
                 if sym not in sell_symbols:
                     sell_symbols.append(sym)
-            if "partial_2" in real_actions:
+            if "partial_2" in real_actions or "partial_2_deferred" in real_actions:
                 sell_proceeds += r.get("partial_sell_2_qty", 0) * price
                 if sym not in sell_symbols:
                     sell_symbols.append(sym)
@@ -741,7 +835,8 @@ def run():
     # ── Alpaca: OTO Orders sofort platzieren ODER als Pending zurückhalten ─────
     top_picks = [s for s in signals if s.is_top_pick]
     if sell_symbols and top_picks and alpaca_portfolio is not None:
-        # Sell-Orders wurden gerade platziert → Käufe erst nach Fill-Bestätigung
+        # Teilverkäufe sind für Montag vorgemerkt → Käufe erst nach deren
+        # Fill-Bestätigung (--monday-execute führt erst die Sells aus, dann die Buys)
         _save_pending_orders(top_picks, sell_symbols, sell_proceeds, report_date)
         print(
             f"[ORDER] ⏳ {len(top_picks)} Kauforder(s) zurückgehalten — "

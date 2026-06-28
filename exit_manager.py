@@ -413,13 +413,27 @@ def check_profit_taking(trade: dict) -> dict:
     return result
 
 
-def run_profit_taking_checks(journal_data: dict, dry_run: bool = False) -> list[dict]:
+def run_profit_taking_checks(
+    journal_data: dict,
+    dry_run: bool = False,
+    defer_sells: bool = False,
+) -> list[dict]:
     """Run all profit-taking rules for every open position in the journal.
 
     For each position this may:
       - Raise the Alpaca stop to breakeven (after +10 %)
       - Place a partial market-sell (1/3 at +20 %, 1/3 at +40 %)
       - Apply an ATR-based trailing stop (after first partial sell)
+
+    Args:
+      defer_sells : when True, partial MARKET sells are not placed here — they
+        are only flagged as 'partial_1_deferred' / 'partial_2_deferred' so the
+        caller can persist them and execute on the next trading day. Stop-order
+        modifications (breakeven, trailing) are still applied because Alpaca
+        accepts GTC stop changes while the market is closed; only plain market
+        orders are rejected outside trading hours. This is the weekend bug: the
+        weekly report runs Saturday (market closed), so market sells fired here
+        were always rejected and never persisted.
 
     Returns list of result dicts with an extra key 'actions_taken'.
     """
@@ -447,19 +461,23 @@ def run_profit_taking_checks(journal_data: dict, dry_run: bool = False) -> list[
                     if new_stop > existing and _replace_stop(client, str(order.id), new_stop):
                         actions.append("breakeven")
 
-        # 2. Teilverkauf 1
+        # 2. Teilverkauf 1 — Market-Sell; bei defer_sells nur vormerken
         if check["partial_sell_1"]:
             qty = check["partial_sell_1_qty"]
             if dry_run:
                 actions.append("partial_1_dry")
+            elif defer_sells:
+                actions.append("partial_1_deferred")
             elif client and _place_market_sell(client, symbol, qty):
                 actions.append("partial_1")
 
-        # 3. Teilverkauf 2
+        # 3. Teilverkauf 2 — Market-Sell; bei defer_sells nur vormerken
         if check["partial_sell_2"]:
             qty = check["partial_sell_2_qty"]
             if dry_run:
                 actions.append("partial_2_dry")
+            elif defer_sells:
+                actions.append("partial_2_deferred")
             elif client and _place_market_sell(client, symbol, qty):
                 actions.append("partial_2")
 
@@ -482,3 +500,31 @@ def run_profit_taking_checks(journal_data: dict, dry_run: bool = False) -> list[
             print(f"[PROFIT] {symbol}: {', '.join(actions)}")
 
     return results
+
+
+def execute_partial_sells(planned: list[dict], dry_run: bool = False) -> list[dict]:
+    """Place the deferred profit-taking market sells on a trading day.
+
+    Args:
+      planned : list of dicts with keys symbol, qty, leg ('partial_1'/'partial_2').
+
+    Returns the same list with an added 'placed' bool per entry.
+    """
+    client = None if dry_run else _trading_client()
+    out: list[dict] = []
+    for p in planned:
+        sym = p["symbol"]
+        qty = int(p["qty"])
+        leg = p.get("leg", "partial_1")
+        if qty < 1:
+            out.append({**p, "placed": False})
+            continue
+        if dry_run:
+            print(f"[PROFIT-MONDAY] 🔍 DRY-RUN {sym} {leg}: {qty} Stück")
+            out.append({**p, "placed": True})
+            continue
+        ok = bool(client) and _place_market_sell(client, sym, qty)
+        print(f"[PROFIT-MONDAY] {'✅' if ok else '❌'} {sym} {leg}: {qty} Stück"
+              + ("" if ok else " — Order fehlgeschlagen"))
+        out.append({**p, "placed": ok})
+    return out

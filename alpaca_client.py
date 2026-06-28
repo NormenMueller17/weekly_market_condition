@@ -179,6 +179,14 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
     Alpaca's API silently drops OTO/bracket child-legs (e.g. auto-triggered
     stop-sells) when side= is set server-side. Filtering client-side instead
     ensures these orders are always captured.
+
+    Pagination: Alpaca caps each get_orders response at 500 rows (sorted by
+    submitted_at desc). Because we query BOTH buys and sells (no side= filter),
+    a single 500-row window silently truncates older orders once the account
+    accumulates >500 closed orders — exactly the regression that caused
+    auto-triggered stop-sells (submitted with their buy, filled weeks later) to
+    fall off the edge and be journaled as 'position_closed_unknown'. We page
+    through the full window using the `until` cursor instead.
     """
     import datetime
     client = _get_trading_client()
@@ -190,15 +198,40 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
 
         after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_back)
 
-        # No side= filter here — see docstring above.
-        orders = client.get_orders(GetOrdersRequest(
-            status = QueryOrderStatus.CLOSED,
-            after  = after,
-            limit  = 500,
-        ))
+        PAGE = 500
+        all_orders: list = []
+        seen_ids: set = set()
+        until = None
+        while True:
+            # No side= filter here — see docstring above.
+            batch = client.get_orders(GetOrdersRequest(
+                status = QueryOrderStatus.CLOSED,
+                after  = after,
+                until  = until,
+                limit  = PAGE,
+            ))
+            if not batch:
+                break
+            new_in_batch = 0
+            for o in batch:
+                oid = str(o.id)
+                if oid in seen_ids:
+                    continue
+                seen_ids.add(oid)
+                all_orders.append(o)
+                new_in_batch += 1
+            if len(batch) < PAGE or new_in_batch == 0:
+                break
+            # Page older: next window ends at the oldest submitted_at of this batch.
+            # `until` is inclusive, so dedup via seen_ids guards against re-fetching
+            # the boundary order(s).
+            oldest_submitted = getattr(batch[-1], "submitted_at", None)
+            if oldest_submitted is None:
+                break
+            until = oldest_submitted
 
         result = []
-        for o in orders:
+        for o in all_orders:
             if str(getattr(o, "status", "")) != "filled":
                 continue
             order_side = str(getattr(o, "side", "")).lower()
@@ -212,7 +245,8 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
                 "order_id":         str(o.id),
                 "order_type":       str(getattr(o,  "type",             "") or ""),
             })
-        print(f"[ALPACA] get_filled_orders({side}): {len(result)} gefüllte Orders gefunden")
+        print(f"[ALPACA] get_filled_orders({side}): {len(result)} gefüllte Orders "
+              f"(aus {len(all_orders)} geschlossenen, {len(seen_ids)} Seiten-IDs)")
         return result
     except Exception as e:
         print(f"[ALPACA] get_filled_orders({side}) FEHLER: {e}")

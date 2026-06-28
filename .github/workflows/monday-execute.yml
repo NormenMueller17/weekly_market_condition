@@ -16,15 +16,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prüfe ob pending_orders.json existiert
+      - name: Prüfe ob Pending-Dateien existieren
         id: check
         run: |
-          if [ -f "docs/data/pending_orders.json" ]; then
+          if [ -f "docs/data/pending_orders.json" ] || [ -f "docs/data/pending_profit_taking.json" ]; then
             echo "has_pending=true" >> $GITHUB_OUTPUT
-            echo "Pending orders gefunden."
+            echo "Pending orders und/oder Profit-Taking gefunden."
           else
             echo "has_pending=false" >> $GITHUB_OUTPUT
-            echo "Keine pending_orders.json — nichts zu tun."
+            echo "Keine Pending-Dateien — nichts zu tun."
           fi
 
       - name: Set up Python
@@ -52,11 +52,11 @@ jobs:
         run: |
           python main.py --monday-execute
 
-      - name: Commit (pending_orders.json entfernen nach Erfolg)
+      - name: Commit (Pending-Dateien + Journal nach Erfolg)
         if: steps.check.outputs.has_pending == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/data/pending_orders.json
+          git add docs/data docs/trades.html
           git diff --staged --quiet || git commit -m "orders: Monday execute $(date +%Y-%m-%d)"
           git push
