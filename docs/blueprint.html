@@ -435,6 +435,8 @@
     </div>
     <p>Bei Aktivierung ersetzt der ATR-Trailing Stop den bisherigen MACD-Stop. Das Modell sichert Gewinne, lässt der Position aber Raum zum Atmen.</p>
 
+    <p><em>Hinweis zur Ausführung:</em> Regel 1 und 4 sind reine Stop-Order-Anpassungen (GTC) und werden direkt im Samstagdurchlauf an den Broker übermittelt — das funktioniert auch bei geschlossenem Markt. Die Teilverkäufe aus Regel 3 sind dagegen Markt-Orders, die der Broker bei geschlossenem Markt ablehnt. Sie werden daher samstags nur als geplante Verkäufe vorgemerkt und am folgenden Montag tatsächlich platziert (siehe Schritt 17, Fall A, und Montagsablauf).</p>
+
     <h2 id="s12">Schritt 12 — Performance-Dashboard erstellen</h2>
     <p>Das System generiert automatisch einen visuellen Leistungsbericht. Dieser enthält die Eigenkapitalkurve des Portfolios, eine Vergleichslinie mit dem S&amp;P 500, Gewinn-/Verlust-Statistiken sowie eine Übersicht aller abgeschlossenen Trades.</p>
 
@@ -564,8 +566,8 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
     <h2 id="s17">Schritt 17 — Orders platzieren</h2>
     <p>Das System unterscheidet bei der Orderplatzierung zwei Szenarien:</p>
 
-    <span class="sub-bold">Fall A — Gewinnmitnahmen wurden platziert</span>
-    <p>Wurden im selben Durchlauf bereits Teilverkäufe aus bestehenden Positionen ausgelöst, wartet das System mit neuen Käufen bis zum nächsten Montag. Der Grund: Der Verkaufserlös steht erst nach dem Settlement-Prozess des Brokers zur Verfügung.</p>
+    <span class="sub-bold">Fall A — Gewinnmitnahmen wurden vorgemerkt</span>
+    <p>Wurden im selben Durchlauf Teilverkäufe aus bestehenden Positionen ausgelöst (Regel 3), wartet das System mit neuen Käufen bis zum nächsten Montag. Der Grund ist zweistufig: Erstens kann der Broker Markt-Verkaufsorders am Samstag gar nicht annehmen, da die Börse geschlossen ist — die Verkäufe werden deshalb nur vorgemerkt, nicht platziert. Zweitens steht der Verkaufserlös ohnehin erst nach Ausführung und Settlement zur Verfügung. Beides zusammen macht den Aufschub bis Montag notwendig.</p>
 
     <span class="sub-bold">Fall B — Direkte Platzierung</span>
     <p>Sind keine offenen Verkäufe vorhanden, werden Kauforders sofort beim Broker als sogenannte OTO-Orders (One-Triggers-Other) platziert. Eine OTO-Order besteht aus zwei verknüpften Teilen:</p>
@@ -598,13 +600,13 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
 
     <!-- ── Montagsablauf ───────────────────────────────────────────── -->
     <h1 id="montag">Montagsablauf — Verzögerter Kaufabschluss</h1>
-    <p>Der Montagsablauf ist nur relevant, wenn der Samstagdurchlauf Gewinnmitnahmen platziert hat und neue Käufe deshalb verschoben wurden (Fall A). Er läuft dann wie folgt ab:</p>
+    <p>Der Montagsablauf besteht aus zwei unabhängigen Teilen, die nacheinander laufen: zuerst die am Samstag vorgemerkten Teilverkäufe, danach — falls vorhanden — die zurückgehaltenen Käufe (Fall A).</p>
     <ul>
-      <li>Die gespeicherte Liste der geplanten Kauforders wird geladen.</li>
-      <li>Das System prüft, ob alle geplanten Verkäufe vom Samstag tatsächlich ausgeführt wurden. Fehlt noch eine Bestätigung, bricht der Montagslauf ab.</li>
+      <li><strong>Teil 1 — Vorgemerkte Teilverkäufe ausführen:</strong> Falls am Samstag Gewinnmitnahmen (Regel 3) vorgemerkt wurden, platziert das System sie jetzt bei offenem Markt als reguläre Markt-Verkaufsorders und schreibt das Ergebnis ins Trade Journal. Dieser Schritt läuft unabhängig davon, ob zusätzlich Käufe ausstehen.</li>
+      <li><strong>Teil 2 — Zurückgehaltene Käufe platzieren (nur Fall A):</strong> Die gespeicherte Liste der geplanten Kauforders wird geladen. Das System prüft, ob die zugehörigen Verkäufe (aus Teil 1 oder bereits vorher) tatsächlich gefüllt sind. Fehlt noch eine Bestätigung, bricht dieser Teil ab und wird beim nächsten Lauf erneut versucht.</li>
       <li>Das tatsächlich verfügbare Bargeld wird vom Broker abgerufen, nach Settlement der Verkäufe.</li>
       <li>Die Positionsgrößen werden auf Basis des real verfügbaren Cashs angepasst und die Kauforders werden als OTO-Orders an den Broker übermittelt.</li>
-      <li>Die Datei mit den gespeicherten Kauforders wird nach erfolgreicher Platzierung gelöscht.</li>
+      <li>Die jeweilige Datei mit den vorgemerkten Verkäufen bzw. Kauforders wird nach erfolgreicher Ausführung gelöscht; fehlgeschlagene Einträge bleiben für den nächsten Lauf vorgemerkt.</li>
     </ul>
 
     <!-- ── Schwächen ──────────────────────────────────────────────── -->
