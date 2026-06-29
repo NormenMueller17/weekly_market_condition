@@ -284,14 +284,26 @@ def _execute_pending_profit_taking(test_mode: bool) -> None:
         trade = next((t for t in data.get("open", []) if t["symbol"] == p["symbol"]), None)
         if not trade:
             continue
+        price = p.get("price")
+        realized = None
+        if price:
+            entry = trade.get("entry_price") or 0
+            realized = (price - entry) * p["qty"]
+            trade["realized_pl_partial"] = round((trade.get("realized_pl_partial") or 0) + realized, 2)
         if p["leg"] == "partial_1":
             trade["pt_partial_1_done"] = True
             trade["pt_partial_1_qty"]  = p["qty"]
             trade["pt_partial_1_date"] = today
+            if price:
+                trade["pt_partial_1_price"] = price
         elif p["leg"] == "partial_2":
             trade["pt_partial_2_done"] = True
             trade["pt_partial_2_qty"]  = p["qty"]
             trade["pt_partial_2_date"] = today
+            if price:
+                trade["pt_partial_2_price"] = price
+        if realized is not None:
+            print(f"[MONDAY] 💰 {p['symbol']}: Teilverkauf {p['leg']} realisiert {realized:+.0f} $ @ {price:.2f}")
     trade_journal.save(data)
 
     failed = [p for p in placed if not p.get("placed")]
@@ -781,12 +793,12 @@ def run():
             if "partial_1_deferred" in acts:
                 planned_sells.append({
                     "symbol": r["symbol"], "qty": r.get("partial_sell_1_qty", 0),
-                    "leg": "partial_1",
+                    "leg": "partial_1", "price": r.get("partial_sell_1_price"),
                 })
             if "partial_2_deferred" in acts:
                 planned_sells.append({
                     "symbol": r["symbol"], "qty": r.get("partial_sell_2_qty", 0),
-                    "leg": "partial_2",
+                    "leg": "partial_2", "price": r.get("partial_sell_2_price"),
                 })
         if planned_sells and not TEST_MODE:
             _save_pending_profit_taking(planned_sells, report_date)

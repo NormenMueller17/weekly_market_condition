@@ -227,11 +227,13 @@ def sync(
             }
             print(f"[JOURNAL] ⚠️  {sym} nicht in Portfolio, kein Sell-Order gefunden — "
                   f"schließe mit letztem bekannten Kurs {fallback_price:.2f} (P&L {pl:+.0f})")
-        entry  = trade.get("entry_price") or 0
-        ep     = exit_info["exit_price"]
-        qty    = trade.get("qty") or 0
-        pl     = (ep - entry) * qty
-        pl_pct = ((ep / entry) - 1) * 100 if entry else 0
+        entry            = trade.get("entry_price") or 0
+        ep               = exit_info["exit_price"]
+        qty              = trade.get("qty") or 0
+        partial_realized = trade.get("realized_pl_partial") or 0
+        pl               = (ep - entry) * qty + partial_realized
+        original_qty     = trade.get("pt_original_qty") or qty
+        pl_pct           = (pl / (entry * original_qty)) * 100 if entry and original_qty else 0
         closed_trade = {
             **trade,
             "exit_date":     exit_info["exit_date"],
@@ -335,17 +337,31 @@ def apply_profit_taking(data: dict, pt_results: list[dict]) -> dict:
         # Teilverkäufe: nur bei tatsächlich ausgeführter Order persistieren
         # (Marktorder → Qty-Änderung; falsches Flag wäre schlimmer als kein Flag)
         if "partial_1" in actions:
-            qty = r["partial_sell_1_qty"]
+            qty   = r["partial_sell_1_qty"]
+            price = r.get("partial_sell_1_price")
             trade["pt_partial_1_done"] = True
             trade["pt_partial_1_qty"]  = qty
             trade["pt_partial_1_date"] = today
             # Qty wird beim nächsten sync() von Alpaca bestätigt
+            if price:
+                entry = trade.get("entry_price") or 0
+                realized = (price - entry) * qty
+                trade["pt_partial_1_price"] = price
+                trade["realized_pl_partial"] = round((trade.get("realized_pl_partial") or 0) + realized, 2)
+                print(f"[JOURNAL] 💰 {sym}: Teilverkauf 1 realisiert {realized:+.0f} $ @ {price:.2f}")
 
         if "partial_2" in actions:
-            qty = r["partial_sell_2_qty"]
+            qty   = r["partial_sell_2_qty"]
+            price = r.get("partial_sell_2_price")
             trade["pt_partial_2_done"] = True
             trade["pt_partial_2_qty"]  = qty
             trade["pt_partial_2_date"] = today
+            if price:
+                entry = trade.get("entry_price") or 0
+                realized = (price - entry) * qty
+                trade["pt_partial_2_price"] = price
+                trade["realized_pl_partial"] = round((trade.get("realized_pl_partial") or 0) + realized, 2)
+                print(f"[JOURNAL] 💰 {sym}: Teilverkauf 2 realisiert {realized:+.0f} $ @ {price:.2f}")
 
         # Trailing-Stop: Journal sofort schreiben, Alpaca-Bestätigung separat tracken
         if r.get("trailing_stop") and r.get("trailing_stop_level"):
@@ -385,9 +401,12 @@ def apply_raised_stops(data: dict, exit_results: list[dict]) -> dict:
 
 def _stats(data: dict) -> dict:
     closed = data.get("closed", [])
+    # Realisierter Gewinn aus Teilverkäufen noch offener Positionen (Power-of-
+    # Three) — sonst wäre er bis zum vollständigen Exit unsichtbar.
+    open_partial_pl = sum(t.get("realized_pl_partial") or 0 for t in data.get("open", []))
     if not closed:
         return {"count": 0, "wins": 0, "losses": 0, "win_rate": None,
-                "total_pl": 0.0, "avg_win": None, "avg_loss": None}
+                "total_pl": round(open_partial_pl, 2), "avg_win": None, "avg_loss": None}
     wins   = [t for t in closed if (t.get("realized_plpc") or 0) > 0]
     losses = [t for t in closed if (t.get("realized_plpc") or 0) <= 0]
     return {
@@ -395,7 +414,7 @@ def _stats(data: dict) -> dict:
         "wins":     len(wins),
         "losses":   len(losses),
         "win_rate": len(wins) / len(closed) * 100,
-        "total_pl": sum(t.get("realized_pl", 0) for t in closed),
+        "total_pl": round(sum(t.get("realized_pl", 0) for t in closed) + open_partial_pl, 2),
         "avg_win":  sum(t.get("realized_plpc", 0) for t in wins)  / len(wins)  if wins   else None,
         "avg_loss": sum(t.get("realized_plpc", 0) for t in losses)/ len(losses) if losses else None,
     }
@@ -447,6 +466,10 @@ def _pt_status(t: dict) -> str:
         parts.append(f"&frac13; TV2 {t.get('pt_partial_2_date','')}")
     if t.get("pt_trailing_stop"):
         parts.append(f"&#x1F4C9; Trail ${t['pt_trailing_stop']:.2f}")
+    realized = t.get("realized_pl_partial")
+    if realized:
+        sign = "+" if realized > 0 else ""
+        parts.append(f"&#x1F4B0; {sign}{realized:,.0f}$ realisiert")
     return "<br>".join(parts) if parts else "–"
 
 

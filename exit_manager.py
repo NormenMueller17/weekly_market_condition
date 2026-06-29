@@ -352,8 +352,10 @@ def check_profit_taking(trade: dict) -> dict:
         "breakeven_stop":     None,
         "partial_sell_1":     False,
         "partial_sell_1_qty": 0,
+        "partial_sell_1_price": None,
         "partial_sell_2":     False,
         "partial_sell_2_qty": 0,
+        "partial_sell_2_price": None,
         "trailing_stop":      False,
         "trailing_stop_level": None,
     }
@@ -439,14 +441,16 @@ def check_profit_taking(trade: dict) -> dict:
     if allow_partial and not partial_1_done and gain_pct >= partial_1_trigger:
         qty1 = max(1, round(original_qty * partial_1_frac))
         if qty1 < current_qty:
-            result["partial_sell_1"]     = True
-            result["partial_sell_1_qty"] = qty1
+            result["partial_sell_1"]       = True
+            result["partial_sell_1_qty"]   = qty1
+            result["partial_sell_1_price"] = current_price
 
     if allow_partial and partial_1_done and not partial_2_done and gain_pct >= partial_2_trigger:
         qty2 = max(1, round(original_qty * partial_2_frac))
         if qty2 < current_qty:
-            result["partial_sell_2"]     = True
-            result["partial_sell_2_qty"] = qty2
+            result["partial_sell_2"]       = True
+            result["partial_sell_2_qty"]   = qty2
+            result["partial_sell_2_price"] = current_price
 
     # ── Regel 3c: ATR-Trailing-Stop für den Runner ───────────────────────────
     if partial_1_done:
