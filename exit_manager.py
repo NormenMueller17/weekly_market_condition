@@ -118,7 +118,7 @@ def _replace_stop_qty(client, order_id: str, new_qty: int) -> bool:
         from alpaca.trading.requests import ReplaceOrderRequest
         client.replace_order_by_id(
             order_id   = order_id,
-            order_data = ReplaceOrderRequest(qty=str(int(new_qty))),
+            order_data = ReplaceOrderRequest(qty=int(new_qty)),
         )
         return True
     except Exception as e:
