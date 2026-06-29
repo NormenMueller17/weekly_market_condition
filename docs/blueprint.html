@@ -423,6 +423,7 @@
       <li>Bei +40 % Gewinn: Ein weiteres Drittel wird automatisch verkauft.</li>
       <li>Das verbleibende Drittel läuft als sogenannter Runner weiter. Für diesen wird Regel 4 aktiviert.</li>
     </ul>
+    <p>Der bei jedem Teilverkauf realisierte Gewinn wird sofort der noch offenen Position gutgeschrieben und fließt unmittelbar in die Gewinn-/Verlust-Statistik des Performance-Dashboards ein — also nicht erst, wenn die Position irgendwann vollständig geschlossen wird. Im Trade Journal erscheint der bereits gesicherte Betrag als Hinweis an der offenen Position; beim späteren Vollverkauf wird er mit dem Erlös des Restbestands zum Gesamtergebnis des Trades verrechnet.</p>
 
     <span class="sub-bold">Regel 4 — ATR-Trailing Stop für den Runner</span>
     <p>Nach dem ersten Teilverkauf (Regel 3) oder nach Ende der Fast-Mover-Haltezeit (Regel 2) wird ein dynamischer Trailing Stop aktiviert:</p>
@@ -439,6 +440,7 @@
 
     <h2 id="s12">Schritt 12 — Performance-Dashboard erstellen</h2>
     <p>Das System generiert automatisch einen visuellen Leistungsbericht. Dieser enthält die Eigenkapitalkurve des Portfolios, eine Vergleichslinie mit dem S&amp;P 500, Gewinn-/Verlust-Statistiken sowie eine Übersicht aller abgeschlossenen Trades.</p>
+    <p>Der ausgewiesene realisierte Gewinn umfasst dabei nicht nur vollständig geschlossene Trades, sondern auch bereits gesicherte Teilverkäufe (Regel 3) noch offener Positionen. So spiegelt die Kennzahl den tatsächlich bereits realisierten Ertrag wider, auch wenn der Runner einer Position noch läuft.</p>
 
     <h2 id="s13">Schritt 13 — Minervini-Screener</h2>
     <p>Das Herzstück des Systems: Jede Aktie im Universum wird anhand von acht technischen Kriterien nach Mark Minervini bewertet. Für jedes erfüllte Kriterium erhält die Aktie einen Punkt — der maximale Score beträgt 8/8.</p>
