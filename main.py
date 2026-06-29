@@ -303,6 +303,29 @@ def _execute_pending_profit_taking(test_mode: bool) -> None:
         PENDING_PROFIT_TAKING_PATH.unlink(missing_ok=True)
 
 
+def _sync_journal_with_alpaca() -> None:
+    """Refresh trades.json/trades.html from Alpaca's current state.
+
+    Run at the end of monday_execute() so the journal reflects same-day fills
+    (sell qty reductions, newly placed buys) instead of staying stale until
+    the next Saturday report. Best-effort: failures are logged, not raised —
+    a sync hiccup on Monday must not abort order placement that already happened.
+    """
+    try:
+        portfolio    = alpaca_client.get_portfolio()
+        if portfolio is None:
+            print("[MONDAY] ⚠  Journal-Sync übersprungen — kein Alpaca-Portfolio.")
+            return
+        filled_buys  = alpaca_client.get_filled_orders("buy")
+        filled_sells = alpaca_client.get_filled_orders("sell")
+        data = trade_journal.sync(portfolio, filled_buys, filled_sells)
+        trade_journal.build_and_save_html(data)
+        print(f"[MONDAY] 🔄 Journal synchronisiert — "
+              f"{len(data.get('open', []))} offen / {len(data.get('closed', []))} geschlossen")
+    except Exception as e:
+        print(f"[MONDAY] ⚠  Journal-Sync fehlgeschlagen: {e}")
+
+
 def monday_execute() -> None:
     """Place pending buy orders after confirming that the prerequisite sell orders filled.
 
@@ -316,6 +339,15 @@ def monday_execute() -> None:
         print("[MONDAY]    Der Job läuft morgen (Dienstag) automatisch erneut.")
         return
 
+    try:
+        _monday_execute_inner()
+    finally:
+        # Läuft immer — auch bei frühem Return (fehlende Sells, kein Cash etc.) —
+        # damit das Journal nicht bis Samstag veraltet bleibt.
+        _sync_journal_with_alpaca()
+
+
+def _monday_execute_inner() -> None:
     # ── Vorgemerkte Profit-Taking-Verkäufe ausführen (unabhängig von Käufen) ───
     _execute_pending_profit_taking(test_mode=TEST_MODE)
 
