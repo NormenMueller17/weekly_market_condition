@@ -112,6 +112,64 @@ def _place_market_sell(client, symbol: str, qty: int) -> bool:
         return False
 
 
+def _replace_stop_qty(client, order_id: str, new_qty: int) -> bool:
+    """Reduce (or restore) the share quantity of an existing stop order."""
+    try:
+        from alpaca.trading.requests import ReplaceOrderRequest
+        client.replace_order_by_id(
+            order_id   = order_id,
+            order_data = ReplaceOrderRequest(qty=str(int(new_qty))),
+        )
+        return True
+    except Exception as e:
+        print(f"[EXIT] _replace_stop_qty({order_id}, {new_qty}): {e}")
+        return False
+
+
+def _place_partial_sell(client, symbol: str, qty: int) -> bool:
+    """Place a partial market-sell, freeing shares from the open stop order first.
+
+    A GTC stop-loss order holds the ENTIRE position as collateral
+    ("held_for_orders"). Alpaca rejects a market sell for any quantity while
+    that hold covers all shares — it has 0 "available". So before selling, the
+    stop order's qty is reduced by the amount we're about to sell; the stop
+    price is left untouched. If the market sell then fails, the stop qty is
+    restored so the remaining position stays protected.
+    """
+    stop_order = _find_stop_order(client, symbol)
+    if stop_order is None:
+        # No competing hold found — try the sell directly.
+        return _place_market_sell(client, symbol, qty)
+
+    held_qty = int(float(getattr(stop_order, "qty", 0) or 0))
+    remaining = held_qty - qty
+    if remaining < 0:
+        print(f"[PROFIT] _place_partial_sell({symbol}): Verkaufsmenge {qty} "
+              f"> Stop-Order-Menge {held_qty} — Abbruch")
+        return False
+
+    if remaining == 0:
+        # Selling the whole held quantity — cancel the stop, it would be a
+        # zero-qty order otherwise.
+        try:
+            client.cancel_order_by_id(str(stop_order.id))
+        except Exception as e:
+            print(f"[EXIT] cancel_order_by_id({stop_order.id}): {e}")
+            return False
+    elif not _replace_stop_qty(client, str(stop_order.id), remaining):
+        return False
+
+    ok = _place_market_sell(client, symbol, qty)
+    if not ok and remaining != held_qty:
+        # Roll back the qty reduction so the rest of the position stays protected.
+        if remaining == 0:
+            print(f"[PROFIT] {symbol}: Market-Sell fehlgeschlagen nach Stop-Order-"
+                  f"Stornierung — Stop muss manuell neu gesetzt werden!")
+        else:
+            _replace_stop_qty(client, str(stop_order.id), held_qty)
+    return ok
+
+
 def _trading_client():
     key    = os.environ.get("ALPACA_API_KEY")
     secret = os.environ.get("ALPACA_API_SECRET")
@@ -468,7 +526,7 @@ def run_profit_taking_checks(
                 actions.append("partial_1_dry")
             elif defer_sells:
                 actions.append("partial_1_deferred")
-            elif client and _place_market_sell(client, symbol, qty):
+            elif client and _place_partial_sell(client, symbol, qty):
                 actions.append("partial_1")
 
         # 3. Teilverkauf 2 — Market-Sell; bei defer_sells nur vormerken
@@ -478,7 +536,7 @@ def run_profit_taking_checks(
                 actions.append("partial_2_dry")
             elif defer_sells:
                 actions.append("partial_2_deferred")
-            elif client and _place_market_sell(client, symbol, qty):
+            elif client and _place_partial_sell(client, symbol, qty):
                 actions.append("partial_2")
 
         # 4. ATR-Trailing-Stop
@@ -523,7 +581,7 @@ def execute_partial_sells(planned: list[dict], dry_run: bool = False) -> list[di
             print(f"[PROFIT-MONDAY] 🔍 DRY-RUN {sym} {leg}: {qty} Stück")
             out.append({**p, "placed": True})
             continue
-        ok = bool(client) and _place_market_sell(client, sym, qty)
+        ok = bool(client) and _place_partial_sell(client, sym, qty)
         print(f"[PROFIT-MONDAY] {'✅' if ok else '❌'} {sym} {leg}: {qty} Stück"
               + ("" if ok else " — Order fehlgeschlagen"))
         out.append({**p, "placed": ok})
