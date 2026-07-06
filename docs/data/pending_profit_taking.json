@@ -5,7 +5,8 @@
       "symbol": "VSH",
       "qty": 192,
       "leg": "partial_2",
-      "price": 45.92
+      "price": 45.92,
+      "placed": false
     }
   ]
 }
