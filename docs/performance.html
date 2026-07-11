@@ -39,7 +39,7 @@
 <body>
   <nav class="g-nav">
     <a href="index.html" class="g-brand">📈 Weekly Screener</a>
-    <a href="reports/2026-06-27.html">Aktueller Report</a>
+    <a href="reports/2026-07-04.html">Aktueller Report</a>
     <a href="trades.html">Trade Journal</a>
     <a href="performance.html" class="active">Performance</a>
     <a href="zertifikate/index.html">Zertifikate</a>
@@ -47,26 +47,26 @@
   </nav>
   <div class="page">
   <h1>Portfolio Performance</h1>
-  <p class="meta">Stand: 2026-07-04 &nbsp;|&nbsp; 13 abgeschlossene Trades &nbsp;|&nbsp; 7 offene Positionen</p>
+  <p class="meta">Stand: 2026-07-11 &nbsp;|&nbsp; 14 abgeschlossene Trades &nbsp;|&nbsp; 6 offene Positionen</p>
 
   <!-- KPI Row 1: Trade-Metriken -->
   <h2>Trade-Statistik</h2>
   <div class="kpis">
-    <div class="kpi"><div class="val" style="">3/13</div><div class="lbl">Wins / Gesamt</div></div>
-    <div class="kpi"><div class="val" style="">23%</div><div class="lbl">Win Rate</div></div>
-    <div class="kpi"><div class="val" style="">0.25</div><div class="lbl">Profit Factor</div></div>
-    <div class="kpi"><div class="val" style="color:#1a8a1a">+8.0%</div><div class="lbl">Ø Gewinner</div></div>
+    <div class="kpi"><div class="val" style="">4/14</div><div class="lbl">Wins / Gesamt</div></div>
+    <div class="kpi"><div class="val" style="">29%</div><div class="lbl">Win Rate</div></div>
+    <div class="kpi"><div class="val" style="">0.73</div><div class="lbl">Profit Factor</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a">+17.1%</div><div class="lbl">Ø Gewinner</div></div>
     <div class="kpi"><div class="val" style="color:#cc2222">-9.8%</div><div class="lbl">Ø Verlierer</div></div>
-    <div class="kpi"><div class="val" style="color:#1a8a1a">+14.4%</div><div class="lbl">Größter Gewinn</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a">+44.5%</div><div class="lbl">Größter Gewinn</div></div>
     <div class="kpi"><div class="val" style="color:#cc2222">-14.3%</div><div class="lbl">Größter Verlust</div></div>
-    <div class="kpi"><div class="val" style="">20.7 Tage</div><div class="lbl">Ø Haltedauer</div></div>
+    <div class="kpi"><div class="val" style="">25.0 Tage</div><div class="lbl">Ø Haltedauer</div></div>
   </div>
   <div class="kpis">
-    <div class="kpi"><div class="val" style="color:#cc2222;font-weight:600">-10,597 $</div><div class="lbl">Realized P&amp;L</div></div>
-    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+12,779 $</div><div class="lbl">Unrealized P&amp;L (offen)</div></div>
-    <div class="kpi"><div class="val" style="">98,833 $</div><div class="lbl">Aktuelles Depot-Equity</div></div>
-    <div class="kpi"><div class="val" style="color:#cc2222">24.7%</div><div class="lbl">Max. Drawdown</div></div>
-    <div class="kpi"><div class="val" style="">-5.5%</div><div class="lbl">CAGR (ann.)</div></div>
+    <div class="kpi"><div class="val" style="color:#cc2222;font-weight:600">-3,793 $</div><div class="lbl">Realized P&amp;L</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+6,765 $</div><div class="lbl">Unrealized P&amp;L (offen)</div></div>
+    <div class="kpi"><div class="val" style="">99,243 $</div><div class="lbl">Aktuelles Depot-Equity</div></div>
+    <div class="kpi"><div class="val" style="color:#cc2222">25.9%</div><div class="lbl">Max. Drawdown</div></div>
+    <div class="kpi"><div class="val" style="">-3.3%</div><div class="lbl">CAGR (ann.)</div></div>
   </div>
 
   <!-- Equity Chart -->
@@ -96,9 +96,9 @@
     const fmtMoney = v => (v >= 0 ? '+' : '') + v.toLocaleString('de-DE', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' $';
 
     // ── Equity curve ─────────────────────────────────────────────────────────
-    const eqLabels = ["2026-04-18", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-23", "2026-05-27", "2026-05-28", "2026-05-29", "2026-05-30", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-27", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03"];
-    const eqValues = [100000.0, 100898.56, 102561.27, 102792.9, 103488.63, 104950.41, 102767.35, 99789.19, 102307.36, 102977.14, 104635.85, 104635.85, 106339.83, 110476.67, 106210.57, 109441.73, 113581.54, 108487.83, 114912.65, 114975.52, 108808.44, 102357.0, 100987.24, 106005.52, 109471.82, 115946.84, 121791.22, 120438.66, 122083.09, 118089.66, 121316.36, 125073.36, 131237.8, 129659.8, 114522.36, 116940.78, 113965.31, 108756.89, 116299.79, 119656.97, 126473.74, 122108.28, 121138.99, 126204.87, 129424.2, 121188.28, 118027.93, 122606.96, 109713.55, 110985.76, 112068.88, 108157.25, 98832.58];
-    const spyValues = [null, 100000.0, 101012.67, 100620.67, 101400.41, 101400.41, 101080.84, 101065.22, 102070.78, 102353.42, 102353.42, 102796.56, 104225.37, 103905.8, 104763.66, 104763.66, 104843.19, 105429.77, 106262.07, 104983.81, 104983.81, 104211.17, 105279.23, 105488.0, 105902.74, 105902.74, 106587.32, 107175.31, 107442.33, 107442.33, 107881.21, 107124.18, 107528.97, 104753.72, 104753.72, 104682.7, 103032.32, 104783.55, 105350.24, 105350.24, 106568.86, 105238.04, 106332.2, 106332.2, 104458.28, 104409.86, 104560.8, 103804.68, 103804.68, 106336.47, 106192.65, 106053.11, 106053.11];
+    const eqLabels = ["2026-04-18", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-23", "2026-05-27", "2026-05-28", "2026-05-29", "2026-05-30", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-27", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-11"];
+    const eqValues = [100000.0, 100898.56, 102561.27, 102792.9, 103488.63, 104950.41, 102767.35, 99789.19, 102307.36, 102977.14, 104635.85, 104635.85, 106339.83, 110476.67, 106210.57, 109441.73, 113581.54, 108487.83, 114912.65, 114975.52, 108808.44, 102357.0, 100987.24, 106005.52, 109471.82, 115946.84, 121791.22, 120438.66, 122083.09, 118089.66, 121316.36, 125073.36, 131237.8, 129659.8, 114522.36, 116940.78, 113965.31, 108756.89, 116299.79, 119656.97, 126473.74, 122108.28, 121138.99, 126204.87, 129424.2, 121188.28, 118027.93, 122606.96, 109713.55, 110985.76, 112068.88, 108157.25, 98832.58, 100140.86, 97260.93, 97681.63, 99715.0, 99242.77];
+    const spyValues = [null, 100000.0, 101012.67, 100620.67, 101400.41, 101400.41, 101080.84, 101065.22, 102070.78, 102353.42, 102353.42, 102796.56, 104225.37, 103905.8, 104763.66, 104763.66, 104843.19, 105429.77, 106262.07, 104983.81, 104983.81, 104211.17, 105279.23, 105488.0, 105902.74, 105902.74, 106587.32, 107175.31, 107442.33, 107442.33, 107881.21, 107124.18, 107528.97, 104753.72, 104753.72, 104682.7, 103032.32, 104783.55, 105350.24, 105350.24, 106568.86, 105238.04, 106332.2, 106332.2, 104458.28, 104409.86, 104560.8, 103804.68, 103804.68, 106336.47, 106192.65, 106053.11, 106053.11, 106470.33, 106141.39, 107039.91, 107501.27, 107501.27];
     const hasSpy = true;
     if (false) {
       document.getElementById('chartEquity').style.display = 'none';
@@ -139,7 +139,7 @@
           scales: {
             x: { ticks: { maxTicksLimit: 10 } },
             y: {
-              min: 96855.93,
+              min: 95315.71,
               max: 133862.56,
               ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k' },
             },
@@ -175,8 +175,8 @@
       });
     }
 
-    makeBarChart('chartSector',  'emptySector',  ["Semiconductors", "Industrials", "Healthcare", "Pharmaceuticals: other", "Technology", "Basic Materials"], [-711.45, -1395.83, -1635.19, -1831.0, -2021.0, -3002.72], ["rgba(204,34,34,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)"]);
-    makeBarChart('chartPattern', 'emptyPattern', ["VCP", "\u2013"], [-711.45, -9885.74], ["rgba(204,34,34,.75)", "rgba(204,34,34,.75)"]);
+    makeBarChart('chartSector',  'emptySector',  ["Electronic production equipment", "Semiconductors", "Industrials", "Healthcare", "Pharmaceuticals: other", "Technology", "Basic Materials"], [6804.48, -711.45, -1395.83, -1635.19, -1831.0, -2021.0, -3002.72], ["rgba(26,138,26,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)", "rgba(204,34,34,.75)"]);
+    makeBarChart('chartPattern', 'emptyPattern', ["VCP", "\u2013"], [-711.45, -3081.26], ["rgba(204,34,34,.75)", "rgba(204,34,34,.75)"]);
   </script>
   </div><!-- .page -->
 </body>

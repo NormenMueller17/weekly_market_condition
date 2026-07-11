@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-07-11",
+  "sells": [
+    {
+      "symbol": "STX",
+      "qty": 7,
+      "leg": "partial_1",
+      "price": 910.34
+    }
+  ]
+}
