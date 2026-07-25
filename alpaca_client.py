@@ -256,6 +256,7 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
                 "filled_at":        str(getattr(o,  "filled_at",        "") or ""),
                 "order_id":         str(o.id),
                 "order_type":       str(getattr(o,  "type",             "") or ""),
+                "position_intent":  _enum_name(getattr(o, "position_intent", "")),
             })
         print(f"[ALPACA] get_filled_orders({side}): {len(result)} gefüllte Orders "
               f"(aus {len(all_orders)} geschlossenen, {len(seen_ids)} Seiten-IDs)")
@@ -293,6 +294,9 @@ def get_filled_sells_since(symbols: list[str], since_date_str: str) -> dict[str,
         sym_set = set(symbols)
         for o in orders:
             if _enum_name(getattr(o, "status", "")) != "filled":
+                continue
+            # Short-Eröffnungen ignorieren — dieses System hält nie Shorts.
+            if _enum_name(getattr(o, "position_intent", "")) == "sell_to_open":
                 continue
             sym = o.symbol
             if sym not in sym_set:

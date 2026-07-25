@@ -114,8 +114,22 @@ def _entry_date_from_orders(symbol: str, filled_buys: list[dict]) -> str:
 
 
 def _exit_info_from_orders(symbol: str, filled_sells: list[dict]) -> Optional[dict]:
-    """Return exit details for a closed position, or None if not found."""
-    matches = [o for o in filled_sells if o["symbol"] == symbol and o["filled_avg_price"] > 0]
+    """Return exit details for a closed position, or None if not found.
+
+    Ignoriert `sell_to_open`-Orders: Dieses System eröffnet nie Short-Positionen,
+    daher darf eine solche Sell-Order nie als Exit einer Long-Position gematcht
+    werden (sonst würde z.B. ein Short-Eröffnungs-Verkauf den echten Stop-Exit
+    überschreiben — siehe STX-Fall 07/2026).
+    """
+    shorts = [o for o in filled_sells
+              if o["symbol"] == symbol and o.get("position_intent") == "sell_to_open"]
+    if shorts:
+        print(f"[JOURNAL] ⚠️  {symbol}: {len(shorts)} sell_to_open-Order(s) ignoriert "
+              f"(System eröffnet keine Shorts — anomale Order?).")
+
+    matches = [o for o in filled_sells
+               if o["symbol"] == symbol and o["filled_avg_price"] > 0
+               and o.get("position_intent") != "sell_to_open"]
     if not matches:
         return None
     matches.sort(key=lambda o: o["filled_at"], reverse=True)
