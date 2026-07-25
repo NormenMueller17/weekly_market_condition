@@ -21,6 +21,19 @@ if TYPE_CHECKING:
 _PAPER_BASE_URL = "https://paper-api.alpaca.markets"
 
 
+def _enum_name(value) -> str:
+    """Normalise an Alpaca enum (or plain string) to its bare member name, lowercased.
+
+    alpaca-py's enums changed __str__ behaviour: newer versions return
+    "OrderStatus.FILLED" instead of "filled", which silently broke every
+    string comparison like `str(o.status) == "filled"` (→ get_filled_orders
+    returned [] → all closes journaled as position_closed_unknown). Splitting
+    on the last "." and lowercasing yields "filled"/"sell" for both the old
+    ("filled") and new ("OrderStatus.FILLED") representations.
+    """
+    return str(value or "").rsplit(".", 1)[-1].lower()
+
+
 def _get_trading_client():
     key    = os.environ.get("ALPACA_API_KEY")
     secret = os.environ.get("ALPACA_API_SECRET")
@@ -232,10 +245,9 @@ def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
 
         result = []
         for o in all_orders:
-            if str(getattr(o, "status", "")) != "filled":
+            if _enum_name(getattr(o, "status", "")) != "filled":
                 continue
-            order_side = str(getattr(o, "side", "")).lower()
-            if order_side != side:
+            if _enum_name(getattr(o, "side", "")) != side.lower():
                 continue
             result.append({
                 "symbol":           o.symbol,
@@ -280,7 +292,7 @@ def get_filled_sells_since(symbols: list[str], since_date_str: str) -> dict[str,
         result: dict[str, dict] = {}
         sym_set = set(symbols)
         for o in orders:
-            if str(getattr(o, "status", "")) != "filled":
+            if _enum_name(getattr(o, "status", "")) != "filled":
                 continue
             sym = o.symbol
             if sym not in sym_set:
