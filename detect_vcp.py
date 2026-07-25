@@ -4,197 +4,186 @@ import numpy as np
 import math
 
 
-def _check_segments(
-    data: pd.DataFrame,
+# ─────────────────────────────────────────────────────────────────────────────
+# Adaptive VCP-Detektion (Minervini)
+#
+# Historie: Die frühere Version analysierte die vollen `window` (=60) Wochen als
+# EINE Basis und teilte sie in Segmente, die über den gesamten Zeitraum monoton
+# kontrahieren mussten. Trendführer machen über 60 Wochen aber steigende Hochs und
+# Pullbacks weit über 15 % — sie fielen daher IMMER durch. Empirisch: 0 Basen über
+# 12.187 (Titel×Woche)-Slices und 0 Signale über die gesamte Signal-Historie.
+#
+# Neu: `window` ist nur noch der SUCHBEREICH. Es werden mehrere Basislängen
+# (base_min..base_max Wochen) getestet; die engste valide Basis DIREKT unter dem
+# Pivot gewinnt. Pullbacks werden gegen den Pivot (Basis-Hoch) gemessen, und es
+# wird eine echte progressive Kontraktion verlangt (jede Welle flacher als die
+# vorige). Kalibriert auf strikte VCP-Geometrie (validiert an CVX/AMZN-Basen).
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _check_waves(
+    base_data: pd.DataFrame,
+    pivot: float,
     n: int,
-    resistance: float,
     max_pullback: float,
     min_contraction: float,
-    min_bars_per_wave: int = 3,
-) -> tuple[bool, np.ndarray | None]:
+    max_final_range: float,
+    min_bars_per_wave: int = 2,
+) -> float | None:
+    """Prüft ob `base_data` mit `n` Wellen eine gültige, progressiv kontrahierende
+    VCP-Struktur unter `pivot` zeigt. Rückgabe: Range der letzten Welle (Anteil des
+    Pivots) bei Erfolg, sonst None.
     """
-    Prüft ob `data` mit `n` Segmenten ein gültiges VCP-Muster zeigt.
-    Gibt (True, seg_highs_arr) oder (False, None) zurück.
-    """
-    n_bars = len(data)
-    seg_len = n_bars // n
-    if seg_len < max(5, min_bars_per_wave):
-        return False, None
+    nb = len(base_data)
+    seg_len = nb // n
+    if seg_len < max(2, min_bars_per_wave):
+        return None
 
-    seg_lows, seg_highs, seg_spread, seg_volume = [], [], [], []
-
+    lows, highs, spread, vols = [], [], [], []
     for s in range(n):
         start = s * seg_len
-        end = n_bars if s == n - 1 else (s + 1) * seg_len
-        seg = data.iloc[start:end]
+        end = nb if s == n - 1 else (s + 1) * seg_len
+        seg = base_data.iloc[start:end]
+        lo, hi = float(seg["Low"].min()), float(seg["High"].max())
+        lows.append(lo)
+        highs.append(hi)
+        spread.append((hi - lo) / pivot)
+        vols.append(float(seg["Volume"].mean()))
 
-        low_s = float(seg["Low"].min())
-        high_s = float(seg["High"].max())
-        spread = (high_s - low_s) / resistance
-        vol_s = float(seg["Volume"].mean())
-
-        seg_lows.append(low_s)
-        seg_highs.append(high_s)
-        seg_spread.append(spread)
-        seg_volume.append(vol_s)
-
-    seg_lows = np.array(seg_lows)
-    seg_highs_arr = np.array(seg_highs)
-    seg_spread = np.array(seg_spread)
-    seg_volume = np.array(seg_volume)
+    lows = np.array(lows)
+    highs = np.array(highs)
+    spread = np.array(spread)
+    vols = np.array(vols)
     x = np.arange(n)
 
-    # Tiefs müssen steigen (kleinere Pullbacks)
-    pullbacks = (resistance - seg_lows) / resistance
-    if np.any(pullbacks > max_pullback):
-        return False, None
-    if np.std(pullbacks) > 0 and np.polyfit(x, pullbacks, 1)[0] >= 0:
-        return False, None
+    # Basistiefe: tiefster Punkt nicht mehr als max_pullback unter dem Pivot
+    if (pivot - lows.min()) / pivot > max_pullback:
+        return None
+    # Höhere Tiefs (Tiefs dürfen im Trend nicht fallen)
+    if np.std(lows) > 0 and np.polyfit(x, lows, 1)[0] < 0:
+        return None
+    # Highs nicht steigend (Pivot deckelt als Widerstand)
+    if np.std(highs) > 0 and np.polyfit(x, highs, 1)[0] > pivot * 0.002:
+        return None
+    # Kontraktion: letzte Welle enger als die erste
+    if spread[0] <= 0 or spread[-1] / spread[0] > min_contraction:
+        return None
+    # Letzte Welle absolut eng
+    if spread[-1] > max_final_range:
+        return None
+    # Progressive Kontraktion: jede Welle flacher als die vorige (mit kleiner Toleranz)
+    if not all(spread[i] <= spread[i - 1] * 1.02 for i in range(1, n)):
+        return None
+    # Volumen-Trockenfall
+    if vols[0] > 0 and vols[-1] / vols[0] >= 0.90:
+        return None
 
-    # Highs müssen fallen (engere Range von oben)
-    if np.std(seg_highs_arr) > 0 and np.polyfit(x, seg_highs_arr, 1)[0] >= 0:
-        return False, None
-
-    # Volatilitätskontraktion: letzte Spread ≤ 75% der ersten
-    if seg_spread[0] <= 0 or seg_spread[-1] / seg_spread[0] > min_contraction:
-        return False, None
-    if np.std(seg_spread) > 0 and np.polyfit(x, seg_spread, 1)[0] >= 0:
-        return False, None
-
-    # Volumenkontraktion: fallender Trend
-    if np.std(seg_volume) > 0 and np.polyfit(x, seg_volume, 1)[0] >= 0:
-        return False, None
-
-    # Trockenfall: letztes Segment < 80% des ersten (Volumen muss deutlich abnehmen)
-    if seg_volume[0] > 0 and seg_volume[-1] / seg_volume[0] >= 0.80:
-        return False, None
-
-    return True, seg_highs_arr
+    return float(spread[-1])
 
 
 def detect_vcp(
     df: pd.DataFrame,
-    window: int = 60,
-    max_close_to_resistance: float = 0.04,
-    min_contraction: float = 0.75,
-    max_pullback: float = 0.15,
-    min_bars_per_wave: int = 3,
+    window: int = 45,
+    base_min: int = 7,
+    base_max: int = 30,
+    max_close_to_resistance: float = 0.05,
+    min_contraction: float = 0.70,
+    max_pullback: float = 0.20,
+    max_final_range: float = 0.08,
+    waves_to_try: tuple[int, ...] = (4, 3),
 ) -> dict:
     """
-    VCP-Detektion nach Minervini.
+    Adaptive VCP-Detektion nach Minervini.
 
     Schritte:
-      1. Pivot = höchstes High der Base (ohne aktuellen Bar)
-      2. Stage-2-Prior-Trend: MA20 > MA50 + MA50 steigt seit 20 Bars
-      3. Flexible Wellenerkennung: n ∈ {4, 3, 2}, höchstes valides n gewinnt
-      4. Pro Welle: Highs fallen, Tiefs steigen, Spread kontrahiert, Volumen trocknet aus
-      5. Ausbruchs-Volumen: max. letzte 5 Bars ≥ 1.40× Base-Avg → Pflicht für Entry_Signal
+      1. Stage-2-Prior-Trend: Kurs > MA20 > MA50 und MA50 steigt seit 10 Bars
+      2. Adaptive Basissuche über base_min..base_max Wochen; Pivot = Basis-Hoch
+      3. Pro Basislänge: Wellen (n ∈ waves_to_try) müssen progressiv kontrahieren
+         (höhere Tiefs, fallende/flache Highs, jede Welle flacher als die vorige,
+         Volumen trocknet aus), Basistiefe ≤ max_pullback unter Pivot
+      4. Die engste valide Basis direkt unter dem Pivot gewinnt
+      5. Entry_Signal: Kurs > Pivot·1.005 UND Volumen-Surge (letzte 4 Bars ≥ 1.40× Base-Avg)
+
+    Args:
+      window: SUCHBEREICH (max. berücksichtigte Basislänge; base_max cappt zusätzlich)
 
     Returns
     -------
     dict: VCP (bool), Waves (int), Entry_Signal (bool),
-          Breakout_Level (float|None), Breakout_Volume (bool)
+          Breakout_Level (float|None), Breakout_Volume (bool), Base_Weeks (int)
     """
-
     result = {
         "VCP": False,
         "Waves": 0,
         "Entry_Signal": False,
         "Breakout_Level": None,
         "Breakout_Volume": False,
+        "Base_Weeks": 0,
     }
 
     if df is None or df.empty:
         return result
-
-    required = {"Close", "High", "Low", "Volume"}
-    if not required.issubset(df.columns):
+    if not {"Close", "High", "Low", "Volume"}.issubset(df.columns):
         return result
 
     df = df.dropna().copy()
-    if len(df) < window:
+    if len(df) < 55:
         return result
 
-    data = df.tail(window).copy()
-    close = data["Close"].astype(float)
-    high = data["High"].astype(float)
-    vol = data["Volume"].astype(float)
-
-    last_close = float(close.iloc[-1])
+    full_close = df["Close"].astype(float)
+    last_close = float(full_close.iloc[-1])
     if not math.isfinite(last_close):
         return result
 
-    # Pivot = höchstes High der Base OHNE den aktuellen Bar (verhindert, dass ein
-    # Breakout-Bar den Pivot nach oben verschiebt und Entry_Signal nie triggert)
-    base_high = high.iloc[:-1]
-    resistance = float(base_high.max())
-    if not math.isfinite(resistance) or resistance <= 0:
-        return result
-
-    # Base-Daten für Muster-Analyse: ohne den letzten Bar
-    base_data = data.iloc[:-1]
-
-    # Stage-2-Prior-Trend aus vollem DataFrame (erfasst Uptrend vor der Base)
-    full_close = df["Close"].astype(float)
-    if len(full_close) < 50:
-        return result
+    # 1. Stage-2-Prior-Trend (Uptrend-Kontext)
     ma20 = full_close.rolling(20).mean()
     ma50 = full_close.rolling(50).mean()
-
-    # Basischeck: Kurs > MA20 > MA50
     if last_close < ma20.iloc[-1] or ma20.iloc[-1] < ma50.iloc[-1]:
         return result
-
-    # MA50 muss seit 10 Bars steigen (Stage-2-Bestätigung — kein getarnter Downtrend)
-    ma50_valid = ma50.dropna()
-    if len(ma50_valid) >= 10 and float(ma50.iloc[-1]) < float(ma50.iloc[-10]):
+    if len(ma50.dropna()) >= 10 and float(ma50.iloc[-1]) < float(ma50.iloc[-10]):
         return result
 
-    # Längerfristiger Momentum: Kurs muss ≥ 5% über dem Niveau von (window + 30) Bars davor
-    # (filtert Erholungsversuche nach großen Kurseinbrüchen heraus)
-    lookback_momentum = window + 30
-    if len(full_close) >= lookback_momentum:
-        prior_price = float(full_close.iloc[-lookback_momentum])
-        if prior_price > 0 and last_close < prior_price * 1.05:
-            return result
+    # 2.–4. Adaptive Basissuche: engste valide Basis direkt unter dem Pivot
+    best = None  # (final_range, L, n, pivot)
+    for L in range(base_min, min(base_max, window) + 1):
+        seg = df.tail(L + 1)          # +1 für den aktuellen (Breakout-)Bar
+        base_data = seg.iloc[:-1]     # Basis ohne aktuellen Bar
+        if len(base_data) < base_min:
+            continue
+        pivot = float(base_data["High"].max())
+        if pivot <= 0:
+            continue
+        # Pivot muss Widerstand SEIN, den der Kurs noch nicht weit überschritten hat
+        rel = (pivot - last_close) / pivot
+        if rel > max_close_to_resistance or rel < -0.06:
+            continue
+        for n in waves_to_try:
+            final_range = _check_waves(
+                base_data, pivot, n, max_pullback, min_contraction, max_final_range
+            )
+            if final_range is not None:
+                cand = (final_range, L, n, pivot)
+                if best is None or cand[0] < best[0]:
+                    best = cand
+                break
 
-    # Flexible Wellenerkennung auf base_data (ohne aktuellen Bar)
-    found_n = None
-    found_seg_highs = None
-
-    for n in [4, 3, 2]:
-        valid, seg_highs_arr = _check_segments(
-            base_data, n, resistance, max_pullback, min_contraction, min_bars_per_wave
-        )
-        if valid:
-            found_n = n
-            found_seg_highs = seg_highs_arr
-            break
-
-    if found_n is None:
+    if best is None:
         return result
 
-    # Breakout-Level = Hoch der letzten Kontraktion
-    breakout_level = float(found_seg_highs[-1])
+    final_range, L, n, pivot = best
 
-    # Kurs muss im Breakout-Fenster sein: max. 4% unter Pivot ODER bereits drüber (max. 5%)
-    rel_dist = (breakout_level - last_close) / breakout_level
-    if rel_dist > max_close_to_resistance or rel_dist < -0.05:
-        return result
-
-    # Ausbruchs-Volumen: max. der letzten 5 Bars muss ≥ 1.40× Base-Durchschnitt sein
-    vol_base_avg = float(vol.mean())
-    vol_last_max = float(vol.iloc[-5:].max())
+    # 5. Ausbruchs-Volumen und Entry
+    vol = df["Volume"].astype(float)
+    vol_base_avg = float(vol.tail(L + 1).mean())
+    vol_last_max = float(vol.iloc[-4:].max())
     breakout_vol_surge = vol_base_avg > 0 and vol_last_max >= vol_base_avg * 1.40
-
-    # Entry nur wenn Kurs über Pivot UND Volumen-Surge vorhanden
-    price_breakout = last_close > breakout_level * 1.005
-    entry_signal = price_breakout and breakout_vol_surge
+    price_breakout = last_close > pivot * 1.005
 
     return {
         "VCP": True,
-        "Waves": found_n,
-        "Entry_Signal": bool(entry_signal),
-        "Breakout_Level": breakout_level,
+        "Waves": n,
+        "Entry_Signal": bool(price_breakout and breakout_vol_surge),
+        "Breakout_Level": pivot,
         "Breakout_Volume": bool(breakout_vol_surge),
+        "Base_Weeks": L,
     }
