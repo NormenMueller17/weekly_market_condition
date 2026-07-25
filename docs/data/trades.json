@@ -195,12 +195,12 @@
       "pt_partial_2_date": null,
       "pt_trailing_stop": null,
       "pt_breakeven_alpaca_confirmed": true,
-      "exit_date": "2026-07-18",
-      "exit_price": 876.66,
-      "exit_reason": "position_closed_unknown",
+      "exit_date": "2026-07-17",
+      "exit_price": 710.53,
+      "exit_reason": "stop_hit",
       "exit_order_id": null,
-      "realized_pl": 2769.5,
-      "realized_plpc": 18.76
+      "realized_pl": -553.1,
+      "realized_plpc": -3.75
     },
     {
       "symbol": "ON",
