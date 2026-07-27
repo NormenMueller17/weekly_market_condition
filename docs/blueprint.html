@@ -581,9 +581,19 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
     <ul>
       <li><strong>VCP:</strong> 2-fache ATR unter dem Ausbruchsniveau, maximal 15 % unter Entry</li>
       <li><strong>Launchpad:</strong> Unteres Drittel der Konsolidierungsbox, gecappt auf das Wick-Tief der Trigger-Kerze</li>
-      <li><strong>Fallback (kein Muster erkannt):</strong> 10 % unter dem Einstiegskurs</li>
+      <li><strong>Fallback (kein Muster erkannt):</strong> 2-fache ATR unter dem Einstiegskurs, mindestens 10 %</li>
       <li><strong>Absolutes Sicherheitslimit:</strong> Niemals mehr als 20 % unter dem Einstiegskurs</li>
     </ul>
+    <p>Der Fallback war bis Juli 2026 ein fester Wert von 10 %. Eine Auswertung des
+    Tradetagebuchs zeigte, dass die nach zwei bis sechs Tagen ausgestoppten Positionen
+    eine Tages-ATR von im Median 7,4 % hatten — 10 % Stopabstand entsprachen dort nur
+    dem 1,2- bis 1,5-fachen der ATR und lagen damit innerhalb der normalen
+    Tagesschwankung. Da der Fallback wegen <code>require_pattern = false</code> für
+    nahezu jeden Trade greift, skaliert er nun wie der VCP-Pfad mit der Volatilität.
+    Die Untergrenze von 10 % verhindert, dass ruhige Titel einen engeren Stop als
+    zuvor bekommen. Weil die Positionsgröße risikobasiert berechnet wird
+    (Position = Maximalrisiko ÷ Stopabstand), bleibt das Risiko je Trade unverändert
+    bei 1,5 % — ein weiterer Stop führt automatisch zu einer kleineren Position.</p>
     <div class="example">
       <strong>Beispiel OTO-Order (VCP-Setup):</strong> Pivot = 100 $, ATR = 4 $.<br>
       Buy-Stop = 100,10 $ (0,1 % über Pivot). Max-Limit = 105 $ (5 % über Pivot).<br>
