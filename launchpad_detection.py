@@ -31,6 +31,7 @@ def detect_launchpad(
     require_prior_trend: bool = True,
     breakout_volume_factor: float = 1.40,
     pivot_proximity_pct: float = 0.03,
+    breakout_buffer_pct: float = 0.005,
     daily_df: pd.DataFrame | None = None,
     daily_vol_lookback: int = 50,
 ) -> dict:
@@ -56,7 +57,10 @@ def detect_launchpad(
     breakout_volume_factor : float
         max(last 3 bars) >= factor * base_avg triggers Launchpad_Entry (default: 1.40)
     pivot_proximity_pct : float
-        Close must be within this % of pivot for Near_Pivot (default: 3%)
+        Close must be within this % of pivot for Near_Pivot (default: 3%).
+        Watchlist-Indikator und Score-Input — NICHT das Entry-Kriterium.
+    breakout_buffer_pct : float
+        Aufschlag über dem Pivot für Launchpad_Entry (default: 0.5 %, wie im VCP)
 
     Returns
     -------
@@ -80,6 +84,7 @@ def detect_launchpad(
         "Launchpad_Entry": False,
         "Breakout_Vol_Ratio": 0.0,
         "Breakout_Vol_Basis": "weekly",
+        "Price_Breakout": False,
         "Base_Weeks": 0,
         "Range_Pct": float("nan"),
         "Volume_Contraction": float("nan"),
@@ -228,11 +233,17 @@ def detect_launchpad(
     # Volume dryness: last bar < 70% of base avg
     vol_dry = (float(volume.iloc[-1]) < 0.70 * base_vol_avg) if base_vol_avg > 0 else False
 
-    # Pivot proximity: close within pivot_proximity_pct below/above pivot
+    # Pivot proximity: close within pivot_proximity_pct below/above pivot.
+    # Nur noch Watchlist-Indikator und Punktelieferant für den Quality-Score —
+    # als ENTRY-Kriterium taugte das nicht, weil es auch unterhalb des Pivots
+    # erfüllt ist (siehe price_breakout unten).
     near_pivot = (
         last_close >= pivot * (1.0 - pivot_proximity_pct)
         and last_close <= pivot * (1.0 + pivot_proximity_pct)
     )
+
+    # Echter Ausbruch — gleiche Schwelle wie im VCP (`detect_vcp`).
+    price_breakout = last_close > pivot * (1.0 + breakout_buffer_pct)
 
     # Ausbruchsvolumen — bevorzugt am AUSBRUCHSTAG gegen den Ø der letzten
     # `daily_vol_lookback` Handelstage (wie `detect_vcp` seit 6d978bc). Vorher
@@ -249,7 +260,7 @@ def detect_launchpad(
     if vol_ratio is None:
         vol_ratio = (float(volume.iloc[-1]) / base_vol_excl) if base_vol_excl > 0 else 0.0
 
-    launchpad_entry = bool(near_pivot and vol_ratio >= breakout_volume_factor)
+    launchpad_entry = bool(price_breakout and vol_ratio >= breakout_volume_factor)
 
     # -----------------------------------------------------------------------
     # 4) Build Result
@@ -259,6 +270,7 @@ def detect_launchpad(
         "Launchpad_Entry": launchpad_entry,
         "Breakout_Vol_Ratio": float(vol_ratio),
         "Breakout_Vol_Basis": vol_basis,
+        "Price_Breakout": price_breakout,
         "Base_Weeks": best_base["weeks"],
         "Range_Pct": best_base["range_pct"] * 100.0,
         "Volume_Contraction": best_base["vol_contraction"],
