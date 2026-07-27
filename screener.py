@@ -163,7 +163,7 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
     vcp_entry = vcp_result.get("Entry_Signal", False)
     vcp_breakout = vcp_result.get("Breakout_Level", None)
   
-    launchpad_result = detect_launchpad(dfw)
+    launchpad_result = detect_launchpad(dfw, daily_df=df)
     launchpad_score = compute_launchpad_score(launchpad_result)
 
     close_w = dfw["Close"].dropna()

@@ -15,6 +15,11 @@ import pandas as pd
 import numpy as np
 import math
 
+# Dieselbe Volumen-Definition wie beim VCP — Ausbruchstag gegen den Ø der
+# Handelstage davor. Bewusst geteilt, damit die beiden Muster nicht wieder
+# auseinanderlaufen.
+from detect_vcp import _daily_breakout_vol_ratio, _naive_index
+
 
 def detect_launchpad(
     df: pd.DataFrame,
@@ -26,6 +31,8 @@ def detect_launchpad(
     require_prior_trend: bool = True,
     breakout_volume_factor: float = 1.40,
     pivot_proximity_pct: float = 0.03,
+    daily_df: pd.DataFrame | None = None,
+    daily_vol_lookback: int = 50,
 ) -> dict:
     """
     Detect TraderLion Launchpad pattern.
@@ -71,6 +78,8 @@ def detect_launchpad(
     result = {
         "Launchpad": False,
         "Launchpad_Entry": False,
+        "Breakout_Vol_Ratio": 0.0,
+        "Breakout_Vol_Basis": "weekly",
         "Base_Weeks": 0,
         "Range_Pct": float("nan"),
         "Volume_Contraction": float("nan"),
@@ -146,15 +155,22 @@ def detect_launchpad(
     best_base = None
     
     for base_len in range(base_weeks_min, base_weeks_max + 1):
-        if len(close) < base_len:
+        if len(close) < base_len + 1:
             continue
-        
-        # Get last N weeks
-        base_close = close.tail(base_len)
-        base_high = high.tail(base_len)
-        base_low = low.tail(base_len)
-        base_volume = volume.tail(base_len)
-        
+
+        # Basis OHNE den aktuellen Bar — der ist der Ausbruchskandidat und darf
+        # die Basisgeometrie nicht mitbestimmen. Vorher lief die Prüfung über
+        # `tail(base_len)` inklusive dieses Bars: ein Volumenausbruch in der
+        # letzten Woche hob dann `vol_second_half` und liess die geforderte
+        # Volumenkontraktion durchfallen — das Muster konnte per Konstruktion
+        # nie einen echten Ausbruch enthalten. Gleicher Fehler wie im VCP vor
+        # a7b625a (dort: `base_data = seg.iloc[:-1]`).
+        sl = slice(-(base_len + 1), -1)
+        base_close = close.iloc[sl]
+        base_high = high.iloc[sl]
+        base_low = low.iloc[sl]
+        base_volume = volume.iloc[sl]
+
         if len(base_close) < base_weeks_min:
             continue
         
@@ -201,7 +217,13 @@ def detect_launchpad(
     # 3) Post-Base Signals
     # -----------------------------------------------------------------------
     pivot = best_base["pivot"]
-    base_vol_avg = float(volume.tail(best_base["weeks"]).mean())
+    bw = best_base["weeks"]
+
+    # Vergleichsdurchschnitt OHNE den aktuellen (Ausbruchs-)Bar. Vorher mittelte
+    # `volume.tail(bw)` den Ausbruchsbar in seinen eigenen Vergleichswert ein —
+    # derselbe Fehler, der in `detect_vcp` mit 81519cb behoben wurde.
+    base_vol_excl = float(volume.iloc[-(bw + 1):-1].mean()) if len(volume) > bw else 0.0
+    base_vol_avg = float(volume.tail(bw).mean())      # nur noch für Volume_Dry
 
     # Volume dryness: last bar < 70% of base avg
     vol_dry = (float(volume.iloc[-1]) < 0.70 * base_vol_avg) if base_vol_avg > 0 else False
@@ -212,13 +234,22 @@ def detect_launchpad(
         and last_close <= pivot * (1.0 + pivot_proximity_pct)
     )
 
-    # Breakout-volume entry: max of last 3 bars >= breakout_volume_factor × base avg
-    recent_vol_max = float(volume.tail(3).max())
-    launchpad_entry = (
-        near_pivot
-        and base_vol_avg > 0
-        and recent_vol_max >= breakout_volume_factor * base_vol_avg
-    )
+    # Ausbruchsvolumen — bevorzugt am AUSBRUCHSTAG gegen den Ø der letzten
+    # `daily_vol_lookback` Handelstage (wie `detect_vcp` seit 6d978bc). Vorher
+    # wurde das Maximum der letzten DREI Wochenbars verglichen, der Surge konnte
+    # also aus einer Woche ohne jeden Preisausbruch stammen.
+    vol_ratio, vol_basis = None, "weekly"
+    if daily_df is not None:
+        vol_ratio = _daily_breakout_vol_ratio(
+            daily_df, _naive_index(df.index)[-1], pivot, daily_vol_lookback
+        )
+        if vol_ratio is not None:
+            vol_basis = "daily"
+
+    if vol_ratio is None:
+        vol_ratio = (float(volume.iloc[-1]) / base_vol_excl) if base_vol_excl > 0 else 0.0
+
+    launchpad_entry = bool(near_pivot and vol_ratio >= breakout_volume_factor)
 
     # -----------------------------------------------------------------------
     # 4) Build Result
@@ -226,6 +257,8 @@ def detect_launchpad(
     result = {
         "Launchpad": True,
         "Launchpad_Entry": launchpad_entry,
+        "Breakout_Vol_Ratio": float(vol_ratio),
+        "Breakout_Vol_Basis": vol_basis,
         "Base_Weeks": best_base["weeks"],
         "Range_Pct": best_base["range_pct"] * 100.0,
         "Volume_Contraction": best_base["vol_contraction"],
