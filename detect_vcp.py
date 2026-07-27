@@ -28,6 +28,7 @@ def _check_waves(
     max_pullback: float,
     min_contraction: float,
     max_final_range: float,
+    max_vol_dryup: float = 0.90,
     min_bars_per_wave: int = 2,
 ) -> float | None:
     """Prüft ob `base_data` mit `n` Wellen eine gültige, progressiv kontrahierende
@@ -74,8 +75,8 @@ def _check_waves(
     # Progressive Kontraktion: jede Welle flacher als die vorige (mit kleiner Toleranz)
     if not all(spread[i] <= spread[i - 1] * 1.02 for i in range(1, n)):
         return None
-    # Volumen-Trockenfall
-    if vols[0] > 0 and vols[-1] / vols[0] >= 0.90:
+    # Volumen-Trockenfall (max_vol_dryup >= 1.0 schaltet ihn ab)
+    if max_vol_dryup < 1.0 and vols[0] > 0 and vols[-1] / vols[0] >= max_vol_dryup:
         return None
 
     return float(spread[-1])
@@ -161,6 +162,7 @@ def detect_vcp(
     min_contraction: float = 0.70,
     max_pullback: float = 0.20,
     max_final_range: float = 0.08,
+    max_vol_dryup: float = 0.90,
     min_breakout_vol_ratio: float = 1.40,
     daily_df: pd.DataFrame | None = None,
     daily_vol_lookback: int = 50,
@@ -190,6 +192,8 @@ def detect_vcp(
 
     Args:
       window: SUCHBEREICH (max. berücksichtigte Basislänge; base_max cappt zusätzlich)
+      max_vol_dryup: geforderter Volumen-Trockenfall über die Basis (letzte Welle
+        / erste Welle muss darunter liegen). 1.0 schaltet das Kriterium ab.
       min_breakout_vol_ratio: Volumenschwelle des Ausbruchs gegen den Vergleichs-Ø
       daily_df: optionale Tages-OHLCV-Serie desselben Titels, aus der `df`
         aggregiert wurde. Nur die Ausbruchswoche wird daraus gelesen; Zeilen nach
@@ -263,7 +267,8 @@ def detect_vcp(
             continue
         for n in waves_to_try:
             final_range = _check_waves(
-                base_data, pivot, n, max_pullback, min_contraction, max_final_range
+                base_data, pivot, n, max_pullback, min_contraction,
+                max_final_range, max_vol_dryup
             )
             if final_range is not None:
                 cand = (final_range, L, n, pivot)

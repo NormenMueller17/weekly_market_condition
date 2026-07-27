@@ -162,6 +162,7 @@ class Params:
     min_contraction: float = 0.70
     max_pullback: float = 0.20
     max_final_range: float = 0.08
+    max_vol_dryup: float = 0.90
     max_close_to_resistance: float = 0.05
     min_breakout_vol_ratio: float = 1.40
     min_rs_score: float = 0.0
@@ -175,6 +176,7 @@ class Params:
             "min_contraction": self.min_contraction,
             "max_pullback": self.max_pullback,
             "max_final_range": self.max_final_range,
+            "max_vol_dryup": self.max_vol_dryup,
             "max_close_to_resistance": self.max_close_to_resistance,
             "min_breakout_vol_ratio": self.min_breakout_vol_ratio,
             "min_rs_score": self.min_rs_score,
@@ -183,8 +185,10 @@ class Params:
 
     def label(self) -> str:
         rs = f" rs≥{self.min_rs_score:.0f}" if self.min_rs_score > 0 else ""
+        dry = "aus" if self.max_vol_dryup >= 1.0 else f"{self.max_vol_dryup:.2f}"
         return (f"pb={self.max_pullback:.2f} fr={self.max_final_range:.2f} "
-                f"con={self.min_contraction:.2f} vol={self.min_breakout_vol_ratio:.2f}"
+                f"con={self.min_contraction:.2f} dry={dry} "
+                f"vol={self.min_breakout_vol_ratio:.2f}"
                 f"{rs} w={'/'.join(map(str, self.waves))}")
 
 
@@ -347,6 +351,19 @@ def summarize(df: pd.DataFrame, slices: int, n_tickers: int, weeks_back: int,
     for thr in (1.0, 1.2, 1.4):
         n_thr = int((pb["vol_ratio"] >= thr).sum()) if bases else 0
         out[f"entries_w_vol{thr:.1f}"] = n_thr / weeks_measured
+
+    # RS-Güte der gefundenen Basen. Für den Sweep ist DAS die belastbare
+    # Zielgröße: Entries sind nach RS-Filter so selten (≈0,4/Woche im vollen
+    # Universum), dass Unterschiede zwischen Kombinationen im Rauschen liegen.
+    rs = df["rs"].dropna() if bases else pd.Series(dtype=float)
+    out["rs_median"] = float(rs.median()) if len(rs) else float("nan")
+    out["rs70_share_pct"] = float((rs >= 70).mean() * 100) if len(rs) else 0.0
+    out["bases70_per_week"] = float((rs >= 70).sum()) / weeks_measured if len(rs) else 0.0
+    if bases:
+        pb70 = pb[pb["rs"] >= 70]
+        out["entries70_vol1.4"] = float((pb70["vol_ratio"] >= 1.4).sum()) / weeks_measured
+    else:
+        out["entries70_vol1.4"] = 0.0
     return out
 
 
@@ -442,10 +459,12 @@ def print_report(df: pd.DataFrame, slices: int, n_tickers: int, weeks_back: int,
 # ─────────────────────────────────────────────────────────────────────────────
 # Sweep
 # ─────────────────────────────────────────────────────────────────────────────
+# max_pullback ist laut Sweep vom 2026-07-26 praktisch wirkungslos (0.20→0.30
+# ändert nichts, die Basistiefe bindet selten) und daher hier fix.
 SWEEP_GRID = {
-    "max_pullback": [0.20, 0.25, 0.30],
     "max_final_range": [0.08, 0.10, 0.12],
     "min_contraction": [0.70, 0.80],
+    "max_vol_dryup": [0.90, 1.00],
 }
 
 
@@ -465,19 +484,24 @@ def run_sweep(hist: dict[str, pd.DataFrame], base: Params, weeks_back: int,
         s = summarize(df, slices, n_tickers, weeks_back, p)
         s.update(dict(zip(keys, values)))
         out.append(s)
-        print(f"  [{i:2d}/{len(combos)}] {p.label():44}  "
-              f"Basen/W {s['bases_per_week']:7.1f}   Entries/W {s['entries_per_week']:6.2f}   "
-              f"(Vol1.2× {s['entries_w_vol1.2']:5.2f}  Vol1.0× {s['entries_w_vol1.0']:5.2f})")
+        print(f"  [{i:2d}/{len(combos)}] {p.label():52}  "
+              f"Basen/W {s['bases_per_week']:6.1f}  RS-Med {s['rs_median']:4.0f}  "
+              f"RS≥70 {s['rs70_share_pct']:4.0f} %  "
+              f"Basen70/W {s['bases70_per_week']:5.1f}")
 
     res = pd.DataFrame(out)
-    print("\n" + "=" * 72)
-    print("SWEEP-ERGEBNIS (sortiert nach Entries/Woche)")
-    print("Entries/W = Preis-Ausbruch + Volumenschwelle aus --min-breakout-vol-ratio;")
-    print("entries_w_volX = dieselbe Basis-Menge bei Schwelle X (ohne Neuscan)")
-    print("=" * 72)
-    cols = keys + ["bases_per_week", "entries_per_week",
-                   "entries_w_vol1.4", "entries_w_vol1.2", "entries_w_vol1.0"]
-    print(res.sort_values("entries_per_week", ascending=False)[cols].to_string(index=False))
+    print("\n" + "=" * 78)
+    print("SWEEP-ERGEBNIS (sortiert nach Basen/Woche mit RS ≥ 70)")
+    print("Zielgröße ist die RS-Güte der BASEN, nicht die Entry-Zahl: nach")
+    print("RS-Filter liegen Entries bei ≈0,4/Woche, Unterschiede zwischen")
+    print("Kombinationen waeren dort reines Rauschen. Ein VCP ist ein")
+    print("Trendfuehrer-Muster — eine Kalibrierung, die ueberwiegend RS-58-Titel")
+    print("findet, sucht das falsche Muster.")
+    print("=" * 78)
+    cols = keys + ["bases_per_week", "rs_median", "rs70_share_pct",
+                   "bases70_per_week", "entries70_vol1.4"]
+    print(res.sort_values("bases70_per_week", ascending=False)[cols]
+          .round(2).to_string(index=False))
     return res
 
 
