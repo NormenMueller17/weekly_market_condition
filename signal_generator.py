@@ -196,8 +196,35 @@ def _stop_vcp(breakout_level: float, atr_pct: float) -> Optional[float]:
         return None
 
 
-def _stop_default(entry: float, pct: float = 0.10) -> float:
-    """Fallback: fixed percentage below entry (Blueprint average ≈ 10 %)."""
+def _stop_default(entry: float, atr_pct: Optional[float] = None,
+                  mult: float = 2.0, min_pct: float = 0.10) -> float:
+    """Fallback-Stop: `mult` × ATR unter dem Entry, mindestens `min_pct`.
+
+    Früher ein fixer Prozentsatz (10 %, Blueprint-Durchschnitt). Der ist
+    volatilitätsblind, und da `require_pattern=False` gilt, läuft praktisch
+    jeder Trade über diesen Pfad — anders als der VCP-Pfad, der schon immer
+    2× ATR nutzt (`_stop_vcp`).
+
+    Gemessen am Tradetagebuch (2026-07-27): Die fünf nach 2–6 Tagen
+    ausgestoppten Positionen hatten einen ATR-Median von 7,4 % bei rund 10 %
+    Stop-Abstand — also nur 1,2–1,5× ATR und damit innerhalb der normalen
+    Tagesschwankung. Sie liefen danach stark (Alpha-Median +12,8 % nach 4
+    Wochen, SPY im selben Zeitraum flach).
+
+    `min_pct` als Untergrenze ist Absicht: Der Stop soll gegenüber dem alten
+    Verhalten nur WEITER werden, nie enger. Bei ruhigen Titeln (ATR ≈ 2 %)
+    ergäbe reines 2× ATR nur 4 % Abstand, und laut ATR-Aufschlüsselung hat
+    gerade das ruhigste Quartil bereits die höchste Woche-1-Stopquote (33 %).
+    Nach oben deckelt der Aufrufer weiterhin auf `max_stop_pct` (20 %).
+    """
+    pct = min_pct
+    if atr_pct is not None:
+        try:
+            a = float(atr_pct)
+            if math.isfinite(a) and a > 0:
+                pct = max(min_pct, mult * a / 100.0)
+        except (TypeError, ValueError):
+            pass
     return entry * (1.0 - pct)
 
 
@@ -559,7 +586,7 @@ def generate_signals(
             pattern = "–"
 
         if stop is None:
-            stop = _stop_default(entry)
+            stop = _stop_default(entry, atr_pct)
 
         # Floor: stop must be at least 1× ATR below entry (avoids sub-1% stops
         # on tight Launchpad bases where the formula gives no real room)
