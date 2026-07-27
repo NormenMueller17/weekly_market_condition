@@ -107,6 +107,7 @@ class Params:
     max_pullback: float = 0.20
     max_final_range: float = 0.08
     max_close_to_resistance: float = 0.05
+    min_breakout_vol_ratio: float = 1.40
     waves: tuple[int, ...] = (4, 3)
 
     def as_kwargs(self) -> dict:
@@ -118,12 +119,14 @@ class Params:
             "max_pullback": self.max_pullback,
             "max_final_range": self.max_final_range,
             "max_close_to_resistance": self.max_close_to_resistance,
+            "min_breakout_vol_ratio": self.min_breakout_vol_ratio,
             "waves_to_try": tuple(self.waves),
         }
 
     def label(self) -> str:
         return (f"pb={self.max_pullback:.2f} fr={self.max_final_range:.2f} "
-                f"con={self.min_contraction:.2f} w={'/'.join(map(str, self.waves))}")
+                f"con={self.min_contraction:.2f} vol={self.min_breakout_vol_ratio:.2f} "
+                f"w={'/'.join(map(str, self.waves))}")
 
 
 # Globals für die Worker-Prozesse (werden per initializer gesetzt)
@@ -166,16 +169,11 @@ def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int) ->
         # oder am Volumen?
         price_ok = bool(pivot and close > pivot * 1.005)
 
-        # Vergleichs-Volumenkriterium: Volumen der AUSBRUCHSWOCHE gegen den
-        # Basisdurchschnitt OHNE diese Woche. detect_vcp nimmt stattdessen das
-        # Maximum der letzten 4 Wochen gegen einen Durchschnitt, der den
-        # Ausbruchsbar mitzählt — dadurch kann der Surge aus einer Woche
-        # stammen, die mit dem Ausbruch nichts zu tun hat.
-        bw = int(res.get("Base_Weeks") or 0)
-        vol = sl["Volume"].astype(float)
-        base_avg_excl = float(vol.iloc[-(bw + 1):-1].mean()) if bw else 0.0
-        vol_break = float(vol.iloc[-1])
-        alt_surge = base_avg_excl > 0 and vol_break >= base_avg_excl * 1.40
+        # Volumenkriterium: Volumen der AUSBRUCHSWOCHE gegen den Basisdurchschnitt
+        # OHNE diese Woche (seit dem Fix in detect_vcp die einzige Definition).
+        # Das rohe Verhältnis wird mitgeschrieben, damit Schwellen ohne Neuscan
+        # ausgewertet werden können.
+        vol_ratio = float(res.get("Breakout_Vol_Ratio") or 0.0)
         hits.append((
             k,
             sl.index[-1],
@@ -188,8 +186,7 @@ def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int) ->
             close,
             price_ok,
             bool(res.get("Breakout_Volume")),
-            alt_surge,
-            float(vol_break / base_avg_excl) if base_avg_excl > 0 else 0.0,
+            vol_ratio,
         ))
     return hits
 
@@ -225,7 +222,7 @@ def run_scan(hist: dict[str, pd.DataFrame], params: Params, weeks_back: int,
 
     cols = ["week_offset", "date", "ticker", "vcp", "entry",
             "base_weeks", "waves", "breakout_level", "close",
-            "price_breakout", "vol_surge", "alt_vol_surge", "vol_ratio"]
+            "price_breakout", "vol_surge", "vol_ratio"]
     df = pd.DataFrame(rows, columns=cols)
     if not quiet:
         print(f"[SCAN] {len(tickers)} Titel × ~{weeks_back} Wochen = {slices} Slices "
@@ -283,7 +280,8 @@ def print_report(df: pd.DataFrame, slices: int, n_tickers: int, weeks_back: int,
     print("\nTrichter Basis → Entry:")
     print(f"  Basen                        : {len(df):5d}")
     print(f"  davon Preis > Pivot·1.005    : {p_ok:5d}  ({p_ok / len(df) * 100:.1f} %)")
-    print(f"  davon Volumen-Surge ≥1.40×   : {v_ok:5d}  ({v_ok / len(df) * 100:.1f} %)")
+    print(f"  davon Volumen-Surge ≥{params.min_breakout_vol_ratio:.2f}×   : "
+          f"{v_ok:5d}  ({v_ok / len(df) * 100:.1f} %)")
     print(f"  davon BEIDES (= Entry)       : {s['entries']:5d}  "
           f"({s['entries'] / len(df) * 100:.1f} %)")
     near = df[(~df["price_breakout"]) &
@@ -291,15 +289,9 @@ def print_report(df: pd.DataFrame, slices: int, n_tickers: int, weeks_back: int,
     print(f"  Watchlist (≤3 % unter Pivot) : {len(near):5d}  "
           f"({len(near) / max(1, weeks_back):.1f} / Woche)")
 
-    # Vergleich: Volumen der Ausbruchswoche statt 4-Wochen-Maximum
-    alt_entries = int((df["price_breakout"] & df["alt_vol_surge"]).sum())
-    alt_surge = int(df["alt_vol_surge"].sum())
+    # Sensitivität der Volumenschwelle (ohne Neuscan, aus dem rohen Verhältnis)
     pb = df[df["price_breakout"]]
-    print("\nAlternatives Volumenkriterium (Ausbruchswoche vs. Basis-Ø ohne sie):")
-    print(f"  Volumen-Surge ≥1.40×         : {alt_surge:5d}  "
-          f"({alt_surge / len(df) * 100:.1f} % der Basen)")
-    print(f"  Entries (Preis + Volumen)    : {alt_entries:5d}  "
-          f"({alt_entries / max(1, weeks_back):.1f} / Woche)")
+    print("\nVolumenschwelle (Ausbruchswoche vs. Basis-Ø ohne sie):")
     if not pb.empty:
         print(f"  Vol-Ratio bei Preis-Ausbruch : Median {pb['vol_ratio'].median():.2f}×, "
               f"Q25 {pb['vol_ratio'].quantile(.25):.2f}×, "
@@ -375,8 +367,8 @@ def run_sweep(hist: dict[str, pd.DataFrame], base: Params, weeks_back: int,
     res = pd.DataFrame(out)
     print("\n" + "=" * 72)
     print("SWEEP-ERGEBNIS (sortiert nach Entries/Woche)")
-    print("Entries/W = aktuelle Logik; entries_w_volX = Preis-Ausbruch mit")
-    print("Volumen der Ausbruchswoche ≥ X × Basisdurchschnitt")
+    print("Entries/W = Preis-Ausbruch + Volumenschwelle aus --min-breakout-vol-ratio;")
+    print("entries_w_volX = dieselbe Basis-Menge bei Schwelle X (ohne Neuscan)")
     print("=" * 72)
     cols = keys + ["bases_per_week", "entries_per_week",
                    "entries_w_vol1.4", "entries_w_vol1.2", "entries_w_vol1.0"]
@@ -412,6 +404,8 @@ def main() -> int:
     ap.add_argument("--max-pullback", type=float, default=0.20)
     ap.add_argument("--max-final-range", type=float, default=0.08)
     ap.add_argument("--max-close-to-resistance", type=float, default=0.05)
+    ap.add_argument("--min-breakout-vol-ratio", type=float, default=1.40,
+                    help="Volumen der Ausbruchswoche / Basis-Ø (Default 1.40)")
     ap.add_argument("--waves", type=str, default="4,3",
                     help="Wellenzahlen in Testreihenfolge, z. B. '4,3' oder '4,3,2'")
     args = ap.parse_args()
@@ -424,6 +418,7 @@ def main() -> int:
         max_pullback=args.max_pullback,
         max_final_range=args.max_final_range,
         max_close_to_resistance=args.max_close_to_resistance,
+        min_breakout_vol_ratio=args.min_breakout_vol_ratio,
         waves=tuple(int(x) for x in args.waves.split(",") if x.strip()),
     )
 

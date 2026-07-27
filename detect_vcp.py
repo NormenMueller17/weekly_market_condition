@@ -90,6 +90,7 @@ def detect_vcp(
     min_contraction: float = 0.70,
     max_pullback: float = 0.20,
     max_final_range: float = 0.08,
+    min_breakout_vol_ratio: float = 1.40,
     waves_to_try: tuple[int, ...] = (4, 3),
 ) -> dict:
     """
@@ -102,15 +103,18 @@ def detect_vcp(
          (höhere Tiefs, fallende/flache Highs, jede Welle flacher als die vorige,
          Volumen trocknet aus), Basistiefe ≤ max_pullback unter Pivot
       4. Die engste valide Basis direkt unter dem Pivot gewinnt
-      5. Entry_Signal: Kurs > Pivot·1.005 UND Volumen-Surge (letzte 4 Bars ≥ 1.40× Base-Avg)
+      5. Entry_Signal: Kurs > Pivot·1.005 UND Volumen der Ausbruchswoche
+         ≥ min_breakout_vol_ratio × Basisdurchschnitt (ohne die Ausbruchswoche)
 
     Args:
       window: SUCHBEREICH (max. berücksichtigte Basislänge; base_max cappt zusätzlich)
+      min_breakout_vol_ratio: Volumenschwelle der Ausbruchswoche gegen den Basis-Ø
 
     Returns
     -------
     dict: VCP (bool), Waves (int), Entry_Signal (bool),
-          Breakout_Level (float|None), Breakout_Volume (bool), Base_Weeks (int)
+          Breakout_Level (float|None), Breakout_Volume (bool),
+          Breakout_Vol_Ratio (float), Base_Weeks (int)
     """
     result = {
         "VCP": False,
@@ -118,6 +122,7 @@ def detect_vcp(
         "Entry_Signal": False,
         "Breakout_Level": None,
         "Breakout_Volume": False,
+        "Breakout_Vol_Ratio": 0.0,
         "Base_Weeks": 0,
     }
 
@@ -173,10 +178,14 @@ def detect_vcp(
     final_range, L, n, pivot = best
 
     # 5. Ausbruchs-Volumen und Entry
+    # Verglichen wird das Volumen der AUSBRUCHSWOCHE (letzter Bar) gegen den
+    # Durchschnitt der Basis OHNE diese Woche — dieselbe Abgrenzung wie bei der
+    # Basisgeometrie oben (`base_data = seg.iloc[:-1]`).
     vol = df["Volume"].astype(float)
-    vol_base_avg = float(vol.tail(L + 1).mean())
-    vol_last_max = float(vol.iloc[-4:].max())
-    breakout_vol_surge = vol_base_avg > 0 and vol_last_max >= vol_base_avg * 1.40
+    vol_base_avg = float(vol.iloc[-(L + 1):-1].mean())
+    vol_breakout = float(vol.iloc[-1])
+    vol_ratio = vol_breakout / vol_base_avg if vol_base_avg > 0 else 0.0
+    breakout_vol_surge = vol_ratio >= min_breakout_vol_ratio
     price_breakout = last_close > pivot * 1.005
 
     return {
@@ -185,5 +194,6 @@ def detect_vcp(
         "Entry_Signal": bool(price_breakout and breakout_vol_surge),
         "Breakout_Level": pivot,
         "Breakout_Volume": bool(breakout_vol_surge),
+        "Breakout_Vol_Ratio": float(vol_ratio),
         "Base_Weeks": L,
     }
