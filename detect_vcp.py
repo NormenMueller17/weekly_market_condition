@@ -164,12 +164,19 @@ def detect_vcp(
     min_breakout_vol_ratio: float = 1.40,
     daily_df: pd.DataFrame | None = None,
     daily_vol_lookback: int = 50,
+    rs_score: float | None = None,
+    min_rs_score: float = 0.0,
     waves_to_try: tuple[int, ...] = (4, 3),
 ) -> dict:
     """
     Adaptive VCP-Detektion nach Minervini.
 
     Schritte:
+      0. RS-Vorfilter (optional): nur Trendführer werden überhaupt auf eine Basis
+         geprüft. Ohne ihn selektiert die enge Geometrie (max_final_range plus
+         Volumen-Trockenfall) bevorzugt Low-Vol-Defensivwerte — gemessen lag deren
+         Volumen am Ausbruchstag im Median bei 0,99× des 50-Tage-Ø, also ohne
+         jede Expansion.
       1. Stage-2-Prior-Trend: Kurs > MA20 > MA50 und MA50 steigt seit 10 Bars
       2. Adaptive Basissuche über base_min..base_max Wochen; Pivot = Basis-Hoch
       3. Pro Basislänge: Wellen (n ∈ waves_to_try) müssen progressiv kontrahieren
@@ -187,6 +194,11 @@ def detect_vcp(
       daily_df: optionale Tages-OHLCV-Serie desselben Titels, aus der `df`
         aggregiert wurde. Nur die Ausbruchswoche wird daraus gelesen; Zeilen nach
         dem letzten Wochenbar werden ignoriert, walk-forward bleibt also sauber.
+      rs_score: O'Neil-RS-Perzentil (1–99) des Titels ZUM ZEITPUNKT des letzten
+        Bars. Querschnittsgröße, die der Aufrufer über das Universum berechnen
+        muss — `detect_vcp` sieht nur einen Titel.
+      min_rs_score: Schwelle für `rs_score`. 0 (Default) schaltet den Vorfilter
+        ab; ohne übergebenen `rs_score` greift er ohnehin nicht.
 
     Returns
     -------
@@ -210,6 +222,13 @@ def detect_vcp(
         return result
     if not {"Close", "High", "Low", "Volume"}.issubset(df.columns):
         return result
+
+    # 0. RS-Vorfilter — vor der Basissuche, spart auch Rechenzeit
+    if min_rs_score > 0:
+        if rs_score is None or not math.isfinite(float(rs_score)):
+            return result
+        if float(rs_score) < min_rs_score:
+            return result
 
     df = df.dropna().copy()
     if len(df) < 55:

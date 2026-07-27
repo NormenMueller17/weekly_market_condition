@@ -25,6 +25,7 @@ Beispiele
   python vcp_universe_check.py --weeks-back 52        # 1 Jahr walk-forward
   python vcp_universe_check.py --sweep                # Parameterraster
   python vcp_universe_check.py --daily-volume         # Vol am Ausbruchstag
+  python vcp_universe_check.py --min-rs-score 70      # nur Trendfuehrer
   python vcp_universe_check.py --max-pullback 0.25 --max-final-range 0.10
 """
 from __future__ import annotations
@@ -111,6 +112,33 @@ def load_daily(tickers: list[str], refresh: bool) -> dict[str, pd.DataFrame]:
     return {t: daily[t] for t in tickers if t in daily}
 
 
+def compute_rs_matrix(hist: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """O'Neil-RS-Perzentile (1–99) je Woche und Titel — walk-forward korrekt.
+
+    Gleiche Definition wie `screener._compute_weighted_perf`/`_compute_rs_scores`,
+    nur auf Wochenbars (13/26/52W statt 63/126/252 Handelstagen) und für alle
+    Zeitpunkte auf einmal: Der Rang wird PRO WOCHE über den Querschnitt gebildet,
+    ein Slice sieht also nur die damals bekannten Kurse.
+
+    Rückgabe: DataFrame [Wochendatum × Ticker].
+    """
+    closes = pd.DataFrame({t: d["Close"].astype(float) for t, d in hist.items()})
+    closes = closes.sort_index()
+
+    num, den = None, None
+    for lag, w in ((52, 0.5), (26, 0.3), (13, 0.2)):
+        perf = closes / closes.shift(lag) - 1.0
+        contrib = perf * w
+        weight = perf.notna().astype(float) * w
+        num = contrib if num is None else num.add(contrib, fill_value=0.0)
+        den = weight if den is None else den.add(weight, fill_value=0.0)
+
+    # Gewichte normalisieren, damit Titel mit kurzer Historie nicht benachteiligt
+    # werden (wie in screener._compute_weighted_perf)
+    weighted_perf = num / den.where(den > 0)
+    return weighted_perf.rank(axis=1, pct=True) * 98.0 + 1.0
+
+
 def _apply_limit(hist: dict[str, pd.DataFrame], limit: int | None) -> dict[str, pd.DataFrame]:
     """Zufallsstichprobe mit festem Seed — die CSV ist nach Marktkapitalisierung
     sortiert, ein einfaches Abschneiden würde nur Large Caps messen. Fester Seed,
@@ -136,6 +164,7 @@ class Params:
     max_final_range: float = 0.08
     max_close_to_resistance: float = 0.05
     min_breakout_vol_ratio: float = 1.40
+    min_rs_score: float = 0.0
     waves: tuple[int, ...] = (4, 3)
 
     def as_kwargs(self) -> dict:
@@ -148,26 +177,30 @@ class Params:
             "max_final_range": self.max_final_range,
             "max_close_to_resistance": self.max_close_to_resistance,
             "min_breakout_vol_ratio": self.min_breakout_vol_ratio,
+            "min_rs_score": self.min_rs_score,
             "waves_to_try": tuple(self.waves),
         }
 
     def label(self) -> str:
+        rs = f" rs≥{self.min_rs_score:.0f}" if self.min_rs_score > 0 else ""
         return (f"pb={self.max_pullback:.2f} fr={self.max_final_range:.2f} "
-                f"con={self.min_contraction:.2f} vol={self.min_breakout_vol_ratio:.2f} "
-                f"w={'/'.join(map(str, self.waves))}")
+                f"con={self.min_contraction:.2f} vol={self.min_breakout_vol_ratio:.2f}"
+                f"{rs} w={'/'.join(map(str, self.waves))}")
 
 
 # Globals für die Worker-Prozesse (werden per initializer gesetzt)
 _W_HIST: dict[str, pd.DataFrame] = {}
 _W_DAILY: dict[str, pd.DataFrame] = {}
+_W_RS: dict[str, pd.Series] = {}
 _W_KWARGS: dict = {}
 _W_WEEKS_BACK: int = 0
 
 
 def _worker_init(hist: dict[str, pd.DataFrame], daily: dict[str, pd.DataFrame],
-                 kwargs: dict, weeks_back: int) -> None:
-    global _W_HIST, _W_DAILY, _W_KWARGS, _W_WEEKS_BACK
-    _W_HIST, _W_DAILY, _W_KWARGS, _W_WEEKS_BACK = hist, daily, kwargs, weeks_back
+                 rs: dict[str, pd.Series], kwargs: dict, weeks_back: int) -> None:
+    global _W_HIST, _W_DAILY, _W_RS, _W_KWARGS, _W_WEEKS_BACK
+    _W_HIST, _W_DAILY, _W_RS = hist, daily, rs
+    _W_KWARGS, _W_WEEKS_BACK = kwargs, weeks_back
 
 
 def _scan_ticker(ticker: str) -> list[tuple]:
@@ -177,7 +210,7 @@ def _scan_ticker(ticker: str) -> list[tuple]:
     waves, breakout_level) — nur Zeilen mit erkannter Basis.
     """
     return scan_ticker(ticker, _W_HIST[ticker], _W_KWARGS, _W_WEEKS_BACK,
-                       _W_DAILY.get(ticker))
+                       _W_DAILY.get(ticker), _W_RS.get(ticker))
 
 
 def trim_daily(daily: dict[str, pd.DataFrame], weeks_back: int,
@@ -192,7 +225,8 @@ def trim_daily(daily: dict[str, pd.DataFrame], weeks_back: int,
 
 
 def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int,
-                daily: pd.DataFrame | None = None) -> list[tuple]:
+                daily: pd.DataFrame | None = None,
+                rs: pd.Series | None = None) -> list[tuple]:
     hits: list[tuple] = []
     n = len(df)
     for k in range(weeks_back):
@@ -200,10 +234,16 @@ def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int,
         if end < MIN_BARS:
             break
         sl = df.iloc[:end]
+        # RS zum Zeitpunkt DIESES Slices — nicht der aktuelle Wert
+        rs_now = None
+        if rs is not None:
+            v = rs.get(sl.index[-1])
+            if v is not None and pd.notna(v):
+                rs_now = float(v)
         try:
             # detect_vcp schneidet `daily` selbst auf das Slice-Ende zu — die
             # volle Serie zu übergeben erzeugt kein Look-ahead.
-            res = detect_vcp(sl, daily_df=daily, **kwargs)
+            res = detect_vcp(sl, daily_df=daily, rs_score=rs_now, **kwargs)
         except Exception:
             continue
         if not res.get("VCP"):
@@ -234,16 +274,19 @@ def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int,
             bool(res.get("Breakout_Volume")),
             vol_ratio,
             vol_basis,
+            rs_now if rs_now is not None else float("nan"),
         ))
     return hits
 
 
 def run_scan(hist: dict[str, pd.DataFrame], params: Params, weeks_back: int,
              workers: int, quiet: bool = False,
-             daily: dict[str, pd.DataFrame] | None = None) -> tuple[pd.DataFrame, int]:
+             daily: dict[str, pd.DataFrame] | None = None,
+             rs: pd.DataFrame | None = None) -> tuple[pd.DataFrame, int]:
     """Scannt alle Titel. Rückgabe: (Treffer-DataFrame, Anzahl gescannter Slices)."""
     kwargs = params.as_kwargs()
     daily = daily or {}
+    rs_cols = {t: rs[t] for t in rs.columns} if rs is not None else {}
     tickers = [t for t, df in hist.items() if len(df) >= MIN_BARS]
 
     # Anzahl tatsächlich auswertbarer (Titel × Woche)-Slices
@@ -254,16 +297,18 @@ def run_scan(hist: dict[str, pd.DataFrame], params: Params, weeks_back: int,
 
     if workers <= 1:
         for i, t in enumerate(tickers, 1):
-            rows.extend(scan_ticker(t, hist[t], kwargs, weeks_back, daily.get(t)))
+            rows.extend(scan_ticker(t, hist[t], kwargs, weeks_back,
+                                    daily.get(t), rs_cols.get(t)))
             if not quiet and i % 200 == 0:
                 print(f"  … {i}/{len(tickers)} ({time.time() - t0:.0f}s)")
     else:
         sub_hist = {t: hist[t] for t in tickers}
         sub_daily = {t: daily[t] for t in tickers if t in daily}
+        sub_rs = {t: rs_cols[t] for t in tickers if t in rs_cols}
         with ProcessPoolExecutor(
             max_workers=workers,
             initializer=_worker_init,
-            initargs=(sub_hist, sub_daily, kwargs, weeks_back),
+            initargs=(sub_hist, sub_daily, sub_rs, kwargs, weeks_back),
         ) as pool:
             for i, res in enumerate(pool.map(_scan_ticker, tickers, chunksize=25), 1):
                 rows.extend(res)
@@ -272,7 +317,7 @@ def run_scan(hist: dict[str, pd.DataFrame], params: Params, weeks_back: int,
 
     cols = ["week_offset", "date", "ticker", "vcp", "entry",
             "base_weeks", "waves", "breakout_level", "close",
-            "price_breakout", "vol_surge", "vol_ratio", "vol_basis"]
+            "price_breakout", "vol_surge", "vol_ratio", "vol_basis", "rs"]
     df = pd.DataFrame(rows, columns=cols)
     if not quiet:
         print(f"[SCAN] {len(tickers)} Titel × ~{weeks_back} Wochen = {slices} Slices "
@@ -353,6 +398,12 @@ def print_report(df: pd.DataFrame, slices: int, n_tickers: int, weeks_back: int,
             print(f"    Schwelle {thr:.1f}× → {n_thr:4d} Entries "
                   f"({n_thr / max(1, weeks_back):.1f} / Woche)")
 
+    if df["rs"].notna().any():
+        rs_ok = df["rs"].dropna()
+        print(f"\nRS der Basen: Median {rs_ok.median():.0f}, "
+              f"Q25 {rs_ok.quantile(.25):.0f}, Q75 {rs_ok.quantile(.75):.0f}, "
+              f"Anteil ≥70: {(rs_ok >= 70).mean() * 100:.0f} %")
+
     print("\nBasislängen (Wochen) — Verteilung:")
     dist = df["base_weeks"].value_counts().sort_index()
     for weeks, cnt in dist.items():
@@ -399,7 +450,8 @@ SWEEP_GRID = {
 
 
 def run_sweep(hist: dict[str, pd.DataFrame], base: Params, weeks_back: int,
-              workers: int, daily: dict[str, pd.DataFrame] | None = None) -> pd.DataFrame:
+              workers: int, daily: dict[str, pd.DataFrame] | None = None,
+              rs: pd.DataFrame | None = None) -> pd.DataFrame:
     combos = list(itertools.product(*SWEEP_GRID.values()))
     keys = list(SWEEP_GRID.keys())
     print(f"[SWEEP] {len(combos)} Kombinationen × {len(hist)} Titel × {weeks_back} Wochen\n")
@@ -407,7 +459,8 @@ def run_sweep(hist: dict[str, pd.DataFrame], base: Params, weeks_back: int,
     out = []
     for i, values in enumerate(combos, 1):
         p = Params(**{**base.__dict__, **dict(zip(keys, values))})
-        df, slices = run_scan(hist, p, weeks_back, workers, quiet=True, daily=daily)
+        df, slices = run_scan(hist, p, weeks_back, workers, quiet=True,
+                              daily=daily, rs=rs)
         n_tickers = sum(1 for d in hist.values() if len(d) >= MIN_BARS)
         s = summarize(df, slices, n_tickers, weeks_back, p)
         s.update(dict(zip(keys, values)))
@@ -461,6 +514,9 @@ def main() -> int:
     ap.add_argument("--daily-volume", action="store_true",
                     help="Ausbruchsvolumen am Ausbruchstag gegen den 50-Tage-Ø "
                          "messen statt an der ganzen Woche (laedt Tagesserien)")
+    ap.add_argument("--min-rs-score", type=float, default=0.0,
+                    help="RS-Vorfilter (O'Neil-Perzentil 1-99). 0 = aus, "
+                         "70 = Produktionsschwelle aus rules.json")
     ap.add_argument("--waves", type=str, default="4,3",
                     help="Wellenzahlen in Testreihenfolge, z. B. '4,3' oder '4,3,2'")
     args = ap.parse_args()
@@ -474,14 +530,24 @@ def main() -> int:
         max_final_range=args.max_final_range,
         max_close_to_resistance=args.max_close_to_resistance,
         min_breakout_vol_ratio=args.min_breakout_vol_ratio,
+        min_rs_score=args.min_rs_score,
         waves=tuple(int(x) for x in args.waves.split(",") if x.strip()),
     )
 
-    hist = load_history(args.history_weeks, args.limit, args.refresh)
-    if not hist:
+    # RS ist ein Querschnittsrang und wird IMMER über das volle Universum
+    # gebildet — sonst würde `--limit` die Perzentile verzerren.
+    hist_all = load_history(args.history_weeks, None, args.refresh)
+    if not hist_all:
         print("[ERROR] Keine Historie geladen.")
         return 1
 
+    rs_matrix: pd.DataFrame | None = None
+    if args.min_rs_score > 0:
+        rs_matrix = compute_rs_matrix(hist_all)
+        print(f"[RS] Perzentile aus {rs_matrix.shape[1]} Titeln × "
+              f"{rs_matrix.shape[0]} Wochen (Vorfilter ≥{args.min_rs_score:.0f})")
+
+    hist = _apply_limit(hist_all, args.limit)
     usable = {t: d for t, d in hist.items() if len(d) >= MIN_BARS}
     print(f"[DATA] {len(usable)} von {len(hist)} Titeln mit ≥{MIN_BARS} Wochenbars")
 
@@ -491,11 +557,16 @@ def main() -> int:
         print(f"[DATA] {len(daily)} Tagesserien fuers Ausbruchsvolumen")
     print()
 
+    rs_sub = rs_matrix[[t for t in usable if t in rs_matrix.columns]] \
+        if rs_matrix is not None else None
+
     if args.sweep:
-        run_sweep(usable, params, args.weeks_back, args.workers, daily=daily)
+        run_sweep(usable, params, args.weeks_back, args.workers,
+                  daily=daily, rs=rs_sub)
         return 0
 
-    df, slices = run_scan(usable, params, args.weeks_back, args.workers, daily=daily)
+    df, slices = run_scan(usable, params, args.weeks_back, args.workers,
+                          daily=daily, rs=rs_sub)
     print_report(df, slices, len(usable), args.weeks_back, params)
 
     if args.csv:
