@@ -550,6 +550,44 @@ def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.D
 
 
 
+def load_daily_history(universe: List[str], years: str = "3y") -> Dict[str, pd.DataFrame]:
+    """Load daily OHLCV history for the universe using batched downloads.
+
+    Gegenstück zu `load_weekly_history` für Auswertungen, die das Ausbruchs-
+    volumen am Ausbruchstag statt an der ganzen Woche messen (siehe
+    `detect_vcp(daily_df=...)`). Deutlich größer als die Wochenserien — nur für
+    Analyse-Tools gedacht, die das Ergebnis cachen.
+    """
+    out: Dict[str, pd.DataFrame] = {}
+
+    tickers = list(dict.fromkeys([t for t in universe if isinstance(t, str) and t.strip()]))
+    if not tickers:
+        print("[WARN] load_daily_history: empty tickers list")
+        return out
+
+    batched = download_ohlcv_batched(
+        tickers=tickers,
+        period=years,
+        interval="1d",
+        chunk_size=40,
+        auto_adjust=False,
+        threads=False,
+    )
+
+    for t, sub in batched.items():
+        if sub is None or sub.empty or "Close" not in sub.columns:
+            continue
+        if "Volume" not in sub.columns:
+            continue
+        sub = sub[["Close", "Volume"]].apply(pd.to_numeric, errors="coerce")
+        sub = sub.dropna(subset=["Close"])
+        if not sub.empty:
+            out[t] = sub
+
+    print(f"[DEBUG] load_daily_history: built {len(out)} series (of {len(tickers)})")
+    return out
+
+
 def load_index_series():
     """
     Lädt Indizes/Proxys als Tagesdaten und resampelt auf Wochen.

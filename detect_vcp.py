@@ -81,6 +81,77 @@ def _check_waves(
     return float(spread[-1])
 
 
+def _naive_index(idx: pd.Index) -> pd.DatetimeIndex:
+    """Zeitzonenfreier DatetimeIndex — Wochen- und Tagesserien kommen je nach
+    yfinance-Aufruf mal mit, mal ohne tz zurück und wären sonst nicht vergleichbar.
+    """
+    out = pd.DatetimeIndex(pd.to_datetime(idx))
+    if out.tz is not None:
+        out = out.tz_localize(None)
+    return out
+
+
+def _daily_breakout_vol_ratio(
+    daily: pd.DataFrame,
+    week_label: pd.Timestamp,
+    pivot: float,
+    lookback: int,
+) -> float | None:
+    """Volumen des AUSBRUCHSTAGS gegen den Ø der `lookback` Handelstage davor.
+
+    Minervini misst den Volumenschub am Tag des Ausbruchs gegen den 50-Tage-
+    Durchschnitt. Auf Wochenbasis verwässert eine starke Ausbruchskerze mit vier
+    ruhigen Tagen zu einem unauffälligen Wochenvolumen — gemessen lag der Median
+    des Wochen-Verhältnisses bei 0,90×, also unter dem Basisdurchschnitt.
+
+    Ausbruchstag = erster Tag der Ausbruchswoche mit Schluss > pivot·1.005.
+
+    `week_label` ist der Index der letzten Wochenkerze. Ob der auf den Wochen-
+    anfang zeigt (yfinance `interval="1wk"`) oder auf den Wochenschluss
+    (`resample("W-FRI")`), ist egal: verglichen wird der Wochen-PERIODE, nicht das
+    Datum. Tage nach der Ausbruchswoche bleiben außen vor, walk-forward ist also
+    look-ahead-frei.
+
+    Rückgabe: Verhältnis, oder None wenn die Tagesdaten es nicht hergeben
+    (Aufrufer fällt dann auf die Wochenlogik zurück).
+    """
+    if daily is None or daily.empty:
+        return None
+    if not {"Close", "Volume"}.issubset(daily.columns):
+        return None
+
+    d = daily.copy()
+    d.index = _naive_index(d.index)
+    d = d[["Close", "Volume"]].apply(pd.to_numeric, errors="coerce").dropna()
+    if d.empty:
+        return None
+
+    # Wochenperiode statt Datum: macht die Zuordnung labelunabhängig
+    day_week = d.index.to_period("W").start_time
+    label_week = pd.Period(pd.Timestamp(week_label).tz_localize(None)
+                           if pd.Timestamp(week_label).tz is not None
+                           else pd.Timestamp(week_label), freq="W").start_time
+
+    hist = d[day_week <= label_week]
+    week_days = d[day_week == label_week]
+    if week_days.empty:
+        return None
+
+    over = (week_days["Close"].to_numpy() > pivot * 1.005)
+    if not over.any():
+        return None
+    pos_in_week = int(np.argmax(over))          # erster Tag über dem Pivot
+    p = len(hist) - len(week_days) + pos_in_week
+
+    base = hist["Volume"].iloc[max(0, p - lookback):p]
+    if len(base) < 20:                          # zu wenig Vorlauf für einen Ø
+        return None
+    base_avg = float(base.mean())
+    if base_avg <= 0:
+        return None
+    return float(hist["Volume"].iloc[p]) / base_avg
+
+
 def detect_vcp(
     df: pd.DataFrame,
     window: int = 45,
@@ -91,6 +162,8 @@ def detect_vcp(
     max_pullback: float = 0.20,
     max_final_range: float = 0.08,
     min_breakout_vol_ratio: float = 1.40,
+    daily_df: pd.DataFrame | None = None,
+    daily_vol_lookback: int = 50,
     waves_to_try: tuple[int, ...] = (4, 3),
 ) -> dict:
     """
@@ -103,18 +176,24 @@ def detect_vcp(
          (höhere Tiefs, fallende/flache Highs, jede Welle flacher als die vorige,
          Volumen trocknet aus), Basistiefe ≤ max_pullback unter Pivot
       4. Die engste valide Basis direkt unter dem Pivot gewinnt
-      5. Entry_Signal: Kurs > Pivot·1.005 UND Volumen der Ausbruchswoche
-         ≥ min_breakout_vol_ratio × Basisdurchschnitt (ohne die Ausbruchswoche)
+      5. Entry_Signal: Kurs > Pivot·1.005 UND Volumen-Surge
+         ≥ min_breakout_vol_ratio. Bevorzugt auf TAGESBASIS gemessen
+         (Ausbruchstag vs. Ø der letzten `daily_vol_lookback` Handelstage);
+         ohne `daily_df` ersatzweise Ausbruchswoche vs. Basis-Ø.
 
     Args:
       window: SUCHBEREICH (max. berücksichtigte Basislänge; base_max cappt zusätzlich)
-      min_breakout_vol_ratio: Volumenschwelle der Ausbruchswoche gegen den Basis-Ø
+      min_breakout_vol_ratio: Volumenschwelle des Ausbruchs gegen den Vergleichs-Ø
+      daily_df: optionale Tages-OHLCV-Serie desselben Titels, aus der `df`
+        aggregiert wurde. Nur die Ausbruchswoche wird daraus gelesen; Zeilen nach
+        dem letzten Wochenbar werden ignoriert, walk-forward bleibt also sauber.
 
     Returns
     -------
     dict: VCP (bool), Waves (int), Entry_Signal (bool),
           Breakout_Level (float|None), Breakout_Volume (bool),
-          Breakout_Vol_Ratio (float), Base_Weeks (int)
+          Breakout_Vol_Ratio (float), Breakout_Vol_Basis ("daily"|"weekly"),
+          Base_Weeks (int)
     """
     result = {
         "VCP": False,
@@ -123,6 +202,7 @@ def detect_vcp(
         "Breakout_Level": None,
         "Breakout_Volume": False,
         "Breakout_Vol_Ratio": 0.0,
+        "Breakout_Vol_Basis": "weekly",
         "Base_Weeks": 0,
     }
 
@@ -178,15 +258,27 @@ def detect_vcp(
     final_range, L, n, pivot = best
 
     # 5. Ausbruchs-Volumen und Entry
-    # Verglichen wird das Volumen der AUSBRUCHSWOCHE (letzter Bar) gegen den
+    price_breakout = last_close > pivot * 1.005
+
+    # Bevorzugt Tagesbasis: Volumen des Ausbruchstags gegen den Ø der letzten
+    # `daily_vol_lookback` Handelstage davor.
+    vol_ratio, vol_basis = None, "weekly"
+    if daily_df is not None:
+        vol_ratio = _daily_breakout_vol_ratio(
+            daily_df, _naive_index(df.index)[-1], pivot, daily_vol_lookback
+        )
+        if vol_ratio is not None:
+            vol_basis = "daily"
+
+    # Fallback ohne Tagesdaten: Volumen der AUSBRUCHSWOCHE (letzter Bar) gegen den
     # Durchschnitt der Basis OHNE diese Woche — dieselbe Abgrenzung wie bei der
     # Basisgeometrie oben (`base_data = seg.iloc[:-1]`).
-    vol = df["Volume"].astype(float)
-    vol_base_avg = float(vol.iloc[-(L + 1):-1].mean())
-    vol_breakout = float(vol.iloc[-1])
-    vol_ratio = vol_breakout / vol_base_avg if vol_base_avg > 0 else 0.0
+    if vol_ratio is None:
+        vol = df["Volume"].astype(float)
+        vol_base_avg = float(vol.iloc[-(L + 1):-1].mean())
+        vol_ratio = float(vol.iloc[-1]) / vol_base_avg if vol_base_avg > 0 else 0.0
+
     breakout_vol_surge = vol_ratio >= min_breakout_vol_ratio
-    price_breakout = last_close > pivot * 1.005
 
     return {
         "VCP": True,
@@ -195,5 +287,6 @@ def detect_vcp(
         "Breakout_Level": pivot,
         "Breakout_Volume": bool(breakout_vol_surge),
         "Breakout_Vol_Ratio": float(vol_ratio),
+        "Breakout_Vol_Basis": vol_basis,
         "Base_Weeks": L,
     }

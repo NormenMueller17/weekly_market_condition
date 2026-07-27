@@ -24,6 +24,7 @@ Beispiele
   python vcp_universe_check.py --limit 300            # schneller Testlauf
   python vcp_universe_check.py --weeks-back 52        # 1 Jahr walk-forward
   python vcp_universe_check.py --sweep                # Parameterraster
+  python vcp_universe_check.py --daily-volume         # Vol am Ausbruchstag
   python vcp_universe_check.py --max-pullback 0.25 --max-final-range 0.10
 """
 from __future__ import annotations
@@ -43,7 +44,7 @@ from pathlib import Path
 import pandas as pd
 
 from config import SETTINGS
-from data_sources import get_universe, load_weekly_history
+from data_sources import get_universe, load_daily_history, load_weekly_history
 from detect_vcp import detect_vcp
 
 # detect_vcp braucht ≥ 55 Wochenbars; Puffer für die walk-forward-Slices
@@ -81,6 +82,33 @@ def load_history(weeks: int, limit: int | None, refresh: bool) -> dict[str, pd.D
         pickle.dump(hist, fh, protocol=pickle.HIGHEST_PROTOCOL)
     print(f"[CACHE] {len(hist)} Serien nach {path.name} geschrieben")
     return _apply_limit(hist, limit)
+
+
+def load_daily(tickers: list[str], refresh: bool) -> dict[str, pd.DataFrame]:
+    """Tagesserien fürs Ausbruchsvolumen — eigener Cache, gleiche TTL.
+
+    Nur Close/Volume, aber ~5× so groß wie die Wochenserien; deshalb getrennt
+    gecacht, damit ein Lauf ohne `--daily-volume` sie gar nicht erst braucht.
+    """
+    d = Path(SETTINGS.cache_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    path = d / f"vcp_check_daily_{SETTINGS.universe_top_n}.pkl"
+
+    if path.exists() and not refresh:
+        age_days = (time.time() - path.stat().st_mtime) / 86400
+        if age_days <= CACHE_TTL_DAYS:
+            with path.open("rb") as fh:
+                daily = pickle.load(fh)
+            print(f"[CACHE] {len(daily)} Tagesserien aus {path.name} "
+                  f"(Alter {age_days:.1f} Tage)")
+            return {t: daily[t] for t in tickers if t in daily}
+        print(f"[CACHE] {path.name} ist {age_days:.1f} Tage alt — lade neu.")
+
+    daily = load_daily_history(get_universe())
+    with path.open("wb") as fh:
+        pickle.dump(daily, fh, protocol=pickle.HIGHEST_PROTOCOL)
+    print(f"[CACHE] {len(daily)} Tagesserien nach {path.name} geschrieben")
+    return {t: daily[t] for t in tickers if t in daily}
 
 
 def _apply_limit(hist: dict[str, pd.DataFrame], limit: int | None) -> dict[str, pd.DataFrame]:
@@ -131,13 +159,15 @@ class Params:
 
 # Globals für die Worker-Prozesse (werden per initializer gesetzt)
 _W_HIST: dict[str, pd.DataFrame] = {}
+_W_DAILY: dict[str, pd.DataFrame] = {}
 _W_KWARGS: dict = {}
 _W_WEEKS_BACK: int = 0
 
 
-def _worker_init(hist: dict[str, pd.DataFrame], kwargs: dict, weeks_back: int) -> None:
-    global _W_HIST, _W_KWARGS, _W_WEEKS_BACK
-    _W_HIST, _W_KWARGS, _W_WEEKS_BACK = hist, kwargs, weeks_back
+def _worker_init(hist: dict[str, pd.DataFrame], daily: dict[str, pd.DataFrame],
+                 kwargs: dict, weeks_back: int) -> None:
+    global _W_HIST, _W_DAILY, _W_KWARGS, _W_WEEKS_BACK
+    _W_HIST, _W_DAILY, _W_KWARGS, _W_WEEKS_BACK = hist, daily, kwargs, weeks_back
 
 
 def _scan_ticker(ticker: str) -> list[tuple]:
@@ -146,10 +176,23 @@ def _scan_ticker(ticker: str) -> list[tuple]:
     Rückgabe: Liste von (week_offset, date, ticker, vcp, entry, base_weeks,
     waves, breakout_level) — nur Zeilen mit erkannter Basis.
     """
-    return scan_ticker(ticker, _W_HIST[ticker], _W_KWARGS, _W_WEEKS_BACK)
+    return scan_ticker(ticker, _W_HIST[ticker], _W_KWARGS, _W_WEEKS_BACK,
+                       _W_DAILY.get(ticker))
 
 
-def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int) -> list[tuple]:
+def trim_daily(daily: dict[str, pd.DataFrame], weeks_back: int,
+               lookback: int = 50) -> dict[str, pd.DataFrame]:
+    """Tagesserien auf das für den Walk-forward nötige Fenster kürzen.
+
+    Gebraucht werden nur die gescannten Wochen plus der Volumen-Lookback davor.
+    Ungekürzt würde jeder Worker-Prozess die volle 3-Jahres-Historie kopieren.
+    """
+    keep = weeks_back * 5 + lookback + 10
+    return {t: d.tail(keep) for t, d in daily.items()}
+
+
+def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int,
+                daily: pd.DataFrame | None = None) -> list[tuple]:
     hits: list[tuple] = []
     n = len(df)
     for k in range(weeks_back):
@@ -158,7 +201,9 @@ def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int) ->
             break
         sl = df.iloc[:end]
         try:
-            res = detect_vcp(sl, **kwargs)
+            # detect_vcp schneidet `daily` selbst auf das Slice-Ende zu — die
+            # volle Serie zu übergeben erzeugt kein Look-ahead.
+            res = detect_vcp(sl, daily_df=daily, **kwargs)
         except Exception:
             continue
         if not res.get("VCP"):
@@ -174,6 +219,7 @@ def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int) ->
         # Das rohe Verhältnis wird mitgeschrieben, damit Schwellen ohne Neuscan
         # ausgewertet werden können.
         vol_ratio = float(res.get("Breakout_Vol_Ratio") or 0.0)
+        vol_basis = str(res.get("Breakout_Vol_Basis") or "weekly")
         hits.append((
             k,
             sl.index[-1],
@@ -187,14 +233,17 @@ def scan_ticker(ticker: str, df: pd.DataFrame, kwargs: dict, weeks_back: int) ->
             price_ok,
             bool(res.get("Breakout_Volume")),
             vol_ratio,
+            vol_basis,
         ))
     return hits
 
 
 def run_scan(hist: dict[str, pd.DataFrame], params: Params, weeks_back: int,
-             workers: int, quiet: bool = False) -> tuple[pd.DataFrame, int]:
+             workers: int, quiet: bool = False,
+             daily: dict[str, pd.DataFrame] | None = None) -> tuple[pd.DataFrame, int]:
     """Scannt alle Titel. Rückgabe: (Treffer-DataFrame, Anzahl gescannter Slices)."""
     kwargs = params.as_kwargs()
+    daily = daily or {}
     tickers = [t for t, df in hist.items() if len(df) >= MIN_BARS]
 
     # Anzahl tatsächlich auswertbarer (Titel × Woche)-Slices
@@ -205,15 +254,16 @@ def run_scan(hist: dict[str, pd.DataFrame], params: Params, weeks_back: int,
 
     if workers <= 1:
         for i, t in enumerate(tickers, 1):
-            rows.extend(scan_ticker(t, hist[t], kwargs, weeks_back))
+            rows.extend(scan_ticker(t, hist[t], kwargs, weeks_back, daily.get(t)))
             if not quiet and i % 200 == 0:
                 print(f"  … {i}/{len(tickers)} ({time.time() - t0:.0f}s)")
     else:
         sub_hist = {t: hist[t] for t in tickers}
+        sub_daily = {t: daily[t] for t in tickers if t in daily}
         with ProcessPoolExecutor(
             max_workers=workers,
             initializer=_worker_init,
-            initargs=(sub_hist, kwargs, weeks_back),
+            initargs=(sub_hist, sub_daily, kwargs, weeks_back),
         ) as pool:
             for i, res in enumerate(pool.map(_scan_ticker, tickers, chunksize=25), 1):
                 rows.extend(res)
@@ -222,7 +272,7 @@ def run_scan(hist: dict[str, pd.DataFrame], params: Params, weeks_back: int,
 
     cols = ["week_offset", "date", "ticker", "vcp", "entry",
             "base_weeks", "waves", "breakout_level", "close",
-            "price_breakout", "vol_surge", "vol_ratio"]
+            "price_breakout", "vol_surge", "vol_ratio", "vol_basis"]
     df = pd.DataFrame(rows, columns=cols)
     if not quiet:
         print(f"[SCAN] {len(tickers)} Titel × ~{weeks_back} Wochen = {slices} Slices "
@@ -291,7 +341,9 @@ def print_report(df: pd.DataFrame, slices: int, n_tickers: int, weeks_back: int,
 
     # Sensitivität der Volumenschwelle (ohne Neuscan, aus dem rohen Verhältnis)
     pb = df[df["price_breakout"]]
-    print("\nVolumenschwelle (Ausbruchswoche vs. Basis-Ø ohne sie):")
+    n_daily = int((pb["vol_basis"] == "daily").sum()) if not pb.empty else 0
+    print("\nVolumenschwelle — Messbasis bei Preis-Ausbruch: "
+          f"{n_daily} Tages-, {len(pb) - n_daily} Wochenmessung")
     if not pb.empty:
         print(f"  Vol-Ratio bei Preis-Ausbruch : Median {pb['vol_ratio'].median():.2f}×, "
               f"Q25 {pb['vol_ratio'].quantile(.25):.2f}×, "
@@ -347,7 +399,7 @@ SWEEP_GRID = {
 
 
 def run_sweep(hist: dict[str, pd.DataFrame], base: Params, weeks_back: int,
-              workers: int) -> pd.DataFrame:
+              workers: int, daily: dict[str, pd.DataFrame] | None = None) -> pd.DataFrame:
     combos = list(itertools.product(*SWEEP_GRID.values()))
     keys = list(SWEEP_GRID.keys())
     print(f"[SWEEP] {len(combos)} Kombinationen × {len(hist)} Titel × {weeks_back} Wochen\n")
@@ -355,7 +407,7 @@ def run_sweep(hist: dict[str, pd.DataFrame], base: Params, weeks_back: int,
     out = []
     for i, values in enumerate(combos, 1):
         p = Params(**{**base.__dict__, **dict(zip(keys, values))})
-        df, slices = run_scan(hist, p, weeks_back, workers, quiet=True)
+        df, slices = run_scan(hist, p, weeks_back, workers, quiet=True, daily=daily)
         n_tickers = sum(1 for d in hist.values() if len(d) >= MIN_BARS)
         s = summarize(df, slices, n_tickers, weeks_back, p)
         s.update(dict(zip(keys, values)))
@@ -405,7 +457,10 @@ def main() -> int:
     ap.add_argument("--max-final-range", type=float, default=0.08)
     ap.add_argument("--max-close-to-resistance", type=float, default=0.05)
     ap.add_argument("--min-breakout-vol-ratio", type=float, default=1.40,
-                    help="Volumen der Ausbruchswoche / Basis-Ø (Default 1.40)")
+                    help="Volumen des Ausbruchs / Vergleichs-Ø (Default 1.40)")
+    ap.add_argument("--daily-volume", action="store_true",
+                    help="Ausbruchsvolumen am Ausbruchstag gegen den 50-Tage-Ø "
+                         "messen statt an der ganzen Woche (laedt Tagesserien)")
     ap.add_argument("--waves", type=str, default="4,3",
                     help="Wellenzahlen in Testreihenfolge, z. B. '4,3' oder '4,3,2'")
     args = ap.parse_args()
@@ -428,13 +483,19 @@ def main() -> int:
         return 1
 
     usable = {t: d for t, d in hist.items() if len(d) >= MIN_BARS}
-    print(f"[DATA] {len(usable)} von {len(hist)} Titeln mit ≥{MIN_BARS} Wochenbars\n")
+    print(f"[DATA] {len(usable)} von {len(hist)} Titeln mit ≥{MIN_BARS} Wochenbars")
+
+    daily: dict[str, pd.DataFrame] = {}
+    if args.daily_volume:
+        daily = trim_daily(load_daily(sorted(usable), args.refresh), args.weeks_back)
+        print(f"[DATA] {len(daily)} Tagesserien fuers Ausbruchsvolumen")
+    print()
 
     if args.sweep:
-        run_sweep(usable, params, args.weeks_back, args.workers)
+        run_sweep(usable, params, args.weeks_back, args.workers, daily=daily)
         return 0
 
-    df, slices = run_scan(usable, params, args.weeks_back, args.workers)
+    df, slices = run_scan(usable, params, args.weeks_back, args.workers, daily=daily)
     print_report(df, slices, len(usable), args.weeks_back, params)
 
     if args.csv:

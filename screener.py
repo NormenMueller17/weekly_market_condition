@@ -155,7 +155,9 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "Volume": "sum"
     }).dropna()
 
-    vcp_result = detect_vcp(dfw, window=60)
+    # `df` ist die Tagesserie, aus der `dfw` aggregiert wurde — detect_vcp misst
+    # das Ausbruchsvolumen damit am Ausbruchstag statt an der ganzen Woche.
+    vcp_result = detect_vcp(dfw, window=60, daily_df=df)
     vcp_flag = vcp_result.get("VCP", False)
     vcp_waves = vcp_result.get("Waves", 0)
     vcp_entry = vcp_result.get("Entry_Signal", False)
