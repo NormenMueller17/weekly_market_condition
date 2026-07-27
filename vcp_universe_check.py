@@ -541,11 +541,13 @@ def main() -> int:
         print("[ERROR] Keine Historie geladen.")
         return 1
 
-    rs_matrix: pd.DataFrame | None = None
-    if args.min_rs_score > 0:
-        rs_matrix = compute_rs_matrix(hist_all)
-        print(f"[RS] Perzentile aus {rs_matrix.shape[1]} Titeln × "
-              f"{rs_matrix.shape[0]} Wochen (Vorfilter ≥{args.min_rs_score:.0f})")
+    # RS wird IMMER berechnet und protokolliert, auch ohne aktiven Vorfilter —
+    # so lassen sich RS-Schwellen aus der CSV auswerten, ohne neu zu scannen.
+    rs_matrix = compute_rs_matrix(hist_all)
+    gate = (f"Vorfilter ≥{args.min_rs_score:.0f}" if args.min_rs_score > 0
+            else "nur protokolliert")
+    print(f"[RS] Perzentile aus {rs_matrix.shape[1]} Titeln × "
+          f"{rs_matrix.shape[0]} Wochen ({gate})")
 
     hist = _apply_limit(hist_all, args.limit)
     usable = {t: d for t, d in hist.items() if len(d) >= MIN_BARS}
