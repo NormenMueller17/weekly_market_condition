@@ -47,6 +47,7 @@ import pandas as pd
 from config import SETTINGS
 from data_sources import get_universe, load_daily_history, load_weekly_history
 from detect_vcp import detect_vcp
+from experiment_log import log_experiment
 
 # detect_vcp braucht ≥ 55 Wochenbars; Puffer für die walk-forward-Slices
 MIN_BARS = 55
@@ -594,6 +595,14 @@ def main() -> int:
     df, slices = run_scan(usable, params, args.weeks_back, args.workers,
                           daily=daily, rs=rs_sub)
     print_report(df, slices, len(usable), args.weeks_back, params)
+
+    log_experiment(
+        tool="vcp_universe_check",
+        params=params.as_kwargs(),
+        metrics=summarize(df, slices, len(usable), args.weeks_back, params),
+        context={"universe": len(usable), "weeks_back": args.weeks_back,
+                 "slices": slices, "daily_volume": bool(daily)},
+    )
 
     if args.csv:
         df.to_csv(args.csv, index=False)

@@ -40,6 +40,7 @@ import pandas as pd
 
 from config import SETTINGS
 from data_sources import load_weekly_history
+from experiment_log import log_experiment
 from vcp_universe_check import (
     MIN_BARS,
     CACHE_TTL_DAYS,
@@ -289,6 +290,29 @@ def main() -> int:
             frames.append(fr)
 
     print_summary(rows, horizons)
+
+    # Ins Ergebnis-Register: eine Zeile je Kalibrierung, Metriken der Horizonte
+    # flach danebengelegt (alpha_med_8w, n_8w, …), damit sich Laeufe spaeter
+    # per experiment_log.py --compare gegenueberstellen lassen.
+    for p, label in cands:
+        metrics: dict[str, float] = {}
+        for r in rows:
+            if r["label"] != label:
+                continue
+            h = r["h"]
+            for key in ("n", "ret_med", "ret_mean", "win_pct",
+                        "alpha_med", "alpha_win_pct", "stop_pct"):
+                if key in r:
+                    metrics[f"{key}_{h}w"] = r[key]
+        log_experiment(
+            tool="vcp_forward_test",
+            params={**p.as_kwargs(), "min_rs": args.min_rs},
+            metrics=metrics,
+            context={"universe": len(usable), "weeks_back": args.weeks_back,
+                     "horizons": list(horizons), "benchmark": BENCH,
+                     "stop_pct": STOP_PCT},
+            note=label,
+        )
 
     if frames:
         allfr = pd.concat(frames, ignore_index=True)
