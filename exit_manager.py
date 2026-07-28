@@ -25,12 +25,16 @@ from typing import Optional
 
 
 def _load_pt_rules() -> dict:
-    """Load profit_taking section from rules.json."""
-    try:
-        rules = json.loads((Path(__file__).parent / "rules.json").read_text(encoding="utf-8"))
-        return rules.get("profit_taking", {})
-    except Exception:
-        return {}
+    """profit_taking-Abschnitt aus rules.json.
+
+    Nutzt denselben Lader wie signal_generator: Fehlt die Datei, gelten die
+    Vorgabewerte; ist sie vorhanden und kaputt, wird abgebrochen. Ein
+    Schreibfehler in rules.json darf nicht dazu fuehren, dass Breakeven-Trigger,
+    Teilverkaufsschwellen und Giveback-Anteil stillschweigend andere Werte
+    annehmen als beabsichtigt.
+    """
+    from signal_generator import _RULES_JSON
+    return _RULES_JSON.get("profit_taking", {})
 
 
 # ── MACD helpers ─────────────────────────────────────────────────────────────

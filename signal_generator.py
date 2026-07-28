@@ -81,11 +81,32 @@ def _filter_earnings_blackout(tickers: list[str], window_days: int = 7) -> list[
 _RULES_PATH = Path(__file__).parent / "rules.json"
 
 def _load_rules_json() -> dict:
-    """Load and parse rules.json; return empty dict on any error."""
+    """rules.json laden.
+
+    Fehlt die Datei, gelten die hartkodierten Vorgabewerte — das ist der
+    dokumentierte Rueckfall. Ist sie aber VORHANDEN und kaputt (Tippfehler,
+    Komma zu viel), wird abgebrochen statt stillschweigend auf andere Werte
+    umzuschalten.
+
+    Der Unterschied ist entscheidend: Ein Schreibfehler in rules.json haette
+    vorher jede Schwelle unbemerkt auf den Vorgabewert zurueckgesetzt — Filter,
+    Positionsgroesse, Stop-Weite. Der Lauf haette normal ausgesehen und mit
+    anderen Parametern gehandelt als beabsichtigt. Genau diese Klasse von Fehler
+    hat uns in dieser Sitzung schon den Sizing-Block und das iShares-Universum
+    gekostet.
+    """
+    if not _RULES_PATH.exists():
+        print(f"[REGELN] {_RULES_PATH.name} nicht gefunden — hartkodierte "
+              f"Vorgabewerte gelten.")
+        return {}
     try:
         return json.loads(_RULES_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+    except Exception as e:
+        raise SystemExit(
+            f"[REGELN] {_RULES_PATH} ist vorhanden, aber nicht lesbar: {e}\n"
+            f"Der Lauf wird abgebrochen. Stillschweigend auf Vorgabewerte "
+            f"umzuschalten wuerde mit anderen Parametern handeln als gewollt."
+        ) from e
 
 _RULES_JSON = _load_rules_json()
 
@@ -168,13 +189,24 @@ def is_market_bullish(spy_df: pd.DataFrame | None) -> bool:
     Fails open (returns True) when data is unavailable so signals are never
     silently suppressed by a data glitch.
     """
+    # Drei stille Ausstiege, alle mit demselben Ergebnis "bullisch". Sie
+    # bleiben fail-open — ein Datenausfall soll keine Signale unterdruecken —
+    # melden sich aber jetzt. Vorher war ein ausgefallener Marktfilter im Log
+    # nicht von einem bestandenen zu unterscheiden; dieselbe Falle wie bei der
+    # Marktbreite (siehe breadth.compute_sp500_breadth_200d).
     if spy_df is None or (hasattr(spy_df, "empty") and spy_df.empty):
+        print("[MARKTFILTER] ⚠️  Keine SPY-Daten — 10W/20W-EMA-Filter diese "
+              "Woche WIRKUNGSLOS (fail-open).")
         return True
     try:
         close = spy_df["Close"].squeeze().dropna()
-    except (KeyError, AttributeError):
+    except (KeyError, AttributeError) as e:
+        print(f"[MARKTFILTER] ⚠️  SPY-Daten unbrauchbar ({e}) — Filter diese "
+              f"Woche WIRKUNGSLOS (fail-open).")
         return True
     if len(close) < 20:
+        print(f"[MARKTFILTER] ⚠️  Nur {len(close)} SPY-Wochen, 20 noetig — "
+              f"Filter diese Woche WIRKUNGSLOS (fail-open).")
         return True
     ema10 = close.ewm(span=10, adjust=False).mean()
     ema20 = close.ewm(span=20, adjust=False).mean()

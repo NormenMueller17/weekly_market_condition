@@ -86,7 +86,11 @@ def get_portfolio() -> Optional[dict]:
             "unrealized_pl": sum(p["unrealized_pl"] for p in pos_list),
             "positions":     pos_list,
         }
-    except Exception:
+    except Exception as e:
+        # Stumm war das gefaehrlich: Der Aufrufer sah "kein Portfolio" und
+        # uebersprang Stop-Verwaltung, Gewinnmitnahme und Journal-Abgleich,
+        # ohne dass im Log etwas darauf hindeutete.
+        print(f"[ALPACA] ⚠️  Portfolio nicht abrufbar: {e}")
         return None
 
 
@@ -96,23 +100,34 @@ def available_cash() -> Optional[float]:
     return portfolio["cash"] if portfolio is not None else None
 
 
-def open_position_tickers() -> list[str]:
-    """Return list of ticker symbols currently held, or [] on failure."""
+def open_position_tickers() -> Optional[list[str]]:
+    """Gehaltene Symbole — oder **None**, wenn der Bestand unbekannt ist.
+
+    Vorher wurde bei einem Fehler `[]` zurueckgegeben. Das ist nicht dasselbe:
+    "wir halten nichts" und "wir wissen nicht, was wir halten" fuehren zu
+    entgegengesetzten Entscheidungen. `place_signal_orders` benutzt den Wert als
+    Doppel-Order-Schutz — bei `[]` war der Schutz stillschweigend abgeschaltet.
+    """
     portfolio = get_portfolio()
     if portfolio is None:
-        return []
+        return None
     return [p["symbol"] for p in portfolio["positions"]]
 
 
-def _open_order_symbols(client) -> set[str]:
-    """Return set of ticker symbols that already have an open order."""
+def _open_order_symbols(client) -> Optional[set[str]]:
+    """Symbole mit offener Order — oder **None**, wenn sie unbekannt sind.
+
+    Gleiche Begruendung wie bei open_position_tickers: Ein leeres Set hiess
+    "keine offenen Orders" und hat den Doppel-Order-Schutz ausgehebelt.
+    """
     try:
         from alpaca.trading.requests import GetOrdersRequest
         from alpaca.trading.enums import QueryOrderStatus
         orders = client.get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN))
         return {o.symbol for o in orders}
-    except Exception:
-        return set()
+    except Exception as e:
+        print(f"[ALPACA] ⚠️  Offene Orders nicht abrufbar: {e}")
+        return None
 
 
 def place_signal_orders(signals: list, dry_run: bool = False) -> list[dict]:
@@ -130,9 +145,19 @@ def place_signal_orders(signals: list, dry_run: bool = False) -> list[dict]:
     if client is None:
         return [{"ticker": s.ticker, "qty": 0, "status": "no_client"} for s in signals if s.is_top_pick]
 
+    # Fail-closed: Ist der Bestand oder die Liste offener Orders unbekannt,
+    # wird NICHT geordert. Lieber eine Woche ohne Kauf als Doppelpositionen —
+    # beide Werte speisen den Doppel-Order-Schutz, und beide lieferten bei
+    # einem Alpaca-Fehler vorher stillschweigend "leer", was den Schutz
+    # aushebelte statt ihn auszulösen.
     existing_orders    = _open_order_symbols(client)
-    existing_positions = set(open_position_tickers())
-    skip_tickers       = existing_orders | existing_positions
+    existing_positions = open_position_tickers()
+    if existing_orders is None or existing_positions is None:
+        print("[ALPACA] ⚠️  KEINE ORDERS PLATZIERT — Bestand oder offene Orders "
+              "nicht abrufbar, Doppel-Order-Schutz nicht gewährleistet.")
+        return [{"ticker": s.ticker, "qty": 0, "status": "abort_state_unknown"}
+                for s in signals if s.is_top_pick]
+    skip_tickers = existing_orders | set(existing_positions)
 
     results: list[dict] = []
 
