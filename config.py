@@ -39,6 +39,18 @@ class Settings:
     # iShares IWV holds ~3000 stocks; top 2000 by ETF weight ≈ top 2000 by market cap
     universe_top_n: int = _get_env_int("UNIVERSE_TOP_N", 2000)
 
+    # Untergrenze der Marktkapitalisierung fuer das Universum (Nasdaq-Screener).
+    # Muss <= rules.json filters.min_market_cap_mio bleiben, sonst erreichen
+    # Titel zwischen beiden Schwellen den Signalfilter nie und werden still
+    # aussortiert. Stand 2026-07-28: rules.json = 300.
+    universe_min_mcap_mio: float = _get_env_float("UNIVERSE_MIN_MCAP_MIO", 300.0)
+
+    # Harte Obergrenze der Titelzahl. 0 = keine. Bewusst NICHT universe_top_n:
+    # das ist ein iShares-Begriff (Top-N nach ETF-Gewicht) und stand in der .env
+    # auf 2000 — beim Nasdaq-Screener haette das das Universum stillschweigend
+    # kleiner gemacht als es heute ist.
+    universe_max_titles: int = _get_env_int("UNIVERSE_MAX_TITLES", 0)
+
     mail_from: str = _get_env("MAIL_FROM", "report@example.com")
     mail_to: str = _get_env("MAIL_TO", "")
     mail_subject_prefix: str = _get_env("MAIL_SUBJECT_PREFIX", "Weekly US Market Report")

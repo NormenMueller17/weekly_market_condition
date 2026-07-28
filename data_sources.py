@@ -48,6 +48,122 @@ _LISTED_CACHE_TTL_HOURS = 24
 _MAX_UNLISTED_SHARE = 0.15
 
 
+# ── Nasdaq-Screener: Symbole MIT Marktkapitalisierung ─────────────────────────
+# Ein Abruf liefert alle US-Aktien mit Kurs, Marktkapitalisierung, Sektor und
+# Industrie — also genau das, was die CSV von 11/2025 enthält, nur tagesaktuell.
+# Frei zugänglich, ohne Schlüssel, ~2,2 MB.
+_NASDAQ_SCREENER_URL = ("https://api.nasdaq.com/api/screener/stocks"
+                        "?tableonly=true&limit=25000&offset=0&download=true")
+_NASDAQ_CACHE_TTL_HOURS = 24
+
+
+def _mcap(wert) -> float:
+    """'$1,234,567' → 1234567.0; alles Unbrauchbare → 0.0"""
+    try:
+        s = str(wert or "").replace(",", "").replace("$", "").strip()
+        return float(s) if s else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def fetch_universe_nasdaq(
+    min_market_cap_mio: float = 500.0,
+    top_n: int | None = None,
+    refresh: bool = False,
+) -> list[str]:
+    """Aktuelles US-Aktienuniversum aus dem Nasdaq-Screener.
+
+    Ersetzt die Altdatei als Quelle: Symbole, Marktkapitalisierung, Sektor und
+    Industrie kommen aus einem Abruf und sind tagesaktuell. Damit entfällt der
+    Grund, warum übernommene Firmen monatelang im Universum standen.
+
+    Füllt nebenbei TICKER_META (company/industry/sector) — dieselbe Struktur,
+    die get_universe_from_csv aus der CSV baut.
+
+    Wirft bei Problemen eine Ausnahme; der Aufrufer entscheidet über den
+    Rückfall auf die CSV.
+    """
+    _ensure_cache_dir()
+    cache = Path(SETTINGS.cache_dir) / "universe_nasdaq.json"
+
+    rows: list[dict] | None = None
+    if cache.exists() and not refresh:
+        try:
+            d = json.loads(cache.read_text(encoding="utf-8"))
+            alter_h = (datetime.utcnow()
+                       - datetime.fromisoformat(d["fetched"])).total_seconds() / 3600
+            if alter_h < _NASDAQ_CACHE_TTL_HOURS:
+                rows = d["rows"]
+                print(f"[UNIVERSE] Nasdaq-Screener aus Cache "
+                      f"({len(rows)} Titel, {alter_h:.0f} h alt).")
+        except Exception:
+            rows = None
+
+    if rows is None:
+        print("[UNIVERSE] Lade Nasdaq-Screener …")
+        r = requests.get(_NASDAQ_SCREENER_URL, timeout=60, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/125.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*"})
+        r.raise_for_status()
+        rows = (r.json().get("data") or {}).get("rows") or []
+        if len(rows) < 1000:
+            raise ValueError(f"Nasdaq-Screener lieferte nur {len(rows)} Zeilen "
+                             f"— unplausibel, Antwortformat vermutlich geändert.")
+        try:
+            cache.write_text(json.dumps(
+                {"fetched": datetime.utcnow().isoformat(), "rows": rows},
+                ensure_ascii=False), encoding="utf-8")
+        except Exception:
+            pass
+        print(f"[UNIVERSE] {len(rows)} Titel vom Nasdaq-Screener geladen.")
+
+    schwelle = min_market_cap_mio * 1_000_000
+    gehalten = _offene_positionen()
+
+    TICKER_META.clear()
+    kandidaten: list[tuple[float, str]] = []
+    for row in rows:
+        sym = _normalize_symbol(row.get("symbol", ""))
+        if not sym or sym in TICKER_BLACKLIST:
+            continue
+        mc = _mcap(row.get("marketCap"))
+        # Offene Positionen bleiben drin, auch wenn die Kennzahl fehlt oder
+        # unter der Schwelle liegt — was wir halten, wird weiter bewertet.
+        if mc < schwelle and sym not in gehalten:
+            continue
+        TICKER_META[sym] = {
+            "company":  row.get("name"),
+            "industry": row.get("industry"),
+            "sector":   row.get("sector"),
+        }
+        kandidaten.append((mc, sym))
+
+    kandidaten.sort(reverse=True)          # größte Marktkapitalisierung zuerst
+    tickers = [s for _, s in kandidaten]
+    if top_n:
+        tickers = tickers[:top_n]
+
+    # Offene Positionen, die im Screener GAR NICHT auftauchen, nachtragen.
+    # Die Schwellenprüfung oben greift nur bei Titeln, die in der Liste stehen;
+    # ein de-listeter Titel steht dort nicht — und genau der Fall liegt vor
+    # (AVNS). Ohne diesen Nachtrag verschwindet eine gehaltene Position
+    # lautlos aus dem Universum.
+    fehlend = sorted(gehalten - set(tickers))
+    if fehlend:
+        print(f"[UNIVERSE] ⚠️  {len(fehlend)} offene Position(en) nicht im "
+              f"Screener — nachgetragen: {', '.join(fehlend)}")
+        for s in fehlend:
+            TICKER_META.setdefault(s, {"company": None, "industry": None,
+                                       "sector": None})
+        tickers.extend(fehlend)
+
+    print(f"[UNIVERSE] {len(tickers)} Titel mit MarketCap >= "
+          f"{min_market_cap_mio:.0f} Mio. USD.")
+    return tickers
+
+
 def _offene_positionen() -> set[str]:
     """Symbole offener Positionen — werden nie aus dem Universum entfernt.
 
@@ -559,13 +675,22 @@ def fetch_universe_ishares(
         # Normalbetrieb. Wer UNIVERSE=ishares_* setzt, will nicht monatelang
         # unbemerkt auf einer Altdatei laufen.
         print("=" * 78)
-        print(f"[UNIVERSE] ⚠️  iSHARES-DOWNLOAD FEHLGESCHLAGEN — es läuft die "
-              f"ALTDATEI {_CSV_FILE}")
+        print(f"[UNIVERSE] ⚠️  iSHARES-DOWNLOAD FEHLGESCHLAGEN")
         print(f"[UNIVERSE] ⚠️  Grund: {exc}")
-        print(f"[UNIVERSE] ⚠️  Das Universum ist damit NICHT aktuell. "
-              f"Übernommene und de-listete Titel stehen weiter drin.")
         print("=" * 78)
-        return get_universe_from_csv(_CSV_FILE)
+        # Zuerst den Nasdaq-Screener versuchen — der ist ebenfalls tagesaktuell.
+        # Erst wenn auch der ausfällt, die Altdatei. Sonst landet eine
+        # Konfiguration mit UNIVERSE=ishares_* auf einer acht Monate alten
+        # Liste, obwohl eine frische Quelle erreichbar wäre.
+        try:
+            return fetch_universe_nasdaq(
+                min_market_cap_mio=SETTINGS.universe_min_mcap_mio,
+                top_n=SETTINGS.universe_max_titles or None,
+            )
+        except Exception as exc2:
+            print(f"[UNIVERSE] ⚠️  Nasdaq-Screener ebenfalls fehlgeschlagen "
+                  f"({exc2}) — es läuft die ALTDATEI {_CSV_FILE}.")
+            return get_universe_from_csv(_CSV_FILE)
 
 
 def get_universe() -> list[str]:
@@ -577,6 +702,24 @@ def get_universe() -> list[str]:
     UNIVERSE=csv           → local CSV (legacy, default fallback)
     """
     src = SETTINGS.universe.lower().strip()
+
+    # Vorgabe: Nasdaq-Screener. Tagesaktuell, liefert Marktkapitalisierung,
+    # Sektor und Industrie in einem Abruf. Die CSV von 11/2025 ist nur noch
+    # Notnagel — sie war nie als Dauerlösung gedacht, wurde es aber, weil der
+    # iShares-Weg still scheiterte (siehe fetch_universe_ishares).
+    if src in ("nasdaq", "screener", "csv_fallback", ""):
+        try:
+            return fetch_universe_nasdaq(
+                min_market_cap_mio=SETTINGS.universe_min_mcap_mio,
+                top_n=SETTINGS.universe_max_titles or None,
+            )
+        except Exception as exc:
+            print("=" * 78)
+            print(f"[UNIVERSE] ⚠️  NASDAQ-SCREENER FEHLGESCHLAGEN — es läuft die "
+                  f"ALTDATEI {_CSV_FILE}")
+            print(f"[UNIVERSE] ⚠️  Grund: {exc}")
+            print("=" * 78)
+            return get_universe_from_csv(_CSV_FILE)
 
     if src.startswith("ishares_"):
         etf = src.split("_", 1)[1].upper()          # "ishares_iwv" → "IWV"
