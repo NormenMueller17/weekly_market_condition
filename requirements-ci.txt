@@ -1,15 +1,32 @@
+# Laufzeitabhaengigkeiten. Quelle der Wahrheit fuer CI (Python 3.11) UND fuer das
+# lokale venv — lokal bitte mit derselben Python-Version anlegen, sonst beweist
+# ein lokaler Test nichts ueber die CI:
+#
+#   py -3.11 -m venv venv
+#   venv/Scripts/python.exe -m pip install -r requirements-ci.txt
+#
+# Am 2026-07-28 entfernt, weil von keinem Modul importiert (geprueft per grep
+# ueber alle .py): scipy==1.11.4 (schwerster Build im ganzen Lauf), matplotlib,
+# python-dotenv (repair_journal.py parst die .env selbst). Ausserdem stand
+# requests doppelt drin. Vor dem Wiedereinfuegen bitte pruefen, ob es wirklich
+# einen Importeur gibt.
+
 yfinance>=0.2.54
 pandas>=2.0
-openpyxl>=3.1.2
 numpy<2.0
-python-dotenv
+openpyxl>=3.1.2
+
+# report_builder.py rendert die HTML-Reports damit
 Jinja2
-matplotlib
-requests
+
+# fetch_quote_data.py, http_cache.py
+requests>=2.31.0
+requests-cache>=1.2
+
+# data_sources.py: HTML-Parsing der Universumslisten
 beautifulsoup4
 lxml
-requests>=2.31.0
-scipy==1.11.4
-requests-cache>=1.2
+
+# alpaca_client.py, exit_manager.py: Orders und Portfolio
 alpaca-py>=0.26
 python-dateutil>=2.8
