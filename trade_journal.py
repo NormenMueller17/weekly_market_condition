@@ -243,6 +243,42 @@ def _exit_info_from_orders(symbol: str, filled_sells: list[dict]) -> Optional[di
     }
 
 
+# ── Anomalien aussortieren ────────────────────────────────────────────────────
+
+def quarantaene_shorts(data: dict) -> tuple[dict, list[str]]:
+    """Verschiebt Einträge mit negativer Menge nach `anomalien`.
+
+    Sie werden nicht gelöscht, sondern beiseitegelegt: Der Vorfall bleibt
+    nachvollziehbar, taucht aber in keiner Auswertung mehr auf. Alle Verbraucher
+    lesen `open` und `closed`; ein zusätzlicher Schlüssel stört keinen von ihnen.
+
+    Idempotent — mehrfaches Aufrufen ändert nach dem ersten Mal nichts mehr.
+    """
+    raus: list[str] = []
+    anomalien = data.setdefault("anomalien", [])
+
+    def ist_short(t: dict) -> bool:
+        for feld in ("qty", "pt_original_qty"):
+            try:
+                if float(t.get(feld) or 0) < 0:
+                    return True
+            except (TypeError, ValueError):
+                continue
+        return False
+
+    for bucket in ("open", "closed"):
+        behalten = []
+        for t in data.get(bucket, []):
+            if ist_short(t):
+                t = {**t, "_anomalie": "short_position", "_aus": bucket}
+                anomalien.append(t)
+                raus.append(f"{t.get('symbol')} (qty={t.get('qty')}, {bucket})")
+            else:
+                behalten.append(t)
+        data[bucket] = behalten
+    return data, raus
+
+
 # ── Core sync ─────────────────────────────────────────────────────────────────
 
 def sync(
@@ -261,6 +297,12 @@ def sync(
     """
     data = load()
 
+    # Altlasten aus der Zeit vor der Short-Prüfung unten selbst aufräumen.
+    data, quarantaeniert = quarantaene_shorts(data)
+    if quarantaeniert:
+        print(f"[JOURNAL] ⚠️  {len(quarantaeniert)} Short-Eintrag/-Einträge nach "
+              f"'anomalien' verschoben: {', '.join(quarantaeniert)}")
+
     if portfolio is None:
         return data
 
@@ -277,6 +319,31 @@ def sync(
         sym = pos["symbol"]
         if sym in journal_open_syms:
             continue
+
+        # Short-Positionen nie als Trade eintragen. Dieses System eröffnet keine
+        # Shorts; eine negative Menge kommt also von außen (manuelle Order,
+        # Alpaca-Anomalie, Rest aus dem Paper-Konto) und gehört nicht in die
+        # Handelsstatistik.
+        #
+        # Genau das ist bei STX passiert: Alpaca meldete eine Position mit
+        # qty=-7 @810, `pos["qty"]` wurde unbesehen übernommen, und beim
+        # Schließen entstand ein Eintrag mit widersprüchlichen Zahlen —
+        # realized_pl +696,29 (Short-Rechnung: 7 × (810 − 710,53)) bei
+        # realized_plpc −12,28 % (Long-Rechnung). Der Eintrag verfälschte
+        # Trefferquote und Erwartungswert in kelly_check und
+        # profit_taking_analysis. b589e65 verhinderte nur, dass solche Orders
+        # als Long-Exit gematcht werden — nicht, dass die Position selbst
+        # journalisiert wird.
+        try:
+            menge = float(pos.get("qty") or 0)
+        except (TypeError, ValueError):
+            menge = 0.0
+        if menge < 0:
+            print(f"[JOURNAL] ⚠️  {sym}: Short-Position (qty={menge:g}) NICHT "
+                  f"journalisiert — dieses System eröffnet keine Shorts. "
+                  f"Position im Alpaca-Konto prüfen!")
+            continue
+
         meta         = _find_signal_meta(sym)
         initial_stop = _find_initial_stop(sym)
         entry_date   = _entry_date_from_orders(sym, filled_buys)

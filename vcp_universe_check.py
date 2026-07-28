@@ -70,8 +70,21 @@ def load_history(weeks: int, limit: int | None, refresh: bool) -> dict[str, pd.D
     if path.exists() and not refresh:
         age_days = (time.time() - path.stat().st_mtime) / 86400
         if age_days <= CACHE_TTL_DAYS:
-            with path.open("rb") as fh:
-                hist = pickle.load(fh)
+            try:
+                with path.open("rb") as fh:
+                    hist = pickle.load(fh)
+            except ModuleNotFoundError as exc:
+                # Pickle bindet die pandas/numpy-Version, die ihn geschrieben
+                # hat. Nach dem Umzug des venv von Python 3.14/numpy 2.x auf
+                # 3.11/numpy 1.26 lautet die Meldung nur "No module named
+                # 'numpy._core.numeric'" — was den Grund nicht erkennen lässt.
+                print(f"[CACHE] {path.name} wurde mit einer anderen "
+                      f"numpy/pandas-Version geschrieben ({exc}). "
+                      f"Neu aufbauen mit --refresh.")
+                raise SystemExit(
+                    f"Cache {path.name} ist nicht lesbar. "
+                    f"Aufruf mit --refresh wiederholen (laedt das Universum neu)."
+                ) from exc
             print(f"[CACHE] {len(hist)} Serien aus {path.name} "
                   f"(Alter {age_days:.1f} Tage)")
             return _apply_limit(hist, limit)
