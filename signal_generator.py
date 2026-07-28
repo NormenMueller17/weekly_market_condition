@@ -15,7 +15,9 @@ Buy criteria (Financial Wisdom Blueprint by FinancialWisdomTV):
 
 Per candidate the generator computes:
   - Entry price      (current weekly close)
-  - Stop-loss level  (lower end of the middle third of the consolidation box)
+  - Stop-loss level  (Muster-Geometrie, aber nie enger als der einheitliche
+                      Floor max(min_stop_pct, stop_atr_mult × ATR) und nie
+                      weiter als max_stop_pct — siehe generate_signals())
   - Position size    (fractional Kelly criterion)
   - Risk per trade   (€/$ at risk + % of total equity)
   - Composite rank   (RS momentum + pattern quality + tightness + industry)
@@ -101,6 +103,8 @@ DEFAULT_RULES: dict = {
     "min_eps_growth_last_q":  _f.get("min_eps_growth_last_q",  0.0),
     "max_industry_rank":      _f.get("max_industry_rank",      100),
     "max_stop_pct":           _f.get("max_stop_pct",           20.0),
+    "min_stop_pct":           _f.get("min_stop_pct",           10.0),
+    "stop_atr_mult":          _f.get("stop_atr_mult",           2.0),
     "earnings_blackout_days": _f.get("earnings_blackout_days", 7),
     "min_price":              _f.get("min_price",              5.0),
     "min_market_cap_mio":     _f.get("min_market_cap_mio",    300.0),
@@ -216,6 +220,12 @@ def _stop_default(entry: float, atr_pct: Optional[float] = None,
     ergäbe reines 2× ATR nur 4 % Abstand, und laut ATR-Aufschlüsselung hat
     gerade das ruhigste Quartil bereits die höchste Woche-1-Stopquote (33 %).
     Nach oben deckelt der Aufrufer weiterhin auf `max_stop_pct` (20 %).
+
+    Seit 2026-07-28 sind `mult` und `min_pct` keine Sonderregel dieses Pfads
+    mehr, sondern kommen als `stop_atr_mult` / `min_stop_pct` aus rules.json —
+    dieselben Werte gelten im Aufrufer als einheitlicher Floor für den VCP- und
+    den Launchpad-Pfad. Die Signatur-Defaults bleiben nur für Direktaufrufe aus
+    Tests und Analyse-Tools stehen.
     """
     pct = min_pct
     if atr_pct is not None:
@@ -556,8 +566,13 @@ def generate_signals(
             continue
 
         atr_pct    = _safe_float(row.get("ATR / Price (%)")) or 5.0
-        has_vcp    = bool(row.get("VCP Entry",     False))
-        has_launch = bool(row.get("Launchpad Entry", False))
+        # _safe_bool statt bool(): bool(float("nan")) ist True, ein fehlendes
+        # Muster-Flag würde den Titel also in den Launchpad-Pfad routen, wo
+        # Pivot und Range ebenfalls NaN sind. Der Stop bliebe NaN, und weil
+        # jeder Vergleich mit NaN False ergibt, würden Floor UND Cap still
+        # übersprungen — der Trade käme ohne Stop und mit NaN-Sizing durch.
+        has_vcp    = _safe_bool(row.get("VCP Entry"))
+        has_launch = _safe_bool(row.get("Launchpad Entry"))
 
         # ── Determine pattern label, breakout level, and stop ────────────────
         stop: Optional[float] = None
@@ -585,20 +600,53 @@ def generate_signals(
         else:
             pattern = "–"
 
+        # Muster-Geometrie kann NaN liefern (fehlender Pivot, kaputte Range).
+        # Auf None normalisieren, damit der Default-Pfad greift — sonst würden
+        # Floor und Cap unten stillschweigend übersprungen.
+        if stop is not None and not math.isfinite(stop):
+            stop = None
         if stop is None:
-            stop = _stop_default(entry, atr_pct)
+            stop = _stop_default(entry, atr_pct, mult=r["stop_atr_mult"],
+                                 min_pct=r["min_stop_pct"] / 100.0)
 
-        # Floor: stop must be at least 1× ATR below entry (avoids sub-1% stops
-        # on tight Launchpad bases where the formula gives no real room)
-        atr_floor = entry * (1.0 - atr_pct / 100.0)
-        if stop > atr_floor:
-            stop = atr_floor
+        # Einheitlicher Mindest-Abstand über ALLE Muster-Pfade.
+        #
+        # Vorher stand hier ein Floor von 1× ATR. Der war zu eng: gemessen auf
+        # 93 Backtest-Entries (atr_stop_analysis.py --sweep, 13W-Horizont) ergab
+        # der musterabhängige Stop einen Abstands-Median von 3,4–9,0 %, eine
+        # Woche-1-Stopquote von 9–37 % und 59–76 % ausgestoppte Trades — bei
+        # einem Depotbeitrag von +10,5 bis −12,9 pp je Trade. Mit einem Floor
+        # von 10 % fallen die Woche-1-Stops auf 3 %, die Gesamt-Stopquote auf
+        # 49 %, und der Depotbeitrag erreicht das Optimum des Gitters.
+        #
+        # Der VCP- und der Launchpad-Pfad hatten nie einen echten Floor:
+        # `_stop_vcp` rechnet 2× ATR mit Deckel nach unten, aber ohne
+        # Untergrenze, und die Launchpad-Box kann bei engen Basen fast beliebig
+        # dicht am Entry liegen. Genau diese Pfade lieferten die Stops im
+        # Rauschband — und laut Tagebuch endete jeder über einen Stop beendete
+        # Trade bei ≤ +1,6 %, während dieselben Titel vier Wochen später im
+        # Median +17,8 % standen.
+        #
+        # Warum 10 % kein gefittetes Optimum ist: max_risk_per_trade_pct /
+        # max_position_pct = 1,5 / 15 = 10 %. Darunter bindet der Positions-Cap,
+        # die Stückzahl wächst nicht weiter mit, und der Vorteil des engeren
+        # Stops ist gar nicht abrufbar. Darüber schrumpft die Position
+        # proportional. Der Wert folgt aus unseren beiden Sizing-Parametern und
+        # wandert mit, wenn die sich ändern.
+        min_stop_frac = max(
+            r["min_stop_pct"] / 100.0,
+            r["stop_atr_mult"] * atr_pct / 100.0,
+        )
+        stop_floor = entry * (1.0 - min_stop_frac)
+        if stop > stop_floor:
+            stop = stop_floor
 
-        # Blueprint safety cap: stop never more than 20 % below entry
+        # Blueprint safety cap: stop never more than max_stop_pct below entry
+        max_stop_frac = r["max_stop_pct"] / 100.0
         stop_pct = (entry - stop) / entry
-        if stop_pct > 0.20:
-            stop     = entry * 0.80
-            stop_pct = 0.20
+        if stop_pct > max_stop_frac:
+            stop     = entry * (1.0 - max_stop_frac)
+            stop_pct = max_stop_frac
 
         # Buy-Stop: 0.1% über dem höheren von entry und breakout_level
         buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
@@ -685,6 +733,18 @@ def _safe_float(val) -> Optional[float]:
         return None if math.isnan(f) else f
     except (TypeError, ValueError):
         return None
+
+
+def _safe_bool(val) -> bool:
+    """True nur für echte Wahrheitswerte — NaN/None gelten als False.
+
+    `bool(float("nan"))` ist True; das darf für Muster-Flags nicht passieren.
+    """
+    if val is None:
+        return False
+    if isinstance(val, float) and math.isnan(val):
+        return False
+    return bool(val)
 
 
 def _safe_int(val) -> Optional[int]:

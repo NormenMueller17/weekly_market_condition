@@ -84,6 +84,17 @@ def load_ohlc(tickers: list[str], refresh: bool) -> dict[str, pd.DataFrame]:
     return cached
 
 
+def _sizing_rules() -> dict:
+    """max_risk_per_trade_pct / max_position_pct aus rules.json (als Bruch)."""
+    try:
+        s = json.loads((Path(__file__).parent / "rules.json")
+                       .read_text(encoding="utf-8")).get("sizing", {})
+    except Exception:
+        s = {}
+    return {"risk": s.get("max_risk_per_trade_pct", 1.5) / 100.0,
+            "pos":  s.get("max_position_pct",      15.0) / 100.0}
+
+
 def atr_pct_at(ohlc: pd.DataFrame, date: pd.Timestamp) -> float:
     """ATR14 in % des Schlusskurses, Stand `date` — exakt wie screener.py, und
     strikt nur mit Daten BIS zu diesem Tag.
@@ -105,19 +116,24 @@ def atr_pct_at(ohlc: pd.DataFrame, date: pd.Timestamp) -> float:
     return float(atr) / last * 100.0
 
 
-def system_stop_pct(atr_pct: float) -> float:
+def system_stop_pct(atr_pct: float, mult: float = STOP_ATR_MULT,
+                    min_pct: float = 0.0, max_pct: float = STOP_CAP_PCT) -> float:
     """Stop-Abstand in Prozent nach Systemregel (Näherung: Entry ≈ Breakout,
     der Buy-Stop-Puffer betraegt nur 0,1 %).
+
+    `min_pct` ist die untere Schranke, die `signal_generator` als einheitlichen
+    Stop-Floor ueber alle Muster-Pfade kennt; `max_pct` der Cap aus rules.json.
     """
     if not np.isfinite(atr_pct):
         return float("nan")
-    pct = STOP_ATR_MULT * atr_pct / 100.0
-    pct = min(pct, STOP_FLOOR_PCT)     # _stop_vcp: Floor 15 % unter Breakout
-    return min(pct, STOP_CAP_PCT)
+    pct = mult * atr_pct / 100.0
+    return float(min(max(pct, min_pct), max_pct))
 
 
 def analyse(entries: pd.DataFrame, hist: dict[str, pd.DataFrame],
-            ohlc: dict[str, pd.DataFrame], horizon: int) -> pd.DataFrame:
+            ohlc: dict[str, pd.DataFrame], horizon: int,
+            mult: float = STOP_ATR_MULT, min_pct: float = 0.0,
+            max_pct: float = STOP_CAP_PCT) -> pd.DataFrame:
     rows = []
     for _, r in entries.iterrows():
         sym = r["ticker"]
@@ -131,7 +147,7 @@ def analyse(entries: pd.DataFrame, hist: dict[str, pd.DataFrame],
 
         entry_px = float(r["entry_px"])
         atr = atr_pct_at(oh, pd.Timestamp(r["date"]))
-        stop_pct = system_stop_pct(atr)
+        stop_pct = system_stop_pct(atr, mult, min_pct, max_pct)
         if not np.isfinite(stop_pct) or entry_px <= 0:
             continue
 
@@ -142,13 +158,78 @@ def analyse(entries: pd.DataFrame, hist: dict[str, pd.DataFrame],
         below = np.where(low.to_numpy() <= stop_px)[0]
         trig_week = int(below[0]) + 1 if len(below) else None
 
+        # Rendite OHNE Stop (nur fuer die "was waere danach passiert"-Frage)
+        ret_raw = float(close.iloc[-1] / entry_px - 1) * 100
+
+        # Rendite MIT Stop: getriggert -> Verlust in Stop-Hoehe, sonst Horizont.
+        # Naeherung ohne Gap-Slippage; ueberschaetzt weite Stops leicht nicht,
+        # sondern behandelt alle Kalibrierungen gleich optimistisch.
+        ret_stop = -stop_pct * 100 if trig_week is not None else ret_raw
+
+        # Entscheidende Groesse: Unter Risk-first-Sizing skaliert die Position
+        # mit 1/stop_pct. Ein weiter Stop kauft also weniger Stueck. Nur das
+        # R-Multiple (Rendite je Risikoeinheit) ist zwischen Kalibrierungen
+        # vergleichbar — die reine Prozentrendite ist es NICHT.
+        r_mult = ret_stop / (stop_pct * 100) if stop_pct > 0 else np.nan
+
         rows.append({
             "ticker": sym, "date": r["date"], "atr_pct": atr,
             "stop_pct": stop_pct * 100,
             "trig_week": trig_week,
             "frueh": bool(trig_week == 1),
-            "ret": float(close.iloc[-1] / entry_px - 1) * 100,
+            "ret": ret_raw,
+            "ret_stop": ret_stop,
+            "r_mult": r_mult,
         })
+    return pd.DataFrame(rows)
+
+
+def portfolio_contribution(res: pd.DataFrame, max_risk_pct: float,
+                           max_pos_pct: float) -> pd.Series:
+    """Beitrag eines Trades zur Depotrendite in Prozentpunkten.
+
+    Spiegelt den echten Sizing-Pfad aus `signal_generator.generate_signals`:
+
+        pos_pct = min(max_risk_pct / stop_pct, max_pos_pct)
+
+    Das ist der Grund, warum das rohe R-Multiple hier in die Irre fuehrt: Es
+    unterstellt, ein enger Stop liesse sich in beliebig viel Stueck umsetzen.
+    Sobald `stop_pct < max_risk_pct / max_pos_pct` ist, bindet aber der
+    Positions-Cap — die Position waechst nicht weiter, das reale Risiko sinkt
+    unter das Ziel, und der R-Vorteil des engen Stops ist nicht abrufbar.
+    """
+    stop_frac = res.stop_pct / 100.0
+    pos_pct = np.minimum(max_risk_pct / stop_frac.replace(0, np.nan), max_pos_pct)
+    return pos_pct * res.ret_stop
+
+
+def sweep(entries: pd.DataFrame, hist: dict[str, pd.DataFrame],
+          ohlc: dict[str, pd.DataFrame], horizon: int,
+          mults: list[float], mins: list[float], max_pct: float,
+          max_risk_pct: float, max_pos_pct: float) -> pd.DataFrame:
+    """Gitter ueber (ATR-Multiplikator, Stop-Floor), bewertet nach Depotbeitrag."""
+    rows = []
+    for m in mults:
+        for lo in mins:
+            res = analyse(entries, hist, ohlc, horizon, m, lo, max_pct)
+            if res.empty:
+                continue
+            contrib = portfolio_contribution(res, max_risk_pct, max_pos_pct)
+            stop_frac = res.stop_pct / 100.0
+            pos_pct = np.minimum(max_risk_pct / stop_frac.replace(0, np.nan),
+                                 max_pos_pct)
+            rows.append({
+                "mult": m, "min_pct": lo * 100,
+                "n": len(res),
+                "stop_med": res.stop_pct.median(),
+                "pos_med_%": pos_pct.median() * 100,
+                "cap_bindet_%": (pos_pct >= max_pos_pct).mean() * 100,
+                "wk1_%": res.frueh.mean() * 100,
+                "gestoppt_%": res.trig_week.notna().mean() * 100,
+                "ret_mean": res.ret_stop.mean(),
+                "depot_pp": contrib.mean(),
+                "R_mean": res.r_mult.mean(),
+            })
     return pd.DataFrame(rows)
 
 
@@ -164,13 +245,43 @@ def main() -> int:
     ap.add_argument("--horizon", type=int, default=13)
     ap.add_argument("--journal", default="docs/data/trades.json")
     ap.add_argument("--refresh", action="store_true")
+    ap.add_argument("--atr-mult", type=float, default=STOP_ATR_MULT,
+                    help="ATR-Multiplikator fuer den Stop-Abstand")
+    ap.add_argument("--min-stop-pct", type=float, default=0.0,
+                    help="einheitlicher Stop-Floor in %% (0 = keiner)")
+    ap.add_argument("--max-stop-pct", type=float, default=STOP_CAP_PCT * 100,
+                    help="Cap in %% (rules.json: max_stop_pct)")
+    ap.add_argument("--sweep", action="store_true",
+                    help="Gitter ueber Multiplikator x Floor, bewertet nach R-Multiple")
     args = ap.parse_args()
+
+    mult    = args.atr_mult
+    min_pct = args.min_stop_pct / 100.0
+    max_pct = args.max_stop_pct / 100.0
 
     entries = pd.read_csv(args.csv).drop_duplicates(subset=["ticker", "date"])
     hist = load_history(156, None, False)
     ohlc = load_ohlc(sorted(entries["ticker"].unique()), args.refresh)
 
-    res = analyse(entries, hist, ohlc, args.horizon)
+    if args.sweep:
+        _sz = _sizing_rules()
+        sw = sweep(entries, hist, ohlc, args.horizon,
+                   mults=[1.5, 2.0, 2.5, 3.0, 4.0],
+                   mins=[0.0, 0.08, 0.10, 0.12, 0.15],
+                   max_pct=max_pct,
+                   max_risk_pct=_sz["risk"], max_pos_pct=_sz["pos"])
+        print(f"\nSweep ueber {args.horizon}W  (Cap {args.max_stop_pct:.0f} %, "
+              f"Risiko {_sz['risk'] * 100:.1f} %, Positions-Cap {_sz['pos'] * 100:.0f} %)")
+        print("depot_pp = Beitrag zur Depotrendite in Prozentpunkten je Trade —\n"
+              "die einzige Groesse, die den Positions-Cap mit einrechnet.\n")
+        print(sw.sort_values("depot_pp", ascending=False).round(2).to_string(index=False))
+        best = sw.loc[sw.depot_pp.idxmax()]
+        print(f"\nBeste Kalibrierung nach Depotbeitrag: mult={best['mult']} "
+              f"floor={best['min_pct']:.0f} %  ->  {best['depot_pp']:.3f} pp/Trade "
+              f"(Stop-Median {best['stop_med']:.1f} %, gestoppt {best['gestoppt_%']:.0f} %)")
+        return 0
+
+    res = analyse(entries, hist, ohlc, args.horizon, mult, min_pct, max_pct)
     if res.empty:
         print("[ERROR] Keine auswertbaren Entries.")
         return 1
@@ -179,7 +290,10 @@ def main() -> int:
     print(f"ATR14: Median {res.atr_pct.median():.2f} %   "
           f"Q25 {res.atr_pct.quantile(.25):.2f} %   Q75 {res.atr_pct.quantile(.75):.2f} %")
     print(f"Stop nach Systemregel: Median {res.stop_pct.median():.1f} % unter Entry "
-          f"(Cap greift bei ATR > {STOP_FLOOR_PCT * 100 / STOP_ATR_MULT:.1f} %)")
+          f"(mult={mult}, floor={args.min_stop_pct:.0f} %, cap={args.max_stop_pct:.0f} %)")
+    print(f"gestoppt {res.trig_week.notna().mean() * 100:.0f} %  |  "
+          f"Rendite mit Stop: Median {res.ret_stop.median():.2f} %  "
+          f"Ø {res.ret_stop.mean():.2f} %  |  R-Multiple Ø {res.r_mult.mean():.3f}")
 
     print("\n" + "=" * 76)
     print("Frueh-Ausstoppung (Woche 1) nach ATR-Quartil")
@@ -234,11 +348,14 @@ def main() -> int:
 
     log_experiment(
         tool="atr_stop_analysis",
-        params={"horizon": args.horizon, "stop_atr_mult": STOP_ATR_MULT,
-                "stop_floor_pct": STOP_FLOOR_PCT},
+        params={"horizon": args.horizon, "stop_atr_mult": mult,
+                "min_stop_pct": args.min_stop_pct,
+                "max_stop_pct": args.max_stop_pct},
         metrics={"n": len(res), "atr_median": float(res.atr_pct.median()),
                  "stop_pct_median": float(res.stop_pct.median()),
                  "week1_stop_pct": float(res.frueh.mean() * 100),
+                 "ret_stop_mean": float(res.ret_stop.mean()),
+                 "r_mult_mean": float(res.r_mult.mean()),
                  "frueh_ret_median": float(fr.ret.median()) if not fr.empty else np.nan,
                  "rest_ret_median": float(rest.ret.median())},
         context={"csv": args.csv},
