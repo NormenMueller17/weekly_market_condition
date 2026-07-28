@@ -378,6 +378,21 @@ def fetch_universe_ishares(
         )
         resp.raise_for_status()
 
+        # BlackRock liefert bei blockierten Anfragen die HTML-Produktseite mit
+        # HTTP 200 UND Content-Type "text/csv" — der Status verrät den Fehler
+        # also nicht. Ohne diese Prüfung findet die Header-Heuristik unten das
+        # Wort "Ticker" in eingebettetem JavaScript, pandas erstickt an der
+        # Zeile, und der Lauf fällt still auf die CSV zurück. Genau das ist über
+        # Monate unbemerkt passiert: UNIVERSE=ishares_iwv war gesetzt, gelaufen
+        # ist trotzdem immer die Altdatei.
+        if resp.text.lstrip()[:200].lower().startswith(("<!doctype", "<html")):
+            raise ValueError(
+                "BlackRock liefert HTML statt CSV (Bot-Schutz). Weder ein "
+                "Browser-User-Agent noch eine Session mit Cookies und Referer "
+                "helfen — der Download braucht offenbar JavaScript und ist aus "
+                "der CI nicht erreichbar."
+            )
+
         # ── Parse the iShares CSV ─────────────────────────────────────────────
         # The file contains a few metadata rows before the actual table.
         # We find the real header by looking for a line that has both
@@ -424,8 +439,16 @@ def fetch_universe_ishares(
         return tickers
 
     except Exception as exc:
-        print(f"[WARN] iShares-Download fehlgeschlagen ({exc}). "
-              f"Fallback auf CSV: {_CSV_FILE}")
+        # Laut und unübersehbar: Der Fallback ist eine Notlösung, kein
+        # Normalbetrieb. Wer UNIVERSE=ishares_* setzt, will nicht monatelang
+        # unbemerkt auf einer Altdatei laufen.
+        print("=" * 78)
+        print(f"[UNIVERSE] ⚠️  iSHARES-DOWNLOAD FEHLGESCHLAGEN — es läuft die "
+              f"ALTDATEI {_CSV_FILE}")
+        print(f"[UNIVERSE] ⚠️  Grund: {exc}")
+        print(f"[UNIVERSE] ⚠️  Das Universum ist damit NICHT aktuell. "
+              f"Übernommene und de-listete Titel stehen weiter drin.")
+        print("=" * 78)
         return get_universe_from_csv(_CSV_FILE)
 
 
