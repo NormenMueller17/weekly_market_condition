@@ -140,7 +140,20 @@ FUNDAMENTAL_WEIGHTS = {
 # ── Portfolio / sizing defaults from rules.json ───────────────────────────────
 _p = _RULES_JSON.get("portfolio", {})
 _s = _RULES_JSON.get("sizing", {})
-DEFAULT_RULES["bearish_risk_fraction"] = _s.get("bearish_risk_fraction", 0.5)
+
+# Der Sizing-Block muss in DEFAULT_RULES landen, sonst greifen die Aufrufe
+# `r.get("max_risk_per_trade_pct", 1.5)` weiter unten auf ihre hartkodierten
+# Rueckfallwerte zurueck — rules.json waere wirkungslos. Genau das war bis
+# 2026-07-28 der Fall; die Werte stimmten nur zufaellig ueberein.
+#
+# `bearish_risk_fraction` hiess in rules.json frueher `bearish_kelly_fraction`
+# und wurde deshalb nie gelesen. Der alte Name wird weiter akzeptiert, damit
+# bestehende Konfigurationen nicht still ihr Verhalten aendern.
+DEFAULT_RULES["max_risk_per_trade_pct"] = _s.get("max_risk_per_trade_pct", 1.5)
+DEFAULT_RULES["max_position_pct"]       = _s.get("max_position_pct",      15.0)
+DEFAULT_RULES["bearish_risk_fraction"]  = _s.get(
+    "bearish_risk_fraction", _s.get("bearish_kelly_fraction", 0.5)
+)
 _DEFAULT_PORTFOLIO_MAX_POSITIONS = _p.get("portfolio_max_positions", 12)
 _DEFAULT_MAX_NEW_PER_WEEK_BULL   = _p.get("max_new_per_week_bull",   3)
 _DEFAULT_MAX_NEW_PER_WEEK_BEAR   = _p.get("max_new_per_week_bear",   1)
@@ -749,12 +762,27 @@ def generate_signals(
             max_risk_pct *= r.get("bearish_risk_fraction", 0.5)
         risk_based_pct = max_risk_pct / stop_pct if stop_pct > 0 else max_pos_pct
         pos_size_pct   = min(risk_based_pct, max_pos_pct)
-        risk_value     = account_equity * max_risk_pct  # always exact target risk
         position_value = account_equity * pos_size_pct
         if available_cash is not None:
             cash_per_slot  = available_cash / max(1, remaining_slots)
             position_value = min(position_value, cash_per_slot)
-            risk_value     = position_value * stop_pct
+
+        # Risiko IMMER aus der tatsaechlichen Positionsgroesse ableiten.
+        #
+        # Vorher stand hier `risk_value = account_equity * max_risk_pct` mit dem
+        # Kommentar "always exact target risk". Das gilt nur, solange die
+        # risikobasierte Groesse auch durchkommt. Sobald `max_position_pct`
+        # bindet — also bei jedem engen Stop, denn dann verlangt das Risikoziel
+        # eine groessere Position als erlaubt — ist die Position kleiner und
+        # damit auch der Verlust am Stop. Beispiel: Position auf 5 % gedeckelt,
+        # Stop 10 % => realer Einsatz 0,5 % des Depots, gemeldet wurden 1,5 %.
+        # Der Wert war also um den Faktor 3 zu hoch und damit unbrauchbar fuer
+        # jede Aussage ueber das Gesamtrisiko des Depots.
+        #
+        # Nur im available_cash-Pfad war die Rechnung schon richtig; in der
+        # Praxis lief sie meist dort durch, weshalb der Fehler lange unsichtbar
+        # blieb.
+        risk_value     = position_value * stop_pct
         risk_on_equity = risk_value / account_equity
 
         # Industry data (used for ranking)
