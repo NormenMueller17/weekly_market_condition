@@ -91,7 +91,9 @@
     "partial_1_qty_frac":     0.333,
     "partial_2_trigger_pct": 40.0,
     "partial_2_qty_frac":     0.333,
-    "trailing_atr_mult":      2.0
+    "trailing_atr_mult":      2.0,
+    "giveback_frac":          0.5,
+    "_giveback_doc":          "Anteil des bisher erreichten Höchstgewinns, den der mitziehende Stop festhält. 0.5 = die Hälfte. Greift ab breakeven_trigger_pct, auch während der Fast-Mover-Sperre — dort schützte vorher nur ein statischer Breakeven-Stop, weshalb sechs Fast Mover im Median von +48,0 % auf −0,0 % zurückfielen. 0 = deaktiviert. NICHT feinkalibriert: 40-60 % sind durchgehend besser als aus, das Maximum bei 50 % traegt ein einzelner Trade."
   },
 
   "ranking_weights": {

@@ -390,6 +390,7 @@ def check_profit_taking(trade: dict) -> dict:
     partial_2_trigger  = pt.get("partial_2_trigger_pct", 40.0)
     partial_2_frac     = pt.get("partial_2_qty_frac",    0.333)
     trailing_atr_mult  = pt.get("trailing_atr_mult",     2.0)
+    giveback_frac      = pt.get("giveback_frac",         0.5)
 
     # ── Fetch weekly data ─────────────────────────────────────────────────────
     try:
@@ -452,25 +453,83 @@ def check_profit_taking(trade: dict) -> dict:
             result["partial_sell_2_qty"]   = qty2
             result["partial_sell_2_price"] = current_price
 
-    # ── Regel 3c: ATR-Trailing-Stop für den Runner ───────────────────────────
-    if partial_1_done:
+    # ── Regel 3c: mitziehender Stop für den Runner ───────────────────────────
+    #
+    # Vorher war diese Regel an `partial_1_done` gekoppelt und damit während der
+    # Fast-Mover-Sperre NIE aktiv: Regel 2 verbietet Teilverkäufe acht Wochen
+    # lang, also gab es keinen Teilverkauf, also keinen Trailing-Stop. Übrig
+    # blieb der statische Breakeven-Stop aus Regel 1 — ein Titel, der +50 %
+    # läuft und zurückkommt, wurde bei exakt 0 % geschlossen.
+    #
+    # Genau das ist fünfmal passiert. Gemessen auf den 16 auswertbaren
+    # Journal-Trades (profit_taking_analysis.py, Wochenbars): Die sechs Fast
+    # Mover erreichten im Median +48,0 % und wurden bei −0,0 % geschlossen.
+    #
+    # Zwei Konsequenzen:
+    #
+    # 1. Die Kopplung an `partial_1_done` fällt weg. Der Stop zieht mit, sobald
+    #    der Breakeven-Trigger erreicht war — auch während der Sperre. Die
+    #    Sperre selbst bleibt: Sie ist richtig. Gemessen ist "Sperre plus
+    #    mitziehender Stop" (+5,53 % je Trade) deutlich besser als
+    #    "Teilverkäufe erlauben" (+1,74 %), weil die Sperre den großen Gewinner
+    #    laufen lässt — VSH behält 81,2 % statt 42,9 %.
+    #
+    # 2. Der ATR-Trailing allein reicht nicht. 2× Wochen-ATR liegt so weit
+    #    unter dem Hoch, dass der Level meist UNTER dem Breakeven-Level bleibt
+    #    und gar nicht greift (gemessen: +11,83 % gegen +12,31 % ohne, also
+    #    wirkungslos). Zusätzlich hält ein Giveback-Stop einen festen Anteil des
+    #    bisherigen Höchstgewinns fest. Der ist volatilitätsunabhängig und
+    #    wirkt: +24,71 % auf den Fast Movern gegen +12,31 % im Ist-Zustand.
+    #
+    # `giveback_frac` ist NICHT feinkalibriert. Der Bereich 40–60 % ist
+    # durchgehend besser als "aus"; das Maximum bei genau 50 % wird von einem
+    # einzigen Trade (VSH) getragen und ist auf n=16 nicht belastbar.
+    peak_gain_pct = 0.0
+    try:
+        peak_high = pd.to_numeric(hist_since["High"], errors="coerce").max()
+        if pd.notna(peak_high):
+            peak_gain_pct = (float(peak_high) / entry_price - 1) * 100
+    except Exception:
+        pass
+
+    if peak_gain_pct >= breakeven_trigger:
         try:
+            kandidaten: list[float] = []
+
+            # (a) ATR-Trailing unter dem höchsten Wochenschluss
             tr = pd.concat([
                 (high - low).abs(),
                 (high - close.shift(1)).abs(),
                 (low  - close.shift(1)).abs(),
             ], axis=1).max(axis=1)
             atr10 = tr.rolling(10).mean().iloc[-1]
-
             highest_close = pd.to_numeric(hist_since["Close"], errors="coerce").max()
             if pd.notna(highest_close) and pd.notna(atr10) and atr10 > 0:
-                trailing_level = round(highest_close - trailing_atr_mult * atr10, 2)
+                kandidaten.append(float(highest_close) - trailing_atr_mult * float(atr10))
+
+            # (b) Giveback: einen Anteil des Höchstgewinns festhalten
+            if giveback_frac > 0:
+                kandidaten.append(
+                    entry_price * (1 + peak_gain_pct * giveback_frac / 100)
+                )
+
+            # Kandidaten oberhalb des aktuellen Kurses zuerst verwerfen, DANN
+            # das Maximum bilden. Andernfalls wuerde ein zu hoher Kandidat den
+            # gueltigen niedrigeren mit unterdruecken: Ein Stop über dem Markt
+            # ist nicht platzierbar, also faellt die ganze Regel aus, obwohl ein
+            # brauchbarer Level vorlag. (Genau das trat auf, als der
+            # ATR-Kandidat bei stark gestiegener Volatilitaet ueber den Kurs
+            # rutschte und den Giveback-Level verdeckte.)
+            gueltig = [k for k in kandidaten
+                       if pd.notna(k) and k < current_price]
+            if gueltig:
+                trailing_level = round(max(gueltig), 2)
                 current_stop   = trade.get("current_stop") or 0.0
-                if trailing_level > current_stop and trailing_level < current_price:
+                if trailing_level > current_stop:
                     result["trailing_stop"]       = True
                     result["trailing_stop_level"] = trailing_level
         except Exception as e:
-            print(f"[PROFIT] ATR-Trailing {symbol}: {e}")
+            print(f"[PROFIT] Trailing {symbol}: {e}")
 
     return result
 
