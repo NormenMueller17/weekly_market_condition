@@ -32,6 +32,93 @@ _ISHARES_URLS: dict[str, str] = {
 # 30-day cache is safe: avoids unnecessary downloads while staying current.
 _UNIVERSE_CACHE_TTL_DAYS = 30
 
+# ── Offizielle Symbolliste der US-Börsen ──────────────────────────────────────
+# Frei abrufbar, reiner Text, kein Bot-Schutz — im Gegensatz zu BlackRock, das
+# aus der CI nicht erreichbar ist (siehe fetch_universe_ishares).
+_NASDAQTRADER_URLS = (
+    "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt",
+    "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt",
+)
+_LISTED_CACHE_TTL_HOURS = 24
+
+# Fielen mehr als dieser Anteil des Universums durch den Listing-Abgleich, ist
+# das ein Normalisierungsfehler und kein Massensterben — dann wird NICHT
+# gefiltert. Dieselbe Lehre wie dead_tickers.MAX_FAIL_SHARE: Eine kaputte
+# Datenquelle darf das Universum nicht stilllegen.
+_MAX_UNLISTED_SHARE = 0.15
+
+
+def _offene_positionen() -> set[str]:
+    """Symbole offener Positionen — werden nie aus dem Universum entfernt.
+
+    Auch ein wirklich de-listeter Titel muss weiter bewertet werden, solange wir
+    ihn halten. Genau dieser Fall liegt vor: AVNS fehlt in der Börsenliste und
+    ist eine offene Position.
+    """
+    try:
+        import trade_journal
+        return {p.get("symbol") for p in trade_journal.load().get("open", [])
+                if p.get("symbol")}
+    except Exception:
+        return set()
+
+
+def fetch_listed_symbols(refresh: bool = False) -> set[str]:
+    """Aktuell an US-Börsen gelistete Symbole.
+
+    Leere Menge bedeutet "unbekannt" — der Aufrufer filtert dann nicht
+    (fail-open). Ein Netzproblem darf nie das Universum leeren.
+
+    Die Symbole werden mit `_normalize_symbol` auf dieselbe Schreibweise
+    gebracht wie das CSV-Universum (Punkt → Bindestrich, z. B. BRK.B → BRK-B),
+    sonst schlägt der Abgleich bei allen Titeln mit Punkt im Symbol fehl.
+    """
+    _ensure_cache_dir()
+    cache = Path(SETTINGS.cache_dir) / "listed_symbols.json"
+
+    if cache.exists() and not refresh:
+        try:
+            d = json.loads(cache.read_text(encoding="utf-8"))
+            alter_h = (datetime.utcnow()
+                       - datetime.fromisoformat(d["fetched"])).total_seconds() / 3600
+            if alter_h < _LISTED_CACHE_TTL_HOURS:
+                return set(d["symbols"])
+        except Exception:
+            pass
+
+    symbole: set[str] = set()
+    for url in _NASDAQTRADER_URLS:
+        try:
+            r = requests.get(url, timeout=30, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                              "AppleWebKit/537.36 (KHTML, like Gecko) "
+                              "Chrome/125.0.0.0 Safari/537.36"})
+            r.raise_for_status()
+            df = pd.read_csv(io.StringIO(r.text), sep="|", dtype=str)
+            # Letzte Zeile ist ein Zeitstempel ("File Creation Time: …")
+            df = df[~df.iloc[:, 0].astype(str).str.startswith("File Creation")]
+
+            spalte = "Symbol" if "Symbol" in df.columns else "ACT Symbol"
+            for sp, wert in (("Test Issue", "Y"),):
+                if sp in df.columns:
+                    df = df[df[sp].astype(str).str.strip().str.upper() != wert]
+
+            symbole |= {_normalize_symbol(s) for s in df[spalte].dropna()}
+        except Exception as exc:
+            print(f"[LISTING] Abruf fehlgeschlagen ({os.path.basename(url)}): {exc}")
+            return set()      # fail-open: lieber gar nicht filtern
+
+    if not symbole:
+        return set()
+
+    try:
+        cache.write_text(json.dumps(
+            {"fetched": datetime.utcnow().isoformat(),
+             "symbols": sorted(symbole)}, indent=1), encoding="utf-8")
+    except Exception:
+        pass
+    return symbole
+
 # --- Delisted / Invalid Ticker Blacklist ---
 TICKER_BLACKLIST = {
     "BFHIV",  "C/PN",   "VMEO",  "K",
@@ -312,6 +399,35 @@ def get_universe_from_csv(path: str = _CSV_FILE,
     # die ungefilterte Liste, sonst könnte ein ausgeschlossenes Symbol nie
     # zurückkehren.
     if mit_ausschluss:
+        # (a) Abgleich mit der offiziellen Börsenliste. Autoritativ und sofort
+        #     wirksam — anders als der Yahoo-basierte dead_tickers-Zähler, der
+        #     drei Fehlläufe abwartet. Beide bleiben: Sie fangen verschiedene
+        #     Fälle. Hier: Titel, die wirklich nicht mehr gelistet sind.
+        #     Dort: Titel, die gelistet sind, für die Yahoo aber nichts liefert.
+        try:
+            gelistet = fetch_listed_symbols()
+            if gelistet:
+                geschuetzt = _offene_positionen()
+                weg = [t for t in tickers
+                       if t not in gelistet and t not in geschuetzt]
+                anteil = len(weg) / max(1, len(tickers))
+                if anteil > _MAX_UNLISTED_SHARE:
+                    print(f"[LISTING] {len(weg)} von {len(tickers)} Titeln nicht "
+                          f"in der Börsenliste ({anteil:.0%}) — über der Schwelle "
+                          f"von {_MAX_UNLISTED_SHARE:.0%}. Das ist ein "
+                          f"Abgleichfehler, kein Massensterben: nicht gefiltert.")
+                elif weg:
+                    tickers = [t for t in tickers if t not in set(weg)]
+                    print(f"[LISTING] {len(weg)} nicht mehr gelistete Titel "
+                          f"entfernt: {', '.join(sorted(weg)[:15])}"
+                          + (f" … (+{len(weg) - 15})" if len(weg) > 15 else ""))
+            else:
+                print("[LISTING] Börsenliste nicht verfügbar — kein Abgleich "
+                      "(fail-open).")
+        except Exception as e:
+            print(f"[LISTING] Abgleich übersprungen: {e}")
+
+        # (b) Symbole, für die Yahoo seit mehreren Läufen keine Daten liefert.
         try:
             from dead_tickers import excluded
             tot = excluded()
