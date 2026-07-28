@@ -523,10 +523,29 @@ def run():
     from signal_generator import _RULES_JSON as _rules_json
     _min_breadth = _rules_json.get("filters", {}).get("min_breadth_pct_200d", 40)
     sp500_breadth_pct = compute_sp500_breadth_200d()
-    breadth_bullish = (_min_breadth == 0) or (sp500_breadth_pct >= _min_breadth)
+
+    # Drei Zustände, nicht zwei: gemessen-und-bestanden, gemessen-und-gerissen,
+    # NICHT GEMESSEN. Der dritte sah vorher wie der erste aus, weil ein
+    # Fehlschlag 100.0 lieferte und der Report ein grünes Häkchen setzte.
+    if _min_breadth == 0:
+        breadth_bullish = True
+        print("[SIGNALS] S&P 500 Marktbreite: Filter deaktiviert "
+              "(min_breadth_pct_200d = 0)")
+    elif sp500_breadth_pct is None:
+        # Weiterhin fail-open: Ein Datenausfall soll keine Kaufsignale
+        # unterdrücken. Aber er wird als solcher benannt.
+        breadth_bullish = True
+        print(f"[SIGNALS] ⚠️  S&P 500 Marktbreite NICHT ERMITTELBAR — der "
+              f"Kaufstopp unter {_min_breadth} % ist diese Woche WIRKUNGSLOS "
+              f"(fail-open).")
+    else:
+        breadth_bullish = sp500_breadth_pct >= _min_breadth
+        print(f"[SIGNALS] S&P 500 Marktbreite: {sp500_breadth_pct:.1f}% über 200d "
+              + ("✅" if breadth_bullish else
+                 f"❌ Kaufstopp (< {_min_breadth}%)"))
+
     if not breadth_bullish:
         market_bullish = False
-    print(f"[SIGNALS] S&P 500 Marktbreite: {sp500_breadth_pct:.1f}% über 200d {'✅' if breadth_bullish else f'❌ Kaufstopp (< {_min_breadth}%)'}")
 
     # 3) Report erzeugen
     summary = heuristic_verdict(breadth_df, idx_rows)

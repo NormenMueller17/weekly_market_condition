@@ -1,4 +1,7 @@
+import io
+
 import pandas as pd
+import requests
 import yfinance as yf
 from typing import Dict, List
 
@@ -152,17 +155,38 @@ def compute_breadth_snapshots_with_advancers(weekly_data: Dict[str, pd.DataFrame
     return out
 
 
-def compute_sp500_breadth_200d() -> float:
-    """Returns % of S&P 500 stocks currently above their 200-day MA.
+def compute_sp500_breadth_200d() -> float | None:
+    """Anteil der S&P-500-Titel über ihrer 200-Tage-Linie, in Prozent.
 
-    Data source: Wikipedia S&P 500 component list + yfinance daily prices.
-    Fails open (returns 100.0) on any error so a data glitch never silently
-    blocks buy signals.
+    Gibt **None** zurück, wenn der Wert nicht ermittelbar ist — nicht 100.0.
+
+    Vorher lieferte jeder Fehlschlag 100.0, und der Aufrufer stellte das als
+    bestandenen Filter mit grünem Haken dar. Im Lauf vom 2026-07-28 sah das so
+    aus:
+
+        [BREADTH] Fehler ... HTTP Error 403: Forbidden — Filter deaktiviert
+        [SIGNALS] S&P 500 Marktbreite: 100.0% über 200d ✅
+
+    Der Kaufstopp unter 40 % war damit wirkungslos, und der Report behauptete
+    das Gegenteil. Ein fehlgeschlagener Messwert darf nicht wie ein bestandener
+    Filter aussehen; ob daraufhin trotzdem gekauft wird, entscheidet der
+    Aufrufer — aber er muss den Unterschied kennen.
+
+    Datenquelle: Wikipedia-Liste der S&P-500-Titel + yfinance-Tageskurse.
     """
     try:
-        tickers = pd.read_html(
+        # Wikipedia blockt den Standard-User-Agent von pandas/urllib mit
+        # HTTP 403. Deshalb selbst holen und den Text an read_html geben.
+        resp = requests.get(
             "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
-            attrs={"id": "constituents"},
+            timeout=30,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                   "Chrome/125.0.0.0 Safari/537.36"},
+        )
+        resp.raise_for_status()
+        tickers = pd.read_html(
+            io.StringIO(resp.text), attrs={"id": "constituents"},
         )[0]["Symbol"].tolist()
         tickers = [t.replace(".", "-") for t in tickers]
 
@@ -177,10 +201,15 @@ def compute_sp500_breadth_200d() -> float:
         last_ma = ma200.iloc[-1]
         valid   = last_c.notna() & last_ma.notna()
         if valid.sum() == 0:
-            print("[BREADTH] Warnung: Keine gültigen 200d-MA-Werte — Marktbreite-Filter deaktiviert (fail-open)")
-            return 100.0
+            print("[BREADTH] Keine gültigen 200d-MA-Werte — Marktbreite NICHT "
+                  "ermittelbar.")
+            return None
         above = (last_c[valid] > last_ma[valid]).sum()
-        return round(float(above / valid.sum() * 100), 1)
+        anteil = round(float(above / valid.sum() * 100), 1)
+        print(f"[BREADTH] {int(above)} von {int(valid.sum())} S&P-500-Titeln "
+              f"über ihrer 200d-Linie ({anteil:.1f} %).")
+        return anteil
     except Exception as e:
-        print(f"[BREADTH] Fehler beim Abruf der S&P-500-Marktbreite: {e} — Filter deaktiviert (fail-open, 100.0%)")
-        return 100.0
+        print(f"[BREADTH] Abruf fehlgeschlagen ({e}) — Marktbreite NICHT "
+              f"ermittelbar.")
+        return None
