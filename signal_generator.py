@@ -111,6 +111,9 @@ DEFAULT_RULES: dict = {
     "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
     "gap_limit_pct":          _f.get("gap_limit_pct",         5.0),
     "require_macd_above_signal": _f.get("require_macd_above_signal", True),
+    "reentry_enabled":        _f.get("reentry_enabled",       True),
+    "reentry_max_attempts":   _f.get("reentry_max_attempts",     3),
+    "reentry_cooldown_days":  _f.get("reentry_cooldown_days",   28),
 }
 
 # ── Ranking weights (must sum to 1.0) ─────────────────────────────────────────
@@ -424,6 +427,10 @@ class TradeSignal:
     # Fundamental score (0-100, percentile-based within signal set; not yet in composite)
     fundamental_score:  Optional[float] = None
 
+    # Wiedereinstieg (Minervini: derselbe Titel darf mehrfach versucht werden)
+    is_reentry:         bool            = False
+    reentry_attempt:    int             = 1     # 1 = Erstkauf, 2 = erster Re-Entry
+
     # Ranking (filled by rank_signals())
     rank:               int             = 0
     is_top_pick:        bool            = False
@@ -446,6 +453,7 @@ def generate_signals(
     rules:                   dict | None = None,
     available_cash:          float | None = None,
     open_positions:          list[str] | None = None,
+    reentry_watchlist:       dict[str, dict] | None = None,
 ) -> tuple[list[TradeSignal], pd.DataFrame]:
     """Apply Blueprint buy rules to the leaders DataFrame.
 
@@ -509,14 +517,16 @@ def generate_signals(
         macd_ok = df.get("MACD > Signal (W)", pd.Series(False, index=df.index)).fillna(False).astype(bool)
         mask &= macd_ok
 
-    # 9. Volume Breakout mandatory — only stocks with confirmed volume surge qualify
+    # 9./10. Timing-Filter — getrennt gehalten, weil der Wiedereinstieg sie
+    #        ersetzen darf (siehe unten). Alles ueber ihnen ist ein THESEN-Filter
+    #        (Trendstruktur, Fundamentaldaten, Industrie) und gilt immer.
+    #
+    #   9. Volume Breakout: nur Titel mit bestaetigtem Volumenschub
+    #  10. Close > Vorwoche: kein Kauf bei fallendem Wochenkurs
+    #      (fail-open: fehlendes Signal = kein Ausschluss)
     vol_breakout_col = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
-    mask &= vol_breakout_col
-
-    # 10. Close > Vorwoche — kein Kauf bei fallendem Wochenkurs
-    #     (fail-open: fehlendes Signal = kein Ausschluss)
     close_above_prev = df.get("Close > Vorwoche", pd.Series(True, index=df.index)).fillna(True).astype(bool)
-    mask &= close_above_prev
+    timing_ok = vol_breakout_col & close_above_prev
 
     # 11. Minimum price — no penny stocks (fail-open: NaN Close = data gap, not penny stock)
     if r.get("min_price", 0) > 0:
@@ -531,6 +541,44 @@ def generate_signals(
             df.get("MarketCap (Mio USD)", pd.Series(index=df.index)), errors="coerce"
         )
         mask &= cap_raw.isna() | (cap_raw >= r["min_market_cap_mio"])
+
+    # ── Wiedereinstieg: Pivot-Rueckeroberung ersetzt die Timing-Filter ────────
+    #
+    # Ein ausgestoppter Titel war nie AKTIV gesperrt — nur offene Positionen
+    # werden aus den Kandidaten entfernt. Er kam faktisch trotzdem nie zurueck,
+    # weil `Vol-Breakout` und `Close > Vorwoche` nach einem Zusammenbruch
+    # wochenlang nicht feuern; requalifiziert er endlich, ist die Bewegung
+    # gelaufen. Genau das kostete uns die Rendite: Alle 16 ueber einen Stop
+    # beendeten Trades endeten bei <= +1,6 %, dieselben Titel standen vier
+    # Wochen spaeter im Median +17,8 %.
+    #
+    # Der Wiedereinstieg ersetzt daher die beiden TIMING-Filter — die
+    # Rueckeroberung des alten Pivots IST das Ausbruchssignal. Die
+    # THESEN-Filter (Score, RS, Abstand zum Hoch, ATR, Fundamentaldaten,
+    # Industrie, MACD) gelten unveraendert weiter, ebenso der
+    # Earnings-Blackout unten.
+    #
+    # Eine zusaetzliche Trendpruefung (Kurs > MA50 beim Wiedereinstieg) wurde
+    # gemessen und ist redundant: In 45 von 45 Faellen lag der Kurs beim
+    # Rueckerobern des Pivots ohnehin ueber der MA50. Die Pivot-Bedingung ist
+    # strikt staerker.
+    reentry_ok = pd.Series(False, index=df.index)
+    watch = reentry_watchlist or {}
+    if r.get("reentry_enabled", True) and watch:
+        px = pd.to_numeric(df.get("Close", pd.Series(index=df.index)),
+                           errors="coerce")
+        buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
+        for tkr, info in watch.items():
+            if tkr not in df.index:
+                continue
+            pivot = info.get("pivot")
+            if not pivot:
+                continue
+            cur = px.get(tkr)
+            if cur is not None and pd.notna(cur) and float(cur) >= pivot * buf:
+                reentry_ok.loc[tkr] = True
+
+    mask &= timing_ok | reentry_ok
 
     candidates = df[mask].copy()
 
@@ -708,6 +756,9 @@ def generate_signals(
             industry_score     = round(ind_score, 2) if ind_score is not None else None,
             market_regime      = market_regime,
             sa_link            = str(row.get("SA", "")),
+            is_reentry         = bool(reentry_ok.get(ticker, False)),
+            reentry_attempt    = int((watch.get(str(ticker), {}) or {})
+                                     .get("attempts", 0)) + 1,
         ))
 
     # ── Fundamental scores (percentile-based within this signal set) ─────────

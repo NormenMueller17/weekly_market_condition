@@ -853,6 +853,25 @@ def run():
             f"Projected Cash für Signal-Sizing: ${projected_cash:,.0f}"
         )
 
+    # ── Re-Entry-Watchlist: ausgestoppte Titel mit abgelaufenem Cooldown ──────
+    _rules_filters = _rules_json.get("filters", {})
+    _watchlist: dict[str, dict] = {}
+    if _rules_filters.get("reentry_enabled", True):
+        try:
+            _watchlist = trade_journal.reentry_watchlist(
+                trade_journal.load(),
+                cooldown_days = _rules_filters.get("reentry_cooldown_days", 28),
+                max_attempts  = _rules_filters.get("reentry_max_attempts",   3),
+            )
+            if _watchlist:
+                print("[REENTRY] Watchlist: " + ", ".join(
+                    f"{t} (Pivot {i['pivot']:.2f}, Versuch {i['attempts'] + 1})"
+                    for t, i in sorted(_watchlist.items())))
+            else:
+                print("[REENTRY] Watchlist leer (kein Titel mit abgelaufenem Cooldown)")
+        except Exception as e:
+            print(f"[REENTRY] Watchlist konnte nicht gebaut werden: {e}")
+
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
     signals, _signal_candidates, sector_excluded = generate_signals(
         leaders,
@@ -864,8 +883,11 @@ def run():
         rules           = {"max_industry_rank": SETTINGS.max_industry_rank},
         available_cash  = projected_cash if projected_cash > 0 else alpaca_cash,
         open_positions  = alpaca_positions,
+        reentry_watchlist = _watchlist,
     )
-    print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden")
+    _n_re = sum(1 for s in signals if s.is_reentry)
+    print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden"
+          + (f" — davon {_n_re} Wiedereinstieg(e)" if _n_re else ""))
 
     out_dir = Path("artifacts")
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -570,6 +570,11 @@ HTML_TMPL = """
               {%- elif s.pattern == 'VCP' %}#e8f5e9
               {%- else %}#e3f2fd{% endif %};
               padding:2px 7px;border-radius:4px;font-size:0.82em;font-weight:bold">{{ s.pattern }}</span>
+            {%- if s.is_reentry %}
+            <span title="Wiedereinstieg: Titel war ausgestoppt und hat den alten Pivot zurückerobert"
+                  style="background:#ede7f6;color:#4527a0;padding:2px 7px;border-radius:4px;
+                         font-size:0.82em;font-weight:bold">↻ Versuch {{ s.reentry_attempt }}</span>
+            {%- endif %}
             <span style="font-size:0.87em">RS&nbsp;<strong>{{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}</strong></span>
             <span style="font-size:0.87em;color:
               {%- if s.rs_delta_4w is not none and s.rs_delta_4w > 0 %}#2e7d32
@@ -652,7 +657,9 @@ HTML_TMPL = """
         <td class="left" style="font-weight:bold;background-color:
           {%- if '+' in s.pattern %}#fffde7
           {%- elif s.pattern == 'VCP' %}#e8f5e9
-          {%- else %}#e3f2fd{% endif %}">{{ s.pattern }}</td>
+          {%- else %}#e3f2fd{% endif %}">{{ s.pattern }}{% if s.is_reentry %}
+          <span title="Wiedereinstieg nach Ausstoppung — alter Pivot zurückerobert"
+                style="color:#4527a0">↻{{ s.reentry_attempt }}</span>{% endif %}</td>
         <td><strong>{{ '%.2f' % s.entry_price }}</strong></td>
         <td style="background-color:#e8f4fd;font-weight:bold">{{ '%.2f' % s.buy_stop }}</td>
         <td style="background-color:#fdecea;font-weight:bold" title="Order verwerfen wenn Montag-Open über diesem Preis">{{ '%.2f' % s.max_gap_price }}</td>

@@ -22,6 +22,9 @@
     "gap_limit_pct":          "Max. erlaubter Gap über dem Breakout-Level in %. Order verwerfen wenn Montag-Open > Pivot * (1 + gap_limit_pct/100).",
     "require_macd_above_signal": "true = MACD-Linie muss über Signal-Linie liegen (wöchentlich). Cross kann zurückliegen — nur aktueller Zustand zählt.",
     "min_breadth_pct_200d":     "Kaufstopp wenn % der S&P-500-Aktien über ihrer 200d-MA unter diesem Wert liegt. 40 = klassischer Bärenmodus. 0 = deaktiviert.",
+    "reentry_enabled":          "true = ausgestoppte Titel duerfen den Pivot zurueckerobern und erneut gekauft werden (Minervini: drei bis vier Versuche je Titel).",
+    "reentry_max_attempts":     "Maximale Kaufversuche je Titel inklusive des ersten. 3 = gemessenes Optimum, der Sprung liegt im ersten Wiedereinstieg.",
+    "reentry_cooldown_days":    "Kalendertage Wartezeit nach dem Stop, bevor ein Wiedereinstieg zulaessig ist. 28 ~ 20 Handelstage; kuerzere Wartezeiten kaufen den Rueckpraller statt einer neuen Basis und messen sich schlechter.",
     "portfolio_max_positions":  "Absolute Obergrenze offener Positionen. Wenn erreicht, werden keine neuen Signale generiert.",
     "max_new_per_week_bull":    "Max. neue Buy-Orders pro Woche im bullischen Markt (10W-EMA > 20W-EMA + Breadth OK).",
     "max_new_per_week_bear":    "Max. neue Buy-Orders pro Woche im bärischen Markt. Konservativ halten (1 = empfohlen).",
@@ -55,7 +58,10 @@
     "buy_stop_buffer_pct":    0.1,
     "gap_limit_pct":          5.0,
     "require_macd_above_signal": true,
-    "min_breadth_pct_200d": 40
+    "min_breadth_pct_200d": 40,
+    "reentry_enabled":        true,
+    "reentry_max_attempts":   3,
+    "reentry_cooldown_days":  28
   },
 
   "portfolio": {

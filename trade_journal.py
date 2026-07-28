@@ -98,6 +98,100 @@ def _find_signal_meta(symbol: str, weeks_back: int = 16) -> dict:
             "market_regime": "bullish", "signal_date": ""}
 
 
+def _find_buy_stop(symbol: str, weeks_back: int = 52) -> Optional[float]:
+    """Buy-Stop (= Pivot) des urspruenglichen Signals von *symbol*."""
+    for f in _signal_files(weeks_back):
+        try:
+            payload = json.loads(f.read_text(encoding="utf-8"))
+            for sig in payload.get("signals", []):
+                if sig.get("ticker") == symbol:
+                    return sig.get("buy_stop")
+        except Exception:
+            continue
+    return None
+
+
+# ── Re-Entry-Watchlist ────────────────────────────────────────────────────────
+
+def reentry_watchlist(
+    data:           dict,
+    cooldown_days:  int = 28,
+    max_attempts:   int = 3,
+    today:          Optional[datetime.date] = None,
+) -> dict[str, dict]:
+    """Ausgestoppte Titel, die fuer einen Wiedereinstieg in Frage kommen.
+
+    Hintergrund (gemessen 2026-07-28, reentry_analysis.py): 16 von 17
+    geschlossenen Trades endeten am Stop, und jeder bei <= +1,6 %. Vier Wochen
+    spaeter standen dieselben Titel im Median +17,8 %. Die Titelauswahl war also
+    richtig, das Timing falsch.
+
+    Simuliert auf 110 Backtest-Signalen ueber 26 Wochen hebt der Wiedereinstieg
+    den Depotbeitrag je Signal von +0,09 pp auf +0,91 pp und den Anteil der im
+    Gewinn endenden Signale von 40 % auf 68 %. Der Sprung liegt fast vollstaendig
+    im ersten Wiedereinstieg; ein dritter Versuch aendert kaum noch etwas
+    (0,910 vs. 0,908 pp), kostet aber auch nichts, weil er selten feuert
+    (Ø 1,4 Versuche je Signal).
+
+    Rueckgabe: {ticker: {"pivot": float, "exit_date": str, "attempts": int}}
+
+    `pivot` ist der Buy-Stop des Originalsignals; fehlt er in den
+    Signal-Metadaten, dient der tatsaechliche Einstandspreis als Ersatz (bei
+    einer Stop-Buy-Order liegen beide dicht beieinander).
+
+    Die Watchlist prueft NUR Cooldown und Versuchszahl. Ob der Kurs den Pivot
+    zurueckerobert hat, entscheidet `signal_generator`, weil dort die aktuellen
+    Kurse vorliegen.
+    """
+    today = today or datetime.date.today()
+    closed = data.get("closed", [])
+    held = {p.get("symbol") for p in data.get("open", [])}
+
+    # Versuche je Titel = Anzahl der Stop-Ausstiege in der Historie
+    attempts: dict[str, int] = {}
+    for t in closed:
+        if t.get("exit_reason") == "stop_hit":
+            sym = t.get("symbol")
+            if sym:
+                attempts[sym] = attempts.get(sym, 0) + 1
+
+    out: dict[str, dict] = {}
+    for t in closed:
+        sym = t.get("symbol")
+        if not sym or sym in held or sym in out:
+            continue
+        if t.get("exit_reason") != "stop_hit":
+            continue
+        if attempts.get(sym, 0) >= max_attempts:
+            continue
+
+        # jeweils den JUENGSTEN Stop-Ausstieg des Titels als Cooldown-Basis
+        latest = max(
+            (x.get("exit_date") or "" for x in closed
+             if x.get("symbol") == sym and x.get("exit_reason") == "stop_hit"),
+            default="",
+        )
+        if not latest:
+            continue
+        try:
+            exit_date = datetime.date.fromisoformat(latest[:10])
+        except ValueError:
+            continue
+        if (today - exit_date).days < cooldown_days:
+            continue
+
+        pivot = _find_buy_stop(sym) or t.get("entry_price")
+        if not pivot or pivot <= 0:
+            continue
+
+        out[sym] = {
+            "pivot":     float(pivot),
+            "exit_date": exit_date.isoformat(),
+            "attempts":  attempts.get(sym, 0),
+        }
+    return out
+
+
 # ── Alpaca order history helpers ──────────────────────────────────────────────
 
 def _entry_date_from_orders(symbol: str, filled_buys: list[dict]) -> str:
