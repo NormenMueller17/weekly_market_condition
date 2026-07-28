@@ -32,7 +32,16 @@ class Settings:
     #   "ishares_iwv"  → iShares Russell 3000 (top UNIVERSE_TOP_N by market cap)
     #   "ishares_iwb"  → iShares Russell 1000
     #   "ishares_iwm"  → iShares Russell 2000 (small-caps)
-    universe:      str = _get_env("UNIVERSE", "csv")
+    # Vorgabe ist der Nasdaq-Screener (tagesaktuell). "csv" waehlt bewusst die
+    # Altdatei; sie ist sonst nur noch Rueckfall.
+    #
+    # Der Vorgabewert MUSS "nasdaq" sein, nicht "csv": Der CI-Workflow schreibt
+    # `UNIVERSE=${{ vars.UNIVERSE }}` immer in die Umgebung, auch wenn die
+    # Repo-Variable nicht gesetzt ist — die Variable existiert dann als LEERER
+    # String. `_get_env` liefert dafuer den Vorgabewert. Stand "csv" darin, lief
+    # sowohl die CI als auch jeder lokale Aufruf auf der Altdatei, obwohl das
+    # Routing in data_sources den Screener vorsieht.
+    universe:      str = _get_env("UNIVERSE", "nasdaq")
     custom_tickers: str = _get_env("CUSTOM_TICKERS", "")
 
     # How many tickers to use when UNIVERSE=ishares_*

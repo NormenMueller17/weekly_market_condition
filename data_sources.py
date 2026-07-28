@@ -707,7 +707,10 @@ def get_universe() -> list[str]:
     # Sektor und Industrie in einem Abruf. Die CSV von 11/2025 ist nur noch
     # Notnagel — sie war nie als Dauerlösung gedacht, wurde es aber, weil der
     # iShares-Weg still scheiterte (siehe fetch_universe_ishares).
-    if src in ("nasdaq", "screener", "csv_fallback", ""):
+    # "" kann hier nicht ankommen (_get_env ersetzt Leerstrings durch den
+    # Vorgabewert) — bleibt als Gürtel-und-Hosenträger stehen, falls jemand
+    # SETTINGS.universe direkt setzt.
+    if src in ("nasdaq", "screener", ""):
         try:
             return fetch_universe_nasdaq(
                 min_market_cap_mio=SETTINGS.universe_min_mcap_mio,
