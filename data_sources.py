@@ -274,7 +274,8 @@ def _normalize_symbol(sym: str) -> str:
     return s
 
 
-def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
+def get_universe_from_csv(path: str = _CSV_FILE,
+                          mit_ausschluss: bool = True) -> list[str]:
     """
     Liefert die Ticker-Liste aus der CSV und füllt optional TICKER_META
     mit 'Company'/'Industry' (falls vorhanden).
@@ -303,7 +304,26 @@ def get_universe_from_csv(path: str = _CSV_FILE) -> list[str]:
     removed = before - len(tickers)
     if removed > 0:
         print(f"[UNIVERSE] {removed} blacklisted Ticker entfernt.")
-    
+
+    # Symbole entfernen, für die Yahoo seit mehreren Läufen keine Daten mehr
+    # liefert. Die Universumsdatei altert (Stand 11/2025), übernommene und
+    # de-listete Firmen stehen weiter drin und kosten jede Woche Abrufe.
+    # `mit_ausschluss=False` schaltet das ab — dead_tickers.py --scan braucht
+    # die ungefilterte Liste, sonst könnte ein ausgeschlossenes Symbol nie
+    # zurückkehren.
+    if mit_ausschluss:
+        try:
+            from dead_tickers import excluded
+            tot = excluded()
+            if tot:
+                vorher = len(tickers)
+                tickers = [t for t in tickers if t not in tot]
+                if vorher - len(tickers) > 0:
+                    print(f"[UNIVERSE] {vorher - len(tickers)} Symbole ohne "
+                          f"Yahoo-Daten übersprungen (dead_tickers.json).")
+        except Exception as e:
+            print(f"[UNIVERSE] dead_tickers-Filter übersprungen: {e}")
+
     print(f"[UNIVERSE] {len(tickers)} Symbole aus {os.path.basename(path)} geladen.")
     return tickers
 

@@ -485,7 +485,29 @@ def run():
 
     print(f"[DEBUG] Universe size: {len(universe)}")
     non_empty = sum(1 for _, df in weekly.items() if isinstance(df, pd.DataFrame) and "Close" in df.columns and not df["Close"].dropna().empty)
-    print(f"[DEBUG] Weekly non-empty datasets: {non_empty}")    
+    print(f"[DEBUG] Weekly non-empty datasets: {non_empty}")
+
+    # ── Buchführung über Symbole ohne Yahoo-Daten ────────────────────────────
+    # Erst nach mehreren Fehlläufen in Folge wird ausgeschlossen (siehe
+    # dead_tickers.py); ein einzelner Yahoo-Ausfall darf das Universum nicht
+    # dauerhaft schrumpfen. Best effort — ein Fehler hier darf den Report nicht
+    # kosten.
+    try:
+        import dead_tickers
+        _ok = {t for t, df in weekly.items()
+               if isinstance(df, pd.DataFrame) and "Close" in df.columns
+               and not df["Close"].dropna().empty}
+        _reg = dead_tickers.record(set(universe), _ok)
+        dead_tickers.save(_reg)
+        _neu = sorted(set(universe) - _ok)
+        _aus = dead_tickers.excluded(_reg)
+        print(f"[DEAD] {len(_neu)} Symbol(e) ohne Daten, "
+              f"{len(_aus)} ab {dead_tickers.MIN_FAILS} Fehlläufen ausgeschlossen")
+        if _neu:
+            print(f"[DEAD] ohne Daten: {', '.join(_neu[:25])}"
+                  + (f" … (+{len(_neu) - 25})" if len(_neu) > 25 else ""))
+    except Exception as e:
+        print(f"[DEAD] Buchführung übersprungen: {e}")
 
     # 2) Kennzahlen berechnen
     breadth_df   = compute_breadth(weekly)
