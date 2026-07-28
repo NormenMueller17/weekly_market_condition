@@ -337,26 +337,61 @@ def _composite_score(sig: "TradeSignal") -> float:
     )
 
 
+_UNKNOWN_SECTORS = {"", "nan", "none", "n/a", "na", "unknown", "–", "-"}
+
+
+def _norm_sector(value) -> Optional[str]:
+    """Sektorname normalisiert; None wenn unbekannt.
+
+    Wichtig: `str(float("nan"))` ist "nan" — ein Wahrheitswert, kein Leerstring.
+    Ohne diese Normalisierung landen alle Titel ohne Sektordaten im gemeinsamen
+    Topf "nan" und deckeln sich gegenseitig weg, obwohl sie fachlich nichts
+    miteinander zu tun haben.
+    """
+    if value is None:
+        return None
+    if isinstance(value, float) and math.isnan(value):
+        return None
+    s = str(value).strip()
+    return None if s.lower() in _UNKNOWN_SECTORS else s
+
+
 def _filter_sector_limit(
     signals:        list["TradeSignal"],
     max_per_sector: int,
-) -> tuple[list["TradeSignal"], set[str]]:
+    initial_counts: dict[str, int] | None = None,
+) -> tuple[list["TradeSignal"], set[str], set[str]]:
     """Drop lower-ranked signals that exceed the per-sector cap (preserves rank order).
 
-    Returns (kept_signals, dropped_tickers).
+    `initial_counts` bringt die Sektoren der SCHON GEHALTENEN Positionen mit.
+    Ohne sie zaehlte der Cap nur innerhalb der Signalliste EINER Woche: drei
+    Tech-Titel pro Woche ueber vier Wochen ergaben zwoelf Tech-Titel im Depot.
+    Genau so entstand unser Klumpen — 12 von 22 Trades in Technology, wodurch
+    die Equity-Kurve taeglich um 6-15 % schwankte (ein Trade, zwoelfmal).
+
+    Titel ohne verwertbaren Sektor werden NICHT gedeckelt (fail-open) und
+    stattdessen zurueckgemeldet: Sie gegeneinander zu deckeln waere eine
+    erfundene Beschraenkung, sie still durchzulassen ein unsichtbares Loch.
+
+    Returns (kept_signals, dropped_tickers, tickers_ohne_sektor).
     """
-    sector_count: dict[str, int] = {}
+    sector_count: dict[str, int] = dict(initial_counts or {})
     kept:    list["TradeSignal"] = []
     dropped: set[str]            = set()
+    unknown: set[str]            = set()
     for sig in signals:
-        sector = sig.sector or "Unknown"
-        count  = sector_count.get(sector, 0)
+        sector = _norm_sector(sig.sector)
+        if sector is None:
+            unknown.add(sig.ticker)
+            kept.append(sig)
+            continue
+        count = sector_count.get(sector, 0)
         if count < max_per_sector:
             kept.append(sig)
             sector_count[sector] = count + 1
         else:
             dropped.add(sig.ticker)
-    return kept, dropped
+    return kept, dropped, unknown
 
 
 def rank_signals(
@@ -454,6 +489,7 @@ def generate_signals(
     available_cash:          float | None = None,
     open_positions:          list[str] | None = None,
     reentry_watchlist:       dict[str, dict] | None = None,
+    open_sectors:            dict[str, str] | None = None,
 ) -> tuple[list[TradeSignal], pd.DataFrame]:
     """Apply Blueprint buy rules to the leaders DataFrame.
 
@@ -768,10 +804,35 @@ def generate_signals(
     signals = rank_signals(signals, max_positions=remaining_slots)
 
     # ── Sector concentration limit ────────────────────────────────────────────
+    # Die Sektoren der bereits gehaltenen Positionen gehen als Startzaehler ein,
+    # sonst gilt der Cap nur je Wochenliste und das Depot klumpt ueber die Zeit.
     max_per_sector = _RULES_JSON.get("portfolio", {}).get("max_positions_per_sector", 3)
     sector_excluded: set[str] = set()
     if max_per_sector > 0:
-        signals, sector_excluded = _filter_sector_limit(signals, max_per_sector=max_per_sector)
+        initial_counts: dict[str, int] = {}
+        for tkr in (open_positions or []):
+            sec = _norm_sector((open_sectors or {}).get(tkr))
+            if sec is not None:
+                initial_counts[sec] = initial_counts.get(sec, 0) + 1
+        if initial_counts:
+            print("[SEKTOR] Bestand: " + ", ".join(
+                f"{s} {n}/{max_per_sector}"
+                for s, n in sorted(initial_counts.items())))
+        fehlend = [t for t in (open_positions or [])
+                   if _norm_sector((open_sectors or {}).get(t)) is None]
+        if fehlend:
+            print(f"[SEKTOR] WARNUNG: Bestand ohne Sektorzuordnung, zaehlt NICHT "
+                  f"gegen den Cap: {', '.join(sorted(fehlend))}")
+
+        signals, sector_excluded, ohne_sektor = _filter_sector_limit(
+            signals, max_per_sector=max_per_sector, initial_counts=initial_counts,
+        )
+        if ohne_sektor:
+            print(f"[SEKTOR] WARNUNG: Signale ohne Sektor, nicht gedeckelt: "
+                  f"{', '.join(sorted(ohne_sektor))}")
+        if sector_excluded:
+            print(f"[SEKTOR] {len(sector_excluded)} Signal(e) wegen Sektorgrenze "
+                  f"verworfen: {', '.join(sorted(sector_excluded))}")
 
     return signals, candidates, sector_excluded
 

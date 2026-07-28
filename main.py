@@ -315,6 +315,23 @@ def _execute_pending_profit_taking(test_mode: bool) -> None:
         PENDING_PROFIT_TAKING_PATH.unlink(missing_ok=True)
 
 
+def _journal_sector(symbol: str) -> str:
+    """Sektor einer offenen Position aus dem Tradetagebuch (Rueckfall).
+
+    Nur zweite Wahl gegenueber `leaders["Sektor"]`: Bei Trades, deren
+    Originalsignal aelter ist als die vorhandenen signals_meta-Dateien, steht
+    im Journal teils ein Industrie- statt eines Sektornamens.
+    """
+    try:
+        data = trade_journal.load()
+        for pos in data.get("open", []) + data.get("closed", []):
+            if pos.get("symbol") == symbol and pos.get("sector"):
+                return str(pos["sector"])
+    except Exception:
+        pass
+    return ""
+
+
 def _sync_journal_with_alpaca() -> None:
     """Refresh trades.json/trades.html from Alpaca's current state.
 
@@ -853,6 +870,22 @@ def run():
             f"Projected Cash für Signal-Sizing: ${projected_cash:,.0f}"
         )
 
+    # ── Sektoren der offenen Positionen (fuer den Konzentrations-Cap) ─────────
+    # Quelle-Reihenfolge ist bewusst: erst `leaders["Sektor"]` (identische
+    # Herkunft wie bei den Kandidaten, also garantiert dieselbe Taxonomie),
+    # dann das Tradetagebuch als Rueckfall. Im Journal stehen bei Alt-Trades
+    # teils Industrie- statt Sektornamen ("Semiconductors" statt "Technology"),
+    # darum ist es die zweite Wahl und nicht die erste.
+    _open_sectors: dict[str, str] = {}
+    for _sym in (alpaca_positions or []):
+        _sec = None
+        if "Sektor" in leaders.columns and _sym in leaders.index:
+            _sec = leaders.at[_sym, "Sektor"]
+        if _sec is None or str(_sec).strip().lower() in ("", "nan", "n/a"):
+            _sec = _journal_sector(_sym)
+        if _sec:
+            _open_sectors[_sym] = str(_sec)
+
     # ── Re-Entry-Watchlist: ausgestoppte Titel mit abgelaufenem Cooldown ──────
     _rules_filters = _rules_json.get("filters", {})
     _watchlist: dict[str, dict] = {}
@@ -884,6 +917,7 @@ def run():
         available_cash  = projected_cash if projected_cash > 0 else alpaca_cash,
         open_positions  = alpaca_positions,
         reentry_watchlist = _watchlist,
+        open_sectors      = _open_sectors,
     )
     _n_re = sum(1 for s in signals if s.is_reentry)
     print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden"

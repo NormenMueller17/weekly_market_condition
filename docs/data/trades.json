@@ -1,10 +1,10 @@
 {
-  "generated": "2026-07-25",
+  "generated": "2026-07-28",
   "open": [
     {
       "symbol": "AVNS",
       "company": "Avanos Medical, Inc.",
-      "sector": "Medical specialties",
+      "sector": "Healthcare",
       "pattern": "–",
       "market_regime": "bullish",
       "rs_score": 91,
@@ -205,7 +205,7 @@
     {
       "symbol": "ON",
       "company": "ON Semiconductor Corporation",
-      "sector": "Semiconductors",
+      "sector": "Technology",
       "pattern": "–",
       "market_regime": "bullish",
       "rs_score": 90,
@@ -235,7 +235,7 @@
     {
       "symbol": "VSH",
       "company": "Vishay Intertechnology, Inc.",
-      "sector": "Electronic production equipment",
+      "sector": "Technology",
       "pattern": "–",
       "market_regime": "bullish",
       "rs_score": 89,
@@ -561,7 +561,7 @@
     {
       "symbol": "CRDO",
       "company": "Credo Technology Group Holding",
-      "sector": "Semiconductors",
+      "sector": "Technology",
       "pattern": "VCP",
       "market_regime": "bullish",
       "rs_score": 95,
@@ -619,7 +619,7 @@
     {
       "symbol": "RVMD",
       "company": "Revolution Medicines, Inc.",
-      "sector": "Pharmaceuticals: other",
+      "sector": "Healthcare",
       "pattern": "–",
       "market_regime": "bullish",
       "rs_score": 97,
