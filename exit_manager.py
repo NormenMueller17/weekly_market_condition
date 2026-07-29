@@ -334,11 +334,20 @@ def run_exit_checks(portfolio: Optional[dict], dry_run: bool = False) -> list[di
 
 # ── Profit-Taking ─────────────────────────────────────────────────────────────
 
-def check_profit_taking(trade: dict) -> dict:
+def check_profit_taking(trade: dict, partial_week: bool = False) -> dict:
     """Evaluate all profit-taking rules for a single open position.
 
     Returns a result dict with flags and target levels.  No orders are placed
     here — execution happens in run_profit_taking_checks().
+
+    `partial_week=True` sagt: der letzte Wochenbalken ist noch nicht
+    abgeschlossen (Lauf an einem Handelstag statt samstags). Dann wird die
+    ATR10 um einen Balken zurueckversetzt gerechnet. Grund: eine angebrochene
+    Woche hat eine kleinere Spanne, die ATR faellt zu niedrig aus, und der
+    Trailing-Stop rutscht zu eng an den Kurs — dauerhaft, denn Stops werden nur
+    angehoben, nie gesenkt. Hoch und Schlusskurs der laufenden Woche bleiben
+    bewusst drin: die sind echte gehandelte Kurse und genau die frische
+    Information, wegen der taeglich geprueft wird.
 
     Keys returned:
       symbol, is_fast_mover, hold_until,
@@ -506,7 +515,10 @@ def check_profit_taking(trade: dict) -> dict:
                 (high - close.shift(1)).abs(),
                 (low  - close.shift(1)).abs(),
             ], axis=1).max(axis=1)
-            atr10 = tr.rolling(10).mean().iloc[-1]
+            atr_series = tr.rolling(10).mean()
+            # Angebrochene Woche ausklammern — siehe Docstring.
+            atr10 = (atr_series.iloc[-2] if partial_week and len(atr_series) >= 2
+                     else atr_series.iloc[-1])
             highest_close = pd.to_numeric(hist_since["Close"], errors="coerce").max()
             if pd.notna(highest_close) and pd.notna(atr10) and atr10 > 0:
                 kandidaten.append(float(highest_close) - trailing_atr_mult * float(atr10))
@@ -542,6 +554,7 @@ def run_profit_taking_checks(
     journal_data: dict,
     dry_run: bool = False,
     defer_sells: bool = False,
+    partial_week: bool = False,
 ) -> list[dict]:
     """Run all profit-taking rules for every open position in the journal.
 
@@ -570,7 +583,7 @@ def run_profit_taking_checks(
     client = None if dry_run else _trading_client()
 
     for trade in open_trades:
-        check = check_profit_taking(trade)
+        check = check_profit_taking(trade, partial_week=partial_week)
         symbol = check["symbol"]
         actions: list[str] = []
 
