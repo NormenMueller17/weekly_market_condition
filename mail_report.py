@@ -383,22 +383,22 @@ def lagebericht(ampel: dict, perf: dict, positionen: list,
     score = ampel.get("score", 0)
     label = ampel.get("label", "Neutral")
     if label == "Bullish":
-        s.append(f"Der Markt traegt: {score} von 6 Ampelkriterien sind erfuellt, "
-                 f"Neueinstiege sind zulaessig.")
+        s.append(f"Der Markt trägt: {score} von 6 Ampelkriterien sind erfüllt, "
+                 f"Neueinstiege sind zulässig.")
     elif label == "Defensiv":
         s.append(f"Der Markt ist defensiv: nur {score} von 6 Kriterien sind "
-                 f"erfuellt — keine Neueinstiege.")
+                 f"erfüllt — keine Neueinstiege.")
     else:
-        s.append(f"Der Markt ist uneinheitlich: {score} von 6 Kriterien sind erfuellt. "
-                 f"Nicht erfuellt: "
+        s.append(f"Der Markt ist uneinheitlich: {score} von 6 Kriterien sind erfüllt. "
+                 f"Nicht erfüllt: "
                  + ", ".join(k["name"] for k in ampel.get("criteria", []) if not k["met"])
                  + ".")
 
     if breadth_jetzt is not None and breadth_vor is not None:
         delta = breadth_jetzt - breadth_vor
-        richtung = "verbessert" if delta > 1 else ("verschlechtert" if delta < -1 else "kaum veraendert")
+        richtung = "verbessert" if delta > 1 else ("verschlechtert" if delta < -1 else "kaum verändert")
         s.append(f"Die Marktbreite hat sich {richtung} "
-                 f"({breadth_vor:.1f} % → {breadth_jetzt:.1f} % ueber der 10-Wochen-Linie).")
+                 f"({breadth_vor:.1f} % → {breadth_jetzt:.1f} % über der 10-Wochen-Linie).")
 
     dw, sw = perf.get("depot_woche"), perf.get("spy_woche")
     if dw is not None and sw is not None:
@@ -417,7 +417,7 @@ def lagebericht(ampel: dict, perf: dict, positionen: list,
     ohne_stop = [p["symbol"] for p in positionen if p["ohne_stop"]]
     if ohne_stop:
         s.append(f"<b style='color:{ROT};'>Ohne Stop-Order: "
-                 f"{', '.join(ohne_stop)} — pruefen.</b>")
+                 f"{', '.join(ohne_stop)} — prüfen.</b>")
 
     eng = [p["symbol"] for p in positionen
            if p["stop_abst"] is not None and p["stop_abst"] < 3.0]
@@ -538,7 +538,7 @@ def _positionen_block(positionen: list, cash, equity) -> str:
         f'Equity {_geld(equity)} · Cash {_geld(cash)} · {len(positionen)} Positionen</p>'
     )
     fuss = (f'<p style="color:{GRAU};font-size:.85em;margin-top:-1.2em;">'
-            f'R = anfaengliches Risiko je Aktie (Einstand minus initialer Stop). '
+            f'R = anfängliches Risiko je Aktie (Einstand minus initialer Stop). '
             f'+2 R heisst: die Position hat das Doppelte dessen verdient, was sie '
             f'riskiert hat.</p>')
     return (_h2("2) Positionen") + kopfzeile
@@ -633,8 +633,8 @@ def _muster_block(muster: list) -> str:
     return (
         _h2("4) Muster zum Ansehen")
         + f'<p style="color:{GRAU};margin:.2em 0 .8em;">'
-          f'{len(muster)} Titel mit erkanntem Muster — unabhaengig davon, ob '
-          f'daraus ein Kaufsignal wurde. Ticker anklicken fuer den Chart.</p>'
+          f'{len(muster)} Titel mit erkanntem Muster — unabhängig davon, ob '
+          f'daraus ein Kaufsignal wurde. Ticker anklicken für den Chart.</p>'
         + f'<table style="{_TABLE}">'
           f'<tr><th style="{_THL}">Titel</th><th style="{_THL}">Muster</th>'
           f'<th style="{_TH}">Kurs</th><th style="{_TH}">Pivot</th>'
@@ -745,7 +745,7 @@ def build_boersenbrief(
     link = (
         f'<p style="margin-top:2em;padding-top:1em;border-top:1px solid {RAHMEN};">'
         f'<a href="{report_url}" style="color:{BLAU};font-weight:bold;">'
-        f'Vollstaendigen Report ansehen →</a></p>' if report_url else ""
+        f'Vollständigen Report ansehen →</a></p>' if report_url else ""
     )
     return f"""<div style="font-family:Arial,Helvetica,sans-serif;max-width:760px;
 margin:0 auto;padding:1.5em 1.2em;color:#1a1a1a;line-height:1.45;">

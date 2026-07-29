@@ -87,7 +87,7 @@ _ACTION_LABEL = {
 def build_mail(pt_results: list[dict], uncovered: list[dict],
                refreshed: list[dict], dry_run: bool) -> str:
     banner = ("<p style='background:#fff3cd;border:1px solid #ffeeba;padding:.6em;'>"
-              "⚠️ TEST-MODUS — nichts wurde geaendert</p>") if dry_run else ""
+              "⚠️ TEST-MODUS — nichts wurde geändert</p>") if dry_run else ""
 
     cover_html = ""
     if uncovered:
@@ -114,7 +114,7 @@ def build_mail(pt_results: list[dict], uncovered: list[dict],
             f"<td>{_fmt_money(level)}</td></tr>"
         )
     act_html = (
-        "<h3>Ausgefuehrte Anpassungen</h3>"
+        "<h3>Ausgeführte Anpassungen</h3>"
         f"<table><tr><th>Symbol</th><th>Aktion</th><th>Level</th></tr>{act_rows}</table>"
         if act_rows else ""
     )
@@ -126,7 +126,7 @@ def build_mail(pt_results: list[dict], uncovered: list[dict],
             f"<td class='left'>{r.get('status', '')}</td></tr>"
             for r in refreshed
         )
-        refresh_html = f"<h3>Verlaengerte Stop-Orders</h3><table>{rows}</table>"
+        refresh_html = f"<h3>Verlängerte Stop-Orders</h3><table>{rows}</table>"
 
     return f"""
 <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:1em;">
@@ -136,7 +136,7 @@ def build_mail(pt_results: list[dict], uncovered: list[dict],
   {act_html}
   {refresh_html}
   <p style="color:#555;font-size:.9em;">
-    MACD-Bearish-Cross wird nur im Samstagslauf geprueft — die Regel ist auf
+    MACD-Bearish-Cross wird nur im Samstagslauf geprüft — die Regel ist auf
     abgeschlossene Wochenbalken definiert.
   </p>
   <style>
@@ -153,7 +153,7 @@ def send_error_mail(msg: str) -> None:
     body = (f"<div style='font-family:Arial,sans-serif;'>"
             f"<h2 style='color:#721c24;'>Depot-Alert fehlgeschlagen</h2>"
             f"<pre style='background:#f8f8f8;padding:1em;white-space:pre-wrap;'>{msg}</pre>"
-            f"<p>Stops und Gewinnmitnahme wurden heute moeglicherweise nicht geprueft.</p>"
+            f"<p>Stops und Gewinnmitnahme wurden heute möglicherweise nicht geprüft.</p>"
             f"</div>")
     try:
         send_email(body, subject_suffix="Depot-Alert FEHLGESCHLAGEN")

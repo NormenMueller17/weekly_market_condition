@@ -122,11 +122,11 @@ def market_ok() -> tuple[bool, str]:
     df = yf.download("SPY", period="6mo", interval="1d",
                      auto_adjust=False, progress=False, threads=False)
     if df is None or df.empty:
-        raise MidweekError("SPY-Kurse nicht abrufbar — Marktfilter nicht pruefbar.")
+        raise MidweekError("SPY-Kurse nicht abrufbar — Marktfilter nicht prüfbar.")
     close = pd.to_numeric(_series(df, "Close"), errors="coerce").dropna()
     if len(close) < MARKET_MA_DAYS:
         raise MidweekError(
-            f"SPY-Historie zu kurz ({len(close)} Tage) fuer die "
+            f"SPY-Historie zu kurz ({len(close)} Tage) für die "
             f"{MARKET_MA_DAYS}-Tage-Linie."
         )
     ma   = float(close.rolling(MARKET_MA_DAYS).mean().iloc[-1])
