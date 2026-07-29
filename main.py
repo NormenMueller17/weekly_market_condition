@@ -459,6 +459,98 @@ def _monday_execute_inner() -> None:
         print("[MONDAY] pending_orders.json gelöscht.")
 
 
+def _breadth_wert(snap, spalte: str):
+    """Prozentwert '% über 10‑Wochen‑EMA' aus dem Snapshot, oder None."""
+    if snap is None or getattr(snap, "empty", True):
+        return None
+    zeile = "% über 10‑Wochen‑EMA"
+    if zeile not in snap.index or spalte not in snap.columns:
+        return None
+    try:
+        return float(snap.loc[zeile, spalte])
+    except (TypeError, ValueError):
+        return None
+
+
+def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
+                        signals, leaders_html, alpaca_portfolio, alpaca_cash,
+                        report_url, test_mode) -> str:
+    """Traegt die Daten fuer den Boersenbrief zusammen und rendert ihn.
+
+    Bewusst hier statt in mail_report: das Modul soll rendern, nicht Daten
+    einsammeln. Faellt ein Baustein aus (Equity-Historie, SPY, Journal), wird
+    der Brief trotzdem gebaut — nur ohne den Abschnitt, und mit sichtbarem
+    Hinweis im Log statt stiller Luecke.
+    """
+    import mail_report
+    from report_builder import compute_filter_fails, filter_rules_for_fails
+
+    positions = (alpaca_portfolio or {}).get("positions", [])
+    equity    = (alpaca_portfolio or {}).get("equity")
+
+    # Journal fuer Stop-Level, Einstiegsdatum und initiales Risiko
+    try:
+        journal_open = trade_journal.load().get("open", [])
+    except Exception as e:
+        print(f"[MAIL] ⚠️  Journal nicht lesbar, Stop-Abstaende fehlen: {e}")
+        journal_open = []
+    positionen = mail_report.position_details(positions, journal_open)
+
+    # Depot gegen SPY
+    perf, svg = {}, ""
+    try:
+        from portfolio_performance import (_equity_metrics, _fetch_spy_benchmark,
+                                           _load_equity_history)
+        _hist  = _load_equity_history()
+        # Auf den ersten echten Trade zuschneiden — sonst vergleicht der Brief
+        # wenige Monate Handel gegen ein volles Indexjahr. Siehe
+        # mail_report.handelsstart().
+        em     = _equity_metrics(_hist, trim_from=mail_report.handelsstart(_hist))
+        labels = em.get("chart_labels", [])
+        werte  = em.get("chart_values", [])
+        spy    = _fetch_spy_benchmark(labels, em.get("start_equity") or 0) if labels else []
+        perf   = mail_report.performance_block(labels, werte, spy)
+        svg    = mail_report.equity_svg(labels, werte, spy)
+        if not spy:
+            print("[MAIL] ⚠️  SPY-Vergleichsreihe leer — Brief zeigt nur die Depotkurve")
+    except Exception as e:
+        print(f"[MAIL] ⚠️  Depot-/SPY-Vergleich nicht baubar: {e}")
+
+    # Kandidaten mit "Scheitert an" — dieselbe Logik wie im Web-Report
+    kandidaten = []
+    try:
+        if leaders_html is not None and not leaders_html.empty:
+            schwellen = filter_rules_for_fails()
+            df = leaders_html.copy()
+            df["_score_num"] = pd.to_numeric(df.get("score"), errors="coerce").fillna(0)
+            df = df[df["_score_num"] >= 6].sort_values("_score_num", ascending=False)
+            for ticker, row in df.head(5).iterrows():
+                kandidaten.append({
+                    "ticker":  ticker,
+                    "company": row.get("Company", ""),
+                    "score":   int(row["_score_num"]),
+                    "rs":      row.get("RS (O'Neil)", "–"),
+                    "fails":   compute_filter_fails(row, sector_excluded=set(), **schwellen),
+                })
+    except Exception as e:
+        print(f"[MAIL] ⚠️  Kandidatenliste nicht baubar: {e}")
+
+    bericht = mail_report.lagebericht(
+        ampel, perf, positionen, len(signals or []),
+        _breadth_wert(breadth_snap, "Aktuelle Woche"),
+        _breadth_wert(breadth_snap, "Woche −1"),
+    )
+
+    return mail_report.build_boersenbrief(
+        report_date=report_date, ampel=ampel, perf=perf, svg=svg,
+        positionen=positionen, cash=alpaca_cash, equity=equity,
+        signale=signals or [], kandidaten=kandidaten,
+        breadth_rows=mail_report.breadth_rows_from_snapshot(breadth_snap),
+        sector_rows=sector_rows or [],
+        bericht=bericht, report_url=report_url, test_mode=test_mode,
+    )
+
+
 def run():
     #cache_enabled = try_enable_yfinance_cache(
     #CacheConfig(
@@ -1154,14 +1246,15 @@ def run():
     )
     print(f"[PAGES] Index aktualisiert → {index_path}")
 
-    # ── E-Mail: kompakte Version ohne große Signaltabelle ─────────────────────
-    html_email = build_html_report(
-        breadth_df, idx_df, risk_df, summary, report_date,
-        weekly, leaders_html, signals=signals, pages_url=report_url,
-        alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
-        sector_excluded=sector_excluded,
-        sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
-        test_mode=TEST_MODE, sector_rows=sector_rows,
+    # ── E-Mail: Boersenbrief ──────────────────────────────────────────────────
+    # Eigener Renderer, nicht mehr derselbe wie fuer die Webseite. Der
+    # Web-Report darf JavaScript, Hover und Sticky-Navigation benutzen; in der
+    # Mail funktioniert nichts davon. Siehe mail_report.py.
+    html_email = _build_email_report(
+        report_date=report_date, ampel=_ampel_result, breadth_snap=_breadth_snap,
+        sector_rows=sector_rows, signals=signals, leaders_html=leaders_html,
+        alpaca_portfolio=alpaca_portfolio, alpaca_cash=alpaca_cash,
+        report_url=report_url, test_mode=TEST_MODE,
     )
 
     # E-Mail Betreff zeigt Signalanzahl + TEST-MODUS-Hinweis

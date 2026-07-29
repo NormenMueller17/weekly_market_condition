@@ -945,6 +945,84 @@ def build_sector_rows(idx_data: dict) -> list:
     return rows
 
 
+def compute_filter_fails(row, *, sector_excluded: set, min_rs: float,
+                         max_rank: float, max_atr: float, min_price: float,
+                         min_cap: float, min_rev_growth: float,
+                         min_eps_growth: float, html: bool = True) -> str:
+    """Welche Kaufkriterien hat dieser Titel NICHT erfuellt?
+
+    Auf Modulebene, weil zwei Verwender dieselbe Antwort brauchen: der
+    Web-Report und der Boersenbrief (mail_report). Als Closure innerhalb von
+    `build_html_report` waere sie fuer die Mail nicht erreichbar gewesen — und
+    eine zweite Umsetzung waere genau die Art Dopplung, die spaeter auseinander
+    laeuft.
+
+    `html=False` liefert dieselben Texte ohne `&nbsp;`/`&lt;` — fuer Kontexte,
+    die reinen Text brauchen.
+    """
+    lt, gt, sp = ("&lt;", "&gt;", "&nbsp;") if html else ("<", ">", " ")
+
+    fails = []
+    if row.name in sector_excluded:
+        fails.append("Sektor-Limit")
+
+    def _n(col):
+        return pd.to_numeric(row.get(col, None), errors="coerce")
+
+    if not bool(row.get("MACD > Signal (W)", False)):
+        fails.append("MACD fällt")
+    if not bool(row.get("Vol-Breakout", False)):
+        fails.append("Vol-BO fehlt")
+    rs = _n("RS (O'Neil)")
+    if pd.isna(rs) or rs < min_rs:
+        fails.append(f"RS{sp}{lt}{sp}{min_rs:.0f}")
+    rank = _n("Industry Ranking")
+    if not pd.isna(rank) and rank > max_rank:
+        fails.append(f"Rank{sp}{gt}{sp}{max_rank:.0f}")
+    atr = _n("ATR / Price (%)")
+    if not pd.isna(atr) and atr > max_atr:
+        fails.append(f"ATR{sp}{gt}{sp}{max_atr:.0f}%")
+    price = _n("Close")
+    if pd.isna(price):
+        fails.append("Kurs fehlt")
+    elif price < min_price:
+        fails.append(f"Kurs{sp}{lt}{sp}${min_price:.0f}")
+    cap = _n("MarketCap (Mio USD)")
+    if not pd.isna(cap) and cap < min_cap:
+        fails.append(f"MCap{sp}{lt}{sp}{min_cap:.0f}M")
+    if min_rev_growth > 0:
+        rev = _n("Revenue Wachstum TTM YoY (%)")
+        if pd.isna(rev):
+            fails.append(f"Rev{sp}fehlt")
+        elif rev < min_rev_growth:
+            fails.append(f"Rev{sp}{lt}{sp}{min_rev_growth:.0f}%")
+    if min_eps_growth > 0:
+        eps = _n("EPS Wachstum letztes Q YoY (%)")
+        if pd.isna(eps):
+            fails.append(f"EPS-Q{sp}fehlt")
+        elif eps < min_eps_growth:
+            fails.append(f"EPS-Q{sp}{lt}{sp}{min_eps_growth:.0f}%")
+    return " · ".join(fails) if fails else "✅"
+
+
+def filter_rules_for_fails() -> dict:
+    """Die Schwellen fuer `compute_filter_fails` aus rules.json."""
+    try:
+        r = json.loads((Path(__file__).parent / "rules.json").read_text(encoding="utf-8"))
+    except Exception:
+        r = {}
+    f = r.get("filters", {})
+    return {
+        "min_rs":         float(f.get("min_rs_score",          70.0)),
+        "max_rank":       float(f.get("max_industry_rank",     50.0)),
+        "max_atr":        float(f.get("max_atr_pct",            8.0)),
+        "min_price":      float(f.get("min_price",              5.0)),
+        "min_cap":        float(f.get("min_market_cap_mio",   300.0)),
+        "min_rev_growth": float(f.get("min_rev_growth",         0.0)),
+        "min_eps_growth": float(f.get("min_eps_growth_last_q",  0.0)),
+    }
+
+
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
                       signals=None, pages_url=None,
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
@@ -1078,44 +1156,12 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     _sector_excluded: set = sector_excluded or set()
 
     def _compute_fails(row) -> str:
-        fails = []
-        if row.name in _sector_excluded:
-            fails.append("Sektor-Limit")
-        def _n(col): return pd.to_numeric(row.get(col, None), errors='coerce')
-        if not bool(row.get("MACD > Signal (W)", False)):
-            fails.append("MACD fällt")
-        if not bool(row.get("Vol-Breakout", False)):
-            fails.append("Vol-BO fehlt")
-        rs = _n("RS (O'Neil)")
-        if pd.isna(rs) or rs < _min_rs:
-            fails.append(f"RS&nbsp;&lt;&nbsp;{_min_rs:.0f}")
-        rank = _n("Industry Ranking")
-        if not pd.isna(rank) and rank > _max_rank:
-            fails.append(f"Rank&nbsp;&gt;&nbsp;{_max_rank:.0f}")
-        atr = _n("ATR / Price (%)")
-        if not pd.isna(atr) and atr > _max_atr:
-            fails.append(f"ATR&nbsp;&gt;&nbsp;{_max_atr:.0f}%")
-        price = _n("Close")
-        if pd.isna(price):
-            fails.append("Kurs fehlt")
-        elif price < _min_price:
-            fails.append(f"Kurs&nbsp;&lt;&nbsp;${_min_price:.0f}")
-        cap = _n("MarketCap (Mio USD)")
-        if not pd.isna(cap) and cap < _min_cap:
-            fails.append(f"MCap&nbsp;&lt;&nbsp;{_min_cap:.0f}M")
-        if _min_rev_growth > 0:
-            rev = _n("Revenue Wachstum TTM YoY (%)")
-            if pd.isna(rev):
-                fails.append("Rev&nbsp;fehlt")
-            elif rev < _min_rev_growth:
-                fails.append(f"Rev&nbsp;&lt;&nbsp;{_min_rev_growth:.0f}%")
-        if _min_eps_growth > 0:
-            eps = _n("EPS Wachstum letztes Q YoY (%)")
-            if pd.isna(eps):
-                fails.append("EPS-Q&nbsp;fehlt")
-            elif eps < _min_eps_growth:
-                fails.append(f"EPS-Q&nbsp;&lt;&nbsp;{_min_eps_growth:.0f}%")
-        return " · ".join(fails) if fails else "✅"
+        return compute_filter_fails(
+            row, sector_excluded=_sector_excluded, min_rs=_min_rs,
+            max_rank=_max_rank, max_atr=_max_atr, min_price=_min_price,
+            min_cap=_min_cap, min_rev_growth=_min_rev_growth,
+            min_eps_growth=_min_eps_growth,
+        )
 
     all_leaders_html["_filter_fails"] = all_leaders_html.apply(_compute_fails, axis=1)
     leaders_html["_filter_fails"]     = leaders_html.apply(_compute_fails, axis=1)
