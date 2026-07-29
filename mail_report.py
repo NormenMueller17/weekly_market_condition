@@ -215,7 +215,16 @@ def performance_block(labels: list, equity: list, spy: list) -> dict:
     return out
 
 
-def position_details(positions: list, journal_open: list) -> list:
+def _rs(v) -> str:
+    """RS ohne Nachkommastelle — der Wert ist ein Perzentil von 1 bis 99."""
+    try:
+        return f"{float(v):.0f}"
+    except (TypeError, ValueError):
+        return "–"
+
+
+def position_details(positions: list, journal_open: list,
+                     rs_now_map: Optional[dict] = None) -> list:
     """Depotpositionen mit Stop-Abstand in Prozent UND in R.
 
     R ist das anfaengliche Risiko je Aktie (Einstand minus initialer Stop).
@@ -224,6 +233,7 @@ def position_details(positions: list, journal_open: list) -> list:
     eine bei +15 % mit weitem. Die Zahl fehlte im alten Report vollstaendig.
     """
     j = {t["symbol"]: t for t in journal_open or []}
+    rs_now_map = rs_now_map or {}
     heute = datetime.date.today()
     out = []
     for p in positions or []:
@@ -245,6 +255,18 @@ def position_details(positions: list, journal_open: list) -> list:
             except ValueError:
                 pass
 
+        # RS bei Kauf steht im Journal (aus den Signal-Metadaten), RS heute
+        # kommt aus dem laufenden Screener. Die Differenz sagt, ob der Titel
+        # seine relative Staerke seit dem Einstieg gehalten hat — ein Verlust
+        # an RS bei steigendem Kurs heisst: der Markt laeuft schneller.
+        rs_kauf = t.get("rs_score")
+        rs_heute = rs_now_map.get(sym)
+        try:
+            rs_delta = (float(rs_heute) - float(rs_kauf)
+                        if rs_heute is not None and rs_kauf is not None else None)
+        except (TypeError, ValueError):
+            rs_delta = None
+
         out.append({
             "symbol":     sym,
             "company":    t.get("company", ""),
@@ -259,7 +281,9 @@ def position_details(positions: list, journal_open: list) -> list:
             "stop_abst":  stop_abst,
             "gewinn_r":   gewinn_r,
             "tage":       tage,
-            "rs":         t.get("rs_score"),
+            "rs_kauf":    rs_kauf,
+            "rs_heute":   rs_heute,
+            "rs_delta":   rs_delta,
             "ohne_stop":  stop is None,
         })
     out.sort(key=lambda d: (d["gewinn_pct"] is None, -(d["gewinn_pct"] or 0)))
@@ -267,6 +291,86 @@ def position_details(positions: list, journal_open: list) -> list:
 
 
 # ── Lagebericht ───────────────────────────────────────────────────────────────
+
+def muster_liste(leaders, limit: int = 12) -> list:
+    """Titel mit erkanntem VCP oder Launchpad, nach RS sortiert.
+
+    Quelle ist der Screener-Frame: `VCP` / `Launchpad` sagen, dass das MUSTER
+    da ist; `VCP Entry` / `Launchpad Entry`, dass der Ausbruch laeuft. Hier
+    zaehlt das Muster — der Zweck ist, sich den Chart anzusehen, bevor etwas
+    passiert.
+
+    Pivot ist das VCP-Breakout-Level bzw. der Launchpad-Pivot; `pivot_abstand`
+    sagt, wie weit der Kurs davon entfernt ist (negativ = noch darunter).
+    """
+    if leaders is None or getattr(leaders, "empty", True):
+        return []
+
+    def _b(row, col):
+        v = row.get(col, False)
+        try:
+            return bool(v) and v == v      # NaN ist nicht gleich sich selbst
+        except (TypeError, ValueError):
+            return False
+
+    def _f(row, col):
+        try:
+            v = float(row.get(col))
+            return v if v == v else None
+        except (TypeError, ValueError):
+            return None
+
+    out = []
+    for ticker, row in leaders.iterrows():
+        hat_vcp   = _b(row, "VCP")
+        hat_lp    = _b(row, "Launchpad")
+        if not (hat_vcp or hat_lp):
+            continue
+
+        close = _f(row, "Close")
+        if close is None or close <= 0:
+            continue
+
+        if hat_vcp and hat_lp:
+            name, pivot = "VCP + Launchpad", _f(row, "Launchpad Pivot") or _f(row, "VCP Breakout Level")
+        elif hat_vcp:
+            name, pivot = "VCP", _f(row, "VCP Breakout Level")
+        else:
+            name, pivot = "Launchpad", _f(row, "Launchpad Pivot")
+
+        detail = []
+        if hat_vcp:
+            wellen = _f(row, "VCP Waves")
+            if wellen:
+                detail.append(f"{int(wellen)} Wellen")
+            if _b(row, "VCP Entry"):
+                detail.append("Ausbruch")
+        if hat_lp:
+            wochen = _f(row, "Launchpad Weeks")
+            spanne = _f(row, "Launchpad Range (%)")
+            if wochen:
+                detail.append(f"{int(wochen)} Wo. Basis")
+            if spanne is not None:
+                detail.append(f"Spanne {spanne:.1f} %")
+            if _b(row, "Launchpad Entry"):
+                detail.append("Ausbruch")
+
+        out.append({
+            "ticker":         ticker,
+            "company":        row.get("Company", ""),
+            "muster":         name,
+            "detail":         " · ".join(detail),
+            "close":          close,
+            "pivot":          pivot,
+            "pivot_abstand":  ((close / pivot - 1) * 100) if pivot else None,
+            "rs":             _f(row, "RS (O'Neil)"),
+            "dist_52w":       _f(row, "Dist to 52W High (%)"),
+            "link":           row.get("SA", ""),
+        })
+
+    out.sort(key=lambda d: (d["rs"] is None, -(d["rs"] or 0)))
+    return out[:limit]
+
 
 def lagebericht(ampel: dict, perf: dict, positionen: list,
                 n_signale: int, breadth_jetzt, breadth_vor) -> str:
@@ -414,8 +518,13 @@ def _positionen_block(positionen: list, cash, equity) -> str:
             f'<td style="{_TD}">{stop_txt}<br>'
             f'<span style="color:{GRAU};font-size:.85em;">{abst} entfernt</span></td>'
             f'<td style="{_TD}">{p["tage"] if p["tage"] is not None else "–"}</td>'
-            f'<td style="{_TD}">{p["rs"] if p["rs"] is not None else "–"}</td>'
-            f'</tr>'
+            f'<td style="{_TD}">{_rs(p["rs_heute"])}'
+            + (f'<br><span style="font-weight:400;font-size:.85em;'
+               f'color:{_farbe(p["rs_delta"])};">{p["rs_delta"]:+.0f} seit Kauf</span>'
+               if p["rs_delta"] is not None else
+               f'<br><span style="font-weight:400;font-size:.85em;color:{GRAU};">'
+               f'Kauf {_rs(p["rs_kauf"])}</span>')
+            + '</td></tr>'
         )
 
     kopf = (f'<tr><th style="{_THL}">Position</th><th style="{_THL}">Sektor</th>'
@@ -485,8 +594,57 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str) -> str:
     )
 
 
+def _muster_block(muster: list) -> str:
+    """Titel mit aktuell erkanntem VCP oder Launchpad — zum Nachschauen im Chart.
+
+    Bewusst NICHT auf Kaufsignale eingeschraenkt: gefragt ist das Muster, nicht
+    der Ausbruch. Ein VCP ohne Volumenausbruch und ein Launchpad, das noch unter
+    dem Pivot liegt, sind genau die Faelle, die man sich vorher ansehen will.
+    Der Titel verlinkt auf StockAnalysis, wo der Chart liegt — den Chart selbst
+    kann eine Mail nicht sinnvoll transportieren.
+    """
+    if not muster:
+        return (_h2("4) Muster zum Ansehen")
+                + f'<p style="color:{GRAU};">Diese Woche kein VCP und kein '
+                  f'Launchpad im Universum erkannt.</p>')
+
+    zeilen = ""
+    for m in muster:
+        titel = (f'<a href="{m["link"]}" style="color:{BLAU};text-decoration:none;">'
+                 f'<b>{m["ticker"]}</b></a>' if m.get("link") else f'<b>{m["ticker"]}</b>')
+        pivot = f'${m["pivot"]:.2f}' if m.get("pivot") else "–"
+        abst  = (f'{m["pivot_abstand"]:+.1f} %' if m.get("pivot_abstand") is not None
+                 else "–")
+        d52 = m.get("dist_52w")
+        zeilen += (
+            f'<tr>'
+            f'<td style="{_TDL}">{titel}<br>'
+            f'<span style="color:{GRAU};font-size:.85em;">{str(m.get("company", ""))[:26]}</span></td>'
+            f'<td style="{_TDL}"><b>{m["muster"]}</b><br>'
+            f'<span style="color:{GRAU};font-size:.85em;">{m.get("detail", "")}</span></td>'
+            f'<td style="{_TD}">${m["close"]:.2f}</td>'
+            f'<td style="{_TD}">{pivot}<br>'
+            f'<span style="color:{GRAU};font-size:.85em;">{abst}</span></td>'
+            f'<td style="{_TD}">{_rs(m.get("rs"))}</td>'
+            f'<td style="{_TD}">{"–" if d52 is None else f"{d52:.1f} %"}</td>'
+            f'</tr>'
+        )
+
+    return (
+        _h2("4) Muster zum Ansehen")
+        + f'<p style="color:{GRAU};margin:.2em 0 .8em;">'
+          f'{len(muster)} Titel mit erkanntem Muster — unabhaengig davon, ob '
+          f'daraus ein Kaufsignal wurde. Ticker anklicken fuer den Chart.</p>'
+        + f'<table style="{_TABLE}">'
+          f'<tr><th style="{_THL}">Titel</th><th style="{_THL}">Muster</th>'
+          f'<th style="{_TH}">Kurs</th><th style="{_TH}">Pivot</th>'
+          f'<th style="{_TH}">RS</th><th style="{_TH}">zum 52W-Hoch</th></tr>'
+          f'{zeilen}</table>'
+    )
+
+
 def _markt_block(breadth_rows: list, sector_rows: list, idx_rows: list) -> str:
-    teile = [_h2("4) Marktlage")]
+    teile = [_h2("5) Marktlage")]
 
     if breadth_rows:
         z = "".join(
@@ -571,6 +729,7 @@ def build_boersenbrief(
     equity,
     signale:       list,
     kandidaten:    list,
+    muster:        list,
     breadth_rows:  list,
     sector_rows:   list,
     markt_extra:   str = "",
@@ -601,6 +760,7 @@ margin:0 auto;padding:1.5em 1.2em;color:#1a1a1a;line-height:1.45;">
   {_perf_block(perf, svg)}
   {_positionen_block(positionen, cash, equity)}
   {_kandidaten_block(signale, kandidaten, report_url)}
+  {_muster_block(muster)}
   {_markt_block(breadth_rows, sector_rows, markt_extra)}
   {link}
 </div>"""

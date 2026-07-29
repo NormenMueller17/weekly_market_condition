@@ -474,7 +474,7 @@ def _breadth_wert(snap, spalte: str):
 
 def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
                         signals, leaders_html, alpaca_portfolio, alpaca_cash,
-                        report_url, test_mode) -> str:
+                        report_url, test_mode, rs_now_map=None) -> str:
     """Traegt die Daten fuer den Boersenbrief zusammen und rendert ihn.
 
     Bewusst hier statt in mail_report: das Modul soll rendern, nicht Daten
@@ -494,7 +494,15 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
     except Exception as e:
         print(f"[MAIL] ⚠️  Journal nicht lesbar, Stop-Abstaende fehlen: {e}")
         journal_open = []
-    positionen = mail_report.position_details(positions, journal_open)
+    positionen = mail_report.position_details(positions, journal_open, rs_now_map)
+
+    # Titel mit erkanntem VCP/Launchpad — zum Nachschauen im Chart
+    try:
+        muster = mail_report.muster_liste(leaders_html)
+        print(f"[MAIL] {len(muster)} Titel mit VCP/Launchpad fuer die Musterrubrik")
+    except Exception as e:
+        print(f"[MAIL] ⚠️  Musterrubrik nicht baubar: {e}")
+        muster = []
 
     # Depot gegen SPY
     perf, svg = {}, ""
@@ -544,7 +552,7 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
     return mail_report.build_boersenbrief(
         report_date=report_date, ampel=ampel, perf=perf, svg=svg,
         positionen=positionen, cash=alpaca_cash, equity=equity,
-        signale=signals or [], kandidaten=kandidaten,
+        signale=signals or [], kandidaten=kandidaten, muster=muster,
         breadth_rows=mail_report.breadth_rows_from_snapshot(breadth_snap),
         sector_rows=sector_rows or [],
         bericht=bericht, report_url=report_url, test_mode=test_mode,
@@ -686,6 +694,17 @@ def run():
         
         launchpad_count = len(leaders[leaders["Launchpad"] == True])
         print(f"[INFO] High-Quality Launchpads (Score >=80): {launchpad_count}")
+
+    # RS-Werte ALLER gescreenten Titel festhalten, bevor der Deckel unten die
+    # Menge beschneidet. Der Boersenbrief vergleicht damit die RS der offenen
+    # Positionen gegen die RS zum Kaufzeitpunkt (die im Journal steht) —
+    # Depotwerte stehen nicht zwangslaeufig in der gedeckelten Leader-Liste.
+    _rs_now_map: dict = {}
+    if not leaders.empty and "RS_now" in leaders.columns:
+        _rs_now_map = {
+            t: float(v) for t, v in leaders["RS_now"].items()
+            if v is not None and v == v
+        }
 
     # ── Deckel fuer die timing-offene Menge ───────────────────────────────────
     #
@@ -1254,7 +1273,7 @@ def run():
         report_date=report_date, ampel=_ampel_result, breadth_snap=_breadth_snap,
         sector_rows=sector_rows, signals=signals, leaders_html=leaders_html,
         alpaca_portfolio=alpaca_portfolio, alpaca_cash=alpaca_cash,
-        report_url=report_url, test_mode=TEST_MODE,
+        report_url=report_url, test_mode=TEST_MODE, rs_now_map=_rs_now_map,
     )
 
     # E-Mail Betreff zeigt Signalanzahl + TEST-MODUS-Hinweis
