@@ -132,6 +132,8 @@ DEFAULT_RULES: dict = {
     "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
     "gap_limit_pct":          _f.get("gap_limit_pct",         5.0),
     "require_macd_above_signal": _f.get("require_macd_above_signal", True),
+    "require_vol_breakout":   _f.get("require_vol_breakout",   True),
+    "midweek_watchlist_max":  _f.get("midweek_watchlist_max",   60),
     "reentry_enabled":        _f.get("reentry_enabled",       True),
     "reentry_max_attempts":   _f.get("reentry_max_attempts",     3),
     "reentry_cooldown_days":  _f.get("reentry_cooldown_days",   28),
@@ -284,6 +286,73 @@ def _stop_default(entry: float, atr_pct: Optional[float] = None,
         except (TypeError, ValueError):
             pass
     return entry * (1.0 - pct)
+
+
+def apply_stop_bounds(entry: float, stop: float, atr_pct: float,
+                      r: dict) -> tuple[float, float]:
+    """Einheitlicher Mindest- und Hoechstabstand ueber ALLE Muster-Pfade.
+
+    Gibt `(stop, stop_pct)` zurueck.
+
+    Vorher stand hier ein Floor von 1x ATR. Der war zu eng: gemessen auf
+    93 Backtest-Entries (atr_stop_analysis.py --sweep, 13W-Horizont) ergab
+    der musterabhaengige Stop einen Abstands-Median von 3,4-9,0 %, eine
+    Woche-1-Stopquote von 9-37 % und 59-76 % ausgestoppte Trades — bei
+    einem Depotbeitrag von +10,5 bis -12,9 pp je Trade. Mit einem Floor
+    von 10 % fallen die Woche-1-Stops auf 3 %, die Gesamt-Stopquote auf
+    49 %, und der Depotbeitrag erreicht das Optimum des Gitters.
+
+    Der VCP- und der Launchpad-Pfad hatten nie einen echten Floor:
+    `_stop_vcp` rechnet 2x ATR mit Deckel nach unten, aber ohne
+    Untergrenze, und die Launchpad-Box kann bei engen Basen fast beliebig
+    dicht am Entry liegen. Genau diese Pfade lieferten die Stops im
+    Rauschband — und laut Tagebuch endete jeder ueber einen Stop beendete
+    Trade bei <= +1,6 %, waehrend dieselben Titel vier Wochen spaeter im
+    Median +17,8 % standen.
+
+    Warum 10 % kein gefittetes Optimum ist: max_risk_per_trade_pct /
+    max_position_pct = 1,5 / 15 = 10 %. Darunter bindet der Positions-Cap,
+    die Stueckzahl waechst nicht weiter mit, und der Vorteil des engeren
+    Stops ist gar nicht abrufbar. Darueber schrumpft die Position
+    proportional. Der Wert folgt aus unseren beiden Sizing-Parametern und
+    wandert mit, wenn die sich aendern.
+    """
+    min_stop_frac = max(
+        r["min_stop_pct"] / 100.0,
+        r["stop_atr_mult"] * atr_pct / 100.0,
+    )
+    stop_floor = entry * (1.0 - min_stop_frac)
+    if stop > stop_floor:
+        stop = stop_floor
+
+    # Blueprint safety cap: stop never more than max_stop_pct below entry
+    max_stop_frac = r["max_stop_pct"] / 100.0
+    stop_pct = (entry - stop) / entry
+    if stop_pct > max_stop_frac:
+        stop     = entry * (1.0 - max_stop_frac)
+        stop_pct = max_stop_frac
+    return stop, stop_pct
+
+
+def size_position(stop_pct: float, account_equity: float, market_bullish: bool,
+                  r: dict, available_cash: float | None = None,
+                  remaining_slots: int = 1) -> tuple[float, float]:
+    """Risk-first sizing: position = max_risk / stop_pct, gedeckelt auf max_position_pct.
+
+    Gibt `(pos_size_pct, position_value)` zurueck. Im baerischen Markt wird das
+    Risikobudget mit `bearish_risk_fraction` skaliert.
+    """
+    max_risk_pct = r.get("max_risk_per_trade_pct", 1.5) / 100.0
+    max_pos_pct  = r.get("max_position_pct",       15.0) / 100.0
+    if not market_bullish:
+        max_risk_pct *= r.get("bearish_risk_fraction", 0.5)
+    risk_based_pct = max_risk_pct / stop_pct if stop_pct > 0 else max_pos_pct
+    pos_size_pct   = min(risk_based_pct, max_pos_pct)
+    position_value = account_equity * pos_size_pct
+    if available_cash is not None:
+        cash_per_slot  = available_cash / max(1, remaining_slots)
+        position_value = min(position_value, cash_per_slot)
+    return pos_size_pct, position_value
 
 
 # ── Fundamental score helpers ─────────────────────────────────────────────────
@@ -439,6 +508,207 @@ def _filter_sector_limit(
     return kept, dropped, unknown
 
 
+# ── Filter-Bausteine ──────────────────────────────────────────────────────────
+#
+# THESE und TIMING sind bewusst getrennt:
+#
+#   THESE  — Trendstruktur, relative Staerke, Fundamentaldaten, Industrie.
+#            Beantwortet "ist das ein kaufenswerter Titel?" und gilt immer.
+#   TIMING — Volumenausbruch und steigender Wochenkurs. Beantwortet "ist der
+#            Ausbruch JETZT?" und darf vom Wiedereinstieg uebergangen werden.
+#
+# Die Trennung existierte als Kommentar schon, war aber wirkungslos: der
+# Volumenausbruch wurde als VORFILTER in screener.py angewandt, bevor
+# irgendetwas hiervon lief. Beide Verwender — der Signalgenerator und die
+# Mid-Week-Watchlist — greifen jetzt auf dieselben Bausteine zu, damit die
+# Definitionen nicht auseinanderlaufen koennen.
+
+def _num_col(df: pd.DataFrame, col: str, fill: float = -999.0) -> pd.Series:
+    return pd.to_numeric(
+        df.get(col, pd.Series(fill, index=df.index)), errors="coerce"
+    ).fillna(fill)
+
+
+def _thesis_mask(df: pd.DataFrame, r: dict) -> pd.Series:
+    """Alle Kaufbedingungen AUSSER Timing und Earnings-Blackout."""
+    def _num(col: str, fill: float = -999.0) -> pd.Series:
+        return _num_col(df, col, fill)
+
+    mask = pd.Series(True, index=df.index)
+
+    # 1. Minervini-Score
+    mask &= _num("score", 0) >= r["min_score"]
+
+    # 2. Pattern: VCP Entry OR Launchpad Entry
+    if r["require_pattern"]:
+        vcp_entry       = df.get("VCP Entry",       pd.Series(False, index=df.index)).fillna(False).astype(bool)
+        launchpad_entry = df.get("Launchpad Entry", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+        mask &= vcp_entry | launchpad_entry
+
+    # 3. RS Score — top-third relative strength (institutional sponsorship)
+    if r.get("min_rs_score", 0) > 0:
+        mask &= _num("RS (O'Neil)", 0) >= r["min_rs_score"]
+
+    # 4. Distance to 52W High — must still be in striking range of highs
+    #    Column stores the distance as a positive percentage (e.g. 15.0 = 15 % below high)
+    if r.get("max_dist_52w_high_pct") is not None:
+        mask &= _num("Dist to 52W High (%)", 999) <= r["max_dist_52w_high_pct"]
+
+    # 5. ATR / Price below NATR threshold
+    mask &= _num("ATR / Price (%)", 999) < r["max_atr_pct"]
+
+    # 6. Fundamental quality filters
+    if r["min_roe"]               > 0: mask &= _num("ROE (%)")                        >= r["min_roe"]
+    if r["min_op_margin"]         > 0: mask &= _num("Operating Margin (%)")           >= r["min_op_margin"]
+    if r["min_rev_growth"]        > 0: mask &= _num("Revenue Wachstum TTM YoY (%)")   >= r["min_rev_growth"]
+    if r["min_eps_growth_last_q"] > 0: mask &= _num("EPS Wachstum letztes Q YoY (%)") >= r["min_eps_growth_last_q"]
+
+    # 7. Industry Ranking filter  (lower rank number = stronger industry)
+    #    NaN industry rank → pass (fail-open: computation failure ≠ bad industry)
+    if r.get("max_industry_rank") is not None and r["max_industry_rank"] > 0:
+        ind_rank_raw = pd.to_numeric(
+            df.get("Industry Ranking", pd.Series(index=df.index)), errors="coerce"
+        )
+        mask &= ind_rank_raw.isna() | (ind_rank_raw <= r["max_industry_rank"])
+
+    # 8. MACD > Signal (weekly) — only buy into rising momentum, not falling
+    if r.get("require_macd_above_signal", True):
+        macd_ok = df.get("MACD > Signal (W)", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+        mask &= macd_ok
+
+    # 9. Minimum price — no penny stocks (fail-open: NaN Close = data gap, not penny stock)
+    if r.get("min_price", 0) > 0:
+        price_raw = pd.to_numeric(df.get("Close", pd.Series(index=df.index)), errors="coerce")
+        mask &= price_raw.isna() | (price_raw >= r["min_price"])
+
+    # 10. Minimum market cap — no micro caps (fail-open: NaN MCap = data gap)
+    if r.get("min_market_cap_mio", 0) > 0:
+        cap_raw = pd.to_numeric(
+            df.get("MarketCap (Mio USD)", pd.Series(index=df.index)), errors="coerce"
+        )
+        mask &= cap_raw.isna() | (cap_raw >= r["min_market_cap_mio"])
+
+    return mask
+
+
+def _timing_mask(df: pd.DataFrame, r: dict) -> pd.Series:
+    """Volumenausbruch UND steigender Wochenkurs.
+
+    `Close > Vorwoche` faellt fail-open aus (fehlendes Signal = kein
+    Ausschluss), `Vol-Breakout` fail-closed — ein fehlender Volumenwert ist
+    kein bestaetigter Ausbruch.
+    """
+    close_above_prev = df.get("Close > Vorwoche", pd.Series(True, index=df.index)).fillna(True).astype(bool)
+    if not r.get("require_vol_breakout", True):
+        return close_above_prev
+    vol_breakout = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
+    return vol_breakout & close_above_prev
+
+
+def _reentry_mask(df: pd.DataFrame, r: dict,
+                  reentry_watchlist: dict[str, dict] | None) -> pd.Series:
+    """Ausgestoppte Titel, die ihren alten Pivot zurueckerobert haben.
+
+    Ein ausgestoppter Titel war nie AKTIV gesperrt — nur offene Positionen
+    werden aus den Kandidaten entfernt. Er kam faktisch trotzdem nie zurueck,
+    weil `Vol-Breakout` und `Close > Vorwoche` nach einem Zusammenbruch
+    wochenlang nicht feuern; requalifiziert er endlich, ist die Bewegung
+    gelaufen. Genau das kostete uns die Rendite: Alle 16 ueber einen Stop
+    beendeten Trades endeten bei <= +1,6 %, dieselben Titel standen vier
+    Wochen spaeter im Median +17,8 %.
+
+    Der Wiedereinstieg ersetzt daher die TIMING-Filter — die Rueckeroberung
+    des alten Pivots IST das Ausbruchssignal. Die THESEN-Filter gelten
+    unveraendert weiter, ebenso der Earnings-Blackout.
+
+    Eine zusaetzliche Trendpruefung (Kurs > MA50 beim Wiedereinstieg) wurde
+    gemessen und ist redundant: In 45 von 45 Faellen lag der Kurs beim
+    Rueckerobern des Pivots ohnehin ueber der MA50. Die Pivot-Bedingung ist
+    strikt staerker.
+    """
+    out = pd.Series(False, index=df.index)
+    watch = reentry_watchlist or {}
+    if not (r.get("reentry_enabled", True) and watch):
+        return out
+    px  = pd.to_numeric(df.get("Close", pd.Series(index=df.index)), errors="coerce")
+    buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
+    for tkr, info in watch.items():
+        if tkr not in df.index:
+            continue
+        pivot = info.get("pivot")
+        if not pivot:
+            continue
+        cur = px.get(tkr)
+        if cur is not None and pd.notna(cur) and float(cur) >= pivot * buf:
+            out.loc[tkr] = True
+    return out
+
+
+def build_midweek_watchlist(
+    leaders:        pd.DataFrame,
+    rules:          dict | None = None,
+    open_positions: list[str] | None = None,
+) -> list[dict]:
+    """Titel, die die THESE erfuellen, aber noch auf das TIMING warten.
+
+    Das ist die Menge, die der Mittwochslauf beobachtet: fundamental und
+    technisch kaufbar, nur ohne bestaetigten Ausbruch am Samstag. Bricht ein
+    solcher Titel mitten in der Woche ueber seinen Pivot aus, faengt ihn sonst
+    niemand — die Buy-Stop-Orders vom Samstag liegen nur fuer echte Signale im
+    Markt, und der naechste Lauf ist erst wieder am Samstag.
+
+    Der Pivot ist das Muster-Level (VCP-Breakout bzw. Launchpad-Pivot), sonst
+    das Hoch der zuletzt abgeschlossenen Woche.
+
+    Die Liste ist auf `midweek_watchlist_max` nach RS gedeckelt. Der Deckel ist
+    kein Qualitaetsfilter, sondern eine Kostengrenze: ohne den alten
+    Vol-Breakout-Vorfilter waechst die Menge sonst unbegrenzt, und jeder Titel
+    darin kostet einen Fundamentaldaten-Abruf.
+    """
+    r = {**DEFAULT_RULES, **(rules or {})}
+    limit = int(r.get("midweek_watchlist_max", 60))
+    if limit <= 0 or leaders is None or leaders.empty:
+        return []
+
+    df = leaders.copy()
+    pending = df[_thesis_mask(df, r) & ~_timing_mask(df, r)]
+
+    held = set(open_positions or [])
+    if held:
+        pending = pending[~pending.index.isin(held)]
+    if pending.empty:
+        return []
+
+    pending = pending.assign(_rs=_num_col(pending, "RS (O'Neil)", 0.0)) \
+                     .sort_values("_rs", ascending=False) \
+                     .head(limit)
+
+    buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
+    out: list[dict] = []
+    for ticker, row in pending.iterrows():
+        pivot = (_safe_float(row.get("VCP Breakout Level"))
+                 or _safe_float(row.get("Launchpad Pivot"))
+                 or _safe_float(row.get("Week High")))
+        close = _safe_float(row.get("Close"))
+        if pivot is None or pivot <= 0 or close is None or close <= 0:
+            continue
+        out.append({
+            "ticker":            ticker,
+            "company":           str(row.get("Company", "")),
+            "industry":          str(row.get("Industry", "")),
+            "sector":            str(row.get("Sektor", "")),
+            "pivot":             round(pivot, 4),
+            "buy_stop":          round(pivot * buf, 4),
+            "close_saturday":    round(close, 4),
+            "atr_pct":           _safe_float(row.get("ATR / Price (%)")),
+            "rs_score":          _safe_float(row.get("RS (O'Neil)")),
+            "score":             _safe_int(row.get("score")),
+            "industry_ranking":  _safe_int(row.get("Industry Ranking")),
+            "sa_link":           str(row.get("SA", "")),
+        })
+    return out
+
+
 def rank_signals(
     signals:       list["TradeSignal"],
     max_positions: int = 5,
@@ -550,114 +820,12 @@ def generate_signals(
     df = leaders.copy()
 
     # ── Filters ───────────────────────────────────────────────────────────────
+    mask = _thesis_mask(df, r)
 
-    def _num(col: str, fill: float = -999.0) -> pd.Series:
-        return pd.to_numeric(
-            df.get(col, pd.Series(fill, index=df.index)), errors="coerce"
-        ).fillna(fill)
-
-    mask = pd.Series(True, index=df.index)
-
-    # 1. All 8 Minervini criteria
-    mask &= _num("score", 0) >= r["min_score"]
-
-    # 2. Pattern: VCP Entry OR Launchpad Entry
-    if r["require_pattern"]:
-        vcp_entry      = df.get("VCP Entry",      pd.Series(False, index=df.index)).fillna(False).astype(bool)
-        launchpad_entry = df.get("Launchpad Entry", pd.Series(False, index=df.index)).fillna(False).astype(bool)
-        mask &= vcp_entry | launchpad_entry
-
-    # 3. RS Score — top-third relative strength (institutional sponsorship)
-    if r.get("min_rs_score", 0) > 0:
-        mask &= _num("RS (O'Neil)", 0) >= r["min_rs_score"]
-
-    # 4. Distance to 52W High — must still be in striking range of highs
-    #    Column stores the distance as a positive percentage (e.g. 15.0 = 15 % below high)
-    if r.get("max_dist_52w_high_pct") is not None:
-        mask &= _num("Dist to 52W High (%)", 999) <= r["max_dist_52w_high_pct"]
-
-    # 5. ATR / Price below NATR threshold
-    mask &= _num("ATR / Price (%)", 999) < r["max_atr_pct"]
-
-    # 6. Fundamental quality filters
-    if r["min_roe"]             > 0:  mask &= _num("ROE (%)")                              >= r["min_roe"]
-    if r["min_op_margin"]       > 0:  mask &= _num("Operating Margin (%)")                 >= r["min_op_margin"]
-    if r["min_rev_growth"]      > 0:  mask &= _num("Revenue Wachstum TTM YoY (%)")        >= r["min_rev_growth"]
-    if r["min_eps_growth_last_q"] > 0: mask &= _num("EPS Wachstum letztes Q YoY (%)") >= r["min_eps_growth_last_q"]
-
-    # 7. Industry Ranking filter  (lower rank number = stronger industry)
-    #    NaN industry rank → pass (fail-open: computation failure ≠ bad industry)
-    if r.get("max_industry_rank") is not None and r["max_industry_rank"] > 0:
-        ind_rank_raw = pd.to_numeric(
-            df.get("Industry Ranking", pd.Series(index=df.index)), errors="coerce"
-        )
-        mask &= ind_rank_raw.isna() | (ind_rank_raw <= r["max_industry_rank"])
-
-    # 8. MACD > Signal (weekly) — only buy into rising momentum, not falling
-    if r.get("require_macd_above_signal", True):
-        macd_ok = df.get("MACD > Signal (W)", pd.Series(False, index=df.index)).fillna(False).astype(bool)
-        mask &= macd_ok
-
-    # 9./10. Timing-Filter — getrennt gehalten, weil der Wiedereinstieg sie
-    #        ersetzen darf (siehe unten). Alles ueber ihnen ist ein THESEN-Filter
-    #        (Trendstruktur, Fundamentaldaten, Industrie) und gilt immer.
-    #
-    #   9. Volume Breakout: nur Titel mit bestaetigtem Volumenschub
-    #  10. Close > Vorwoche: kein Kauf bei fallendem Wochenkurs
-    #      (fail-open: fehlendes Signal = kein Ausschluss)
-    vol_breakout_col = df.get("Vol-Breakout", pd.Series(False, index=df.index)).fillna(False).astype(bool)
-    close_above_prev = df.get("Close > Vorwoche", pd.Series(True, index=df.index)).fillna(True).astype(bool)
-    timing_ok = vol_breakout_col & close_above_prev
-
-    # 11. Minimum price — no penny stocks (fail-open: NaN Close = data gap, not penny stock)
-    if r.get("min_price", 0) > 0:
-        price_raw = pd.to_numeric(
-            df.get("Close", pd.Series(index=df.index)), errors="coerce"
-        )
-        mask &= price_raw.isna() | (price_raw >= r["min_price"])
-
-    # 12. Minimum market cap — no micro caps (fail-open: NaN MCap = data gap)
-    if r.get("min_market_cap_mio", 0) > 0:
-        cap_raw = pd.to_numeric(
-            df.get("MarketCap (Mio USD)", pd.Series(index=df.index)), errors="coerce"
-        )
-        mask &= cap_raw.isna() | (cap_raw >= r["min_market_cap_mio"])
-
-    # ── Wiedereinstieg: Pivot-Rueckeroberung ersetzt die Timing-Filter ────────
-    #
-    # Ein ausgestoppter Titel war nie AKTIV gesperrt — nur offene Positionen
-    # werden aus den Kandidaten entfernt. Er kam faktisch trotzdem nie zurueck,
-    # weil `Vol-Breakout` und `Close > Vorwoche` nach einem Zusammenbruch
-    # wochenlang nicht feuern; requalifiziert er endlich, ist die Bewegung
-    # gelaufen. Genau das kostete uns die Rendite: Alle 16 ueber einen Stop
-    # beendeten Trades endeten bei <= +1,6 %, dieselben Titel standen vier
-    # Wochen spaeter im Median +17,8 %.
-    #
-    # Der Wiedereinstieg ersetzt daher die beiden TIMING-Filter — die
-    # Rueckeroberung des alten Pivots IST das Ausbruchssignal. Die
-    # THESEN-Filter (Score, RS, Abstand zum Hoch, ATR, Fundamentaldaten,
-    # Industrie, MACD) gelten unveraendert weiter, ebenso der
-    # Earnings-Blackout unten.
-    #
-    # Eine zusaetzliche Trendpruefung (Kurs > MA50 beim Wiedereinstieg) wurde
-    # gemessen und ist redundant: In 45 von 45 Faellen lag der Kurs beim
-    # Rueckerobern des Pivots ohnehin ueber der MA50. Die Pivot-Bedingung ist
-    # strikt staerker.
-    reentry_ok = pd.Series(False, index=df.index)
-    watch = reentry_watchlist or {}
-    if r.get("reentry_enabled", True) and watch:
-        px = pd.to_numeric(df.get("Close", pd.Series(index=df.index)),
-                           errors="coerce")
-        buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
-        for tkr, info in watch.items():
-            if tkr not in df.index:
-                continue
-            pivot = info.get("pivot")
-            if not pivot:
-                continue
-            cur = px.get(tkr)
-            if cur is not None and pd.notna(cur) and float(cur) >= pivot * buf:
-                reentry_ok.loc[tkr] = True
+    # Timing darf uebergangen werden, These nicht — siehe _reentry_mask().
+    timing_ok  = _timing_mask(df, r)
+    reentry_ok = _reentry_mask(df, r, reentry_watchlist)
+    watch      = reentry_watchlist or {}   # fuer reentry_attempt weiter unten
 
     mask &= timing_ok | reentry_ok
 
@@ -738,44 +906,7 @@ def generate_signals(
             stop = _stop_default(entry, atr_pct, mult=r["stop_atr_mult"],
                                  min_pct=r["min_stop_pct"] / 100.0)
 
-        # Einheitlicher Mindest-Abstand über ALLE Muster-Pfade.
-        #
-        # Vorher stand hier ein Floor von 1× ATR. Der war zu eng: gemessen auf
-        # 93 Backtest-Entries (atr_stop_analysis.py --sweep, 13W-Horizont) ergab
-        # der musterabhängige Stop einen Abstands-Median von 3,4–9,0 %, eine
-        # Woche-1-Stopquote von 9–37 % und 59–76 % ausgestoppte Trades — bei
-        # einem Depotbeitrag von +10,5 bis −12,9 pp je Trade. Mit einem Floor
-        # von 10 % fallen die Woche-1-Stops auf 3 %, die Gesamt-Stopquote auf
-        # 49 %, und der Depotbeitrag erreicht das Optimum des Gitters.
-        #
-        # Der VCP- und der Launchpad-Pfad hatten nie einen echten Floor:
-        # `_stop_vcp` rechnet 2× ATR mit Deckel nach unten, aber ohne
-        # Untergrenze, und die Launchpad-Box kann bei engen Basen fast beliebig
-        # dicht am Entry liegen. Genau diese Pfade lieferten die Stops im
-        # Rauschband — und laut Tagebuch endete jeder über einen Stop beendete
-        # Trade bei ≤ +1,6 %, während dieselben Titel vier Wochen später im
-        # Median +17,8 % standen.
-        #
-        # Warum 10 % kein gefittetes Optimum ist: max_risk_per_trade_pct /
-        # max_position_pct = 1,5 / 15 = 10 %. Darunter bindet der Positions-Cap,
-        # die Stückzahl wächst nicht weiter mit, und der Vorteil des engeren
-        # Stops ist gar nicht abrufbar. Darüber schrumpft die Position
-        # proportional. Der Wert folgt aus unseren beiden Sizing-Parametern und
-        # wandert mit, wenn die sich ändern.
-        min_stop_frac = max(
-            r["min_stop_pct"] / 100.0,
-            r["stop_atr_mult"] * atr_pct / 100.0,
-        )
-        stop_floor = entry * (1.0 - min_stop_frac)
-        if stop > stop_floor:
-            stop = stop_floor
-
-        # Blueprint safety cap: stop never more than max_stop_pct below entry
-        max_stop_frac = r["max_stop_pct"] / 100.0
-        stop_pct = (entry - stop) / entry
-        if stop_pct > max_stop_frac:
-            stop     = entry * (1.0 - max_stop_frac)
-            stop_pct = max_stop_frac
+        stop, stop_pct = apply_stop_bounds(entry, stop, atr_pct, r)
 
         # Buy-Stop: 0.1% über dem höheren von entry und breakout_level
         buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
@@ -786,18 +917,10 @@ def generate_signals(
         gap_limit = 1.0 + r.get("gap_limit_pct", 5.0) / 100.0
         max_gap_price = round(pivot * gap_limit, 2)
 
-        # Risk-first sizing: position = max_risk / stop_pct, capped at max_position_pct
-        max_risk_pct  = r.get("max_risk_per_trade_pct", 1.5) / 100.0
-        max_pos_pct   = r.get("max_position_pct",       15.0) / 100.0
-        # Bearish regime: halve risk exposure
-        if not market_bullish:
-            max_risk_pct *= r.get("bearish_risk_fraction", 0.5)
-        risk_based_pct = max_risk_pct / stop_pct if stop_pct > 0 else max_pos_pct
-        pos_size_pct   = min(risk_based_pct, max_pos_pct)
-        position_value = account_equity * pos_size_pct
-        if available_cash is not None:
-            cash_per_slot  = available_cash / max(1, remaining_slots)
-            position_value = min(position_value, cash_per_slot)
+        pos_size_pct, position_value = size_position(
+            stop_pct, account_equity, market_bullish, r,
+            available_cash=available_cash, remaining_slots=remaining_slots,
+        )
 
         # Risiko IMMER aus der tatsaechlichen Positionsgroesse ableiten.
         #

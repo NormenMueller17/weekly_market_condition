@@ -576,7 +576,12 @@ def run():
     ]
     
     # 4) Marktführer nach Minervini screenen
-    leaders = screen_universe_minervini(universe, min_score=0)
+    # `require_vol_breakout=False`: Der Volumenausbruch war hier ein Vorfilter und
+    # lief damit VOR den Fundamentaldaten und VOR generate_signals. Der
+    # Wiedereinstieg konnte deshalb nie greifen, und Titel, die nur auf das
+    # Timing warten, bekamen nie einen Namen. Der Filter sitzt jetzt in
+    # signal_generator._timing_mask (rules.json → require_vol_breakout).
+    leaders = screen_universe_minervini(universe, min_score=0, require_vol_breakout=False)
     info_map = get_company_info_map_from_csv()
     # NEU: Launchpad Quality Filter
     # Strenger Filter: Score ≥90 UND Range <8%
@@ -589,6 +594,40 @@ def run():
         
         launchpad_count = len(leaders[leaders["Launchpad"] == True])
         print(f"[INFO] High-Quality Launchpads (Score >=80): {launchpad_count}")
+
+    # ── Deckel fuer die timing-offene Menge ───────────────────────────────────
+    #
+    # Ohne den alten Vol-Breakout-Vorfilter enthaelt `leaders` jetzt auch Titel
+    # ohne bestaetigten Ausbruch. Fuer den Report und die Signale aendert das
+    # nichts (der Filter greift in generate_signals), aber der
+    # Fundamentaldaten-Abruf haengt an `leaders` und waere sonst unbegrenzt.
+    #
+    # Titel MIT Ausbruch bleiben also vollstaendig erhalten — das ist exakt die
+    # alte Menge. Titel OHNE Ausbruch kommen nur so weit dazu, wie der Deckel
+    # reicht, sortiert nach RS. Der Deckel ist eine Kostengrenze, kein
+    # Qualitaetsfilter.
+    MIN_SCORE_FOR_FUNDAMENTALS = 6
+    _midweek_max = int(_rules_json.get("filters", {}).get("midweek_watchlist_max", 60))
+    if not leaders.empty and "Vol-Breakout" in leaders.columns:
+        _has_breakout = leaders["Vol-Breakout"].fillna(False).astype(bool)
+        _score_num    = pd.to_numeric(leaders["score"], errors="coerce").fillna(0)
+        _pending_all  = leaders[~_has_breakout & (_score_num >= MIN_SCORE_FOR_FUNDAMENTALS)]
+        _pending_kept = (
+            _pending_all.assign(
+                _rs=pd.to_numeric(_pending_all.get("RS_now"), errors="coerce").fillna(0.0)
+            )
+            .sort_values("_rs", ascending=False)
+            .head(_midweek_max)
+            .drop(columns="_rs")
+        ) if _midweek_max > 0 else _pending_all.iloc[0:0]
+
+        print(f"[UNIVERSE] Leaders mit Volumenausbruch: {int(_has_breakout.sum())} — "
+              f"timing-offen (Score >= {MIN_SCORE_FOR_FUNDAMENTALS}): {len(_pending_all)}, "
+              f"davon uebernommen: {len(_pending_kept)} (Deckel {_midweek_max})")
+
+        leaders = pd.concat([leaders[_has_breakout], _pending_kept]).sort_values(
+            "score", ascending=False
+        )
 
     industry_table = pd.DataFrame()
     
@@ -618,7 +657,6 @@ def run():
         # --- Fundamentaldaten nur für Leaders mit Score >= 6 laden ---
         # Score < 6 erscheinen nicht in Kaufsignalen und selten im Mail-Report (nur Score 8/8).
         # Damit werden 300-400 API-Calls auf ~20-50 reduziert.
-        MIN_SCORE_FOR_FUNDAMENTALS = 6
         tickers_for_fundamentals = (
             leaders[pd.to_numeric(leaders["score"], errors="coerce") >= MIN_SCORE_FOR_FUNDAMENTALS]
             .index.tolist()
@@ -972,6 +1010,31 @@ def run():
     # Persist signal metadata in docs/data/ so it survives across CI runs (committed to git)
     meta_json = save_signals_json(signals, Path("docs/data") / f"signals_meta_{report_date}.json")
     print(f"[SIGNALS] Signal-Metadaten persistiert → {meta_json}")
+
+    # ── Mid-Week-Watchlist: These erfuellt, Timing offen ──────────────────────
+    # Der Mittwochslauf (midweek_entry.py) prueft nur diese Liste — kein
+    # zweiter Universumslauf. Sie wird ueberschrieben, nicht datiert: gueltig
+    # ist immer die des letzten Wochenlaufs, und midweek_entry.py lehnt eine
+    # veraltete Datei ab.
+    try:
+        from signal_generator import build_midweek_watchlist
+        _mw = build_midweek_watchlist(
+            leaders,
+            rules          = {"max_industry_rank": SETTINGS.max_industry_rank},
+            open_positions = alpaca_positions,
+        )
+        _mw_path = Path("docs/data") / "midweek_watchlist.json"
+        _mw_path.write_text(json.dumps({
+            "generated":   report_date,
+            "market_bullish": bool(market_bullish),
+            "count":       len(_mw),
+            "watchlist":   _mw,
+        }, indent=2), encoding="utf-8")
+        print(f"[MIDWEEK] {len(_mw)} Titel auf der Mid-Week-Watchlist → {_mw_path}")
+    except Exception as e:
+        # Kein stiller Rueckfall: die Watchlist ist eine Nebenausgabe, ihr
+        # Fehlen darf den Wochenlauf nicht kippen — aber es muss sichtbar sein.
+        print(f"[MIDWEEK] ⚠️  Watchlist konnte nicht gebaut werden: {e}")
 
     # ── Alpaca: OTO Orders sofort platzieren ODER als Pending zurückhalten ─────
     top_picks = [s for s in signals if s.is_top_pick]

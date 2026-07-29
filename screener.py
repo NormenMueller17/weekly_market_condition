@@ -309,14 +309,35 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "Launchpad Pivot": launchpad_result.get("Pivot_Level", None),
         "Launchpad Near Pivot": launchpad_result.get("Near_Pivot", False),
         "Week Low": float(low.iloc[-1]) if len(low) > 0 else float("nan"),
+        # Hoch der zuletzt abgeschlossenen Woche — Pivot fuer den Mid-Week-Check
+        # bei Titeln ohne erkanntes Muster (VCP/Launchpad liefern eigene Level).
+        "Week High": float(high.iloc[-1]) if len(high) > 0 else float("nan"),
     }
 
 
-def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame:
+def screen_universe_minervini(
+    universe=None,
+    min_score: int = 0,
+    require_vol_breakout: bool = True,
+) -> pd.DataFrame:
     """
     Screeningt ein Universum nach Minervini.
     - universe: optionale Iterable von Ticker-Symbolen. Wenn None, wird get_universe() benutzt.
-    - min_score: Mindestanzahl erfüllter Kriterien (zusätzlich zum Pflicht-Kriterium 'Vol-Breakout').
+    - min_score: Mindestanzahl erfüllter Kriterien.
+    - require_vol_breakout: Wenn True (Vorgabe), bleiben nur Titel mit Volumenausbruch
+      uebrig — das alte Verhalten.
+
+      Warum abschaltbar: `Vol-Breakout` war hier ein VORFILTER, der vor den
+      Fundamentaldaten und vor `generate_signals` griff. Damit konnte der
+      Wiedereinstieg (signal_generator: Pivot-Rueckeroberung ersetzt die
+      Timing-Filter) nie greifen — ein ausgestoppter Titel hat nach dem
+      Zusammenbruch wochenlang keinen Volumenausbruch und war deshalb schon
+      hier weg, bevor die Regel ihn ueberhaupt sehen konnte. Dasselbe gilt fuer
+      jeden Titel, der die These erfuellt und nur auf das Timing wartet.
+
+      Der Filter gehoert deshalb nach `generate_signals`, wo er als regulaerer
+      Timing-Filter neben `Close > Vorwoche` steht und uebergangen werden darf.
+      Aufrufer, die ihn hier abschalten, MUESSEN ihn dort anwenden.
     """
     tickers = list(universe) if universe is not None else list(get_universe())
 
@@ -442,10 +463,11 @@ def screen_universe_minervini(universe=None, min_score: int = 0) -> pd.DataFrame
     df_results["RS_4w"] = df_results.index.map(lambda t: safe_get(rs_map_4w, t))
     df_results["RS_delta_4w"] = df_results["RS_now"] - df_results["RS_4w"]
 
-    # Minervini Leader filtern — Vol-Breakout ist Pflicht, min_score zählt alle 8 Kriterien
-    leaders = df_results[
-        df_results["Vol-Breakout"] & (df_results["score"] >= min_score)
-    ].sort_values("score", ascending=False)
+    # Minervini Leader filtern — min_score zählt alle 8 Kriterien
+    mask = pd.to_numeric(df_results["score"], errors="coerce").fillna(0) >= min_score
+    if require_vol_breakout:
+        mask &= df_results["Vol-Breakout"].fillna(False).astype(bool)
+    leaders = df_results[mask].sort_values("score", ascending=False)
 
 
     return leaders
