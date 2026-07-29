@@ -496,6 +496,21 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
         journal_open = []
     positionen = mail_report.position_details(positions, journal_open, rs_now_map)
 
+    # Unternehmensportraet je Kaufsignal. Nur fuer die tatsaechlichen Signale
+    # (null bis drei pro Woche) — deshalb ein eigener Abruf statt zusaetzlicher
+    # Last im Universumslauf. Faellt er aus, fehlt das Portraet, nicht der Brief.
+    profile: dict = {}
+    try:
+        if signals:
+            import company_profile
+            profile = company_profile.fetch_profiles([s.ticker for s in signals])
+            for s in signals:
+                if s.ticker in profile:
+                    profile[s.ticker]["_begruendung"] = company_profile.kaufbegruendung(s)
+            print(f"[MAIL] Unternehmensportraet fuer {len(profile)} Signal(e) geladen")
+    except Exception as e:
+        print(f"[MAIL] ⚠️  Unternehmensportraets nicht ladbar: {e}")
+
     # Titel mit erkanntem VCP/Launchpad — zum Nachschauen im Chart
     try:
         muster = mail_report.muster_liste(leaders_html)
@@ -553,6 +568,7 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
         report_date=report_date, ampel=ampel, perf=perf, svg=svg,
         positionen=positionen, cash=alpaca_cash, equity=equity,
         signale=signals or [], kandidaten=kandidaten, muster=muster,
+        profile=profile,
         breadth_rows=mail_report.breadth_rows_from_snapshot(breadth_snap),
         sector_rows=sector_rows or [],
         bericht=bericht, report_url=report_url, test_mode=test_mode,

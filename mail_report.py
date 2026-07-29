@@ -545,18 +545,101 @@ def _positionen_block(positionen: list, cash, equity) -> str:
             + f'<table style="{_TABLE}">{kopf}{zeilen}</table>' + fuss)
 
 
-def _kandidaten_block(signale: list, kandidaten: list, report_url: str) -> str:
+def _mio(v, waehrung: str = "USD") -> str:
+    """Grosse Betraege lesbar: Mrd. ab einer Milliarde, sonst Mio."""
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return "–"
+    zeichen = "$" if waehrung in (None, "USD") else ""
+    if abs(v) >= 1e9:
+        return f"{zeichen}{v / 1e9:,.2f} Mrd."
+    if abs(v) >= 1e6:
+        return f"{zeichen}{v / 1e6:,.0f} Mio."
+    return f"{zeichen}{v:,.2f}"
+
+
+def _reihen_tabelle(titel: str, reihe: list, waehrung: str,
+                    als_betrag: bool = True) -> str:
+    """Quartals- oder Jahresreihe als schmale Tabelle mit Vorjahresvergleich."""
+    if not reihe:
+        return ""
+    kopf = "".join(f'<th style="{_TH}">{p["periode"]}</th>' for p in reihe)
+    werte = "".join(
+        f'<td style="{_TD}">'
+        f'{_mio(p["wert"], waehrung) if als_betrag else f"{p['wert']:.2f}"}</td>'
+        for p in reihe
+    )
+    yoy = "".join(
+        f'<td style="{_TD}color:{_farbe(p["yoy"])};font-size:.85em;">'
+        f'{"–" if p["yoy"] is None else f"{p['yoy']:+.1f} %"}</td>'
+        for p in reihe
+    )
+    return (
+        f'<table style="{_TABLE}margin-bottom:.8em;">'
+        f'<tr><th style="{_THL}">{titel}</th>{kopf}</tr>'
+        f'<tr><td style="{_TDL}">Wert</td>{werte}</tr>'
+        f'<tr><td style="{_TDL}font-size:.85em;color:{GRAU};">ggü. Vorjahr</td>{yoy}</tr>'
+        f'</table>'
+    )
+
+
+def _portraet(s, profil: dict, begruendung: list) -> str:
+    """Unternehmensportraet zu einem Kaufsignal."""
+    if not profil and not begruendung:
+        return ""
+    waehrung = (profil or {}).get("waehrung") or "USD"
+
+    kopfzeilen = []
+    for wert, name in ((profil.get("industrie"), None), (profil.get("land"), None)):
+        if wert:
+            kopfzeilen.append(str(wert))
+    if profil.get("mitarbeiter"):
+        kopfzeilen.append(f'{profil["mitarbeiter"]:,} Mitarbeitende'.replace(",", "."))
+
+    beschreibung = profil.get("beschreibung", "")
+    beschr_html = (
+        f'<p style="margin:.6em 0;">{beschreibung}</p>'
+        f'<p style="color:{GRAU};font-size:.82em;margin:-.3em 0 .8em;">'
+        f'Unternehmensbeschreibung im Original (englisch), gekürzt.</p>'
+        if beschreibung else ""
+    )
+
+    gruende = "".join(f"<li style='margin-bottom:.25em;'>{g}</li>" for g in begruendung)
+    gruende_html = (
+        f'<div style="font-weight:600;color:{BLAU};margin-top:.6em;">Warum im Depot</div>'
+        f'<ul style="margin:.4em 0 .2em;padding-left:1.2em;">{gruende}</ul>'
+        if gruende else ""
+    )
+
+    return (
+        beschr_html
+        + (f'<p style="color:{GRAU};font-size:.88em;margin:.2em 0 .8em;">'
+           f'{" · ".join(kopfzeilen)}</p>' if kopfzeilen else "")
+        + _reihen_tabelle("Umsatz je Quartal", profil.get("umsatz_q", []), waehrung)
+        + _reihen_tabelle("Umsatz je Jahr", profil.get("umsatz_j", []), waehrung)
+        + _reihen_tabelle("Gewinn je Aktie (Quartal)", profil.get("eps_q", []),
+                          waehrung, als_betrag=False)
+        + gruende_html
+    )
+
+
+def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
+                      profile: Optional[dict] = None) -> str:
     if signale:
+        profile = profile or {}
         karten = ""
         for s in signale:
+            link = (f'<a href="{s.sa_link}" style="color:{BLAU};text-decoration:none;">'
+                    f'{s.ticker}</a>' if s.sa_link else s.ticker)
             karten += (
                 f'<div style="border:1px solid {RAHMEN};border-left:4px solid {GRUEN};'
-                f'padding:.8em 1em;margin-bottom:.8em;">'
-                f'<div style="font-size:1.05em;font-weight:bold;color:{BLAU};">'
-                f'{s.ticker} — {s.company}</div>'
+                f'padding:.9em 1.1em;margin-bottom:1.4em;">'
+                f'<div style="font-size:1.1em;font-weight:bold;color:{BLAU};">'
+                f'{link} — {s.company}</div>'
                 f'<div style="color:{GRAU};font-size:.88em;margin-bottom:.5em;">'
-                f'{s.industry} · Muster {s.pattern} · RS {s.rs_score or "–"}</div>'
-                f'<table style="{_TABLE}margin-bottom:0;">'
+                f'{s.industry} · Muster {s.pattern} · RS {_rs(s.rs_score)}</div>'
+                f'<table style="{_TABLE}margin-bottom:.8em;">'
                 f'<tr><th style="{_TH}">Kurs</th><th style="{_TH}">Buy-Stop</th>'
                 f'<th style="{_TH}">Stop</th><th style="{_TH}">Risiko</th>'
                 f'<th style="{_TH}">Position</th></tr>'
@@ -566,7 +649,10 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str) -> str:
                 f'<span style="color:{GRAU};">({s.stop_loss_pct * 100:.1f} %)</span></td>'
                 f'<td style="{_TD}">{s.risk_on_equity_pct * 100:.2f} %</td>'
                 f'<td style="{_TD}">{_geld(s.position_value)}</td></tr>'
-                f'</table></div>'
+                f'</table>'
+                + _portraet(s, profile.get(s.ticker, {}),
+                            (profile.get(s.ticker, {}) or {}).get("_begruendung", []))
+                + '</div>'
             )
         return _h2("3) Kaufsignale") + karten
 
@@ -730,6 +816,7 @@ def build_boersenbrief(
     signale:       list,
     kandidaten:    list,
     muster:        list,
+    profile:       Optional[dict] = None,
     breadth_rows:  list,
     sector_rows:   list,
     markt_extra:   str = "",
@@ -759,7 +846,7 @@ margin:0 auto;padding:1.5em 1.2em;color:#1a1a1a;line-height:1.45;">
        margin:1.2em 0 .5em;">{bericht}</div>
   {_perf_block(perf, svg)}
   {_positionen_block(positionen, cash, equity)}
-  {_kandidaten_block(signale, kandidaten, report_url)}
+  {_kandidaten_block(signale, kandidaten, report_url, profile)}
   {_muster_block(muster)}
   {_markt_block(breadth_rows, sector_rows, markt_extra)}
   {link}
