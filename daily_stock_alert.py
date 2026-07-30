@@ -184,9 +184,18 @@ def run(dry_run: bool) -> int:
         print(f"[COVERAGE] {c.get('symbol')}: {c.get('status')}")
 
     # 2. Ablaufende Stop-Orders verlaengern
-    refreshed = alpaca_client.refresh_expiring_sell_orders(dry_run=dry_run)
-    for r in refreshed:
+    #
+    # `refresh_expiring_sell_orders` liefert eine Zeile je GEPRUEFTER Order,
+    # nicht je verlaengerter — Orders, die noch lange genug laufen, kommen mit
+    # status "ok" zurueck. Wer die ganze Liste als Aktion wertet, verschickt
+    # jeden Tag eine Mail, solange ueberhaupt eine Position offen ist. Genau
+    # das ist hier passiert.
+    geprueft  = alpaca_client.refresh_expiring_sell_orders(dry_run=dry_run)
+    refreshed = [r for r in geprueft if r.get("status") != "ok"]
+    for r in geprueft:
         print(f"[REFRESH] {r.get('symbol')}: {r.get('status')}")
+    if geprueft and not refreshed:
+        print(f"[REFRESH] {len(geprueft)} Sell-Order(s) aktiv, keine ablaufenden")
 
     # 3. Journal synchronisieren
     filled_buys  = alpaca_client.get_filled_orders("buy")
