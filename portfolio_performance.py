@@ -57,6 +57,19 @@ def _load_equity_history() -> Optional[dict]:
 # ── Metric computation ────────────────────────────────────────────────────────
 
 def _trade_metrics(closed: list, open_: list) -> dict:
+    """Handelskennzahlen.
+
+    Zwei Grundmengen, weil zwei verschiedene Fragen beantwortet werden:
+    Trefferquote, Profit-Faktor und Haltedauer messen die REGELGUETE und
+    lassen Nicht-Markt-Ausstiege aus (siehe trade_journal.NICHT_MARKT_EXITS);
+    `total_realized_pl` ist geflossenes Geld und zaehlt alles.
+    """
+    alle   = list(closed or [])
+    try:
+        import trade_journal
+        closed = trade_journal.markt_trades(alle)
+    except Exception:
+        closed = alle
     n = len(closed)
     wins   = [t for t in closed if (t.get("realized_plpc") or 0) > 0]
     losses = [t for t in closed if (t.get("realized_plpc") or 0) <= 0]
@@ -92,7 +105,8 @@ def _trade_metrics(closed: list, open_: list) -> dict:
         "wins":              len(wins),
         "losses":            len(losses),
         "win_rate":          len(wins) / n * 100 if n else None,
-        "total_realized_pl": sum(t.get("realized_pl", 0) for t in closed),
+        "total_realized_pl": sum(t.get("realized_pl", 0) for t in alle),
+        "excluded_trades":   len(alle) - n,
         "profit_factor":     round(win_pl / loss_pl, 2) if loss_pl > 0 else None,
         "avg_win_pct":       sum(t.get("realized_plpc", 0) for t in wins)   / len(wins)   if wins   else None,
         "avg_loss_pct":      sum(t.get("realized_plpc", 0) for t in losses) / len(losses) if losses else None,

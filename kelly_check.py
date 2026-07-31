@@ -93,8 +93,14 @@ def main() -> int:
     rules = json.loads(Path("rules.json").read_text(encoding="utf-8"))
     sizing = rules.get("sizing", {})
     data = trade_journal.load()
-    closed = [t for t in data.get("closed", [])
+    # Nicht-Markt-Ausstiege raus: ein Delisting sagt nichts ueber die
+    # Trefferquote der Regeln aus. Siehe trade_journal.NICHT_MARKT_EXITS.
+    closed = [t for t in trade_journal.markt_trades(data.get("closed", []))
               if t.get("realized_plpc") is not None]
+    _ausgenommen = len(data.get("closed", [])) - len(trade_journal.markt_trades(data.get("closed", [])))
+    if _ausgenommen:
+        print(f"[KELLY] {_ausgenommen} Nicht-Markt-Ausstieg(e) ausgenommen "
+              f"(z. B. Delisting).")
 
     if not closed:
         print("[KELLY] Keine geschlossenen Trades im Journal.")

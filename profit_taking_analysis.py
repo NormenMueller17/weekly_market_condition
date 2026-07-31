@@ -156,7 +156,10 @@ def main() -> int:
         pt.get("trailing_atr_mult", 2.0)
 
     data = json.loads(Path(args.journal).read_text(encoding="utf-8"))
-    closed = [t for t in data.get("closed", [])
+    # Nicht-Markt-Ausstiege (Delisting) raus — siehe
+    # trade_journal.NICHT_MARKT_EXITS.
+    import trade_journal
+    closed = [t for t in trade_journal.markt_trades(data.get("closed", []))
               if t.get("entry_date") and t.get("exit_date")
               and t.get("entry_price")]
     if not closed:

@@ -588,16 +588,62 @@ def apply_raised_stops(data: dict, exit_results: list[dict]) -> dict:
     return data
 
 
+# ── Nicht-Markt-Ausstiege ─────────────────────────────────────────────────────
+#
+# Manche Trades enden, ohne dass das Regelwerk etwas entschieden haette. Sie
+# gehoeren ins Tagebuch — sie sind passiert und haben Geld bewegt —, aber nicht
+# in die Messung der Regelguete: Trefferquote, Gewinn/Verlust-Verhaeltnis und
+# Kelly-Abgleich wuerden sonst ein Ergebnis ausweisen, das niemand
+# herbeigefuehrt hat.
+#
+# Anlass (2026-07-30): AVNS endete mit +1,42 % durch das Delisting nach einer
+# Uebernahme. Bei damals 18 geschlossenen Trades haette dieser eine Eintrag die
+# Trefferquote um mehr als fuenf Prozentpunkte gehoben, ohne dass eine Regel
+# daran beteiligt war.
+#
+# `position_closed_unknown` steht bewusst NICHT hier: dort ist eine Position
+# tatsaechlich am Markt verschwunden und der Grund nur nicht rekonstruierbar —
+# das ist eine Datenluecke, kein anderer Ausstiegstyp.
+NICHT_MARKT_EXITS = frozenset({"delisted"})
+
+
+def ist_marktausstieg(trade: dict) -> bool:
+    """False, wenn der Trade nicht durch eine Handelsentscheidung endete."""
+    return (trade or {}).get("exit_reason") not in NICHT_MARKT_EXITS
+
+
+def markt_trades(closed: list | None) -> list:
+    """Geschlossene Trades ohne die Nicht-Markt-Ausstiege."""
+    return [t for t in (closed or []) if ist_marktausstieg(t)]
+
+
 # ── Summary stats ─────────────────────────────────────────────────────────────
 
 def _stats(data: dict) -> dict:
-    closed = data.get("closed", [])
+    """Kennzahlen des Tagebuchs.
+
+    Zwei verschiedene Fragen, zwei verschiedene Grundmengen:
+
+      * Trefferquote, Durchschnittsgewinn und -verlust messen die REGELGUETE.
+        Nicht-Markt-Ausstiege gehoeren dort nicht hinein.
+      * `total_pl` ist realisiertes Geld. Das ist geflossen, egal wodurch der
+        Trade endete, und wird deshalb ueber ALLE geschlossenen Trades
+        gerechnet.
+
+    Frueher lief beides ueber dieselbe Liste; nach dem AVNS-Delisting waere
+    entweder die Trefferquote geschoent oder die Summe falsch gewesen.
+    """
+    alle   = data.get("closed", [])
+    closed = markt_trades(alle)
     # Realisierter Gewinn aus Teilverkäufen noch offener Positionen (Power-of-
     # Three) — sonst wäre er bis zum vollständigen Exit unsichtbar.
     open_partial_pl = sum(t.get("realized_pl_partial") or 0 for t in data.get("open", []))
+    total_pl = round(sum(t.get("realized_pl", 0) for t in alle) + open_partial_pl, 2)
+
     if not closed:
         return {"count": 0, "wins": 0, "losses": 0, "win_rate": None,
-                "total_pl": round(open_partial_pl, 2), "avg_win": None, "avg_loss": None}
+                "total_pl": total_pl, "avg_win": None, "avg_loss": None,
+                "excluded": len(alle)}
     wins   = [t for t in closed if (t.get("realized_plpc") or 0) > 0]
     losses = [t for t in closed if (t.get("realized_plpc") or 0) <= 0]
     return {
@@ -605,9 +651,10 @@ def _stats(data: dict) -> dict:
         "wins":     len(wins),
         "losses":   len(losses),
         "win_rate": len(wins) / len(closed) * 100,
-        "total_pl": round(sum(t.get("realized_pl", 0) for t in closed) + open_partial_pl, 2),
+        "total_pl": total_pl,
         "avg_win":  sum(t.get("realized_plpc", 0) for t in wins)  / len(wins)  if wins   else None,
         "avg_loss": sum(t.get("realized_plpc", 0) for t in losses)/ len(losses) if losses else None,
+        "excluded": len(alle) - len(closed),
     }
 
 
