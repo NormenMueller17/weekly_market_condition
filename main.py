@@ -459,6 +459,16 @@ def _monday_execute_inner() -> None:
         print("[MONDAY] pending_orders.json gelöscht.")
 
 
+def _eingefrorener_wert(positions) -> float:
+    """Marktwert delisteter Positionen — fuer den Hinweis im Brief."""
+    try:
+        import delisted
+        return delisted.eingefrorener_wert(positions)
+    except Exception as e:
+        print(f"[MAIL] Delisting-Register nicht lesbar: {e}")
+        return 0.0
+
+
 def _breadth_wert(snap, spalte: str):
     """Prozentwert '% über 10‑Wochen‑EMA' aus dem Snapshot, oder None."""
     if snap is None or getattr(snap, "empty", True):
@@ -567,6 +577,7 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
     return mail_report.build_boersenbrief(
         report_date=report_date, ampel=ampel, perf=perf, svg=svg,
         positionen=positionen, cash=alpaca_cash, equity=equity,
+        eingefroren=_eingefrorener_wert(positions),
         signale=signals or [], kandidaten=kandidaten, muster=muster,
         profile=profile,
         breadth_rows=mail_report.breadth_rows_from_snapshot(breadth_snap),

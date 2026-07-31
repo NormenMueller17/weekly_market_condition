@@ -420,11 +420,25 @@ def check_sell_order_coverage(portfolio: Optional[dict], dry_run: bool = False) 
         except Exception:
             pass
 
+    # Broker-seitig tote Titel: Alpaca lehnt jede Order mit "not active" ab —
+    # auch von Hand ueber die Weboberflaeche. Ein taeglicher Versuch waere ein
+    # taeglicher Fehlalarm. Siehe delisted.py.
+    try:
+        import delisted
+        tote = delisted.symbols()
+    except Exception:
+        tote = set()
+
     results: list[dict] = []
     for pos in portfolio["positions"]:
         symbol      = pos["symbol"]
         qty         = float(pos["qty"])
         entry_price = float(pos["avg_entry_price"])
+
+        if symbol in tote:
+            results.append({"symbol": symbol, "status": "delisted", "stop_price": None})
+            print(f"[COVERAGE] {symbol}: delisted — kein Stop moeglich, uebersprungen")
+            continue
 
         stop_order = _find_open_stop_sell(client, symbol)
 

@@ -492,7 +492,8 @@ def _perf_block(perf: dict, svg: str) -> str:
     )
 
 
-def _positionen_block(positionen: list, cash, equity) -> str:
+def _positionen_block(positionen: list, cash, equity,
+                      eingefroren: float = 0.0) -> str:
     if not positionen:
         return _h2("2) Positionen") + "<p>Keine offenen Positionen.</p>"
 
@@ -541,8 +542,27 @@ def _positionen_block(positionen: list, cash, equity) -> str:
             f'R = anfängliches Risiko je Aktie (Einstand minus initialer Stop). '
             f'+2 R heisst: die Position hat das Doppelte dessen verdient, was sie '
             f'riskiert hat.</p>')
+
+    # Delistete Positionen bleiben im Broker-Bestand liegen und werden mit
+    # ihrem letzten Kurs bewertet. Sie zaehlen damit in die Equity und in jeden
+    # Vergleich gegen den S&P 500 — als Block, der weder steigt noch faellt.
+    # Das gehoert benannt, sonst liest sich die Performance genauer als sie ist.
+    hinweis = ""
+    if eingefroren and equity:
+        try:
+            anteil = eingefroren / float(equity) * 100
+            hinweis = (
+                f'<p style="background:#fff3cd;border-left:4px solid #ffc107;'
+                f'padding:.6em .9em;font-size:.9em;margin:-.8em 0 1.4em;">'
+                f'Die Equity enthält {_geld(eingefroren)} ({anteil:.0f} %) in delisteten '
+                f'Positionen, die mit ihrem letzten Kurs eingefroren sind. '
+                f'Der Vergleich gegen den S&amp;P 500 ist in diesem Umfang unscharf.</p>'
+            )
+        except (TypeError, ValueError, ZeroDivisionError):
+            pass
+
     return (_h2("2) Positionen") + kopfzeile
-            + f'<table style="{_TABLE}">{kopf}{zeilen}</table>' + fuss)
+            + f'<table style="{_TABLE}">{kopf}{zeilen}</table>' + fuss + hinweis)
 
 
 def _mio(v, waehrung: str = "USD") -> str:
@@ -813,6 +833,7 @@ def build_boersenbrief(
     positionen:    list,
     cash,
     equity,
+    eingefroren:   float = 0.0,
     signale:       list,
     kandidaten:    list,
     muster:        list,
@@ -845,7 +866,7 @@ margin:0 auto;padding:1.5em 1.2em;color:#1a1a1a;line-height:1.45;">
   <div style="background:{KOPFBG};border-left:4px solid {BLAU};padding:.9em 1.1em;
        margin:1.2em 0 .5em;">{bericht}</div>
   {_perf_block(perf, svg)}
-  {_positionen_block(positionen, cash, equity)}
+  {_positionen_block(positionen, cash, equity, eingefroren)}
   {_kandidaten_block(signale, kandidaten, report_url, profile)}
   {_muster_block(muster)}
   {_markt_block(breadth_rows, sector_rows, markt_extra)}

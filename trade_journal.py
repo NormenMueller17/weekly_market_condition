@@ -306,6 +306,13 @@ def sync(
     if portfolio is None:
         return data
 
+    try:
+        import delisted
+        _delisted_symbols = delisted.symbols()
+    except Exception as e:
+        print(f"[JOURNAL] Delisting-Register nicht lesbar: {e}")
+        _delisted_symbols = set()
+
     open_symbols        = {p["symbol"] for p in portfolio["positions"]}
     journal_open_syms   = {t["symbol"] for t in data["open"]}
     missing_from_alpaca = journal_open_syms - open_symbols
@@ -342,6 +349,15 @@ def sync(
             print(f"[JOURNAL] ⚠️  {sym}: Short-Position (qty={menge:g}) NICHT "
                   f"journalisiert — dieses System eröffnet keine Shorts. "
                   f"Position im Alpaca-Konto prüfen!")
+            continue
+
+        # Broker-seitig tote Titel nicht wieder als offene Position eintragen.
+        # Sie bleiben nach einem Delisting dauerhaft im Alpaca-Bestand liegen;
+        # ohne diese Sperre wuerde jeder Lauf den bereits abgeschlossenen Trade
+        # erneut oeffnen. Siehe delisted.py.
+        if sym in _delisted_symbols:
+            print(f"[JOURNAL] {sym}: delisted — nicht erneut als offene Position "
+                  f"eingetragen (Trade ist abgeschlossen).")
             continue
 
         meta         = _find_signal_meta(sym)

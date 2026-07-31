@@ -179,7 +179,10 @@ def run(dry_run: bool) -> int:
 
     # 1. Positionen ohne Stop-Order
     coverage  = alpaca_client.check_sell_order_coverage(portfolio, dry_run=dry_run)
-    uncovered = [c for c in coverage if c.get("status") not in ("covered", "ok")]
+    # "delisted" ist kein Mangel, sondern ein bekannter Dauerzustand — sonst
+    # kaeme die Mail bis in alle Ewigkeit taeglich.
+    uncovered = [c for c in coverage
+                 if c.get("status") not in ("covered", "ok", "delisted")]
     for c in coverage:
         print(f"[COVERAGE] {c.get('symbol')}: {c.get('status')}")
 
