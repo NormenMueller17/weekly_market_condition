@@ -73,7 +73,7 @@ def build_report(
         sections.append(_section_markt_warnung(markt))
     else:
         if kandidaten:
-            sections.append(_section_kandidaten(kandidaten, markt))
+            sections.append(_section_kandidaten(kandidaten, markt, company_info or {}))
         else:
             sections.append(_section_keine_kandidaten(markt))
 
@@ -84,6 +84,7 @@ def build_report(
         sections.append(_section_roll(roll_kandidaten))
 
     if universe_all:
+        sections.append(_section_top_titel(universe_all, company_info or {}))
         sections.append(_section_universe_overview(universe_all, company_info or {}))
 
     sections.append(_section_footer(report_date))
@@ -196,9 +197,46 @@ def _css() -> str:
     .info-card .value { font-size: 1.1em; font-weight: 700; }
     .keine { color: #7f8c8d; font-style: italic; padding: 8px 0; }
     .footer { text-align: center; color: #95a5a6; font-size: 0.8em; padding: 16px 0 8px; }
+
+    /* ── Kachel-Layout (Kaufkandidaten & Top-Titel) ─────────────────────── */
+    .kachel-grid { display: grid; gap: 14px;
+                   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    .kachel { border: 1px solid #e1e5ea; border-radius: 8px; overflow: hidden;
+              background: #fff; display: flex; flex-direction: column;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .kachel-head { display: flex; align-items: baseline; gap: 8px;
+                   padding: 10px 14px; border-bottom: 1px solid #ecf0f1; }
+    .kachel-ticker { font-size: 1.15em; font-weight: 700; color: #2c3e50; }
+    .kachel-name { font-size: 0.8em; color: #7f8c8d; overflow: hidden;
+                   text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .kachel-score { margin-left: auto; font-size: 0.85em; font-weight: 700;
+                    border-radius: 12px; padding: 2px 10px; white-space: nowrap; }
+    .kachel-sub { padding: 4px 14px 0; font-size: 0.76em; color: #7f8c8d;
+                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kachel-metrics { display: grid; grid-template-columns: repeat(4, 1fr);
+                      gap: 1px; background: #ecf0f1; margin: 10px 0 0; }
+    .kachel-metrics .m { background: #fff; padding: 7px 4px; text-align: center; }
+    .kachel-metrics .m .k { font-size: 0.66em; text-transform: uppercase;
+                            letter-spacing: .04em; color: #95a5a6; }
+    .kachel-metrics .m .v { font-size: 0.92em; font-weight: 600; margin-top: 1px; }
+    .m-ok   { background: #eafaf1 !important; }
+    .m-ok   .v { color: #1e8449; }
+    .m-bad  { background: #fdeeec !important; }
+    .m-bad  .v { color: #922b21; }
+    .kachel-foot { margin-top: auto; padding: 8px 14px; background: #f8f9fa;
+                   font-size: 0.76em; color: #2980b9; border-top: 1px solid #ecf0f1; }
+    .kachel-e3 { padding: 8px 14px; font-size: 0.78em; color: #555;
+                 display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .e3-chip { border-radius: 10px; padding: 1px 8px; font-size: 0.95em; }
+    .e3-on  { background: #d5f5e3; color: #1e8449; }
+    .e3-off { background: #eaecee; color: #7f8c8d; }
+    .mode-badge { background: #e8f4fd; color: #1a5276; border: 1px solid #aed6f1;
+                  border-radius: 3px; padding: 1px 5px; font-size: 0.7em; }
+
     @media (max-width: 700px) {
       .ampel-grid, .info-grid { grid-template-columns: 1fr 1fr; }
       table { font-size: 0.8em; }
+      .kachel-grid { grid-template-columns: 1fr; }
     }
   </style>"""
 
@@ -271,75 +309,83 @@ def _section_markt_warnung(markt: MarktampelResult) -> str:
 </div>"""
 
 
-def _section_kandidaten(kandidaten: list[dict], markt: MarktampelResult) -> str:
+def _metric(label: str, value: str, ok: Optional[bool] = None) -> str:
+    """Eine Metrik-Zelle einer Kachel. ok=None → neutral, True → grün, False → rot."""
+    cls = "" if ok is None else (" m-ok" if ok else " m-bad")
+    return (f'<div class="m{cls}"><div class="k">{label}</div>'
+            f'<div class="v">{value}</div></div>')
+
+
+def _e3_chips(macd: bool, momentum: bool, volumen: bool, confirmed: int) -> str:
+    def _chip(on: bool, text: str) -> str:
+        return f'<span class="e3-chip {"e3-on" if on else "e3-off"}">{text}</span>'
+    return (f'<div class="kachel-e3"><span style="color:#95a5a6">E3 {confirmed}/3</span>'
+            f'{_chip(bool(macd), "MACD↑")}{_chip(bool(momentum), "Mom↑")}'
+            f'{_chip(bool(volumen), "Vol↑")}</div>')
+
+
+def _section_kandidaten(kandidaten: list[dict], markt: MarktampelResult,
+                        company_info: Optional[dict] = None) -> str:
+    company_info = company_info or {}
     markt_hinweis = ""
     if markt.status == Ampel.GELB:
         markt_hinweis = '<div class="warnung" style="margin-bottom:12px">⚠️ Marktampel GELB — Kandidaten mit Vorsicht handeln. Stopps enger setzen, keine Aufstockung bestehender Positionen.</div>'
 
-    _G = "background:#d5f5e3;color:#1e8449"  # grün
-    _N = ""                                   # neutral (kein Hintergrund)
-
-    def _td(ok: bool, content: str) -> str:
-        style = _G if ok else _N
-        return f'<td style="{style}">{content}</td>'
-
-    rows = ""
+    kacheln = ""
     for k in kandidaten:
-        score = k.get("score", 0)
-        bar_w = min(int(score), 100)
-        e3    = k.get("e3_confirmed", 0)
+        ticker = k["ticker"]
+        info   = company_info.get(ticker, {})
+        name   = info.get("name", "")
+        sector = info.get("sector", "")
+        score  = k.get("score", 0)
 
-        e3_icons = ("✅" if k.get("e3_macd_dreht")   else "·") + \
-                   ("✅" if k.get("e3_momentum_pos") else "·") + \
-                   ("✅" if k.get("e3_volumen_ok")   else "·")
-
-        os_emp = k.get("os_empfehlung", {})
+        if score >= 70:
+            score_style = "background:#d5f5e3;color:#1e8449"
+        elif score >= 50:
+            score_style = "background:#fef9e7;color:#9a7d0a"
+        else:
+            score_style = "background:#eaecee;color:#555"
 
         is_recovery = k.get("e2_mode") == "recovery"
-        mode_badge  = (' <span title="Recovery: 40W-MA-Kreuz von unten" '
-                       'style="background:#e8f4fd;color:#1a5276;border:1px solid #aed6f1;'
-                       'border-radius:3px;padding:1px 5px;font-size:0.75em">🔄 Recovery</span>'
-                       if is_recovery else "")
+        mode_badge  = ('<span class="mode-badge" title="Recovery: 40W-MA-Kreuz von unten">'
+                       '🔄 Recovery</span>' if is_recovery else "")
         pb_label = "MA-Kreuz" if is_recovery else f"{k.get('pullback_pct','—')}%"
 
-        rows += f"""<tr>
-          <td><strong>{k['ticker']}</strong>{mode_badge}</td>
-          {_td(True,  k.get('close', '—'))}
-          {_td(True,  k.get('ma50',  '—'))}
-          {_td(True,  f"{k.get('perf_52w_pct','—')}%")}
-          {_td(True,  k.get('adx',   '—'))}
-          {_td(True,  pb_label)}
-          {_td(k.get('e2_rsi_ok',      False), k.get('rsi',       '—'))}
-          {_td(k.get('e2_williams_ok', False), k.get('williams_r', '—'))}
-          {_td(True,  f"{k.get('hv30','—')}%")}
-          {_td(k.get('e2_beta_ok',     False), k.get('beta',       '—'))}
-          <td><span style="font-size:1.1em">{e3_icons}</span> ({e3}/3)</td>
-          <td>
-            <span class="score-bar" style="width:{bar_w}px"></span>
-            <strong>{score}</strong>
-          </td>
-          <td class="os-empfehlung">{os_emp.get('hinweis','—')}</td>
-        </tr>"""
+        os_hinweis = k.get("os_empfehlung", {}).get("hinweis", "—")
+
+        kacheln += f"""
+      <div class="kachel">
+        <div class="kachel-head">
+          <span class="kachel-ticker">{ticker}</span>{mode_badge}
+          <span class="kachel-name" title="{name}">{name}</span>
+          <span class="kachel-score" style="{score_style}">{score}</span>
+        </div>
+        <div class="kachel-sub">{sector}</div>
+        <div class="kachel-metrics">
+          {_metric("Kurs",     k.get('close', '—'))}
+          {_metric("MA50",     k.get('ma50',  '—'))}
+          {_metric("52W",      f"{k.get('perf_52w_pct','—')}%", True)}
+          {_metric("ADX",      k.get('adx',   '—'),             True)}
+          {_metric("Pullback", pb_label,                        True)}
+          {_metric("RSI",      k.get('rsi', '—'),        k.get('e2_rsi_ok',      False))}
+          {_metric("W%R",      k.get('williams_r', '—'), k.get('e2_williams_ok', False))}
+          {_metric("Beta",     k.get('beta', '—'),       k.get('e2_beta_ok',     False))}
+        </div>
+        {_e3_chips(k.get('e3_macd_dreht'), k.get('e3_momentum_pos'),
+                   k.get('e3_volumen_ok'), k.get('e3_confirmed', 0))}
+        <div class="kachel-foot">💡 {os_hinweis}</div>
+      </div>"""
 
     return f"""
 <div class="section">
   <h2>Neue Kaufkandidaten ({len(kandidaten)})</h2>
   {markt_hinweis}
-  <div style="overflow-x:auto">
-  <table>
-    <thead>
-      <tr>
-        <th>Ticker</th><th>Kurs</th><th>MA50</th><th>52W%</th>
-        <th>ADX</th><th>Pullback%</th><th>RSI</th><th>Will.%R</th>
-        <th>HV30</th><th>Beta</th><th>E3</th><th>Score</th>
-        <th>OS-Empfehlung</th>
-      </tr>
-    </thead>
-    <tbody>{rows}</tbody>
-  </table>
+  <div class="kachel-grid">{kacheln}
   </div>
-  <p style="margin-top:10px;font-size:0.82em;color:#7f8c8d">
+  <p style="margin-top:12px;font-size:0.82em;color:#7f8c8d">
+    Score 0–100 (E2 Pullback-Qualität + E3 Wiederanlauf) &nbsp;|&nbsp;
     E3: MACD dreht / Momentum+ / Volumen-Bestätigung &nbsp;|&nbsp;
+    Grün = im Optimalbereich &nbsp;|&nbsp;
     OS-Empfehlung: Strike, Laufzeit und Hebel sind Richtwerte — bitte im Broker-Tool verifizieren.
   </p>
 </div>"""
@@ -483,6 +529,79 @@ def _section_roll(roll_kandidaten: list[dict]) -> str:
     </thead>
     <tbody>{rows}</tbody>
   </table>
+  </div>
+</div>"""
+
+
+def _section_top_titel(universe_all: list[dict], company_info: dict,
+                       min_erfuellt: int = 8) -> str:
+    """Kachel-Ansicht aller Titel mit mindestens `min_erfuellt` von 12 Kriterien.
+
+    Ergänzt die Universum-Tabelle: dieselben Daten, aber nur die aussichtsreichsten
+    Titel und ohne horizontales Scrollen.
+    """
+    top = [t for t in universe_all if t["kriterien_erfuellt"] >= min_erfuellt]
+    top.sort(key=lambda t: t["kriterien_erfuellt"], reverse=True)
+
+    if not top:
+        return f"""
+<div class="section">
+  <h2>Top-Titel — mindestens {min_erfuellt}/12 Kriterien</h2>
+  <p class="keine">Kein Titel erreicht diese Woche {min_erfuellt} von 12 Kriterien.</p>
+</div>"""
+
+    kacheln = ""
+    for t in top:
+        ticker   = t["ticker"]
+        info     = company_info.get(ticker, {})
+        name     = info.get("name", ticker)
+        sector   = info.get("sector", "n/a")
+        erfuellt = t["kriterien_erfuellt"]
+
+        if erfuellt >= 11:
+            score_style = "background:#d5f5e3;color:#1e8449"
+        elif erfuellt >= 9:
+            score_style = "background:#fef9e7;color:#9a7d0a"
+        else:
+            score_style = "background:#eaecee;color:#555"
+
+        rec_badge = ('<span class="mode-badge" title="Recovery: 40W-MA-Kreuz von unten">'
+                     '🔄 Recovery</span>' if t.get("e2_recovery") else "")
+
+        kacheln += f"""
+      <div class="kachel">
+        <div class="kachel-head">
+          <span class="kachel-ticker">{ticker}</span>{rec_badge}
+          <span class="kachel-name" title="{name}">{name}</span>
+          <span class="kachel-score" style="{score_style}">{erfuellt}/12</span>
+        </div>
+        <div class="kachel-sub">{sector}</div>
+        <div class="kachel-metrics">
+          {_metric("Kurs",   t['close'])}
+          {_metric("&gt;MA200", "✓" if t["e1_ma200"] else "✗", t["e1_ma200"])}
+          {_metric("&gt;MA50",  "✓" if t["e1_ma50"]  else "✗", t["e1_ma50"])}
+          {_metric("ADX",    t['adx_val'],                 t["e1_adx"])}
+          {_metric("52W",    f"{t['perf_52w']}%",          t["e1_perf"])}
+          {_metric("PB",     f"{t['pullback_pct']}%",      t["e2_pullback"])}
+          {_metric("RSI",    t['rsi_val'],                 t["e2_rsi"])}
+          {_metric("W%R",    t['williams_val'],            t["e2_williams"])}
+          {_metric("HV30",   f"{t['hv30_val']}%",          t["e2_hv"])}
+          {_metric("Beta",   t['beta_val'],                t["e2_beta"])}
+        </div>
+        {_e3_chips(t["e3_macd"], t["e3_momentum"], t["e3_volumen"],
+                   int(t["e3_macd"]) + int(t["e3_momentum"]) + int(t["e3_volumen"]))}
+      </div>"""
+
+    return f"""
+<div class="section">
+  <h2>Top-Titel — mindestens {min_erfuellt}/12 Kriterien ({len(top)})</h2>
+  <p style="margin-bottom:12px;font-size:0.85em;color:#555">
+    Die aussichtsreichsten Titel des Universums auf einen Blick.
+    <strong style="color:#1e8449">Grün</strong> = Kriterium erfüllt &nbsp;|&nbsp;
+    <strong style="color:#922b21">Rot</strong> = nicht erfüllt.
+    Vollständige Liste in der Tabelle darunter.
+  </p>
+  <div class="kachel-grid">{kacheln}
   </div>
 </div>"""
 
