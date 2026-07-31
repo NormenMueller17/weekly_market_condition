@@ -32,6 +32,126 @@ _GEWINN_ZEILEN = ["Net Income", "NetIncome", "Net Income Common Stockholders",
 _EPS_ZEILEN    = ["Diluted EPS", "DilutedEPS", "Basic EPS", "BasicEPS"]
 
 
+# ── Uebersetzung ──────────────────────────────────────────────────────────────
+#
+# Nur geschlossene Vokabulare: Sektor, Branche, Land. Das sind endliche Listen,
+# die sich von Hand vollstaendig abdecken lassen und sich kaum aendern.
+#
+# Der Fliesstext von `longBusinessSummary` steht NICHT hier. Er ist frei
+# formuliert, je Unternehmen anders und mehrere hundert Zeichen lang — dafuer
+# braeuchte es eine echte Uebersetzung zur Laufzeit, nicht eine Tabelle. Was
+# nicht in der Tabelle steht, bleibt im Original stehen; eine halb geratene
+# Uebersetzung waere schlechter als eine ehrlich englische.
+
+_SEKTOREN = {
+    "Technology": "Technologie",
+    "Healthcare": "Gesundheit",
+    "Financial Services": "Finanzdienstleistungen",
+    "Consumer Cyclical": "Zyklischer Konsum",
+    "Consumer Defensive": "Basiskonsum",
+    "Industrials": "Industrie",
+    "Energy": "Energie",
+    "Basic Materials": "Grundstoffe",
+    "Real Estate": "Immobilien",
+    "Utilities": "Versorger",
+    "Communication Services": "Kommunikation",
+}
+
+_BRANCHEN = {
+    "Software - Infrastructure": "Software — Infrastruktur",
+    "Software - Application":    "Software — Anwendungen",
+    "Packaged software":         "Standardsoftware",
+    "Information Technology Services": "IT-Dienstleistungen",
+    "Semiconductors":            "Halbleiter",
+    "Semiconductor Equipment & Materials": "Halbleiterausrüstung",
+    "Computer Hardware":         "Computer-Hardware",
+    "Consumer Electronics":      "Unterhaltungselektronik",
+    "Communication Equipment":   "Kommunikationstechnik",
+    "Electronic production equipment": "Elektronikfertigungsanlagen",
+    "Medical Devices":           "Medizintechnik",
+    "Medical Instruments & Supplies": "Medizinprodukte",
+    "Medical/Nursing services":  "Medizinische Dienstleistungen",
+    "Biotechnology":             "Biotechnologie",
+    "Drug Manufacturers - General": "Pharma",
+    "Drug Manufacturers - Specialty & Generic": "Pharma — Spezial und Generika",
+    "Diagnostics & Research":    "Diagnostik und Forschung",
+    "Healthcare Plans":          "Krankenversicherung",
+    "Banks - Regional":          "Regionalbanken",
+    "Banks - Diversified":       "Großbanken",
+    "Regional banks":            "Regionalbanken",
+    "Major banks":               "Großbanken",
+    "Capital Markets":           "Kapitalmarkt",
+    "Asset Management":          "Vermögensverwaltung",
+    "Insurance - Property & Casualty": "Sach- und Unfallversicherung",
+    "Property/Casualty insurance": "Sach- und Unfallversicherung",
+    "Insurance - Life":          "Lebensversicherung",
+    "Credit Services":           "Kreditdienstleistungen",
+    "Real Estate Services":      "Immobiliendienstleistungen",
+    "Real estate investment trusts": "Immobilienfonds (REITs)",
+    "REIT - Industrial":         "REIT — Industrie",
+    "REIT - Residential":        "REIT — Wohnen",
+    "REIT - Retail":             "REIT — Einzelhandel",
+    "Specialty Industrial Machinery": "Spezialmaschinenbau",
+    "Building Products & Equipment": "Bauprodukte",
+    "Engineering & Construction": "Ingenieurbau",
+    "Aerospace & Defense":       "Luft- und Raumfahrt, Verteidigung",
+    "Farm & Heavy Construction Machinery": "Land- und Baumaschinen",
+    "Specialty Business Services": "Unternehmensdienstleistungen",
+    "Staffing & Employment Services": "Personaldienstleistungen",
+    "Containers/Packaging":      "Verpackung",
+    "Packaging & Containers":    "Verpackung",
+    "Oil & Gas E&P":             "Öl und Gas — Förderung",
+    "Oil & Gas Midstream":       "Öl und Gas — Transport",
+    "Oil & Gas Equipment & Services": "Öl- und Gastechnik",
+    "Specialty Chemicals":       "Spezialchemie",
+    "Steel":                     "Stahl",
+    "Gold":                      "Gold",
+    "Utilities - Regulated Electric": "Stromversorger",
+    "Restaurants":               "Gastronomie",
+    "Specialty Retail":          "Fachhandel",
+    "Internet Retail":           "Onlinehandel",
+    "Apparel Retail":            "Bekleidungshandel",
+    "Auto Parts":                "Autozulieferer",
+    "Travel Services":           "Reisedienstleistungen",
+    "Telecom Services":          "Telekommunikation",
+    "Entertainment":             "Unterhaltung",
+    "Advertising Agencies":      "Werbeagenturen",
+}
+
+_LAENDER = {
+    "United States": "USA",
+    "Canada": "Kanada",
+    "Germany": "Deutschland",
+    "United Kingdom": "Vereinigtes Königreich",
+    "Ireland": "Irland",
+    "Netherlands": "Niederlande",
+    "Switzerland": "Schweiz",
+    "France": "Frankreich",
+    "Israel": "Israel",
+    "China": "China",
+    "Japan": "Japan",
+    "India": "Indien",
+    "Brazil": "Brasilien",
+    "Sweden": "Schweden",
+    "Denmark": "Dänemark",
+    "Bermuda": "Bermuda",
+    "Cayman Islands": "Kaimaninseln",
+    "Luxembourg": "Luxemburg",
+}
+
+
+def uebersetze(wert: Optional[str], tabelle: dict) -> Optional[str]:
+    """Begriff uebersetzen, sonst unveraendert lassen."""
+    if not wert:
+        return wert
+    return tabelle.get(str(wert).strip(), wert)
+
+
+def sektor_de(v):  return uebersetze(v, _SEKTOREN)
+def branche_de(v): return uebersetze(v, _BRANCHEN)
+def land_de(v):    return uebersetze(v, _LAENDER)
+
+
 def _zeile(stmt: pd.DataFrame, kandidaten: list[str]) -> Optional[pd.Series]:
     if stmt is None or not isinstance(stmt, pd.DataFrame) or stmt.empty:
         return None
@@ -118,9 +238,9 @@ def fetch_profile(ticker: str) -> dict:
         return profil
 
     profil["beschreibung"] = _kurzfassung(info.get("longBusinessSummary", ""))
-    profil["sektor"]       = info.get("sector")
-    profil["industrie"]    = info.get("industry")
-    profil["land"]         = info.get("country")
+    profil["sektor"]       = sektor_de(info.get("sector"))
+    profil["industrie"]    = branche_de(info.get("industry"))
+    profil["land"]         = land_de(info.get("country"))
     profil["webseite"]     = info.get("website")
     profil["waehrung"]     = info.get("financialCurrency") or info.get("currency")
     try:

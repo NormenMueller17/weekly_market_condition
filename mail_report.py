@@ -58,17 +58,40 @@ def _farbe(v: Optional[float]) -> str:
     return GRUEN if v > 0 else (ROT if v < 0 else GRAU)
 
 
+def _n(v, decimals: int = 2, plus: bool = False, tausender: bool = False) -> str:
+    """Zahl in deutscher Schreibweise: Komma als Dezimaltrennzeichen.
+
+    Der Brief ist auf Deutsch, also gehoert dort 1.234,56 und nicht 1,234.56.
+    Python formatiert englisch; die beiden Trennzeichen werden ueber einen
+    Platzhalter getauscht, weil ein direktes Ersetzen sie sonst gegenseitig
+    ueberschreibt.
+
+    ACHTUNG: nicht fuer SVG-Koordinaten benutzen. Dort sind Punkt und Komma
+    Syntax (`x,y`-Paare in `points`), kein Zahlenformat — ein Dezimalkomma
+    zerlegt den Pfad in doppelt so viele, falsche Punkte.
+    """
+    if v is None:
+        return "–"
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return "–"
+    s = f"{v:,.{decimals}f}" if tausender else f"{v:.{decimals}f}"
+    s = s.replace(",", "\x00").replace(".", ",").replace("\x00", ".")
+    return ("+" + s) if (plus and v > 0) else s
+
+
 def _pct(v: Optional[float], decimals: int = 2) -> str:
     if v is None:
         return "–"
-    return f"{v:+.{decimals}f} %"
+    return f"{_n(v, decimals, plus=True)} %"
 
 
 def _geld(v: Optional[float], plus: bool = False) -> str:
     if v is None:
         return "–"
     s = "+" if plus and v > 0 else ""
-    return f"{s}${v:,.0f}"
+    return f"{s}${_n(v, 0, tausender=True)}"
 
 
 # ── Kurve ─────────────────────────────────────────────────────────────────────
@@ -351,7 +374,7 @@ def muster_liste(leaders, limit: int = 12) -> list:
             if wochen:
                 detail.append(f"{int(wochen)} Wo. Basis")
             if spanne is not None:
-                detail.append(f"Spanne {spanne:.1f} %")
+                detail.append(f"Spanne {_n(spanne, 1)} %")
             if _b(row, "Launchpad Entry"):
                 detail.append("Ausbruch")
 
@@ -398,21 +421,21 @@ def lagebericht(ampel: dict, perf: dict, positionen: list,
         delta = breadth_jetzt - breadth_vor
         richtung = "verbessert" if delta > 1 else ("verschlechtert" if delta < -1 else "kaum verändert")
         s.append(f"Die Marktbreite hat sich {richtung} "
-                 f"({breadth_vor:.1f} % → {breadth_jetzt:.1f} % über der 10-Wochen-Linie).")
+                 f"({_n(breadth_vor, 1)} % → {_n(breadth_jetzt, 1)} % über der 10-Wochen-Linie).")
 
     dw, sw = perf.get("depot_woche"), perf.get("spy_woche")
     if dw is not None and sw is not None:
         diff = dw - sw
         wort = "besser als" if diff > 0.1 else ("schlechter als" if diff < -0.1 else "gleichauf mit")
-        s.append(f"Das Depot liegt diese Woche bei {dw:+.2f} % und damit {wort} "
-                 f"dem S&P 500 ({sw:+.2f} %).")
+        s.append(f"Das Depot liegt diese Woche bei {_n(dw, 2, plus=True)} % und damit {wort} "
+                 f"dem S&P 500 ({_n(sw, 2, plus=True)} %).")
     elif dw is not None:
-        s.append(f"Das Depot liegt diese Woche bei {dw:+.2f} %.")
+        s.append(f"Das Depot liegt diese Woche bei {_n(dw, 2, plus=True)} %.")
 
     ds, ss = perf.get("depot_start"), perf.get("spy_start")
     if ds is not None and ss is not None:
-        s.append(f"Seit Handelsstart stehen {ds:+.1f} % gegen {ss:+.1f} % im Index "
-                 f"({ds - ss:+.1f} Prozentpunkte).")
+        s.append(f"Seit Handelsstart stehen {_n(ds, 1, plus=True)} % gegen {_n(ss, 1, plus=True)} % im Index "
+                 f"({_n(ds - ss, 1, plus=True)} Prozentpunkte).")
 
     ohne_stop = [p["symbol"] for p in positionen if p["ohne_stop"]]
     if ohne_stop:
@@ -484,9 +507,9 @@ def _perf_block(perf: dict, svg: str) -> str:
         + zeile("S&amp;P 500", sw, ss)
         + (f'<tr><td style="{_TDL}">Differenz</td>'
            f'<td style="{_TD}color:{_farbe(diff_w)};">'
-           f'{"–" if diff_w is None else f"{diff_w:+.2f} pp"}</td>'
+           f'{"–" if diff_w is None else f"{_n(diff_w, 2, plus=True)} pp"}</td>'
            f'<td style="{_TD}color:{_farbe(diff_s)};">'
-           f'{"–" if diff_s is None else f"{diff_s:+.1f} pp"}</td></tr>')
+           f'{"–" if diff_s is None else f"{_n(diff_s, 1, plus=True)} pp"}</td></tr>')
         + "</table>"
         + (f'<div style="margin-bottom:1.6em;">{svg}</div>' if svg else "")
     )
@@ -499,19 +522,19 @@ def _positionen_block(positionen: list, cash, equity,
 
     zeilen = ""
     for p in positionen:
-        stop_txt = "–" if p["stop"] is None else f'${p["stop"]:.2f}'
+        stop_txt = "–" if p["stop"] is None else f'${_n(p["stop"])}'
         if p["ohne_stop"]:
             stop_txt = f'<span style="color:{ROT};font-weight:bold;">kein Stop</span>'
         abst = ("–" if p["stop_abst"] is None
-                else f'{p["stop_abst"]:.1f} %')
-        r_txt = "–" if p["gewinn_r"] is None else f'{p["gewinn_r"]:+.2f} R'
+                else f'{_n(p["stop_abst"], 1)} %')
+        r_txt = "–" if p["gewinn_r"] is None else f'{_n(p["gewinn_r"], 2, plus=True)} R'
         zeilen += (
             f'<tr>'
             f'<td style="{_TDL}"><b>{p["symbol"]}</b><br>'
             f'<span style="color:{GRAU};font-size:.85em;">{p["company"][:28]}</span></td>'
             f'<td style="{_TDL}font-size:.88em;">{p["sector"]}</td>'
-            f'<td style="{_TD}">${p["einstand"]:.2f}</td>'
-            f'<td style="{_TD}">${p["kurs"]:.2f}</td>'
+            f'<td style="{_TD}">${_n(p["einstand"])}</td>'
+            f'<td style="{_TD}">${_n(p["kurs"])}</td>'
             f'<td style="{_TD}color:{_farbe(p["gewinn_pct"])};font-weight:600;">'
             f'{_pct(p["gewinn_pct"], 1)}<br>'
             f'<span style="font-weight:400;font-size:.85em;">{_geld(p["gewinn_usd"], True)}</span></td>'
@@ -521,7 +544,7 @@ def _positionen_block(positionen: list, cash, equity,
             f'<td style="{_TD}">{p["tage"] if p["tage"] is not None else "–"}</td>'
             f'<td style="{_TD}">{_rs(p["rs_heute"])}'
             + (f'<br><span style="font-weight:400;font-size:.85em;'
-               f'color:{_farbe(p["rs_delta"])};">{p["rs_delta"]:+.0f} seit Kauf</span>'
+               f'color:{_farbe(p["rs_delta"])};">{_n(p["rs_delta"], 0, plus=True)} seit Kauf</span>'
                if p["rs_delta"] is not None else
                f'<br><span style="font-weight:400;font-size:.85em;color:{GRAU};">'
                f'Kauf {_rs(p["rs_kauf"])}</span>')
@@ -554,7 +577,7 @@ def _positionen_block(positionen: list, cash, equity,
             hinweis = (
                 f'<p style="background:#fff3cd;border-left:4px solid #ffc107;'
                 f'padding:.6em .9em;font-size:.9em;margin:-.8em 0 1.4em;">'
-                f'Die Equity enthält {_geld(eingefroren)} ({anteil:.0f} %) in delisteten '
+                f'Die Equity enthält {_geld(eingefroren)} ({_n(anteil, 0)} %) in delisteten '
                 f'Positionen, die mit ihrem letzten Kurs eingefroren sind. '
                 f'Der Vergleich gegen den S&amp;P 500 ist in diesem Umfang unscharf.</p>'
             )
@@ -573,10 +596,10 @@ def _mio(v, waehrung: str = "USD") -> str:
         return "–"
     zeichen = "$" if waehrung in (None, "USD") else ""
     if abs(v) >= 1e9:
-        return f"{zeichen}{v / 1e9:,.2f} Mrd."
+        return f"{zeichen}{_n(v / 1e9, 2, tausender=True)} Mrd."
     if abs(v) >= 1e6:
-        return f"{zeichen}{v / 1e6:,.0f} Mio."
-    return f"{zeichen}{v:,.2f}"
+        return f"{zeichen}{_n(v / 1e6, 0, tausender=True)} Mio."
+    return f"{zeichen}{_n(v, 2, tausender=True)}"
 
 
 def _reihen_tabelle(titel: str, reihe: list, waehrung: str,
@@ -587,12 +610,12 @@ def _reihen_tabelle(titel: str, reihe: list, waehrung: str,
     kopf = "".join(f'<th style="{_TH}">{p["periode"]}</th>' for p in reihe)
     werte = "".join(
         f'<td style="{_TD}">'
-        f'{_mio(p["wert"], waehrung) if als_betrag else f"{p['wert']:.2f}"}</td>'
+        f'{_mio(p["wert"], waehrung) if als_betrag else _n(p['wert'])}</td>'
         for p in reihe
     )
     yoy = "".join(
         f'<td style="{_TD}color:{_farbe(p["yoy"])};font-size:.85em;">'
-        f'{"–" if p["yoy"] is None else f"{p['yoy']:+.1f} %"}</td>'
+        f'{"–" if p["yoy"] is None else f"{_n(p['yoy'], 1, plus=True)} %"}</td>'
         for p in reihe
     )
     return (
@@ -663,11 +686,11 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
                 f'<tr><th style="{_TH}">Kurs</th><th style="{_TH}">Buy-Stop</th>'
                 f'<th style="{_TH}">Stop</th><th style="{_TH}">Risiko</th>'
                 f'<th style="{_TH}">Position</th></tr>'
-                f'<tr><td style="{_TD}">${s.entry_price:.2f}</td>'
-                f'<td style="{_TD}">${s.buy_stop:.2f}</td>'
-                f'<td style="{_TD}">${s.stop_loss:.2f} '
-                f'<span style="color:{GRAU};">({s.stop_loss_pct * 100:.1f} %)</span></td>'
-                f'<td style="{_TD}">{s.risk_on_equity_pct * 100:.2f} %</td>'
+                f'<tr><td style="{_TD}">${_n(s.entry_price)}</td>'
+                f'<td style="{_TD}">${_n(s.buy_stop)}</td>'
+                f'<td style="{_TD}">${_n(s.stop_loss)} '
+                f'<span style="color:{GRAU};">({_n(s.stop_loss_pct * 100, 1)} %)</span></td>'
+                f'<td style="{_TD}">{_n(s.risk_on_equity_pct * 100, 2)} %</td>'
                 f'<td style="{_TD}">{_geld(s.position_value)}</td></tr>'
                 f'</table>'
                 + _portraet(s, profile.get(s.ticker, {}),
@@ -718,8 +741,8 @@ def _muster_block(muster: list) -> str:
     for m in muster:
         titel = (f'<a href="{m["link"]}" style="color:{BLAU};text-decoration:none;">'
                  f'<b>{m["ticker"]}</b></a>' if m.get("link") else f'<b>{m["ticker"]}</b>')
-        pivot = f'${m["pivot"]:.2f}' if m.get("pivot") else "–"
-        abst  = (f'{m["pivot_abstand"]:+.1f} %' if m.get("pivot_abstand") is not None
+        pivot = f'${_n(m["pivot"])}' if m.get("pivot") else "–"
+        abst  = (f'{_n(m["pivot_abstand"], 1, plus=True)} %' if m.get("pivot_abstand") is not None
                  else "–")
         d52 = m.get("dist_52w")
         zeilen += (
@@ -728,11 +751,11 @@ def _muster_block(muster: list) -> str:
             f'<span style="color:{GRAU};font-size:.85em;">{str(m.get("company", ""))[:26]}</span></td>'
             f'<td style="{_TDL}"><b>{m["muster"]}</b><br>'
             f'<span style="color:{GRAU};font-size:.85em;">{m.get("detail", "")}</span></td>'
-            f'<td style="{_TD}">${m["close"]:.2f}</td>'
+            f'<td style="{_TD}">${_n(m["close"])}</td>'
             f'<td style="{_TD}">{pivot}<br>'
             f'<span style="color:{GRAU};font-size:.85em;">{abst}</span></td>'
             f'<td style="{_TD}">{_rs(m.get("rs"))}</td>'
-            f'<td style="{_TD}">{"–" if d52 is None else f"{d52:.1f} %"}</td>'
+            f'<td style="{_TD}">{"–" if d52 is None else f"{_n(d52, 1)} %"}</td>'
             f'</tr>'
         )
 
@@ -774,7 +797,7 @@ def _markt_block(breadth_rows: list, sector_rows: list, idx_rows: list) -> str:
             return "".join(
                 f'<tr><td style="{_TDL}">{r["name"]}</td>'
                 f'<td style="{_TDL}">{r["ticker"]}</td>'
-                f'<td style="{_TD}color:{_farbe(r["chg"])};">{r["chg"]:+.2f} %</td></tr>'
+                f'<td style="{_TD}color:{_farbe(r["chg"])};">{_n(r["chg"], 2, plus=True)} %</td></tr>'
                 for r in rows
             )
         teile.append(
@@ -815,7 +838,7 @@ def breadth_rows_from_snapshot(snap, zeilen: Optional[list] = None) -> list:
         for c in spalten:
             v = snap.loc[name, c]
             try:
-                werte.append(f"{float(v):.1f} %")
+                werte.append(f"{_n(v, 1)} %")
             except (TypeError, ValueError):
                 werte.append(str(v))
         out.append((name.replace("‑", "-"), *werte))
