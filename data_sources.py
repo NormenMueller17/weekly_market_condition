@@ -392,6 +392,71 @@ def get_company_info_map_from_csv(path: str = _CSV_FILE) -> dict[str, dict[str, 
     return info_map
 
 
+# Wertpapiergattung im Namen — der Nasdaq-Screener haengt sie an jeden Namen
+# ("Park National Corporation Common Stock"). Ab der Gattungsbezeichnung wird
+# alles abgeschnitten, nicht nur ein exaktes Suffix: ADRs schleppen sonst
+# ihren ganzen Beipackzettel mit ("… American Depositary Shares each
+# representing 10 Units (each Unit consists of 3 Series B Shares …)").
+#
+# Klassen-Angaben (Class A) bleiben stehen — bei Doppelnotierungen wie
+# BRK-A/BRK-B sind sie die einzige Unterscheidung. "Preferred Stock" wird
+# bewusst NICHT entfernt, sonst sieht eine Vorzugsaktie im Report aus wie
+# die Stammaktie.
+_GATTUNG_RE = re.compile(
+    r"\s+(?:common\s+stock|capital\s+stock|common\s+shares|ordinary\s+shares|"
+    r"american\s+depositar?y\s+(?:shares?|receipts?)|depositary\s+shares?|"
+    r"sponsored\s+adr|adr\s+representing|"
+    r"shares\s+of\s+beneficial\s+interest)\b.*$",
+    re.IGNORECASE,
+)
+
+
+def _bereinige_firmenname(name: str) -> str:
+    """"Park National Corporation Common Stock" -> "Park National Corporation".
+
+    Der Punkt der Rechtsform bleibt erhalten ("Apple Inc.", "ENI S.p.A.") —
+    nur Kommas und Bindestriche am Ende fallen weg.
+    """
+    s = re.sub(r"\s+", " ", (name or "").strip())
+    s = _GATTUNG_RE.sub("", s).strip()
+    s = re.sub(r"\s*\(The\)\s*$", "", s).strip()
+    return s.rstrip(" ,-")
+
+
+def get_company_info_map(csv_path: str = _CSV_FILE) -> dict[str, dict[str, str]]:
+    """Company/Industry je Ticker — primaer aus dem Nasdaq-Screener.
+
+    Die CSV war bis hierher die einzige Quelle. Sie stammt aus 11/2025 und
+    deckt nur 2818 der 3708 Universumstitel ab: 32 % der Titel standen im
+    Report ohne Namen ("n/a"), darunter Marktfuehrer wie ENI, FEMSA oder
+    Rocky Brands. TICKER_META kommt aus derselben Abfrage wie das Universum
+    und ist damit per Konstruktion vollstaendig.
+
+    Die CSV bleibt als Luecken-Fueller: Branche fehlt beim Screener bei
+    einigen Dutzend Titeln.
+
+    Voraussetzung: Das Universum muss geladen sein (fuellt TICKER_META).
+    """
+    info: dict[str, dict[str, str]] = {}
+    for sym, meta in TICKER_META.items():
+        firma   = _bereinige_firmenname(str(meta.get("company") or ""))
+        branche = str(meta.get("industry") or "").strip()
+        info[sym] = {"Company": firma or "n/a", "Industry": branche or "n/a"}
+
+    aus_screener = sum(1 for d in info.values() if d["Company"] != "n/a")
+
+    for sym, d in get_company_info_map_from_csv(csv_path).items():
+        eintrag = info.setdefault(sym, {"Company": "n/a", "Industry": "n/a"})
+        for feld in ("Company", "Industry"):
+            if eintrag[feld] == "n/a" and d.get(feld, "n/a") != "n/a":
+                eintrag[feld] = d[feld]
+
+    ohne = sum(1 for d in info.values() if d["Company"] == "n/a")
+    print(f"[INFO MAP] {len(info)} Ticker: {aus_screener} Namen aus dem "
+          f"Screener, {ohne} weiterhin ohne Namen.")
+    return info
+
+
 def _read_universe_csv_smart(path: str) -> pd.DataFrame:
     """
     Liest 'Symbol' (+ optional 'Company', 'Industry') robust ein.

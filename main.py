@@ -6,7 +6,8 @@ import pandas as pd
 from datetime import datetime
 from dataclasses import asdict
 from config import SETTINGS
-from data_sources import get_universe, get_company_info_map_from_csv, load_weekly_history, load_index_series
+import data_sources
+from data_sources import get_universe, get_company_info_map, load_weekly_history, load_index_series
 from breadth import compute_breadth, compute_breadth_snapshots_with_advancers as compute_breadth_snapshots, compute_sp500_breadth_200d
 from emailer import send_email
 from screener import screen_universe_minervini
@@ -709,7 +710,7 @@ def run():
     # Timing warten, bekamen nie einen Namen. Der Filter sitzt jetzt in
     # signal_generator._timing_mask (rules.json → require_vol_breakout).
     leaders = screen_universe_minervini(universe, min_score=0, require_vol_breakout=False)
-    info_map = get_company_info_map_from_csv()
+    info_map = get_company_info_map()
     # NEU: Launchpad Quality Filter
     # Strenger Filter: Score ≥90 UND Range <8%
     if "Launchpad" in leaders.columns and "Launchpad Score" in leaders.columns:
@@ -802,7 +803,16 @@ def run():
         print(f"[INFO] Fundamentaldaten werden für {len(tickers_for_fundamentals)} "
               f"von {len(leaders)} Leaders geholt (Score >= {MIN_SCORE_FOR_FUNDAMENTALS}).")
         quote_map = batch_fetch_quote_data(tickers_for_fundamentals)
-        leaders.insert(4, "Sektor", leaders.index.map(lambda t: quote_map.get(t, {}).get("Sector", "n/a")))
+        # Sektor: Yahoo zuerst, sonst der Screener. Bei Drosselung liefert
+        # batch_fetch_quote_data gar nichts — dann stand hier bisher "n/a",
+        # obwohl der Screener den Sektor ohnehin mitgeliefert hat.
+        def _sektor(t: str) -> str:
+            s = (quote_map.get(t, {}).get("Sector") or "").strip()
+            if not s or s == "n/a":
+                s = (data_sources.TICKER_META.get(t, {}).get("sector") or "").strip()
+            return s or "n/a"
+
+        leaders.insert(4, "Sektor", leaders.index.map(_sektor))
         leaders.insert(5, "Close", leaders.index.map(lambda t: quote_map.get(t, {}).get("Close")))
         # Fallback: Screener-Wochenschlusskurs wenn API-Fetch fehlschlug
         if "close_weekly_now" in leaders.columns:
