@@ -608,14 +608,21 @@ def _reihen_tabelle(titel: str, reihe: list, waehrung: str,
     if not reihe:
         return ""
     kopf = "".join(f'<th style="{_TH}">{p["periode"]}</th>' for p in reihe)
+
+    def _wert(p) -> str:
+        return _mio(p["wert"], waehrung) if als_betrag else _n(p["wert"])
+
+    def _yoy(p) -> str:
+        if p["yoy"] is None:
+            return "–"
+        return f"{_n(p['yoy'], 1, plus=True)} %"
+
     werte = "".join(
-        f'<td style="{_TD}">'
-        f'{_mio(p["wert"], waehrung) if als_betrag else _n(p['wert'])}</td>'
-        for p in reihe
+        f'<td style="{_TD}">{_wert(p)}</td>' for p in reihe
     )
     yoy = "".join(
         f'<td style="{_TD}color:{_farbe(p["yoy"])};font-size:.85em;">'
-        f'{"–" if p["yoy"] is None else f"{_n(p['yoy'], 1, plus=True)} %"}</td>'
+        f'{_yoy(p)}</td>'
         for p in reihe
     )
     return (

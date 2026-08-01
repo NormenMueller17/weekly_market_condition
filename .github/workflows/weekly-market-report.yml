@@ -31,6 +31,10 @@ jobs:
           pip install -r requirements-ci.txt
           pip install "yfinance>=0.2.54" "numpy<2.0"
 
+      - name: Syntax-Check (bricht sofort ab statt nach dem Scan)
+        run: |
+          python -m compileall -q .
+
       - name: Export secrets to env
         run: |
           echo "MAIL_FROM=${{ secrets.MAIL_FROM }}" >> $GITHUB_ENV
