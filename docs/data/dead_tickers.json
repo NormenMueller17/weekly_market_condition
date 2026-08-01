@@ -1,15 +1,4 @@
 {
-  "tickers": {
-    "BRK/A": {
-      "fails": 1,
-      "zuerst": "2026-08-01",
-      "zuletzt": "2026-08-01"
-    },
-    "BRK/B": {
-      "fails": 1,
-      "zuerst": "2026-08-01",
-      "zuletzt": "2026-08-01"
-    }
-  },
+  "tickers": {},
   "updated": "2026-08-01"
 }
