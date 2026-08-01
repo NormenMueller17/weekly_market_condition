@@ -1,34 +1,20 @@
 {
   "generated": "2026-08-01",
   "market_bullish": true,
-  "count": 2,
+  "count": 1,
   "watchlist": [
     {
-      "ticker": "ATEX",
-      "company": "n/a",
-      "industry": "n/a",
-      "sector": "Communication Services",
-      "pivot": 95.935,
-      "buy_stop": 96.0309,
-      "close_saturday": 93.02,
-      "atr_pct": 7.907362012135534,
-      "rs_score": 98.21794166208035,
-      "score": 6,
-      "industry_ranking": null,
-      "sa_link": "https://stockanalysis.com/stocks/ATEX"
-    },
-    {
       "ticker": "ACRS",
-      "company": "n/a",
-      "industry": "n/a",
+      "company": "Aclaris Therapeutics Inc.",
+      "industry": "Biotechnology: Pharmaceutical Preparations",
       "sector": "Healthcare",
       "pivot": 5.615,
       "buy_stop": 5.6206,
       "close_saturday": 5.2,
       "atr_pct": 6.075548824524312,
-      "rs_score": 96.43808475509081,
+      "rs_score": 96.43949394939493,
       "score": 6,
-      "industry_ranking": null,
+      "industry_ranking": 12,
       "sa_link": "https://stockanalysis.com/stocks/ACRS"
     }
   ]
