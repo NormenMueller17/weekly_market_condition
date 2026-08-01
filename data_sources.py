@@ -186,8 +186,9 @@ def fetch_listed_symbols(refresh: bool = False) -> set[str]:
     (fail-open). Ein Netzproblem darf nie das Universum leeren.
 
     Die Symbole werden mit `_normalize_symbol` auf dieselbe Schreibweise
-    gebracht wie das CSV-Universum (Punkt → Bindestrich, z. B. BRK.B → BRK-B),
-    sonst schlägt der Abgleich bei allen Titeln mit Punkt im Symbol fehl.
+    gebracht wie das CSV-Universum (Punkt bzw. Slash → Bindestrich, z. B.
+    BRK.B und BRK/B → BRK-B), sonst schlägt der Abgleich bei allen Titeln
+    mit Klassentrennzeichen im Symbol fehl.
     """
     _ensure_cache_dir()
     cache = Path(SETTINGS.cache_dir) / "listed_symbols.json"
@@ -236,11 +237,15 @@ def fetch_listed_symbols(refresh: bool = False) -> set[str]:
     return symbole
 
 # --- Delisted / Invalid Ticker Blacklist ---
+# Achtung: Die Eintraege muessen in der NORMALISIERTEN Schreibweise stehen
+# (siehe _normalize_symbol), denn alle Vergleiche laufen gegen bereits
+# normalisierte Ticker. "C/PN" stand hier frueher mit Slash und griff nur,
+# solange _normalize_symbol den Slash stehen liess.
 TICKER_BLACKLIST = {
-    "BFHIV",  "C/PN",   "VMEO",  "K",
+    "BFHIV",  "C-PN",   "VMEO",  "K",
     "IPG",    "AKRO",   "SPR",   "HBI",
     "SCS",    "GHLD",   "HSII",  "PRO",
-    "ODP",    "AMRK",   "BFHIV",  "C/PN", 
+    "ODP",    "AMRK",
 }
 TICKER_META: dict[str, dict] = {}
 
@@ -459,6 +464,9 @@ def _normalize_symbol(sym: str) -> str:
     - Whitespace entfernen
     - Großbuchstaben
     - BRK.B -> BRK-B
+    - BRK/B -> BRK-B  (der Nasdaq-Screener trennt Aktienklassen mit '/',
+      Yahoo kennt nur die Bindestrich-Schreibweise. Ohne diese Wandlung
+      liefert Yahoo 404 und die Titel landen im Dead-Register.)
     - SAP.DE, SIE.DE usw. bleiben mit '.DE' erhalten
     """
     if not isinstance(sym, str):
@@ -471,9 +479,9 @@ def _normalize_symbol(sym: str) -> str:
     if s.endswith(".DE"):
         return s
 
-    # Bei anderen Tickers (z.B. BRK.B) den Punkt in Dash wandeln
-    # (falls du das weiterhin brauchst)
-    s = s.replace(".", "-")
+    # Bei anderen Tickers (z.B. BRK.B / BRK/A) das Klassentrennzeichen
+    # in einen Bindestrich wandeln
+    s = s.replace(".", "-").replace("/", "-")
     return s
 
 
