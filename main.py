@@ -604,6 +604,10 @@ def run():
     cache_enabled = try_enable_yfinance_cache(cache_config)
     if cache_enabled:
         print("[CACHE] ✅ HTTP caching enabled (24h TTL)")
+    else:
+        # Bis hierher gab es nur den Erfolgsfall — der Fehlschlag war unsichtbar.
+        print("[CACHE] ⚠️  Kein HTTP-Cache aktiv, alle Daten werden frisch "
+              "geholt (Grund siehe [CACHE]-Zeile oben).")
 
     
     # 1) Daten laden

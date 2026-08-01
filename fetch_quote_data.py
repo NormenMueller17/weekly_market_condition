@@ -1,34 +1,34 @@
 import time
 import random
-import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 import pandas as pd
-from rate_limit import RateLimiter
+from rate_limit import RateLimiter, install_yfinance_limiter
 
-GLOBAL_LIMITER = RateLimiter(max_calls=6, period_seconds=1.0)
+# 5 echte HTTP-Requests je Sekunde. Vorher standen hier 6 "Methodenaufrufe",
+# was gemessen ~13 Requests/s entsprach — mehr, als Yahoo von einer
+# CI-Runner-IP toleriert.
+GLOBAL_LIMITER = RateLimiter(max_calls=5, period_seconds=1.0)
 
-# Optional but recommended: reuse a single HTTP session inside yfinance.
-# IMPORTANT: If a CachedSession (requests-cache) is already installed (e.g. by main.py),
-# we must NOT overwrite it, otherwise caching stops working.
-try:
-    import requests
+# Bremst ab hier JEDEN yfinance-Request, auch den aus load_weekly_history.
+_LIMITER_AKTIV = install_yfinance_limiter(GLOBAL_LIMITER)
+if not _LIMITER_AKTIV:
+    print("[WARN] Rate-Limiter konnte nicht in yfinance eingehaengt werden "
+          "(Datenschicht geaendert?) — es bremsen nur noch die Einzelaufrufe "
+          "in fetch_quote_data_single.")
 
-    cached_session_type = None
-    try:
-        from requests_cache import CachedSession  # type: ignore
-        cached_session_type = CachedSession
-    except Exception:
-        cached_session_type = None
 
-    current = getattr(getattr(yf, "shared", None), "_requests", None)
-    if cached_session_type is not None and isinstance(current, cached_session_type):
-        # Keep the cached session.
-        pass
-    else:
-        yf.shared._requests = requests.Session()  # type: ignore[attr-defined]
-except Exception:
-    pass
+def _bremse() -> None:
+    """Notbremse fuer den Fall, dass der zentrale Limiter nicht greift."""
+    if not _LIMITER_AKTIV:
+        GLOBAL_LIMITER.acquire()
+
+# Hier stand ein Block, der yfinance eine eigene requests.Session unterschob
+# (yf.shared._requests). Seit yfinance 1.x gibt es `yf.shared` nicht mehr und
+# intern laeuft alles ueber curl_cffi — der Block lief jahrelang in einen
+# AttributeError, den ein `except: pass` verschluckt hat. yfinance verwaltet
+# seine Session inzwischen selbst; es gibt nichts zu setzen. Siehe auch
+# http_cache.try_enable_yfinance_cache, das am selben Umbau gescheitert ist.
 
 _EMPTY_QUOTE: dict = {
     "Close": None, "MarketCap_Mio": None, "Sector": None,
@@ -107,29 +107,30 @@ def fetch_quote_data_single(ticker: str) -> dict:
 
     for attempt in range(MAX_RETRIES):
         try:
-            GLOBAL_LIMITER.acquire()
+            _bremse()
             tkr = yf.Ticker(ticker)
             # IMPORTANT: `.info` can be None; always normalize to dict.
-            GLOBAL_LIMITER.acquire()
+            _bremse()
             info = (tkr.info or {})
-            fast_info = getattr(tkr, "fast_info", None)
 
-            # Close — fast_info is an object (not a dict) in modern yfinance
-            close = None
-            if fast_info is not None:
-                close = (
-                    getattr(fast_info, "last_price", None)
-                    or getattr(fast_info, "lastPrice",  None)
-                )
-            if not close:
-                close = info.get("currentPrice") or info.get("regularMarketPrice")
+            # Kurs und Marktkapitalisierung stehen bereits in `info` — der
+            # quoteSummary-Aufruf oben hat sie geliefert. `fast_info` wurde
+            # hier frueher ZUERST gefragt und kostete gemessen 3-4 weitere
+            # HTTP-Requests je Ticker (Chart-Endpunkt), ohne etwas Neues zu
+            # liefern: rund 40 % der Last des gesamten Batches. Jetzt nur
+            # noch Notnagel, wenn quoteSummary die Felder nicht hat.
+            close = info.get("currentPrice") or info.get("regularMarketPrice")
+            market_cap = info.get("marketCap")
 
-            # MarketCap
-            market_cap = None
-            if fast_info is not None:
-                market_cap = getattr(fast_info, "market_cap", None)
-            if not market_cap:
-                market_cap = info.get("marketCap")
+            if not close or not market_cap:
+                fast_info = getattr(tkr, "fast_info", None)
+                if fast_info is not None:
+                    if not close:
+                        close = (getattr(fast_info, "last_price", None)
+                                 or getattr(fast_info, "lastPrice", None))
+                    if not market_cap:
+                        market_cap = getattr(fast_info, "market_cap", None)
+
             market_cap_mio = market_cap / 1_000_000 if market_cap else None
 
             # Sector
@@ -325,7 +326,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
                         return None, None, 0
                 
                 # --- Quarterly EPS: YoY letztes Quartal + Acceleration ---
-                GLOBAL_LIMITER.acquire()
+                _bremse()
                 qs = getattr(tkr, "quarterly_income_stmt", None)
                 if qs is None or getattr(qs, "empty", True):
                     get_stmt = getattr(tkr, "get_income_stmt", None)
@@ -432,7 +433,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
             # EPS-Q YoY: Fallback aus quarterly Income Statement wenn bisher None
             if eps_growth_last_q is None:
                 try:
-                    GLOBAL_LIMITER.acquire()
+                    _bremse()
                     qs_fb = getattr(tkr, "quarterly_income_stmt", None)
                     if qs_fb is None or getattr(qs_fb, "empty", True):
                         get_stmt_fb = getattr(tkr, "get_income_stmt", None)
