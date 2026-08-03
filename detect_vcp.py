@@ -82,6 +82,40 @@ def _check_waves(
     return float(spread[-1])
 
 
+def _base_weekly_range(df: pd.DataFrame, base_len: int) -> float | None:
+    """Median der Wochen-Range (High−Low)/Close INNERHALB der Basis.
+
+    Stillstands-Gegenprobe: trennt echte Kontraktion von einem eingefrorenen Kurs.
+    Eine Basis verengt sich RELATIV zum Pivot, der Titel bewegt sich dabei aber
+    weiter. Eine Aktie in einer laufenden BARÜBERNAHME steht dagegen still — der
+    Kurs ist an den Angebotspreis genagelt, kann ihn nicht überschreiten (darüber
+    bietet niemand) und fällt nicht weit darunter (darunter kauft die Arbitrage).
+    Die VCP-Geometrie ist dann mustergültig erfüllt bei einem Ausbruchspotenzial
+    von exakt null.
+
+    Absolut gemessen, NICHT gegen die eigene Historie. Die relative Variante wurde
+    verworfen: sie bestraft genau die Titel, die das Verfahren sucht — ein Titel
+    nach einem starken Lauf (GSAT: 20 → 85 USD im Vorjahr) hat gegen diesen
+    Vorlauf zwangsläufig eine "kollabierte" Basis und fiel mit 0,22 unter dieselbe
+    Schwelle wie die echten Übernahmefälle.
+
+    Kalibriert an 353 Basen aus dem Cache-Universum (2561 Titel × 13 Stichwochen).
+    Unter 1,5 % lagen ausschließlich laufende Barübernahmen — Clear Channel
+    (Offerte 2,43), EA (210,00), TXNM (61,25), GBTG, TALK, OGN, IHS, DBRG — sowie
+    Muni-Rentenfonds (BTT, IQI). Echte Basen liegen im Median bei 4,3 %; die
+    engsten belegten VCPs kamen auf 2,5 % (GSAT) bzw. 7,2 % (JCI).
+
+    Rückgabe: Median, oder None wenn die Basis zu kurz für einen Median ist (dann
+    greift das Kriterium nicht — lieber durchlassen als blind verwerfen).
+    """
+    base = df.tail(base_len + 1).iloc[:-1]
+    r = (base["High"].astype(float) - base["Low"].astype(float)) / base["Close"].astype(float)
+    r = r.replace([np.inf, -np.inf], np.nan).dropna()
+    if len(r) < 5:
+        return None
+    return float(r.median())
+
+
 def _naive_index(idx: pd.Index) -> pd.DatetimeIndex:
     """Zeitzonenfreier DatetimeIndex — Wochen- und Tagesserien kommen je nach
     yfinance-Aufruf mal mit, mal ohne tz zurück und wären sonst nicht vergleichbar.
@@ -168,6 +202,7 @@ def detect_vcp(
     daily_vol_lookback: int = 50,
     rs_score: float | None = None,
     min_rs_score: float = 0.0,
+    min_base_weekly_range: float = 0.015,
     waves_to_try: tuple[int, ...] = (4, 3),
 ) -> dict:
     """
@@ -185,6 +220,10 @@ def detect_vcp(
          (höhere Tiefs, fallende/flache Highs, jede Welle flacher als die vorige,
          Volumen trocknet aus), Basistiefe ≤ max_pullback unter Pivot
       4. Die engste valide Basis direkt unter dem Pivot gewinnt
+      4b. Stillstands-Gegenprobe: die Wochen-Range der Basis muss im Median über
+         `min_base_weekly_range` liegen — verwirft Aktien in laufenden Bar-
+         übernahmen, die die Geometrie erfüllen, aber nicht steigen können
+         (siehe `_base_weekly_range`)
       5. Entry_Signal: Kurs > Pivot·1.005 UND Volumen-Surge
          ≥ min_breakout_vol_ratio. Bevorzugt auf TAGESBASIS gemessen
          (Ausbruchstag vs. Ø der letzten `daily_vol_lookback` Handelstage);
@@ -203,13 +242,15 @@ def detect_vcp(
         muss — `detect_vcp` sieht nur einen Titel.
       min_rs_score: Schwelle für `rs_score`. 0 (Default) schaltet den Vorfilter
         ab; ohne übergebenen `rs_score` greift er ohnehin nicht.
+      min_base_weekly_range: Mindest-Median der Wochen-Range innerhalb der Basis.
+        0 schaltet die Stillstands-Gegenprobe ab.
 
     Returns
     -------
     dict: VCP (bool), Waves (int), Entry_Signal (bool),
           Breakout_Level (float|None), Breakout_Volume (bool),
           Breakout_Vol_Ratio (float), Breakout_Vol_Basis ("daily"|"weekly"),
-          Base_Weeks (int)
+          Base_Weeks (int), Base_Weekly_Range (float|None)
     """
     result = {
         "VCP": False,
@@ -220,6 +261,7 @@ def detect_vcp(
         "Breakout_Vol_Ratio": 0.0,
         "Breakout_Vol_Basis": "weekly",
         "Base_Weeks": 0,
+        "Base_Weekly_Range": None,
     }
 
     if df is None or df.empty:
@@ -281,6 +323,16 @@ def detect_vcp(
 
     final_range, L, n, pivot = best
 
+    # 4b. Stillstands-Gegenprobe. Bewusst NACH der Basissuche: eine festgenagelte
+    # Aktie steht über den ganzen Suchbereich still, es gibt also keine andere
+    # Basislänge, die hier noch durchkäme.
+    bwr = None
+    if min_base_weekly_range > 0:
+        bwr = _base_weekly_range(df, L)
+        if bwr is not None and bwr < min_base_weekly_range:
+            result["Base_Weekly_Range"] = float(bwr)
+            return result
+
     # 5. Ausbruchs-Volumen und Entry
     price_breakout = last_close > pivot * 1.005
 
@@ -313,4 +365,5 @@ def detect_vcp(
         "Breakout_Vol_Ratio": float(vol_ratio),
         "Breakout_Vol_Basis": vol_basis,
         "Base_Weeks": L,
+        "Base_Weekly_Range": None if bwr is None else float(bwr),
     }
