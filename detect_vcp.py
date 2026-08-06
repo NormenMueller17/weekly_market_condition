@@ -82,7 +82,7 @@ def _check_waves(
     return float(spread[-1])
 
 
-def _base_weekly_range(df: pd.DataFrame, base_len: int) -> float | None:
+def _base_weekly_range(df: pd.DataFrame, base_len: int, min_window: int = 10) -> float | None:
     """Median der Wochen-Range (High−Low)/Close INNERHALB der Basis.
 
     Stillstands-Gegenprobe: trennt echte Kontraktion von einem eingefrorenen Kurs.
@@ -105,10 +105,19 @@ def _base_weekly_range(df: pd.DataFrame, base_len: int) -> float | None:
     Muni-Rentenfonds (BTT, IQI). Echte Basen liegen im Median bei 4,3 %; die
     engsten belegten VCPs kamen auf 2,5 % (GSAT) bzw. 7,2 % (JCI).
 
-    Rückgabe: Median, oder None wenn die Basis zu kurz für einen Median ist (dann
-    greift das Kriterium nicht — lieber durchlassen als blind verwerfen).
+    Gemessen wird über `max(base_len, min_window)` Wochen, nicht über die Basis
+    allein. Bei kurzen Basen läuft der Median sonst über zu wenige Werte: auf den
+    3–5-Wochen-Basen des Launchpads verwarf die Schwelle 1,5 % auch gewöhnliche
+    Titel mit einer zufällig ruhigen Phase (CZR, PEN, SLAB, ACA, APGE). Mit dem
+    10-Wochen-Fenster verschwinden diese Fehltreffer, während die Übernahmefälle
+    weiter sicher erkannt werden — die Signatur hält über Monate an, nicht über
+    drei Wochen. Für den VCP ändert die Untergrenze fast nichts (26 statt 27 von
+    353 Basen), sie macht beide Muster aber vergleichbar.
+
+    Rückgabe: Median, oder None wenn die Historie zu kurz für einen Median ist
+    (dann greift das Kriterium nicht — lieber durchlassen als blind verwerfen).
     """
-    base = df.tail(base_len + 1).iloc[:-1]
+    base = df.tail(max(base_len, min_window) + 1).iloc[:-1]
     r = (base["High"].astype(float) - base["Low"].astype(float)) / base["Close"].astype(float)
     r = r.replace([np.inf, -np.inf], np.nan).dropna()
     if len(r) < 5:

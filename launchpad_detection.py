@@ -18,7 +18,7 @@ import math
 # Dieselbe Volumen-Definition wie beim VCP — Ausbruchstag gegen den Ø der
 # Handelstage davor. Bewusst geteilt, damit die beiden Muster nicht wieder
 # auseinanderlaufen.
-from detect_vcp import _daily_breakout_vol_ratio, _naive_index
+from detect_vcp import _daily_breakout_vol_ratio, _naive_index, _base_weekly_range
 
 
 def detect_launchpad(
@@ -34,6 +34,7 @@ def detect_launchpad(
     breakout_buffer_pct: float = 0.005,
     daily_df: pd.DataFrame | None = None,
     daily_vol_lookback: int = 50,
+    min_base_weekly_range: float = 0.015,
 ) -> dict:
     """
     Detect TraderLion Launchpad pattern.
@@ -61,6 +62,12 @@ def detect_launchpad(
         Watchlist-Indikator und Score-Input — NICHT das Entry-Kriterium.
     breakout_buffer_pct : float
         Aufschlag über dem Pivot für Launchpad_Entry (default: 0.5 %, wie im VCP)
+    min_base_weekly_range : float
+        Stillstands-Gegenprobe (default: 1.5 %, wie im VCP). Verwirft Aktien in
+        laufenden Barübernahmen, die die Enge-Kriterien mustergültig erfüllen,
+        weil der Kurs am Angebotspreis festgenagelt ist — bei Ausbruchspotenzial
+        null. Siehe `_base_weekly_range` in `detect_vcp`; bewusst geteilt, damit
+        die beiden Muster nicht auseinanderlaufen. 0 schaltet die Prüfung ab.
 
     Returns
     -------
@@ -76,6 +83,7 @@ def detect_launchpad(
             "Near_Pivot": bool,
             "Above_MA50": bool,
             "Prior_Trend": bool,
+            "Base_Weekly_Range": float | None,
         }
     """
     
@@ -93,6 +101,7 @@ def detect_launchpad(
         "Near_Pivot": False,
         "Above_MA50": False,
         "Prior_Trend": False,
+        "Base_Weekly_Range": None,
     }
     
     # Basic checks
@@ -219,6 +228,18 @@ def detect_launchpad(
         return result
 
     # -----------------------------------------------------------------------
+    # 2b) Stillstands-Gegenprobe
+    # -----------------------------------------------------------------------
+    # Nach der Basissuche: eine festgenagelte Aktie steht über alle geprüften
+    # Basislängen still, es käme also keine andere durch.
+    base_wrng = None
+    if min_base_weekly_range > 0:
+        base_wrng = _base_weekly_range(df, best_base["weeks"])
+        if base_wrng is not None and base_wrng < min_base_weekly_range:
+            result["Base_Weekly_Range"] = float(base_wrng)
+            return result
+
+    # -----------------------------------------------------------------------
     # 3) Post-Base Signals
     # -----------------------------------------------------------------------
     pivot = best_base["pivot"]
@@ -279,6 +300,7 @@ def detect_launchpad(
         "Near_Pivot": near_pivot,
         "Above_MA50": above_ma50,
         "Prior_Trend": prior_trend,
+        "Base_Weekly_Range": None if base_wrng is None else float(base_wrng),
     }
 
     return result
