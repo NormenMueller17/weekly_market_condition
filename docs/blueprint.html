@@ -289,12 +289,14 @@
     <p>Zusätzlich wird ein Datenzwischenspeicher aktiviert. Einmal heruntergeladene Kursdaten werden 24 Stunden lokal gespeichert, um bei einem Neustart keine Daten erneut herunterladen zu müssen.</p>
 
     <h2 id="s2">Schritt 2 — Aktien-Universum laden</h2>
-    <p>Das System definiert zunächst, welche Aktien überhaupt betrachtet werden sollen. Dieses Universum ist eine Liste von Ticker-Symbolen und wird aus zwei Quellen zusammengestellt:</p>
+    <p>Das System definiert zunächst, welche Aktien überhaupt betrachtet werden sollen. Dieses Universum ist eine Liste von Ticker-Symbolen und stammt aus drei möglichen Quellen:</p>
     <ul>
-      <li><strong>Lokale CSV-Datei (Standard-Fallback):</strong> Eine vorbereitete statische Liste der nach Marktkapitalisierung größten US-Aktien aus dem S&amp;P 500, Nasdaq 100 und Russell 1000.</li>
-      <li><strong>BlackRock ETF-Holdings:</strong> Täglich aktualisierte Listen der iShares-ETFs (Russell 1000, 2000 oder 3000), direkt von der BlackRock-Website heruntergeladen.</li>
+      <li><strong>Nasdaq-Screener (Standardquelle):</strong> Die vollständige Liste aller an US-Börsen gelisteten Aktien, tagesaktuell abgerufen. Marktkapitalisierung, Sektor und Branche kommen im selben Abruf mit. Aus rund 7.100 gelieferten Titeln bleiben nach der Mindestgröße von 300 Mio. USD Marktkapitalisierung etwa 3.700 übrig.</li>
+      <li><strong>Lokale CSV-Datei (Notnagel):</strong> Eine statische Liste vom Stand 11/2025. Sie greift nur, wenn der Screener-Abruf fehlschlägt, und meldet das dann deutlich im Protokoll — sie altert, übernommene und delistete Firmen stehen weiter darin.</li>
+      <li><strong>BlackRock ETF-Holdings (optional):</strong> Holdings der iShares-ETFs auf Russell 1000, 2000 oder 3000. Per Konfiguration wählbar, im Normalbetrieb nicht aktiv.</li>
     </ul>
-    <p>Gleichzeitig liest das System Unternehmensnamen und Branchenzuordnungen aus der Quelldatei aus, ohne dafür externe Daten abzufragen.</p>
+    <p>Anschließend wird die Liste bereinigt: Ein Abgleich mit dem offiziellen Börsenverzeichnis entfernt Titel, die nicht mehr gelistet sind; zusätzlich fliegen Symbole heraus, für die der Kursanbieter über mehrere Läufe hinweg keine Daten mehr liefert. Beide Prüfungen fangen unterschiedliche Fälle ab — nicht mehr existierende Firmen einerseits, Datenlücken bei weiterhin gelisteten Titeln andererseits. Offene Depotpositionen sind von der Bereinigung ausgenommen.</p>
+    <p>Unternehmensnamen und Branchenzuordnungen kommen aus derselben Quelle und erfordern keinen zusätzlichen Abruf.</p>
 
     <h2 id="s3">Schritt 3 — Historische Kursdaten laden</h2>
     <p>Für alle Aktien im Universum werden historische Wochenkursdaten der letzten zwei Jahre heruntergeladen. Jeder Datensatz enthält Eröffnung, Hoch, Tief, Schluss und Volumen auf Wochenbasis.</p>
@@ -650,8 +652,8 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
           </tr>
           <tr>
             <td><strong>Universum-Aktualität</strong></td>
-            <td>Die statische CSV-Datei wird nicht automatisch aktualisiert. Neu gelistete oder herausgefallene Aktien werden verpasst.</td>
-            <td>Automatische wöchentliche Aktualisierung aus einer verlässlichen Quelle einplanen.</td>
+            <td>Weitgehend entschärft: Das Universum kommt tagesaktuell aus dem Nasdaq-Screener, die statische CSV ist nur noch Notnagel. Verbleibendes Risiko ist ein stiller Rückfall auf diese Altdatei — ein solcher Fall blieb schon einmal monatelang unbemerkt, weshalb der Rückfall jetzt deutlich protokolliert wird.</td>
+            <td>Den Rückfall auf die Altdatei aktiv melden statt nur protokollieren.</td>
           </tr>
           <tr>
             <td><strong>Datenladegeschwindigkeit</strong></td>
