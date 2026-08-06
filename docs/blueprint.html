@@ -484,6 +484,18 @@
     </ul>
     <p>Das Erkennen eines dieser Muster ist kein Pflichtkriterium für ein Kaufsignal, verbessert aber den Rang einer Aktie im abschließenden Ranking erheblich.</p>
 
+    <span class="sub-bold">Stillstands-Gegenprobe (beide Muster)</span>
+    <p>Beide Muster suchen nach Enge — und genau diese Enge entsteht auch aus einem Grund, der mit Charttechnik nichts zu tun hat. Eine Aktie, für die ein <strong>Barangebot zur Übernahme</strong> läuft, ist an den Angebotspreis genagelt: darüber bietet niemand mehr, darunter kauft die Arbitrage sofort. Die Kursspanne schnurrt zusammen, das Volumen bleibt hoch, und das Muster erfüllt alle Kriterien mustergültig — bei einem Ausbruchspotenzial von exakt null.</p>
+    <p>Das System prüft deshalb zusätzlich, ob sich der Titel überhaupt noch bewegt: Die durchschnittliche Wochen-Kursspanne der letzten zehn Wochen muss über 1,5 % liegen. Eine echte Basis verengt sich relativ zu ihrem Ausbruchsniveau, der Titel schwankt dabei aber weiter; ein eingefrorener Kurs fällt durch.</p>
+    <div class="example">
+      <strong>Beispiel Clear Channel Outdoor (August 2026):</strong><br>
+      Übernahmeangebot 2,43 $ je Aktie, angekündigt im Februar 2026.<br>
+      Durchschnittliche Tagesspanne vorher: 4,9 % — danach: 0,7 %.<br>
+      Das System erkannte eine 20-Wochen-Basis mit lehrbuchmäßiger Verengung; der Kurs stand seit 20 Wochen zwischen 2,33 $ und 2,43 $.<br>
+      Wochen-Kursspanne 0,84 % → unter der Schwelle → Muster verworfen.
+    </div>
+    <p>Kalibriert wurde die Schwelle an 353 VCP- und 274 Launchpad-Basen aus dem Gesamtuniversum. Unterhalb von 1,5 % fanden sich ausschließlich laufende Barübernahmen, Rentenfonds und illiquide Sonderpapiere; echte Basen liegen im Mittel bei rund 4 %. Betroffen sind 7 bis 9 % aller erkannten Muster.</p>
+
     <h2 id="s14">Schritt 14 — Fundamentaldaten laden</h2>
     <p>Um den Rechenaufwand zu begrenzen, werden Fundamentaldaten nur für Aktien abgerufen, die im Minervini-Screener mindestens 5 von 8 Punkten erreicht haben. Abgerufen werden:</p>
     <ul>
@@ -698,8 +710,8 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
           </tr>
           <tr>
             <td><strong>Mustererkennung</strong></td>
-            <td>Algorithmische VCP-Erkennung ist fehleranfällig in seitwärtslaufenden oder hochvolatilen Märkten.</td>
-            <td>Zusätzliche Plausibilitätsprüfungen oder manuelle Review-Möglichkeit für erkannte Muster einbauen.</td>
+            <td>Algorithmische VCP-Erkennung ist fehleranfällig in seitwärtslaufenden oder hochvolatilen Märkten. Die Stillstands-Gegenprobe fängt inzwischen den wichtigsten Sonderfall ab (Aktien in laufender Barübernahme), sie bleibt aber eine reine Kursprüfung: Übernahmen, Bilanzsonderfälle oder anstehende Abspaltungen kennt das System nicht.</td>
+            <td>Unternehmensmeldungen als Datenquelle anbinden, um Sonderlagen direkt statt über ihre Kursspur zu erkennen. Manuelle Review-Möglichkeit für erkannte Muster.</td>
           </tr>
         </tbody>
       </table>
