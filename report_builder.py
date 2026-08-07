@@ -838,23 +838,15 @@ HTML_TMPL = """
       <p style="color:#aaa;font-size:0.8em;margin:-.3em 0 .9em">
         Unternehmensbeschreibung im Original (englisch), gekürzt.</p>
       {% endif %}
-      {% for label, reihe, als_betrag in [
-          ("Umsatz je Quartal", pd_.umsatz_q, true),
-          ("Umsatz je Jahr", pd_.umsatz_j, true),
-          ("Gewinn je Aktie (Quartal)", pd_.eps_q, false)] %}
-      {% if reihe %}
-      <table style="width:100%;margin-bottom:.7em;font-size:.88em">
-        <tr><th class="left" style="white-space:nowrap">{{ label }}</th>
-          {% for r in reihe %}<th>{{ r.periode }}</th>{% endfor %}</tr>
-        <tr><td class="left">Wert</td>
-          {% for r in reihe %}<td>{{ r.wert }}</td>{% endfor %}</tr>
-        <tr><td class="left" style="font-size:.85em;color:#888">ggü. Vorjahr</td>
-          {% for r in reihe %}
-          <td style="font-size:.85em;color:{% if r.yoy_val is not none and r.yoy_val > 0 %}{{ COLOR_POS_TEXT }}{% elif r.yoy_val is not none and r.yoy_val < 0 %}{{ COLOR_NEG_TEXT }}{% else %}#888{% endif %}">
-            {{ r.yoy }}</td>
-          {% endfor %}
-        </tr>
-      </table>
+      {% for label, chart in [
+          ("Umsatz je Quartal", pd_.umsatz_q_chart),
+          ("Umsatz je Jahr", pd_.umsatz_j_chart),
+          ("Gewinn je Aktie (Quartal)", pd_.eps_q_chart)] %}
+      {% if chart %}
+      <div style="margin-bottom:.9em">
+        <div class="left" style="font-weight:600;color:#003d99;font-size:.88em;margin-bottom:.2em">{{ label }}</div>
+        {{ chart | safe }}
+      </div>
       {% endif %}
       {% endfor %}
       {% if pd_.begruendung %}
@@ -1176,37 +1168,127 @@ def _tv_advanced_chart(ticker: str, elem_id: str, height: int = 400) -> str:
     )
 
 
+def _format_geld_kompakt(v) -> str:
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return "–"
+    if abs(v) >= 1e9:
+        return f"${v / 1e9:.2f}B"
+    if abs(v) >= 1e6:
+        return f"${v / 1e6:.0f}M"
+    return f"${v:,.0f}"
+
+
+_BAR_FARBE = "#0052cc"   # dieselbe Akzentfarbe wie die SA-Buttons im Report
+
+
+def _bar_chart_svg(reihe: list, als_betrag: bool, jahres_reihe: bool = False,
+                   hoehe: int = 168) -> str:
+    """Balkendiagramm fuer eine Kennzahlreihe (Umsatz oder Gewinn je Aktie).
+
+    Ersetzt die fruehere Tabelle: bei 4-5 Perioden zeigt die Balkenhoehe den
+    Trend auf einen Blick, waehrend die Tabelle ihn erst beim Vergleichen der
+    Zahlen ergab. Nullbasis ist Pflicht (kein abgeschnittener Balken) — sonst
+    uebertreibt die Balkenhoehe das Wachstum. Ein einzelner Balken je Periode
+    ist eine Serie, deshalb kein Farbwechsel und keine Legende noetig; der
+    Titel darueber (im Template) sagt, was geplottet ist.
+    """
+    reihe = [r for r in (reihe or []) if r.get("wert") is not None]
+    if not reihe:
+        return ""
+
+    n = len(reihe)
+    breite_bar = 62
+    breite = n * breite_bar
+    pad_l, pad_t, pad_b = 4, 38, 34
+    plot_h = hoehe - pad_t - pad_b
+
+    werte = [float(r["wert"]) for r in reihe]
+    lo = min(0.0, min(werte))
+    hi = max(0.0, max(werte))
+    if hi - lo < 1e-9:
+        hi = lo + 1.0
+    baseline_y = pad_t + (hi - 0.0) / (hi - lo) * plot_h
+
+    def _y(v: float) -> float:
+        return pad_t + (hi - v) / (hi - lo) * plot_h
+
+    bar_w, rund = 22, 4   # Spezifikation: Balken max. 24px dick, 4px Eckenradius
+
+    teile = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {breite} {hoehe}" '
+        f'width="100%" height="{hoehe}" style="max-width:{breite}px;font-family:Arial,sans-serif;">',
+        f'<line x1="0" y1="{baseline_y:.1f}" x2="{breite}" y2="{baseline_y:.1f}" '
+        f'stroke="#c3c2b7" stroke-width="1"/>',
+    ]
+
+    for i, r in enumerate(reihe):
+        wert = float(r["wert"])
+        cx = pad_l + i * breite_bar + breite_bar / 2
+        periode = str(r.get("periode", ""))
+        # Jahresreihe auf das Jahr kuerzen ("2025-12" -> "2025"); Quartale
+        # behalten "YYYY-MM", auch das Q4-Quartal, das ebenfalls auf "-12"
+        # endet — an der Endung allein laesst sich das nicht unterscheiden.
+        label_periode = periode[:4] if jahres_reihe else periode
+        teile.append(
+            f'<text x="{cx:.1f}" y="{hoehe - 6}" text-anchor="middle" font-size="9.5" '
+            f'fill="#52514e">{label_periode}</text>'
+        )
+
+        y_wert  = _y(wert)
+        top     = min(y_wert, baseline_y)
+        bottom  = max(y_wert, baseline_y)
+        positiv = wert >= 0
+        x0 = cx - bar_w / 2
+
+        wert_label = _format_geld_kompakt(wert) if als_betrag else f"{wert:.2f}"
+        yoy = r.get("yoy")
+        yoy_label = f"{'+' if yoy > 0 else ''}{yoy:.0f}%" if yoy is not None else None
+        hover = f"{periode}: {wert_label}" + (f" ({yoy_label} ggü. Vorjahr)" if yoy_label else "")
+
+        if positiv:
+            pfad = (
+                f'M{x0:.1f},{bottom:.1f} L{x0:.1f},{top + rund:.1f} '
+                f'Q{x0:.1f},{top:.1f} {x0 + rund:.1f},{top:.1f} '
+                f'L{x0 + bar_w - rund:.1f},{top:.1f} '
+                f'Q{x0 + bar_w:.1f},{top:.1f} {x0 + bar_w:.1f},{top + rund:.1f} '
+                f'L{x0 + bar_w:.1f},{bottom:.1f} Z'
+            )
+        else:
+            pfad = (
+                f'M{x0:.1f},{top:.1f} L{x0 + bar_w:.1f},{top:.1f} '
+                f'L{x0 + bar_w:.1f},{bottom - rund:.1f} '
+                f'Q{x0 + bar_w:.1f},{bottom:.1f} {x0 + bar_w - rund:.1f},{bottom:.1f} '
+                f'L{x0 + rund:.1f},{bottom:.1f} '
+                f'Q{x0:.1f},{bottom:.1f} {x0:.1f},{bottom - rund:.1f} Z'
+            )
+        teile.append(f'<path d="{pfad}" fill="{_BAR_FARBE}"><title>{hover}</title></path>')
+
+        label_y = (top - 6) if positiv else (bottom + 13)
+        teile.append(
+            f'<text x="{cx:.1f}" y="{label_y:.1f}" text-anchor="middle" font-size="10.5" '
+            f'font-weight="bold" fill="#0b0b0b">{wert_label}</text>'
+        )
+        if yoy_label is not None:
+            yoy_farbe = COLOR_POS_TEXT if yoy > 0 else (COLOR_NEG_TEXT if yoy < 0 else "#898781")
+            yoy_y = (top - 19) if positiv else (bottom + 25)
+            teile.append(
+                f'<text x="{cx:.1f}" y="{yoy_y:.1f}" text-anchor="middle" font-size="9" '
+                f'fill="{yoy_farbe}">{yoy_label}</text>'
+            )
+
+    teile.append("</svg>")
+    return "".join(teile)
+
+
 def _format_profile_for_report(profile: dict) -> dict:
     """Unternehmensportraets fuer den Web-Report vorformatieren.
 
     `profile` kommt roh aus `company_profile.fetch_profiles` (Zahlen, keine
-    Strings). Die Formatierung passiert hier statt im Template, weil Jinja
-    fuer Mio/Mrd-Rundung und YoY-Vorzeichen umstaendlicher ist als Python —
-    und weil dieselbe Logik sonst ein zweites Mal im Template stehen wuerde.
+    Strings). Umsatz und Gewinn je Aktie werden hier zu fertigen SVG-Balken-
+    diagrammen — Jinja baut keine Geometrie, das gehoert nach Python.
     """
-    def _betrag(v) -> str:
-        try:
-            v = float(v)
-        except (TypeError, ValueError):
-            return "–"
-        if abs(v) >= 1e9:
-            return f"${v / 1e9:.2f}B"
-        if abs(v) >= 1e6:
-            return f"${v / 1e6:.0f}M"
-        return f"${v:,.0f}"
-
-    def _reihe(reihe: list, als_betrag: bool) -> list:
-        out = []
-        for r in reihe or []:
-            wert = r.get("wert")
-            wert_str = _betrag(wert) if als_betrag else (
-                f"{float(wert):.2f}" if wert is not None else "–")
-            yoy = r.get("yoy")
-            yoy_str = (f"{'+' if yoy > 0 else ''}{yoy:.1f}%") if yoy is not None else "–"
-            out.append({"periode": r.get("periode", ""), "wert": wert_str,
-                        "yoy": yoy_str, "yoy_val": yoy})
-        return out
-
     out = {}
     for ticker, p in (profile or {}).items():
         if not p:
@@ -1219,9 +1301,9 @@ def _format_profile_for_report(profile: dict) -> dict:
         out[ticker] = {
             "beschreibung": p.get("beschreibung", ""),
             "kopfzeile":    kopfzeile,
-            "umsatz_q":     _reihe(p.get("umsatz_q", []), True),
-            "umsatz_j":     _reihe(p.get("umsatz_j", []), True),
-            "eps_q":        _reihe(p.get("eps_q", []), False),
+            "umsatz_q_chart": _bar_chart_svg(p.get("umsatz_q", []), True),
+            "umsatz_j_chart": _bar_chart_svg(p.get("umsatz_j", []), True, jahres_reihe=True),
+            "eps_q_chart":    _bar_chart_svg(p.get("eps_q", []), False),
             "begruendung":  p.get("_begruendung", []),
         }
     return out
