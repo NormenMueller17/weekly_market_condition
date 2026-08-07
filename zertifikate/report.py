@@ -18,6 +18,12 @@ from pathlib import Path
 from typing import Optional
 
 from zertifikate.ampel import Ampel, MarktampelResult
+from report_builder import _tv_chart_id, _tv_advanced_chart, _format_profile_for_report
+
+# Ab wie vielen von 12 Kriterien ein Titel in "Top-Titel" auftaucht — Konstante
+# statt Literal, weil main_zertifikate.py dieselbe Schwelle braucht, um nur
+# fuer tatsaechlich angezeigte Titel Unternehmensprofile abzurufen.
+TOP_TITEL_MIN_ERFUELLT = 8
 
 # Farbpalette (konsistent mit Portfolio-UI)
 _FARBEN = {
@@ -48,6 +54,7 @@ def build_report(
     report_date: Optional[str] = None,
     universe_all: Optional[list[dict]] = None,
     company_info: Optional[dict] = None,
+    profile: Optional[dict] = None,
 ) -> str:
     """
     Gibt einen vollständigen, selbst-enthaltenen HTML-String zurück.
@@ -61,9 +68,15 @@ def build_report(
     report_date     : str         — ISO-Datum, default heute
     universe_all    : list[dict]  — Ausgabe von scanner.screen_universe_full()
     company_info    : dict        — {ticker: {name, sector}} aus universe.fetch_company_info()
+    profile         : dict        — {ticker: {...}} aus company_profile.fetch_profiles(),
+                                     Quelle fuer TradingView-Chart + Umsatz/Gewinn-Balken je
+                                     Kaufkandidat und Top-Titel. Fehlt es, bleiben die Kacheln
+                                     wie zuvor (Charts sind Beiwerk, kein Pflichtfeld).
     """
     if report_date is None:
         report_date = date.today().isoformat()
+
+    profile_display = _format_profile_for_report(profile or {})
 
     sections = [
         _section_marktampel(markt),
@@ -73,7 +86,7 @@ def build_report(
         sections.append(_section_markt_warnung(markt))
     else:
         if kandidaten:
-            sections.append(_section_kandidaten(kandidaten, markt, company_info or {}))
+            sections.append(_section_kandidaten(kandidaten, markt, company_info or {}, profile_display))
         else:
             sections.append(_section_keine_kandidaten(markt))
 
@@ -84,7 +97,7 @@ def build_report(
         sections.append(_section_roll(roll_kandidaten))
 
     if universe_all:
-        sections.append(_section_top_titel(universe_all, company_info or {}))
+        sections.append(_section_top_titel(universe_all, company_info or {}, profile_display=profile_display))
         sections.append(_section_universe_overview(universe_all, company_info or {}))
 
     sections.append(_section_footer(report_date))
@@ -201,6 +214,10 @@ def _css() -> str:
     /* ── Kachel-Layout (Kaufkandidaten & Top-Titel) ─────────────────────── */
     .kachel-grid { display: grid; gap: 14px;
                    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    /* Kaufkandidaten: breiter als Top-Titel, damit der TradingView-Chart und
+       die Balkendiagramme mehr Platz haben — bei 0-5 Kandidaten/Woche kostet
+       das keine Spalten, die man sonst gebraucht haette. */
+    .kachel-grid-breit { grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); }
     .kachel { border: 1px solid #e1e5ea; border-radius: 8px; overflow: hidden;
               background: #fff; display: flex; flex-direction: column;
               box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
@@ -232,6 +249,11 @@ def _css() -> str:
     .e3-off { background: #eaecee; color: #7f8c8d; }
     .mode-badge { background: #e8f4fd; color: #1a5276; border: 1px solid #aed6f1;
                   border-radius: 3px; padding: 1px 5px; font-size: 0.7em; }
+    .kachel-chart { padding: 10px 14px 12px; border-top: 1px solid #ecf0f1; }
+    .kachel-chart-label { font-size: 0.72em; font-weight: 700; color: #2980b9;
+                          text-transform: uppercase; letter-spacing: .03em;
+                          margin: 8px 0 2px; }
+    .kachel-chart-label:first-child { margin-top: 0; }
 
     @media (max-width: 700px) {
       .ampel-grid, .info-grid { grid-template-columns: 1fr 1fr; }
@@ -324,9 +346,33 @@ def _e3_chips(macd: bool, momentum: bool, volumen: bool, confirmed: int) -> str:
             f'{_chip(bool(volumen), "Vol↑")}</div>')
 
 
+def _kachel_chart_block(ticker: str, profile_display: dict) -> str:
+    """TradingView-Chart + Umsatz-/Gewinn-Balken einer Kachel — oder leer.
+
+    Dieselbe Aufbereitung wie im Web-Report (report_builder.py, Abschnitt
+    "Kaufsignale im Detail"): ein Balken-SVG je Kennzahlreihe, davor der
+    TradingView-Chart mit den 10/30/40-Wochen-Linien. Kein Import-Duplikat,
+    `_format_profile_for_report` liefert die fertigen SVG-Strings bereits.
+    """
+    pd_ = (profile_display or {}).get(ticker)
+    if not pd_:
+        return ""
+    teile = [_tv_advanced_chart(ticker, _tv_chart_id("tv_zert", ticker), height=280)]
+    for label, chart in (
+        ("Umsatz je Quartal", pd_.get("umsatz_q_chart")),
+        ("Umsatz je Jahr", pd_.get("umsatz_j_chart")),
+        ("Gewinn je Aktie (Quartal)", pd_.get("eps_q_chart")),
+    ):
+        if chart:
+            teile.append(f'<div class="kachel-chart-label">{label}</div>{chart}')
+    return f'<div class="kachel-chart">{"".join(teile)}</div>'
+
+
 def _section_kandidaten(kandidaten: list[dict], markt: MarktampelResult,
-                        company_info: Optional[dict] = None) -> str:
+                        company_info: Optional[dict] = None,
+                        profile_display: Optional[dict] = None) -> str:
     company_info = company_info or {}
+    profile_display = profile_display or {}
     markt_hinweis = ""
     if markt.status == Ampel.GELB:
         markt_hinweis = '<div class="warnung" style="margin-bottom:12px">⚠️ Marktampel GELB — Kandidaten mit Vorsicht handeln. Stopps enger setzen, keine Aufstockung bestehender Positionen.</div>'
@@ -373,6 +419,7 @@ def _section_kandidaten(kandidaten: list[dict], markt: MarktampelResult,
         </div>
         {_e3_chips(k.get('e3_macd_dreht'), k.get('e3_momentum_pos'),
                    k.get('e3_volumen_ok'), k.get('e3_confirmed', 0))}
+        {_kachel_chart_block(ticker, profile_display)}
         <div class="kachel-foot">💡 {os_hinweis}</div>
       </div>"""
 
@@ -380,7 +427,7 @@ def _section_kandidaten(kandidaten: list[dict], markt: MarktampelResult,
 <div class="section">
   <h2>Neue Kaufkandidaten ({len(kandidaten)})</h2>
   {markt_hinweis}
-  <div class="kachel-grid">{kacheln}
+  <div class="kachel-grid kachel-grid-breit">{kacheln}
   </div>
   <p style="margin-top:12px;font-size:0.82em;color:#7f8c8d">
     Score 0–100 (E2 Pullback-Qualität + E3 Wiederanlauf) &nbsp;|&nbsp;
@@ -534,12 +581,14 @@ def _section_roll(roll_kandidaten: list[dict]) -> str:
 
 
 def _section_top_titel(universe_all: list[dict], company_info: dict,
-                       min_erfuellt: int = 8) -> str:
+                       min_erfuellt: int = TOP_TITEL_MIN_ERFUELLT,
+                       profile_display: Optional[dict] = None) -> str:
     """Kachel-Ansicht aller Titel mit mindestens `min_erfuellt` von 12 Kriterien.
 
     Ergänzt die Universum-Tabelle: dieselben Daten, aber nur die aussichtsreichsten
     Titel und ohne horizontales Scrollen.
     """
+    profile_display = profile_display or {}
     top = [t for t in universe_all if t["kriterien_erfuellt"] >= min_erfuellt]
     top.sort(key=lambda t: t["kriterien_erfuellt"], reverse=True)
 
@@ -590,6 +639,7 @@ def _section_top_titel(universe_all: list[dict], company_info: dict,
         </div>
         {_e3_chips(t["e3_macd"], t["e3_momentum"], t["e3_volumen"],
                    int(t["e3_macd"]) + int(t["e3_momentum"]) + int(t["e3_volumen"]))}
+        {_kachel_chart_block(ticker, profile_display)}
       </div>"""
 
     return f"""

@@ -45,7 +45,10 @@ from zertifikate.universe import load_large_cap_universe, fetch_company_info
 from zertifikate.ampel import compute_marktampel, compute_zeitampel, combine, Ampel
 from zertifikate.scanner import screen_kandidaten, screen_universe_full
 from zertifikate.portfolio import load_portfolio, enrich_positions, portfolio_stats
-from zertifikate.report import build_report, save_report, build_regelwerk_page, save_regelwerk
+from zertifikate.report import (
+    build_report, save_report, build_regelwerk_page, save_regelwerk,
+    TOP_TITEL_MIN_ERFUELLT,
+)
 
 _RULES_PATH = ROOT / "zertifikate" / "rules.json"
 
@@ -132,11 +135,29 @@ def run(dry_run: bool = False) -> None:
     )
     print(f"  → {len(company_info)} Titel mit Info.")
 
+    # ── 6d. Unternehmensprofile fuer Charts (TradingView + Umsatz/Gewinn) ────
+    # Nur fuer tatsaechlich angezeigte Kacheln (Kandidaten + Top-Titel) — nicht
+    # das gesamte Universum, sonst waeren das zu viele yfinance-Abrufe fuer
+    # Daten, die niemand zu sehen bekommt.
+    chart_tickers = {k["ticker"] for k in kandidaten} | {
+        t["ticker"] for t in universe_all
+        if t["kriterien_erfuellt"] >= TOP_TITEL_MIN_ERFUELLT
+    }
+    profile: dict = {}
+    if chart_tickers:
+        print(f"[6d] Lade Unternehmensprofile fuer Charts ({len(chart_tickers)} Titel) …")
+        try:
+            import company_profile
+            profile = company_profile.fetch_profiles(sorted(chart_tickers))
+            print(f"  → {len(profile)} Profile geladen.")
+        except Exception as e:
+            print(f"  ⚠️  Profile nicht ladbar, Kacheln bleiben ohne Charts: {e}")
+
     # ── 7. Report + Regelwerk generieren ─────────────────────────────────────
     print("[7/7] Generiere Report …")
     html = build_report(
         markt, kandidaten, positionen, roll_kandidaten, report_date,
-        universe_all=universe_all, company_info=company_info,
+        universe_all=universe_all, company_info=company_info, profile=profile,
     )
     report_path = save_report(html, report_date)
     save_regelwerk(build_regelwerk_page(rules))
