@@ -91,7 +91,7 @@ def build_report(
             sections.append(_section_keine_kandidaten(markt))
 
     if positionen:
-        sections.append(_section_portfolio(positionen))
+        sections.append(_section_portfolio(positionen, profile_display))
 
     if roll_kandidaten:
         sections.append(_section_roll(roll_kandidaten))
@@ -447,7 +447,7 @@ def _section_keine_kandidaten(markt: MarktampelResult) -> str:
 </div>"""
 
 
-def _section_portfolio(positionen: list[dict]) -> str:
+def _section_portfolio(positionen: list[dict], profile_display: Optional[dict] = None) -> str:
     if not positionen:
         return f"""
 <div class="section">
@@ -455,6 +455,7 @@ def _section_portfolio(positionen: list[dict]) -> str:
   <p class="keine">Keine offenen Positionen. <a href="../zertifikate/portfolio.html">Position erfassen →</a></p>
 </div>"""
 
+    profile_display = profile_display or {}
     rows = ""
     for p in positionen:
         e_s = p.get("einzelampel", "unbekannt")
@@ -484,9 +485,10 @@ def _section_portfolio(positionen: list[dict]) -> str:
         hebel_style = 'color:#e74c3c;font-weight:700' if strike_roll else ''
 
         basis_text = f"{basis_pct:+.1f}%" if basis_pct is not None else "—"
+        basiswert  = p.get("basiswert", "")
 
         rows += f"""<tr>
-          <td><strong>{p.get('basiswert','—')}</strong></td>
+          <td><strong>{basiswert or '—'}</strong></td>
           <td style="font-size:0.82em">{p.get('schein_name','—')}</td>
           <td>{p.get('kauf_datum','—')}</td>
           <td>{p.get('kauf_kurs_schein','—')}</td>
@@ -498,6 +500,11 @@ def _section_portfolio(positionen: list[dict]) -> str:
           <td>{z_badge}</td>
           <td style="{ausstieg_style}">{ausstieg_hinweis}</td>
         </tr>"""
+
+        chart_block = _kachel_chart_block(basiswert, profile_display) if basiswert else ""
+        if chart_block:
+            rows += (f'<tr><td colspan="11" style="border-top:none;padding:0">'
+                     f'{chart_block}</td></tr>')
 
     return f"""
 <div class="section">

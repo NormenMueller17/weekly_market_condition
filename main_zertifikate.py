@@ -136,13 +136,13 @@ def run(dry_run: bool = False) -> None:
     print(f"  → {len(company_info)} Titel mit Info.")
 
     # ── 6d. Unternehmensprofile fuer Charts (TradingView + Umsatz/Gewinn) ────
-    # Nur fuer tatsaechlich angezeigte Kacheln (Kandidaten + Top-Titel) — nicht
-    # das gesamte Universum, sonst waeren das zu viele yfinance-Abrufe fuer
-    # Daten, die niemand zu sehen bekommt.
+    # Nur fuer tatsaechlich angezeigte Kacheln/Zeilen (Kandidaten + Top-Titel +
+    # offene Portfolio-Positionen) — nicht das gesamte Universum, sonst waeren
+    # das zu viele yfinance-Abrufe fuer Daten, die niemand zu sehen bekommt.
     chart_tickers = {k["ticker"] for k in kandidaten} | {
         t["ticker"] for t in universe_all
         if t["kriterien_erfuellt"] >= TOP_TITEL_MIN_ERFUELLT
-    }
+    } | {p["basiswert"] for p in positionen if p.get("basiswert")}
     profile: dict = {}
     if chart_tickers:
         print(f"[6d] Lade Unternehmensprofile fuer Charts ({len(chart_tickers)} Titel) …")
