@@ -813,6 +813,103 @@ HTML_TMPL = """
 
     {% endif %}
 
+    <h2>9) 🏢 Kaufsignale im Detail</h2>
+    {% if not signals %}
+    <p style="color:#888">Keine Kaufsignale diese Woche — kein Steckbrief zu zeigen.</p>
+    {% elif not profile_display %}
+    <p style="color:#888">Unternehmensdaten konnten diese Woche nicht geladen werden.</p>
+    {% else %}
+    {% for s in signals %}
+    {% set pd_ = profile_display.get(s.ticker) %}
+    {% if pd_ %}
+    <div class="leader-card" style="max-width:820px;margin-bottom:1.4em">
+      <div style="font-size:1.15em;font-weight:bold;margin-bottom:2px">
+        <a href="{{ s.sa_link }}" target="_blank" style="color:#003d99;text-decoration:none">{{ s.ticker }}</a>
+        &nbsp;—&nbsp;{{ s.company }}
+      </div>
+      <div style="color:#888;font-size:0.85em;margin-bottom:10px">
+        {{ pd_.kopfzeile }}{% if pd_.kopfzeile %} · {% endif %}RS {{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}
+        · Muster {{ s.pattern }}
+      </div>
+      {% if pd_.beschreibung %}
+      <p style="margin:.4em 0">{{ pd_.beschreibung }}</p>
+      <p style="color:#aaa;font-size:0.8em;margin:-.3em 0 .9em">
+        Unternehmensbeschreibung im Original (englisch), gekürzt.</p>
+      {% endif %}
+      {% for label, reihe, als_betrag in [
+          ("Umsatz je Quartal", pd_.umsatz_q, true),
+          ("Umsatz je Jahr", pd_.umsatz_j, true),
+          ("Gewinn je Aktie (Quartal)", pd_.eps_q, false)] %}
+      {% if reihe %}
+      <table style="width:100%;margin-bottom:.7em;font-size:.88em">
+        <tr><th class="left" style="white-space:nowrap">{{ label }}</th>
+          {% for r in reihe %}<th>{{ r.periode }}</th>{% endfor %}</tr>
+        <tr><td class="left">Wert</td>
+          {% for r in reihe %}<td>{{ r.wert }}</td>{% endfor %}</tr>
+        <tr><td class="left" style="font-size:.85em;color:#888">ggü. Vorjahr</td>
+          {% for r in reihe %}
+          <td style="font-size:.85em;color:{% if r.yoy_val is not none and r.yoy_val > 0 %}{{ COLOR_POS_TEXT }}{% elif r.yoy_val is not none and r.yoy_val < 0 %}{{ COLOR_NEG_TEXT }}{% else %}#888{% endif %}">
+            {{ r.yoy }}</td>
+          {% endfor %}
+        </tr>
+      </table>
+      {% endif %}
+      {% endfor %}
+      {% if pd_.begruendung %}
+      <div style="font-weight:600;color:#003d99;margin-top:.6em">Warum im Depot</div>
+      <ul style="margin:.4em 0 0;padding-left:1.2em">
+        {% for g in pd_.begruendung %}<li style="margin-bottom:.25em">{{ g }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    <h2>10) 📐 Muster zum Ansehen</h2>
+    <p style="font-size:0.88em;color:#555;margin-top:-1em;margin-bottom:0.8em">
+      Titel mit erkanntem VCP oder Launchpad — unabhängig davon, ob daraus ein Kaufsignal wurde.
+      Bewusst nicht auf Kaufsignale eingeschränkt: gefragt ist das Muster, nicht der Ausbruch.
+    </p>
+    {% if not muster %}
+    <p style="color:#888">Diese Woche kein VCP und kein Launchpad im Universum erkannt.</p>
+    {% else %}
+    <div style="overflow-x:auto">
+    <table>
+      <tr>
+        <th class="left sortable" onclick="sortTable(this)">Ticker</th>
+        <th class="left sortable" onclick="sortTable(this)">Unternehmen</th>
+        <th class="left sortable" onclick="sortTable(this)">Muster</th>
+        <th class="left sortable" onclick="sortTable(this)">Detail</th>
+        <th class="sortable" onclick="sortTable(this)">Kurs</th>
+        <th class="sortable" onclick="sortTable(this)">Pivot</th>
+        <th class="sortable" onclick="sortTable(this)">Abstand Pivot</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">RS</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">Dist 52W H %</th>
+        <th class="sortable" onclick="sortTable(this)">SA</th>
+      </tr>
+      {% for m in muster %}
+      <tr>
+        <td class="left"><strong style="color:#003d99">{{ m.ticker }}</strong></td>
+        <td class="left" style="font-size:0.85em;color:#555">{{ m.company }}</td>
+        <td class="left" style="font-weight:bold">{{ m.muster }}</td>
+        <td class="left" style="font-size:0.85em;color:#555">{{ m.detail }}</td>
+        <td>{{ '%.2f' % m.close if m.close is not none else '–' }}</td>
+        <td>{{ '%.2f' % m.pivot if m.pivot is not none else '–' }}</td>
+        <td style="color:{% if m.pivot_abstand is not none and m.pivot_abstand > 0 %}{{ COLOR_POS_TEXT }}{% elif m.pivot_abstand is not none and m.pivot_abstand < 0 %}{{ COLOR_NEG_TEXT }}{% else %}inherit{% endif %}">
+          {% if m.pivot_abstand is not none %}{% if m.pivot_abstand > 0 %}+{% endif %}{{ '%.1f' % m.pivot_abstand }}%{% else %}–{% endif %}
+        </td>
+        <td style="background-color:{% if m.rs is not none and m.rs >= 70 %}#d4edda{% else %}transparent{% endif %}">
+          {{ '%.0f' % m.rs if m.rs is not none else '–' }}</td>
+        <td style="background-color:{% if m.dist_52w is not none and m.dist_52w <= 25 %}#d4edda{% else %}transparent{% endif %}">
+          {{ '%.1f' % m.dist_52w if m.dist_52w is not none else '–' }}</td>
+        <td>{% if m.link %}<a href="{{ m.link }}" target="_blank" class="btn-sa">SA</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    {% endif %}
+
   </div><!-- .page -->
 </body>
 </html>
@@ -1023,12 +1120,64 @@ def filter_rules_for_fails() -> dict:
     }
 
 
+def _format_profile_for_report(profile: dict) -> dict:
+    """Unternehmensportraets fuer den Web-Report vorformatieren.
+
+    `profile` kommt roh aus `company_profile.fetch_profiles` (Zahlen, keine
+    Strings). Die Formatierung passiert hier statt im Template, weil Jinja
+    fuer Mio/Mrd-Rundung und YoY-Vorzeichen umstaendlicher ist als Python —
+    und weil dieselbe Logik sonst ein zweites Mal im Template stehen wuerde.
+    """
+    def _betrag(v) -> str:
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            return "–"
+        if abs(v) >= 1e9:
+            return f"${v / 1e9:.2f}B"
+        if abs(v) >= 1e6:
+            return f"${v / 1e6:.0f}M"
+        return f"${v:,.0f}"
+
+    def _reihe(reihe: list, als_betrag: bool) -> list:
+        out = []
+        for r in reihe or []:
+            wert = r.get("wert")
+            wert_str = _betrag(wert) if als_betrag else (
+                f"{float(wert):.2f}" if wert is not None else "–")
+            yoy = r.get("yoy")
+            yoy_str = (f"{'+' if yoy > 0 else ''}{yoy:.1f}%") if yoy is not None else "–"
+            out.append({"periode": r.get("periode", ""), "wert": wert_str,
+                        "yoy": yoy_str, "yoy_val": yoy})
+        return out
+
+    out = {}
+    for ticker, p in (profile or {}).items():
+        if not p:
+            continue
+        kopfzeile = " · ".join(str(x) for x in [
+            p.get("industrie"), p.get("land"),
+            (f"{p['mitarbeiter']:,} Mitarbeitende".replace(",", ".")
+             if p.get("mitarbeiter") else None),
+        ] if x)
+        out[ticker] = {
+            "beschreibung": p.get("beschreibung", ""),
+            "kopfzeile":    kopfzeile,
+            "umsatz_q":     _reihe(p.get("umsatz_q", []), True),
+            "umsatz_j":     _reihe(p.get("umsatz_j", []), True),
+            "eps_q":        _reihe(p.get("eps_q", []), False),
+            "begruendung":  p.get("_begruendung", []),
+        }
+    return out
+
+
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
                       signals=None, pages_url=None,
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
                       sector_excluded=None,
                       sp500_breadth_pct=None, min_breadth_pct=40,
-                      test_mode=False, sector_rows=None):
+                      test_mode=False, sector_rows=None,
+                      profile=None, muster=None):
     """Build the weekly HTML email.
 
     Parameters
@@ -1040,8 +1189,16 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         Available buying power from Alpaca paper account.
     alpaca_positions : list[str] | None
         Tickers of currently held positions.
+    profile : dict | None
+        Unternehmensportraets je Ticker (aus `company_profile.fetch_profiles`,
+        angereichert um `_begruendung`) — Quelle fuer Abschnitt 9.
+    muster : list | None
+        Titel mit erkanntem VCP/Launchpad (aus `mail_report.muster_liste`) —
+        Quelle fuer Abschnitt 10.
     """
     signals = signals or []
+    profile_display = _format_profile_for_report(profile or {})
+    muster = muster or []
 
     # ── Recent closed trades (last 7 days) ───────────────────────────────────
     _EXIT_LABELS = {
@@ -1219,6 +1376,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         ampel              = ampel,
         sector_rows        = sector_rows or [],
         recent_trades      = recent_trades,
+        profile_display    = profile_display,
+        muster             = muster,
     )
     return html
 

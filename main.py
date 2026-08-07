@@ -483,15 +483,48 @@ def _breadth_wert(snap, spalte: str):
         return None
 
 
+def _build_signal_extras(signals, leaders_html) -> tuple:
+    """Unternehmensportraets und Musterliste — einmal berechnet, von Mail UND
+
+    Web-Report genutzt. Vorher steckte das nur in `_build_email_report` und
+    lief dort ein zweites Mal, wenn auch der Web-Report dieselben Daten haben
+    sollte — genau die Art Dopplung, die spaeter auseinanderlaeuft.
+    """
+    profile: dict = {}
+    try:
+        if signals:
+            import company_profile
+            profile = company_profile.fetch_profiles([s.ticker for s in signals])
+            for s in signals:
+                if s.ticker in profile:
+                    profile[s.ticker]["_begruendung"] = company_profile.kaufbegruendung(s)
+            print(f"[REPORT] Unternehmensportraet fuer {len(profile)} Signal(e) geladen")
+    except Exception as e:
+        print(f"[REPORT] ⚠️  Unternehmensportraets nicht ladbar: {e}")
+
+    try:
+        import mail_report
+        muster = mail_report.muster_liste(leaders_html)
+        print(f"[REPORT] {len(muster)} Titel mit VCP/Launchpad fuer die Musterrubrik")
+    except Exception as e:
+        print(f"[REPORT] ⚠️  Musterrubrik nicht baubar: {e}")
+        muster = []
+
+    return profile, muster
+
+
 def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
                         signals, leaders_html, alpaca_portfolio, alpaca_cash,
-                        report_url, test_mode, rs_now_map=None) -> str:
+                        report_url, test_mode, profile, muster, rs_now_map=None) -> str:
     """Traegt die Daten fuer den Boersenbrief zusammen und rendert ihn.
 
     Bewusst hier statt in mail_report: das Modul soll rendern, nicht Daten
     einsammeln. Faellt ein Baustein aus (Equity-Historie, SPY, Journal), wird
     der Brief trotzdem gebaut — nur ohne den Abschnitt, und mit sichtbarem
     Hinweis im Log statt stiller Luecke.
+
+    `profile` und `muster` kommen fertig von `_build_signal_extras` — derselbe
+    Abruf, den auch der Web-Report verwendet.
     """
     import mail_report
     from report_builder import compute_filter_fails, filter_rules_for_fails
@@ -506,29 +539,6 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
         print(f"[MAIL] ⚠️  Journal nicht lesbar, Stop-Abstaende fehlen: {e}")
         journal_open = []
     positionen = mail_report.position_details(positions, journal_open, rs_now_map)
-
-    # Unternehmensportraet je Kaufsignal. Nur fuer die tatsaechlichen Signale
-    # (null bis drei pro Woche) — deshalb ein eigener Abruf statt zusaetzlicher
-    # Last im Universumslauf. Faellt er aus, fehlt das Portraet, nicht der Brief.
-    profile: dict = {}
-    try:
-        if signals:
-            import company_profile
-            profile = company_profile.fetch_profiles([s.ticker for s in signals])
-            for s in signals:
-                if s.ticker in profile:
-                    profile[s.ticker]["_begruendung"] = company_profile.kaufbegruendung(s)
-            print(f"[MAIL] Unternehmensportraet fuer {len(profile)} Signal(e) geladen")
-    except Exception as e:
-        print(f"[MAIL] ⚠️  Unternehmensportraets nicht ladbar: {e}")
-
-    # Titel mit erkanntem VCP/Launchpad — zum Nachschauen im Chart
-    try:
-        muster = mail_report.muster_liste(leaders_html)
-        print(f"[MAIL] {len(muster)} Titel mit VCP/Launchpad fuer die Musterrubrik")
-    except Exception as e:
-        print(f"[MAIL] ⚠️  Musterrubrik nicht baubar: {e}")
-        muster = []
 
     # Depot gegen SPY
     perf, svg = {}, ""
@@ -1281,6 +1291,10 @@ def run():
     PAGES_BASE_URL = "https://weekly-market-condition.pages.dev"
     report_url     = f"{PAGES_BASE_URL}/reports/{report_date}.html"
 
+    # Unternehmensportraets + Musterliste einmal berechnen — Web-Report und
+    # Boersenbrief teilen sich dasselbe Ergebnis statt es zweimal abzurufen.
+    profile, muster = _build_signal_extras(signals, leaders_html)
+
     html_full = build_html_report(
         breadth_df, idx_df, risk_df, summary, report_date,
         weekly, leaders_html, signals=signals, pages_url=None,
@@ -1288,6 +1302,7 @@ def run():
         sector_excluded=sector_excluded,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
         test_mode=TEST_MODE, sector_rows=sector_rows,
+        profile=profile, muster=muster,
     )
     docs_reports_dir = Path("docs/reports")
     docs_reports_dir.mkdir(parents=True, exist_ok=True)
@@ -1315,6 +1330,7 @@ def run():
         sector_rows=sector_rows, signals=signals, leaders_html=leaders_html,
         alpaca_portfolio=alpaca_portfolio, alpaca_cash=alpaca_cash,
         report_url=report_url, test_mode=TEST_MODE, rs_now_map=_rs_now_map,
+        profile=profile, muster=muster,
     )
 
     # E-Mail Betreff zeigt Signalanzahl + TEST-MODUS-Hinweis
