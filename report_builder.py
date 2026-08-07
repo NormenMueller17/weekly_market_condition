@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import re
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Dict, List, Tuple
@@ -831,6 +832,7 @@ HTML_TMPL = """
         {{ pd_.kopfzeile }}{% if pd_.kopfzeile %} · {% endif %}RS {{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}
         · Muster {{ s.pattern }}
       </div>
+      {{ tv_signal_charts.get(s.ticker, '') | safe }}
       {% if pd_.beschreibung %}
       <p style="margin:.4em 0">{{ pd_.beschreibung }}</p>
       <p style="color:#aaa;font-size:0.8em;margin:-.3em 0 .9em">
@@ -904,6 +906,11 @@ HTML_TMPL = """
         <td style="background-color:{% if m.dist_52w is not none and m.dist_52w <= 25 %}#d4edda{% else %}transparent{% endif %}">
           {{ '%.1f' % m.dist_52w if m.dist_52w is not none else '–' }}</td>
         <td>{% if m.link %}<a href="{{ m.link }}" target="_blank" class="btn-sa">SA</a>{% endif %}</td>
+      </tr>
+      <tr>
+        <td colspan="10" style="border-top:none;padding:0 8px 14px 8px;text-align:left">
+          {{ tv_muster_charts.get(m.ticker, '') | safe }}
+        </td>
       </tr>
       {% endfor %}
     </table>
@@ -1120,6 +1127,55 @@ def filter_rules_for_fails() -> dict:
     }
 
 
+def _tv_chart_id(prefix: str, ticker: str) -> str:
+    """DOM-taugliche, eindeutige Widget-ID je Ticker und Sektion."""
+    return f"{prefix}_{re.sub(r'[^A-Za-z0-9]', '_', str(ticker))}"
+
+
+def _tv_advanced_chart(ticker: str, elem_id: str, height: int = 400) -> str:
+    """TradingView Advanced-Chart-Widget: Wochenkerzen mit 10/30/40-Wochen-Linien.
+
+    Oeffentliches Embed-Widget (kein Login, kein API-Key, kein Pro-Abo noetig
+    — Premium lizenziert nur die Darstellung im TradingView-eigenen Chart,
+    nicht den Embed, siehe [[project_kursquelle_alternativen]]). Die drei
+    Moving Averages sind bewusst 10/30/40 Wochen: dasselbe Set, das das
+    VCP/Launchpad-Regelwerk selbst benutzt (siehe signal_generator.py), damit
+    der Chart zeigt, wonach der Screener tatsaechlich sucht.
+
+    Nur fuer den Web-Report. Die Mail bindet bewusst keine externen Skripte
+    oder Iframes ein — die meisten Mailclients blockieren sie ohnehin (siehe
+    mail_report.py Modul-Docstring).
+    """
+    options = {
+        "autosize": False,
+        "width": "100%",
+        "height": height,
+        "symbol": ticker,
+        "interval": "W",
+        "timezone": "Etc/UTC",
+        "theme": "light",
+        "style": "1",
+        "locale": "de_DE",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": False,
+        "hide_side_toolbar": True,
+        "allow_symbol_change": False,
+        "studies": [
+            {"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}},
+            {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}},
+            {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}},
+        ],
+        "container_id": elem_id,
+    }
+    return (
+        f'<div class="tradingview-widget-container" style="margin:.6em 0 1em;">'
+        f'<div id="{elem_id}"></div>'
+        f'<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>'
+        f'<script type="text/javascript">new TradingView.widget({json.dumps(options)});</script>'
+        f'</div>'
+    )
+
+
 def _format_profile_for_report(profile: dict) -> dict:
     """Unternehmensportraets fuer den Web-Report vorformatieren.
 
@@ -1199,6 +1255,17 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     signals = signals or []
     profile_display = _format_profile_for_report(profile or {})
     muster = muster or []
+
+    # TradingView-Charts je Ticker — getrennte IDs je Sektion, falls derselbe
+    # Titel sowohl Kaufsignal als auch Musterzeile ist.
+    tv_signal_charts = {
+        s.ticker: _tv_advanced_chart(s.ticker, _tv_chart_id("tv_sig", s.ticker))
+        for s in signals
+    }
+    tv_muster_charts = {
+        m["ticker"]: _tv_advanced_chart(m["ticker"], _tv_chart_id("tv_mus", m["ticker"]), height=360)
+        for m in muster
+    }
 
     # ── Recent closed trades (last 7 days) ───────────────────────────────────
     _EXIT_LABELS = {
@@ -1378,6 +1445,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         recent_trades      = recent_trades,
         profile_display    = profile_display,
         muster             = muster,
+        tv_signal_charts   = tv_signal_charts,
+        tv_muster_charts   = tv_muster_charts,
     )
     return html
 
