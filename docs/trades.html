@@ -40,6 +40,10 @@
                font-size:.82em; font-weight:600; text-decoration:none; white-space:nowrap; }
     .dl-btn:hover { background:#0055cc; }
     .tbl-wrap { border-top:2px solid #003d99; padding-top:.5em; }
+    .trade-charts { display:flex; gap:20px; flex-wrap:wrap; padding:10px 4px; }
+    .chart-col    { flex:1; min-width:280px; }
+    .chart-label  { font-size:.72em; font-weight:700; color:#2980b9; text-transform:uppercase;
+                     letter-spacing:.03em; margin-bottom:4px; }
   </style>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script>
@@ -56,7 +60,7 @@
 <body>
   <nav class="g-nav">
     <a href="index.html" class="g-brand">📈 Weekly Screener</a>
-    <a href="reports/2026-08-01.html">Aktueller Report</a>
+    <a href="reports/2026-08-08.html">Aktueller Report</a>
     <a href="trades.html" class="active">Trade Journal</a>
     <a href="performance.html">Performance</a>
     <a href="zertifikate/index.html">Zertifikate</a>
@@ -113,6 +117,9 @@
           <td style="color:#1a8a1a;font-weight:600">+918</td>
           <td class="left" style="font-size:.8em">&#x2705; Breakeven<br>&#x1F4C9; Trail $100.75</td>
         </tr>
+        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_QCRH"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "QCRH", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_QCRH"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>NTRA</strong><br>
             <span style="font-size:.8em;color:#666">Natera, Inc.</span></td>
@@ -129,6 +136,9 @@
           <td style="color:#1a8a1a;font-weight:600">+2,654</td>
           <td class="left" style="font-size:.8em">&#x2705; Breakeven<br>&#x1F4C9; Trail $296.01</td>
         </tr>
+        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_NTRA"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "NTRA", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_NTRA"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>SUN</strong><br>
             <span style="font-size:.8em;color:#666">Sunoco LP</span></td>
@@ -145,6 +155,9 @@
           <td style="color:#cc2222;font-weight:600">-770</td>
           <td class="left" style="font-size:.8em">–</td>
         </tr>
+        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_SUN"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "SUN", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_SUN"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>CORT</strong><br>
             <span style="font-size:.8em;color:#666"></span></td>
@@ -161,6 +174,9 @@
           <td style="color:#cc2222;font-weight:600">-451</td>
           <td class="left" style="font-size:.8em">–</td>
         </tr>
+        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_CORT"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "CORT", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_CORT"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>MBIN</strong><br>
             <span style="font-size:.8em;color:#666">Merchants Bancorp</span></td>
@@ -177,6 +193,9 @@
           <td style="color:#cc2222;font-weight:600">-605</td>
           <td class="left" style="font-size:.8em">–</td>
         </tr>
+        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_MBIN"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "MBIN", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_MBIN"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>ACRS</strong><br>
             <span style="font-size:.8em;color:#666"></span></td>
@@ -193,6 +212,9 @@
           <td style="color:#cc2222;font-weight:600">-946</td>
           <td class="left" style="font-size:.8em">–</td>
         </tr>
+        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_ACRS"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "ACRS", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_ACRS"});</script></div></div></div>
+        </td></tr>
   </table>
   </div>
 
@@ -232,6 +254,9 @@
           <td style="color:#1a8a1a;font-weight:600">+1.4%</td>
           <td style="color:#1a8a1a;font-weight:600">+213</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_AVNS"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "AVNS", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_AVNS"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>ASTH</strong><br>
             <span style="font-size:.8em;color:#666">Astrana Health Inc.</span></td>
@@ -247,6 +272,9 @@
           <td style="color:#cc2222;font-weight:600">-11.2%</td>
           <td style="color:#cc2222;font-weight:600">-1,480</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_ASTH"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "ASTH", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_ASTH"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>STX</strong><br>
             <span style="font-size:.8em;color:#666">Seagate Technology Holdings PLC</span></td>
@@ -262,6 +290,9 @@
           <td style="color:#cc2222;font-weight:600">-3.8%</td>
           <td style="color:#cc2222;font-weight:600">-553</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_STX"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "STX", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_STX"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>ON</strong><br>
             <span style="font-size:.8em;color:#666">ON Semiconductor Corporation</span></td>
@@ -277,6 +308,9 @@
           <td style="color:#1a8a1a;font-weight:600">+1.6%</td>
           <td style="color:#1a8a1a;font-weight:600">+235</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_ON"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "ON", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_ON"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>VSH</strong><br>
             <span style="font-size:.8em;color:#666">Vishay Intertechnology, Inc.</span></td>
@@ -292,6 +326,9 @@
           <td style="color:#1a8a1a;font-weight:600">+73.8%</td>
           <td style="color:#1a8a1a;font-weight:600">+11,290</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_VSH"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "VSH", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_VSH"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>SANM</strong><br>
             <span style="font-size:.8em;color:#666">Sanmina Corporation</span></td>
@@ -307,6 +344,9 @@
           <td style="color:#cc2222;font-weight:600">-0.1%</td>
           <td style="color:#cc2222;font-weight:600">-10</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_SANM"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "SANM", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_SANM"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>TTMI</strong><br>
             <span style="font-size:.8em;color:#666">TTM Technologies, Inc.</span></td>
@@ -322,6 +362,9 @@
           <td style="">-0.0%</td>
           <td style="color:#cc2222;font-weight:600">-0</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_TTMI"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "TTMI", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_TTMI"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>GLW</strong><br>
             <span style="font-size:.8em;color:#666">Corning Incorporated</span></td>
@@ -337,6 +380,9 @@
           <td style="color:#cc2222;font-weight:600">-10.7%</td>
           <td style="color:#cc2222;font-weight:600">-1,404</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_GLW"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "GLW", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_GLW"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>NUE</strong><br>
             <span style="font-size:.8em;color:#666">Nucor Corporation</span></td>
@@ -352,6 +398,9 @@
           <td style="color:#cc2222;font-weight:600">-10.3%</td>
           <td style="color:#cc2222;font-weight:600">-1,517</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_NUE"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "NUE", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_NUE"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>AAON</strong><br>
             <span style="font-size:.8em;color:#666">AAON, Inc.</span></td>
@@ -367,6 +416,9 @@
           <td style="color:#cc2222;font-weight:600">-10.3%</td>
           <td style="color:#cc2222;font-weight:600">-1,396</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_AAON"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "AAON", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_AAON"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>SKYT</strong><br>
             <span style="font-size:.8em;color:#666">SkyWater Technology, Inc.</span></td>
@@ -382,6 +434,9 @@
           <td style="color:#cc2222;font-weight:600">-0.0%</td>
           <td style="color:#cc2222;font-weight:600">-1</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_SKYT"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "SKYT", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_SKYT"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>CYTK</strong><br>
             <span style="font-size:.8em;color:#666">Cytokinetics, Incorporated</span></td>
@@ -397,6 +452,9 @@
           <td style="color:#cc2222;font-weight:600">-11.8%</td>
           <td style="color:#cc2222;font-weight:600">-1,635</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_CYTK"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "CYTK", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_CYTK"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>HLIT</strong><br>
             <span style="font-size:.8em;color:#666">Harmonic Inc.</span></td>
@@ -412,6 +470,9 @@
           <td style="color:#cc2222;font-weight:600">-14.3%</td>
           <td style="color:#cc2222;font-weight:600">-1,883</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_HLIT"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "HLIT", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_HLIT"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>KALU</strong><br>
             <span style="font-size:.8em;color:#666">Kaiser Aluminum Corporation</span></td>
@@ -427,6 +488,9 @@
           <td style="color:#cc2222;font-weight:600">-12.9%</td>
           <td style="color:#cc2222;font-weight:600">-1,958</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_KALU"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "KALU", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_KALU"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>MU</strong><br>
             <span style="font-size:.8em;color:#666">Micron Technology, Inc.</span></td>
@@ -442,6 +506,9 @@
           <td style="color:#cc2222;font-weight:600">-14.2%</td>
           <td style="color:#cc2222;font-weight:600">-2,007</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_MU"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "MU", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_MU"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>CRDO</strong><br>
             <span style="font-size:.8em;color:#666">Credo Technology Group Holding</span></td>
@@ -457,6 +524,9 @@
           <td style="color:#cc2222;font-weight:600">-4.7%</td>
           <td style="color:#cc2222;font-weight:600">-711</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_CRDO"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "CRDO", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_CRDO"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>VICR</strong><br>
             <span style="font-size:.8em;color:#666">Vicor Corporation</span></td>
@@ -472,6 +542,9 @@
           <td style="color:#cc2222;font-weight:600">-10.9%</td>
           <td style="color:#cc2222;font-weight:600">-1,625</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_VICR"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "VICR", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_VICR"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>RVMD</strong><br>
             <span style="font-size:.8em;color:#666">Revolution Medicines, Inc.</span></td>
@@ -487,6 +560,9 @@
           <td style="color:#cc2222;font-weight:600">-12.1%</td>
           <td style="color:#cc2222;font-weight:600">-1,831</td>
         </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_RVMD"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "RVMD", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_RVMD"});</script></div></div></div>
+        </td></tr>
   </table>
   </div>
   </div><!-- .page -->
