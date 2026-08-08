@@ -515,7 +515,8 @@ def _build_signal_extras(signals, leaders_html) -> tuple:
 
 def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
                         signals, leaders_html, alpaca_portfolio, alpaca_cash,
-                        report_url, test_mode, profile, muster, rs_now_map=None) -> str:
+                        report_url, test_mode, profile, muster, rs_now_map=None,
+                        sector_excluded=None) -> str:
     """Traegt die Daten fuer den Boersenbrief zusammen und rendert ihn.
 
     Bewusst hier statt in mail_report: das Modul soll rendern, nicht Daten
@@ -574,7 +575,7 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
                     "company": row.get("Company", ""),
                     "score":   int(row["_score_num"]),
                     "rs":      row.get("RS (O'Neil)", "–"),
-                    "fails":   compute_filter_fails(row, sector_excluded=set(), **schwellen),
+                    "fails":   compute_filter_fails(row, sector_excluded=sector_excluded or set(), **schwellen),
                 })
     except Exception as e:
         print(f"[MAIL] ⚠️  Kandidatenliste nicht baubar: {e}")
@@ -1330,7 +1331,7 @@ def run():
         sector_rows=sector_rows, signals=signals, leaders_html=leaders_html,
         alpaca_portfolio=alpaca_portfolio, alpaca_cash=alpaca_cash,
         report_url=report_url, test_mode=TEST_MODE, rs_now_map=_rs_now_map,
-        profile=profile, muster=muster,
+        profile=profile, muster=muster, sector_excluded=sector_excluded,
     )
 
     # E-Mail Betreff zeigt Signalanzahl + TEST-MODUS-Hinweis
