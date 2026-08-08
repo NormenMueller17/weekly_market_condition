@@ -459,7 +459,7 @@ HTML_TMPL = """
     {% if not pages_url and not all_leaders.empty %}
     {# ── CLOUDFLARE PAGES: Fallback-Tabelle aller Screener-Kandidaten ── #}
     <p style="font-size:0.9em;color:#555;margin-bottom:0.6em">
-        Screener-Kandidaten (Score ≥ 6/8) — sortierbar, kein Handelssignal diese Woche:
+        Screener-Kandidaten (Score ≥ 6/8, Top 20 nach Score/RS) — sortierbar, kein Handelssignal diese Woche:
     </p>
     <div style="overflow-x:auto">
     <table>
@@ -1512,11 +1512,23 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     # Marktampel berechnen
     ampel = compute_ampel(breadth_snap, idx)
 
-    # 2) Leaders: Screener-Kandidaten Score ≥ 6; für Email nur Score 8/8
+    # 2) Leaders: Screener-Kandidaten Score ≥ 6, Top 20 nach Score/RS; für Email nur Score 8/8
     all_leaders_html = leaders.copy()
     if "score" in all_leaders_html.columns:
         all_leaders_html["score_num"] = pd.to_numeric(all_leaders_html["score"], errors="coerce")
-        all_leaders_html = all_leaders_html[all_leaders_html["score_num"] >= 6].drop(columns=["score_num"])
+        all_leaders_html = all_leaders_html[all_leaders_html["score_num"] >= 6]
+        _sort_cols = ["score_num"]
+        _sort_asc  = [False]
+        if "RS (O'Neil)" in all_leaders_html.columns:
+            all_leaders_html["_rs_num"] = pd.to_numeric(all_leaders_html["RS (O'Neil)"], errors="coerce")
+            _sort_cols.append("_rs_num")
+            _sort_asc.append(False)
+        all_leaders_html = (
+            all_leaders_html
+            .sort_values(_sort_cols, ascending=_sort_asc)
+            .head(20)
+            .drop(columns=[c for c in ("score_num", "_rs_num") if c in all_leaders_html.columns])
+        )
     leaders_html = leaders.copy()
     if "score" in leaders_html.columns:
         leaders_html["score_num"] = pd.to_numeric(leaders_html["score"], errors="coerce")
