@@ -1,21 +1,63 @@
 {
-  "generated": "2026-08-01",
+  "generated": "2026-08-08",
   "market_bullish": true,
-  "count": 1,
+  "count": 4,
   "watchlist": [
     {
-      "ticker": "ACRS",
-      "company": "Aclaris Therapeutics Inc.",
-      "industry": "Biotechnology: Pharmaceutical Preparations",
+      "ticker": "ATEX",
+      "company": "Anterix Inc.",
+      "industry": "Telecommunications Equipment",
+      "sector": "Communication Services",
+      "pivot": 107.31,
+      "buy_stop": 107.4173,
+      "close_saturday": 99.26,
+      "atr_pct": 6.885091945775454,
+      "rs_score": 98.0925925925926,
+      "score": 7,
+      "industry_ranking": 49,
+      "sa_link": "https://stockanalysis.com/stocks/ATEX"
+    },
+    {
+      "ticker": "PSNL",
+      "company": "Personalis Inc.",
+      "industry": "Medical Specialities",
       "sector": "Healthcare",
-      "pivot": 5.615,
-      "buy_stop": 5.6206,
-      "close_saturday": 5.2,
-      "atr_pct": 6.075548824524312,
-      "rs_score": 96.43949394939493,
-      "score": 6,
-      "industry_ranking": 12,
-      "sa_link": "https://stockanalysis.com/stocks/ACRS"
+      "pivot": 14.3,
+      "buy_stop": 14.3143,
+      "close_saturday": 14.16,
+      "atr_pct": 5.213377799393027,
+      "rs_score": 96.49128540305011,
+      "score": 7,
+      "industry_ranking": 21,
+      "sa_link": "https://stockanalysis.com/stocks/PSNL"
+    },
+    {
+      "ticker": "FRD",
+      "company": "Friedman Industries Inc.",
+      "industry": "Steel/Iron Ore",
+      "sector": "Basic Materials",
+      "pivot": 45.88,
+      "buy_stop": 45.9259,
+      "close_saturday": 43.91,
+      "atr_pct": 6.549110873455966,
+      "rs_score": 95.98420479302831,
+      "score": 7,
+      "industry_ranking": 36,
+      "sa_link": "https://stockanalysis.com/stocks/FRD"
+    },
+    {
+      "ticker": "PNTG",
+      "company": "The Pennant Group Inc.",
+      "industry": "Medical/Nursing Services",
+      "sector": "Healthcare",
+      "pivot": 41.46,
+      "buy_stop": 41.5015,
+      "close_saturday": 39.0,
+      "atr_pct": 3.717399429488968,
+      "rs_score": 82.239651416122,
+      "score": 7,
+      "industry_ranking": 33,
+      "sa_link": "https://stockanalysis.com/stocks/PNTG"
     }
   ]
 }
