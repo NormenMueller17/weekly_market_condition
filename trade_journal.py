@@ -22,6 +22,64 @@ TRADES_FILE    = Path("docs/data/trades.json")
 TRADES_HTML    = Path("docs/trades.html")
 SIGNALS_DIR    = Path("artifacts")
 SIGNALS_META_DIR = Path("docs/data")
+TRADE_CHARTS_DIR = Path("docs/data/trade_charts")
+
+
+# ── Kauf-Chart einfrieren ────────────────────────────────────────────────────
+
+def _snapshot_entry_chart(symbol: str, entry_date: str, entry_price) -> Optional[str]:
+    """Kursverlauf vor dem Kauf einmalig als SVG einfrieren.
+
+    Warum einmalig statt bei jedem trades.html-Build neu berechnen: TradingView
+    (fuer den "Jetzt"-Chart in build_html) zeigt immer die Live-Ansicht und
+    kennt kein festes historisches Fenster — das Vorher-Bild gibt es nur, wenn
+    wir es selbst einfangen. Ein spaeterer Neuabruf haette zudem zwei Nachteile:
+    wiederholte Yahoo-Last bei jedem Report-Build, und das Risiko, dass Yahoo
+    die Historie bis zum Kaufdatum irgendwann nicht mehr vorhaelt.
+
+    Fehlschlaege duerfen den Journal-Sync nie blockieren — Chart ist Beiwerk.
+    """
+    try:
+        import yfinance as yf
+        from report_builder import _price_history_svg
+
+        ende  = datetime.date.fromisoformat(entry_date)
+        start = ende - datetime.timedelta(weeks=27)
+        df = yf.download(symbol, start=start.isoformat(),
+                         end=(ende + datetime.timedelta(days=1)).isoformat(),
+                         interval="1wk", progress=False, auto_adjust=False)
+        if df is None or df.empty or "Close" not in df.columns:
+            return None
+
+        close = df["Close"]
+        if hasattr(close, "columns"):   # MultiIndex-Fallback bei manchen yfinance-Versionen
+            close = close.iloc[:, 0]
+        close = close.dropna()
+        if len(close) < 2:
+            return None
+
+        volumen = df["Volume"].reindex(close.index) if "Volume" in df.columns else None
+        if volumen is not None and hasattr(volumen, "columns"):
+            volumen = volumen.iloc[:, 0]
+
+        perioden = [d.strftime("%Y-%m-%d") for d in close.index]
+        svg = _price_history_svg(
+            perioden,
+            [float(v) for v in close],
+            [float(v) for v in volumen] if volumen is not None else None,
+            marker_index=len(perioden) - 1,
+            marker_label=f"Kauf {float(entry_price):.2f}" if entry_price else "Kauf",
+        )
+        if not svg:
+            return None
+
+        TRADE_CHARTS_DIR.mkdir(parents=True, exist_ok=True)
+        out_path = TRADE_CHARTS_DIR / f"{symbol}_{entry_date}.svg"
+        out_path.write_text(svg, encoding="utf-8")
+        return f"data/trade_charts/{out_path.name}"
+    except Exception as e:
+        print(f"[JOURNAL] ⚠️  {symbol}: Kauf-Chart nicht erzeugbar: {e}")
+        return None
 
 
 # ── JSON helpers ──────────────────────────────────────────────────────────────
@@ -363,8 +421,10 @@ def sync(
         meta         = _find_signal_meta(sym)
         initial_stop = _find_initial_stop(sym)
         entry_date   = _entry_date_from_orders(sym, filled_buys)
+        chart_before_path = _snapshot_entry_chart(sym, entry_date, pos["avg_entry_price"])
         data["open"].append({
             "symbol":           sym,
+            "chart_before_path": chart_before_path,
             "company":          meta["company"],
             "sector":           meta.get("sector", ""),
             "pattern":          meta["pattern"],
@@ -711,6 +771,27 @@ def _pt_status(t: dict) -> str:
     return "<br>".join(parts) if parts else "–"
 
 
+def _trade_chart_block(symbol: str, chart_before_path: Optional[str]) -> str:
+    """Vorher/Jetzt-Charts einer Position fuer trades.html.
+
+    "Vorher" ist das eingefrorene SVG aus `_snapshot_entry_chart` (kann fehlen,
+    z.B. bei Trades vor Einfuehrung dieses Felds). "Jetzt" ist immer live via
+    TradingView — genau dafuer ist das Embed-Widget geeignet, siehe
+    `_price_history_svg`-Docstring in report_builder.py.
+    """
+    from report_builder import _tv_advanced_chart, _tv_chart_id
+
+    tv = _tv_advanced_chart(symbol, _tv_chart_id("tv_trade", symbol), height=260)
+    vorher = ""
+    if chart_before_path:
+        vorher = (f'<div class="chart-col"><div class="chart-label">Vor dem Kauf</div>'
+                  f'<img src="{chart_before_path}" alt="Kursverlauf vor dem Kauf" '
+                  f'style="width:100%;max-width:560px;display:block;border:1px solid #ecf0f1;'
+                  f'border-radius:4px"></div>')
+    jetzt = f'<div class="chart-col"><div class="chart-label">Jetzt</div>{tv}</div>'
+    return f'<div class="trade-charts">{vorher}{jetzt}</div>'
+
+
 def build_html(data: dict) -> str:
     stats   = _stats(data)
     today   = datetime.date.today().isoformat()
@@ -756,7 +837,10 @@ def build_html(data: dict) -> str:
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
           <td class="left" style="font-size:.8em">{_pt_status(t)}</td>
-        </tr>"""
+        </tr>
+        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
+          {_trade_chart_block(t.get('symbol',''), t.get('chart_before_path'))}
+        </td></tr>"""
 
     if not open_rows:
         open_rows = '<tr><td colspan="13" style="text-align:center;color:#999">Keine offenen Positionen</td></tr>'
@@ -783,7 +867,10 @@ def build_html(data: dict) -> str:
           <td class="left">{_exit_reason_label(t.get('exit_reason'))}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
-        </tr>"""
+        </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          {_trade_chart_block(t.get('symbol',''), t.get('chart_before_path'))}
+        </td></tr>"""
 
     if not closed_rows:
         closed_rows = '<tr><td colspan="12" style="text-align:center;color:#999">Noch keine abgeschlossenen Trades</td></tr>'
@@ -830,6 +917,10 @@ def build_html(data: dict) -> str:
                font-size:.82em; font-weight:600; text-decoration:none; white-space:nowrap; }}
     .dl-btn:hover {{ background:#0055cc; }}
     .tbl-wrap {{ border-top:2px solid #003d99; padding-top:.5em; }}
+    .trade-charts {{ display:flex; gap:20px; flex-wrap:wrap; padding:10px 4px; }}
+    .chart-col    {{ flex:1; min-width:280px; }}
+    .chart-label  {{ font-size:.72em; font-weight:700; color:#2980b9; text-transform:uppercase;
+                     letter-spacing:.03em; margin-bottom:4px; }}
   </style>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script>

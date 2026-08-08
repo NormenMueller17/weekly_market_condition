@@ -3,7 +3,7 @@ import json
 import re
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import pandas as pd
 from jinja2 import Template
 
@@ -1277,6 +1277,104 @@ def _bar_chart_svg(reihe: list, als_betrag: bool, jahres_reihe: bool = False,
                 f'<text x="{cx:.1f}" y="{yoy_y:.1f}" text-anchor="middle" font-size="9" '
                 f'fill="{yoy_farbe}">{yoy_label}</text>'
             )
+
+    teile.append("</svg>")
+    return "".join(teile)
+
+
+def _price_history_svg(perioden: list, close: list, volumen: Optional[list] = None,
+                       marker_index: Optional[int] = None, marker_label: str = "",
+                       breite: int = 560, hoehe: int = 210) -> str:
+    """Kursverlauf (Linie) + Volumen (Balken) als eigenstaendiges SVG, mit optionalem
+    Marker (z.B. Kaufzeitpunkt).
+
+    Anders als `_tv_advanced_chart`: TradingViews Embed-Widget zeigt immer den
+    aktuellen Live-Chart und laesst sich nicht auf ein festes historisches
+    Fenster verankern. Fuer einen Zustand, der dauerhaft eingefroren werden
+    soll (z.B. "wie sah der Titel unmittelbar vor dem Kauf aus"), reicht das
+    nicht — deshalb dieses SVG, das exakt das Fenster zeigt, das man ihm
+    mitgibt und beliebig oft identisch neu rendert.
+
+    `close`/`volumen` sind parallele Listen, keine DataFrame-Abhaengigkeit in
+    der Signatur — der Aufrufer extrahiert aus yfinance, diese Funktion baut
+    nur noch Geometrie.
+    """
+    n = len(close)
+    if n < 2:
+        return ""
+
+    hat_volumen = bool(volumen) and len(volumen) == n
+    pad_l, pad_r, pad_t, pad_b = 4, 46, 20, 26
+    vol_h = 40 if hat_volumen else 0
+    gap   = 14 if hat_volumen else 0
+    preis_h = hoehe - pad_t - pad_b - vol_h - gap
+
+    plot_w = breite - pad_l - pad_r
+    dx = plot_w / (n - 1)
+
+    lo, hi = min(close), max(close)
+    if hi - lo < 1e-9:
+        hi = lo + 1.0
+
+    def _py(v: float) -> float:
+        return pad_t + (hi - v) / (hi - lo) * preis_h
+
+    xs = [pad_l + i * dx for i in range(n)]
+    ys = [_py(v) for v in close]
+
+    teile = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {breite} {hoehe}" '
+        f'width="100%" height="{hoehe}" style="max-width:{breite}px;font-family:Arial,sans-serif;">',
+    ]
+
+    # Flaeche unter der Linie (Wash, 10% Deckkraft)
+    area = f'M{xs[0]:.1f},{pad_t + preis_h:.1f} '
+    area += " ".join(f'L{x:.1f},{y:.1f}' for x, y in zip(xs, ys))
+    area += f' L{xs[-1]:.1f},{pad_t + preis_h:.1f} Z'
+    teile.append(f'<path d="{area}" fill="{_BAR_FARBE}" opacity="0.10"/>')
+
+    # Linie (2px, runde Verbindungen)
+    linie = " ".join(f'{"M" if i == 0 else "L"}{x:.1f},{y:.1f}' for i, (x, y) in enumerate(zip(xs, ys)))
+    teile.append(f'<path d="{linie}" fill="none" stroke="{_BAR_FARBE}" stroke-width="2" '
+                 f'stroke-linejoin="round" stroke-linecap="round"/>')
+
+    # Marker (z.B. Kaufzeitpunkt): gestrichelte Vertikale + Endpunkt-Dot
+    if marker_index is not None and 0 <= marker_index < n:
+        mx, my = xs[marker_index], ys[marker_index]
+        teile.append(f'<line x1="{mx:.1f}" y1="{pad_t:.1f}" x2="{mx:.1f}" y2="{pad_t + preis_h:.1f}" '
+                     f'stroke="#e34948" stroke-width="1" stroke-dasharray="3,3"/>')
+        teile.append(f'<circle cx="{mx:.1f}" cy="{my:.1f}" r="4.5" fill="#e34948" '
+                     f'stroke="#fcfcfb" stroke-width="2"/>')
+        if marker_label:
+            anchor = "start" if marker_index < n * 0.7 else "end"
+            lx = mx + (6 if anchor == "start" else -6)
+            teile.append(f'<text x="{lx:.1f}" y="{pad_t - 6:.1f}" text-anchor="{anchor}" '
+                         f'font-size="10" font-weight="bold" fill="#e34948">{marker_label}</text>')
+
+    # Endlabel: letzter Kurs (Linie -> Wert am Ende, per Spezifikation)
+    teile.append(f'<text x="{xs[-1] + 8:.1f}" y="{ys[-1] + 3:.1f}" font-size="10.5" '
+                 f'font-weight="bold" fill="#0b0b0b">{close[-1]:.2f}</text>')
+
+    # x-Achse: sparsam beschriften — nur erster, letzter und Marker-Punkt
+    label_idx = {0, n - 1}
+    if marker_index is not None:
+        label_idx.add(marker_index)
+    for i in sorted(label_idx):
+        anchor = "start" if i == 0 else ("end" if i == n - 1 else "middle")
+        teile.append(f'<text x="{xs[i]:.1f}" y="{hoehe - pad_b + 16:.1f}" text-anchor="{anchor}" '
+                     f'font-size="9" fill="#898781">{perioden[i]}</text>')
+
+    # Volumen-Panel: eigene Skala, eigenes Panel — kein zweiter Y-Achsenmassstab
+    # im selben Plot (dual-axis waere hier ein Anti-Pattern).
+    if hat_volumen:
+        vol_top = pad_t + preis_h + gap
+        vmax = max(volumen) or 1.0
+        bar_w = max(1.5, dx * 0.55)
+        for i, (x, v) in enumerate(zip(xs, volumen)):
+            bh = (v / vmax) * vol_h
+            farbe = "#e34948" if i == marker_index else "#c3c2b7"
+            teile.append(f'<rect x="{x - bar_w / 2:.1f}" y="{vol_top + vol_h - bh:.1f}" '
+                         f'width="{bar_w:.1f}" height="{max(bh, 1):.1f}" fill="{farbe}"/>')
 
     teile.append("</svg>")
     return "".join(teile)
