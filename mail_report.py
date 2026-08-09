@@ -798,24 +798,12 @@ def _markt_block(breadth_rows: list, sector_rows: list, idx_rows: list) -> str:
 
     if sector_rows:
         # sector_rows: [{"ticker","name","chg"}], bereits absteigend sortiert.
-        # Nur die drei staerksten und die drei schwaechsten — die Rotation ist
-        # die Information, nicht die vollstaendige Liste.
-        def sz(rows):
-            return "".join(
-                f'<tr><td style="{_TDL}">{r["name"]}</td>'
-                f'<td style="{_TDL}">{r["ticker"]}</td>'
-                f'<td style="{_TD}color:{_farbe(r["chg"])};">{_n(r["chg"], 2, plus=True)} %</td></tr>'
-                for r in rows
-            )
-        teile.append(
-            f'<table style="{_TABLE}">'
-            f'<tr><th style="{_THL}">Sektor</th><th style="{_THL}">ETF</th>'
-            f'<th style="{_TH}">Woche</th></tr>'
-            f'{sz(sector_rows[:3])}'
-            f'<tr><td colspan="3" style="{_TDL}color:{GRAU};font-size:.85em;">'
-            f'… {max(0, len(sector_rows) - 6)} weitere …</td></tr>'
-            f'{sz(sector_rows[-3:])}</table>'
-        )
+        # Gleiche Inline-SVG-Grafik wie im Web-Report — geteilte Funktion,
+        # damit beide Darstellungen nicht auseinanderlaufen.
+        from report_builder import build_sector_bar_svg
+        svg = build_sector_bar_svg(sector_rows, width=560)
+        if svg:
+            teile.append(f'<div style="margin-bottom:1.6em;">{svg}</div>')
 
     if idx_rows:
         teile.append(idx_rows)

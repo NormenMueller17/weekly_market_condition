@@ -253,22 +253,7 @@ HTML_TMPL = """
     
     {% if sector_rows %}
     <h2>1b) Sektor-Performance (Wochenbasis)</h2>
-    <table>
-      <tr>
-        <th class="left">Sektor</th>
-        <th class="left" style="color:#888">ETF</th>
-        <th>Performance Woche</th>
-      </tr>
-      {% for s in sector_rows %}
-      <tr>
-        <td class="left">{{ s.name }}</td>
-        <td class="left" style="font-size:0.85em;color:#888">{{ s.ticker }}</td>
-        <td style="background-color:{{ COLOR_POSITIVE if s.chg > 0 else COLOR_NEGATIVE if s.chg < 0 else 'transparent' }};color:{{ COLOR_POS_TEXT if s.chg > 0 else COLOR_NEG_TEXT if s.chg < 0 else 'inherit' }};font-weight:{{ 'bold' if s.chg != 0 else 'normal' }}">
-          {{ '+' if s.chg > 0 else '' }}{{ '%.2f'|format(s.chg) }}%
-        </td>
-      </tr>
-      {% endfor %}
-    </table>
+    <div style="overflow-x:auto">{{ sector_bar_svg | safe }}</div>
     {% endif %}
 
     <h2>2) Trend & Momentum (Weekly)</h2>
@@ -1041,6 +1026,60 @@ def build_sector_rows(idx_data: dict) -> list:
     return rows
 
 
+def build_sector_bar_svg(sector_rows: list, width: int = 620, row_height: int = 26) -> str:
+    """Sektor-Performance als horizontaler Balkenchart, Null in der Mitte.
+
+    Inline-SVG statt <canvas>/Bild, damit dieselbe Grafik unveraendert im
+    Web-Report UND im Boersenbrief funktioniert — siehe mail_report.equity_svg
+    fuer dieselbe Begruendung.
+    """
+    if not sector_rows:
+        return ""
+    n = len(sector_rows)
+    label_w, value_w = 150, 60
+    pad_top, pad_bottom = 8, 8
+    chart_w  = width - label_w - value_w
+    half_w   = chart_w / 2.0
+    height   = pad_top + pad_bottom + n * row_height
+    zero_x   = label_w + half_w
+
+    max_abs = max((abs(s["chg"]) for s in sector_rows), default=0) or 1.0
+    scale   = (half_w * 0.9) / max_abs
+
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
+        f'width="100%" height="{height}" style="max-width:{width}px;font-family:Arial;">',
+        f'<line x1="{zero_x:.1f}" y1="{pad_top}" x2="{zero_x:.1f}" y2="{height - pad_bottom}" '
+        f'stroke="#c9d2e8" stroke-width="1"/>',
+    ]
+    for i, s in enumerate(sector_rows):
+        y_top  = pad_top + i * row_height
+        y_mid  = y_top + row_height / 2.0
+        bar_h  = row_height * 0.55
+        val    = s["chg"]
+        color  = COLOR_POS_TEXT if val > 0 else (COLOR_NEG_TEXT if val < 0 else "#888")
+        bar_len = abs(val) * scale
+        bar_x   = zero_x if val >= 0 else zero_x - bar_len
+        parts.append(
+            f'<text x="{label_w - 8}" y="{y_mid + 4:.1f}" font-size="12" fill="#333" '
+            f'text-anchor="end">{s["name"]} '
+            f'<tspan fill="#999" font-size="10">{s["ticker"]}</tspan></text>'
+        )
+        parts.append(
+            f'<rect x="{bar_x:.1f}" y="{y_top + (row_height - bar_h) / 2:.1f}" '
+            f'width="{bar_len:.1f}" height="{bar_h:.1f}" fill="{color}" rx="2"/>'
+        )
+        label_x = bar_x + bar_len + 5 if val >= 0 else bar_x - 5
+        anchor  = "start" if val >= 0 else "end"
+        parts.append(
+            f'<text x="{label_x:.1f}" y="{y_mid + 4:.1f}" font-size="12" fill="{color}" '
+            f'font-weight="bold" text-anchor="{anchor}">'
+            f'{"+" if val > 0 else ""}{val:.2f}%</text>'
+        )
+    parts.append("</svg>")
+    return "".join(parts)
+
+
 def compute_filter_fails(row, *, sector_excluded: set, min_rs: float,
                          max_rank: float, max_atr: float, min_price: float,
                          min_cap: float, min_rev_growth: float,
@@ -1634,6 +1673,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         test_mode          = test_mode,
         ampel              = ampel,
         sector_rows        = sector_rows or [],
+        sector_bar_svg     = build_sector_bar_svg(sector_rows or []),
         recent_trades      = recent_trades,
         profile_display    = profile_display,
         muster             = muster,
