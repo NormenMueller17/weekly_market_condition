@@ -456,10 +456,10 @@ HTML_TMPL = """
         <th class="sortable" onclick="sortTable(this)">Close</th>
         <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">RS</th>
         <th class="sortable" onclick="sortTable(this)">ΔRS 4W</th>
-        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">Dist 52W H %</th>
-        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">Ind. Rank</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0;width:1px;white-space:normal;padding-left:0.4em;padding-right:0.4em">Dist 52W H %</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0;width:1px;white-space:normal;padding-left:0.4em;padding-right:0.4em">Ind. Rank</th>
         <th class="sortable" onclick="sortTable(this)">ATR %</th>
-        <th class="sortable" onclick="sortTable(this)">Vol-Score</th>
+        <th class="sortable" onclick="sortTable(this)" style="width:1px;white-space:normal;padding-left:0.4em;padding-right:0.4em">Vol-Score</th>
         <th class="sortable" onclick="sortTable(this)">MarketCap<br>(Mio $)</th>
         <th class="left sortable" onclick="sortTable(this)" style="color:#c62828">Scheitert an</th>
       </tr>
@@ -492,16 +492,16 @@ HTML_TMPL = """
         <td style="text-align:center;color:{% if drs_val is not none and drs_val > 0 %}#2e7d32{% elif drs_val is not none and drs_val < 0 %}#c62828{% else %}#555{% endif %}">
           {% if drs_val is not none %}{% if drs_val > 0 %}+{% endif %}{{ "%.0f"|format(drs_val) }}{% else %}–{% endif %}
         </td>
-        <td style="text-align:center;background:{% if dist_val != none and dist_val|float <= 25 %}#e8f5e9{% else %}transparent{% endif %}">
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:{% if dist_val != none and dist_val|float <= 25 %}#e8f5e9{% else %}transparent{% endif %}">
           {{ dist_val if dist_val != none else "–" }}
         </td>
-        <td style="text-align:center;background:{% if ind_val != none and ind_val|float <= 50 %}#e8f5e9{% else %}transparent{% endif %}">
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:{% if ind_val != none and ind_val|float <= 50 %}#e8f5e9{% else %}transparent{% endif %}">
           {{ ind_val|float|round|int if ind_val != none else "–" }}
         </td>
         <td style="text-align:center">{{ row.get("ATR / Price (%)", "–") }}</td>
         {% set vol_bo = row.get("Vol-Breakout", false) %}
         {% set vol_sc = row.get("Volume Score", none) %}
-        <td style="text-align:center;background:{% if vol_bo %}#e8f5e9{% else %}transparent{% endif %}">
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:{% if vol_bo %}#e8f5e9{% else %}transparent{% endif %}">
           {% if vol_sc is not none and vol_sc != "–" %}{{ "%.2f"|format(vol_sc|float) }}{% else %}–{% endif %}
         </td>
         <td style="text-align:right">{{ row.get("MarketCap (Mio USD)", "–") }}</td>
