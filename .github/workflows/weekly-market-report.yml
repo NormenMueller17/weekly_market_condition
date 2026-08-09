@@ -35,6 +35,14 @@ jobs:
         run: |
           python -m compileall -q .
 
+      - name: Restore Yahoo-Wochenkerzen-Cache
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: weekly-ohlcv-${{ github.run_id }}
+          restore-keys: |
+            weekly-ohlcv-
+
       - name: Export secrets to env
         run: |
           echo "MAIL_FROM=${{ secrets.MAIL_FROM }}" >> $GITHUB_ENV

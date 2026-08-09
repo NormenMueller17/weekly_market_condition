@@ -1,6 +1,7 @@
 # data_sources.py
 import io
 import os
+import pickle
 import time
 import json
 import requests
@@ -849,11 +850,23 @@ def _slice_ticker_from_downloaded(df: pd.DataFrame, ticker: str) -> pd.DataFrame
 
 
 
+_WEEKLY_CACHE_TTL_HOURS = 24
+
+
 def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.DataFrame]:
     """Load weekly OHLCV history for the universe using batched downloads.
 
     Phase-1 screening should run on cheap bulk weekly downloads and must not
     call expensive per-ticker endpoints (like `Ticker.info`).
+
+    Anwendungs-Cache statt HTTP-Cache: yfinance akzeptiert seit 1.x keine
+    eigene requests-Session mehr (siehe http_cache.py) — ein HTTP-Level-Cache
+    ist damit endgueltig unmoeglich. Stattdessen wird hier das fertige
+    Ergebnis pro Ticker auf Platte gehalten (TTL 24h) und nur fehlende/
+    abgelaufene Ticker werden neu von Yahoo geholt. Bringt vor allem bei
+    Wiederholungslaeufen am selben Tag (Testlaeufe, fehlgeschlagene CI-Laeufe)
+    etwas — braucht dafuer in CI einen persistenten Cache-Ordner (siehe
+    actions/cache-Schritt im weekly-market-report-Workflow).
 
     Returns
     -------
@@ -867,23 +880,49 @@ def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.D
         print("[WARN] load_weekly_history: empty tickers list")
         return out
 
+    # Cache haelt die rohen, unbeschnittenen 3y-Serien -- die Trimmung auf
+    # `weeks` und die Delisting-Pruefung unten laufen bei jedem Aufruf frisch,
+    # ein Cache-Treffer ueberspringt nur den Yahoo-Request selbst.
+    _ensure_cache_dir()
+    cache_file = Path(SETTINGS.cache_dir) / "weekly_ohlcv_raw.pkl"
+    cached: Dict[str, pd.DataFrame] = {}
+    if cache_file.exists():
+        try:
+            payload = pickle.loads(cache_file.read_bytes())
+            age_h = (datetime.utcnow() - payload["fetched"]).total_seconds() / 3600
+            if age_h < _WEEKLY_CACHE_TTL_HOURS:
+                cached = payload["data"]
+                print(f"[CACHE] Wochenkerzen: {len(cached)} Ticker im Cache "
+                      f"(Alter: {age_h:.1f}h / TTL: {_WEEKLY_CACHE_TTL_HOURS}h).")
+        except Exception as exc:
+            print(f"[CACHE] ⚠️  Wochenkerzen-Cache beschaedigt, wird neu aufgebaut: {exc}")
+
+    missing = [t for t in tickers if t not in cached]
+
     # Use batched OHLCV downloads.
     # Keep period long enough so `weeks` is always available (weeks=104 -> ~2y).
     # Using 3y gives buffer for missing weeks / holidays / sparse assets.
-    batched = download_ohlcv_batched(
-        tickers=tickers,
-        period="3y",
-        interval="1wk",
-        chunk_size=40,        # keep your previous CHUNK=40 behavior
-        auto_adjust=False,
-        threads=False,
-    )
+    batched: Dict[str, pd.DataFrame] = {}
+    if missing:
+        batched = download_ohlcv_batched(
+            tickers=missing,
+            period="3y",
+            interval="1wk",
+            chunk_size=40,        # keep your previous CHUNK=40 behavior
+            auto_adjust=False,
+            threads=False,
+        )
+    if cached:
+        print(f"[CACHE] {len(missing)} von {len(tickers)} Tickern frisch geholt, "
+              f"{len(tickers) - len(missing)} aus dem Cache uebernommen.")
 
-    if not batched:
+    combined = {**{t: cached[t] for t in tickers if t in cached}, **batched}
+
+    if not combined:
         print(f"[DEBUG] load_weekly_history: built 0 series (of {len(tickers)})")
         return out
 
-    for t, sub in batched.items():
+    for t, sub in combined.items():
         if sub is None or sub.empty:
             continue
 
@@ -922,6 +961,16 @@ def load_weekly_history(universe: List[str], weeks: int = 104) -> Dict[str, pd.D
 
         # Keep same output column selection behavior as before
         out[t] = sub[[c for c in ["Open", "High", "Low", "Close", "Volume"] if c in sub.columns]].copy()
+
+    # Cache aktualisieren: nur Ticker aus dem aktuellen Universum behalten,
+    # damit er nicht unbegrenzt mit Alttickern waechst.
+    try:
+        cache_file.write_bytes(pickle.dumps({
+            "fetched": datetime.utcnow(),
+            "data": {t: combined[t] for t in tickers if t in combined},
+        }))
+    except Exception as exc:
+        print(f"[CACHE] ⚠️  Wochenkerzen-Cache konnte nicht geschrieben werden: {exc}")
 
     print(f"[DEBUG] load_weekly_history: built {len(out)} series (of {len(tickers)})")
     return out
