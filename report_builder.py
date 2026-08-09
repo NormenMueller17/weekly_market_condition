@@ -453,7 +453,6 @@ HTML_TMPL = """
         <th class="left sortable" onclick="sortTable(this)">Unternehmen</th>
         <th class="left sortable" onclick="sortTable(this)">Industry</th>
         <th class="sortable" onclick="sortTable(this)">Score</th>
-        <th class="left sortable" onclick="sortTable(this)">Muster</th>
         <th class="sortable" onclick="sortTable(this)">Close</th>
         <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">RS</th>
         <th class="sortable" onclick="sortTable(this)">ΔRS 4W</th>
@@ -462,7 +461,6 @@ HTML_TMPL = """
         <th class="sortable" onclick="sortTable(this)">ATR %</th>
         <th class="sortable" onclick="sortTable(this)">Vol-Score</th>
         <th class="sortable" onclick="sortTable(this)">MarketCap<br>(Mio $)</th>
-        <th class="sortable" onclick="sortTable(this)">SA</th>
         <th class="left sortable" onclick="sortTable(this)" style="color:#c62828">Scheitert an</th>
       </tr>
       {% for idx, row in all_leaders.iterrows() %}
@@ -470,18 +468,23 @@ HTML_TMPL = """
       {% set dist_val = row.get("Dist to 52W High (%)", none) %}
       {% set ind_val = row.get("Industry Ranking", none) %}
       {% set drs_val = row["ΔRS 4W"] if "ΔRS 4W" in all_leaders.columns else none %}
+      {% set pat = row.get("VCP", false) %}
+      {% set lp  = row.get("Launchpad", false) %}
       <tr>
-        <td class="left"><strong style="color:#003d99">{{ idx }}</strong></td>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/{{ idx }}" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">{{ idx }}</a>
+          {% if pat or lp %}
+          <div style="font-size:0.68em;font-weight:bold;letter-spacing:.03em;margin-top:1px">
+            {% if pat %}<span style="color:#b8860b">VCP</span>{% endif %}
+            {% if pat and lp %}&nbsp;{% endif %}
+            {% if lp %}<span style="color:#9e9e9e">LP</span>{% endif %}
+          </div>
+          {% endif %}
+        </td>
         <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Company", "–") }}</td>
         <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Industry", "–") }}</td>
         <td style="text-align:center">{{ row.get("score", "–") }}</td>
-        <td class="left">
-          {% set pat = row.get("VCP", false) %}
-          {% set lp  = row.get("Launchpad", false) %}
-          {% if pat %}<span style="background:#e8f5e9;padding:1px 5px;border-radius:3px;font-size:0.82em">VCP</span>{% endif %}
-          {% if lp %}<span style="background:#fffde7;padding:1px 5px;border-radius:3px;font-size:0.82em">LP</span>{% endif %}
-          {% if not pat and not lp %}<span style="color:#aaa;font-size:0.82em">–</span>{% endif %}
-        </td>
         <td style="text-align:right">{{ row.get("Close", "–") }}</td>
         <td style="text-align:center;background:{% if rs_val != none and rs_val|float >= 70 %}#e8f5e9{% else %}transparent{% endif %}">
           {{ rs_val if rs_val != none else "–" }}
@@ -502,7 +505,6 @@ HTML_TMPL = """
           {% if vol_sc is not none and vol_sc != "–" %}{{ "%.2f"|format(vol_sc|float) }}{% else %}–{% endif %}
         </td>
         <td style="text-align:right">{{ row.get("MarketCap (Mio USD)", "–") }}</td>
-        <td style="text-align:center">{{ row.get("SA", "") }}</td>
         <td class="left" style="font-size:0.82em;{% if row.get('_filter_fails','') == '✅' %}color:#2e7d32;font-weight:bold{% else %}color:#c62828{% endif %}">
           {{ row.get("_filter_fails", "–") }}
         </td>
@@ -1625,8 +1627,6 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         )
     if "SA" in leaders_html.columns:
         leaders_html["SA"] = leaders_html["SA"].apply(_sa_button)
-    if "SA" in all_leaders_html.columns:
-        all_leaders_html["SA"] = all_leaders_html["SA"].apply(_sa_button)
 
     # 4a) ΔRS 4W sicher auf numerisch konvertieren (verhindert str/int-Vergleich im Template)
     if 'ΔRS 4W' in leaders_html.columns:
