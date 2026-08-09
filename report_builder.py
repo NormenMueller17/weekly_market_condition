@@ -731,10 +731,10 @@ HTML_TMPL = """
 
     {% endif %}
 
-    <h2>8) Marktführer nach Minervini (Score 8/8)</h2>
+    <h2>8) Marktführer nach Minervini (Score 8/8, RS ≥ 85)</h2>
 
     {% if leaders.empty %}
-    <p>Keine Aktien erfüllen alle 8 Minervini-Kriterien.</p>
+    <p>Keine Aktien erfüllen alle 8 Minervini-Kriterien mit RS ≥ 85.</p>
     {% else %}
 
     {% set ns = namespace(col=0) %}
@@ -1551,7 +1551,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     # Marktampel berechnen
     ampel = compute_ampel(breadth_snap, idx)
 
-    # 2) Leaders: Screener-Kandidaten Score ≥ 6, Top 20 nach Score/RS; für Email nur Score 8/8
+    # 2) Leaders: Screener-Kandidaten Score ≥ 6, Top 20 nach Score/RS; echte Leader nur Score 8/8 + RS ≥ 85
     all_leaders_html = leaders.copy()
     if "score" in all_leaders_html.columns:
         all_leaders_html["score_num"] = pd.to_numeric(all_leaders_html["score"], errors="coerce")
@@ -1571,7 +1571,13 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     leaders_html = leaders.copy()
     if "score" in leaders_html.columns:
         leaders_html["score_num"] = pd.to_numeric(leaders_html["score"], errors="coerce")
-        leaders_html = leaders_html[leaders_html["score_num"] == 8].drop(columns=["score_num"])
+        leaders_html = leaders_html[leaders_html["score_num"] == 8]
+        if "RS (O'Neil)" in leaders_html.columns:
+            leaders_html["_rs_num"] = pd.to_numeric(leaders_html["RS (O'Neil)"], errors="coerce")
+            leaders_html = leaders_html[leaders_html["_rs_num"] >= 85]
+        leaders_html = leaders_html.drop(
+            columns=[c for c in ("score_num", "_rs_num") if c in leaders_html.columns]
+        )
 
     # 3) SA-Spalte in HTML-Buttons umwandeln
     def _sa_button(url: str) -> str:
