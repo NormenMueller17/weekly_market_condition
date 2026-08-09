@@ -223,8 +223,9 @@ HTML_TMPL = """
     </script>
 </head>
 {%- macro rs_meter(val) -%}
-  {%- if val is not none -%}
-  <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:{{ [val, 100] | min }}%"></div></div><span class="meter-num">{{ '%.0f' % val }}</span></div>
+  {%- set v = val | float(default=none) -%}
+  {%- if v is not none -%}
+  <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:{{ [v, 100] | min }}%"></div></div><span class="meter-num">{{ '%.0f' % v }}</span></div>
   {%- else -%}
   <span class="meter-num">–</span>
   {%- endif -%}
