@@ -73,52 +73,43 @@ def _macd_bullish_cross_weekly(df: pd.DataFrame, price_col: str = "Close",
     return bool(cross and early)
 
 
+_RS_MIN_HISTORY_DAYS = 252  # ~12 Monate
+
+
 def _compute_weighted_perf(close: pd.Series) -> float:
     """
     Berechnet eine gewichtete Performance aus 3M, 6M, 12M
     (ca. 63 / 126 / 252 Handelstage).
     Gibt np.nan zurück, falls zu wenig Historie vorhanden ist.
-    
+
     Gewichtung: 12M=50%, 6M=30%, 3M=20%
+
+    Verlangt die volle 12-Monats-Historie, bevor überhaupt gerechnet wird —
+    analog zu O'Neil/IBD, wo frisch gelistete Titel ("New Issues") kein
+    reguläres RS Rating bekommen statt eines aus verfügbaren Perioden
+    umnormierten Ersatzwerts. Ohne diese Schranke dominierte bei kurzer
+    Historie die 3-Monats-Rendite allein (Gewicht auf 100% hochnormiert) und
+    konnte frische, duenn gehandelte Microcaps auf RS 99 heben, obwohl das
+    Minervini Trend Template (SMA40W/52W-Range) mangels Historie ohnehin
+    fehlschlägt.
     """
-    if close is None or len(close) < 63:
+    if close is None or len(close) < _RS_MIN_HISTORY_DAYS:
         return float("nan")
-    
+
     c = pd.to_numeric(close, errors="coerce").dropna()
-    if len(c) < 63:
+    if len(c) < _RS_MIN_HISTORY_DAYS:
         return float("nan")
-    
+
     # Performance berechnen (Return in %)
     def calc_return(periods):
-        if len(c) < periods + 1:
-            return None
         return (c.iloc[-1] / c.iloc[-periods - 1] - 1.0) * 100.0
-    
-    perf_3m = calc_return(63)    # ~3 Monate
-    perf_6m = calc_return(126)   # ~6 Monate
+
+    perf_3m  = calc_return(63)   # ~3 Monate
+    perf_6m  = calc_return(126)  # ~6 Monate
     perf_12m = calc_return(252)  # ~12 Monate
-    
-    # Gewichtete Performance
-    weights = []
-    perfs = []
-    
-    if perf_12m is not None:
-        weights.append(0.5)
-        perfs.append(perf_12m)
-    if perf_6m is not None:
-        weights.append(0.3)
-        perfs.append(perf_6m)
-    if perf_3m is not None:
-        weights.append(0.2)
-        perfs.append(perf_3m)
-    
-    if not weights:
-        return float("nan")
-    
-    # Normalisieren falls nicht alle Perioden verfügbar
-    total_weight = sum(weights)
-    weighted_perf = sum(p * w for p, w in zip(perfs, weights)) / total_weight
-    
+
+    weighted_perf = 0.5 * perf_12m + 0.3 * perf_6m + 0.2 * perf_3m
+
     return float(weighted_perf)
 
 
