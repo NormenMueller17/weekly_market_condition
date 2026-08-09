@@ -493,7 +493,7 @@ HTML_TMPL = """
           {{ dist_val if dist_val != none else "–" }}
         </td>
         <td style="text-align:center;background:{% if ind_val != none and ind_val|float <= 50 %}#e8f5e9{% else %}transparent{% endif %}">
-          {{ ind_val if ind_val != none else "–" }}
+          {{ ind_val|float|round|int if ind_val != none else "–" }}
         </td>
         <td style="text-align:center">{{ row.get("ATR / Price (%)", "–") }}</td>
         {% set vol_bo = row.get("Vol-Breakout", false) %}
