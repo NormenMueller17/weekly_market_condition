@@ -11,10 +11,14 @@ from indicators import rsi, macd, pct_above_ma
 from breadth import compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
 
 
-COLOR_POSITIVE  = "#d4edda"   # soft green background
-COLOR_NEGATIVE  = "#f8d7da"   # soft red background
-COLOR_POS_TEXT  = "#155724"   # dark green text
-COLOR_NEG_TEXT  = "#721c24"   # dark red text
+# Token-Referenzen statt fester Hex-Werte, damit Positiv-/Negativ-Faerbung
+# im HTML automatisch mit dem Farbschema (hell/dunkel, siehe :root-Tokens im
+# HTML_TMPL-Stylesheet) mitgeht, obwohl diese Konstanten per Jinja direkt in
+# inline `style="..."` interpoliert werden.
+COLOR_POSITIVE  = "var(--success-bg)"
+COLOR_NEGATIVE  = "var(--danger-bg)"
+COLOR_POS_TEXT  = "var(--success-text)"
+COLOR_NEG_TEXT  = "var(--danger-text)"
 
 SECTOR_ETFS = {
     "XLK":  "Technology",
@@ -38,51 +42,80 @@ HTML_TMPL = """
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        :root {
+            --bg: #eef1f7; --surface: #ffffff; --surface-2: #f6f8fc;
+            --border: #dde3ef; --border-strong: #c3cde0;
+            --text: #10192b; --text-secondary: #4d5b73; --text-muted: #8593ab;
+            --accent: #1f4fa3; --accent-soft: #e8eefa; --accent-text: #163c80;
+            --success: #1c7c4d; --success-bg: #e6f6ec; --success-text: #145c39;
+            --danger: #b3261e; --danger-bg: #fcebea; --danger-text: #8f1e18;
+            --gold: #9a7b1f; --silver: #6b7688;
+            --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0a0f1a; --surface: #121a2b; --surface-2: #0f1626;
+                --border: #223049; --border-strong: #2e4066;
+                --text: #e8edf7; --text-secondary: #a3b1c9; --text-muted: #6b7a97;
+                --accent: #6c9bef; --accent-soft: #16233e; --accent-text: #9dbdf5;
+                --success: #4cbf83; --success-bg: #12291d; --success-text: #6fd4a0;
+                --danger: #e5716a; --danger-bg: #2c1414; --danger-text: #ef938d;
+                --gold: #d4b04a; --silver: #9aa5b8;
+            }
+        }
         *, *::before, *::after { box-sizing: border-box; }
-        body    { font-family: Arial, sans-serif; margin: 0; }
-        .g-nav   { background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
-                   box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap;
-                   position: sticky; top: 0; z-index: 100; }
-        .g-brand { font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
-                   margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
-                   white-space: nowrap; font-size: .95em; }
-        .g-nav a { color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+        body    { font-family: var(--font-sans); margin: 0; background: var(--bg); color: var(--text); }
+        h1, h2, h3 { font-weight: 600; letter-spacing: -.01em; text-wrap: balance; color: var(--text); }
+        h2 { font-size: 1.3em; margin: 1.8em 0 .7em; padding-bottom: .35em; border-bottom: 1px solid var(--border); }
+        a { color: var(--accent); }
+        .g-nav   { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 1.5em;
+                   flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }
+        .g-brand { font-family: var(--font-mono); font-weight: 600; color: var(--text-muted); text-decoration: none;
+                   padding: .72em 1.1em .72em 0; margin-right: .5em; border-right: 1px solid var(--border);
+                   white-space: nowrap; font-size: .78em; letter-spacing: .05em; text-transform: uppercase; }
+        .g-nav a { color: var(--text-secondary); text-decoration: none; padding: .72em .85em;
                    font-size: .84em; white-space: nowrap; }
-        .g-nav a:hover  { color: #fff; background: rgba(255,255,255,.12); }
-        .g-nav a.active { color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }
+        .g-nav a:hover  { color: var(--accent); background: var(--accent-soft); }
+        .g-nav a.active { color: var(--accent-text); box-shadow: inset 0 -2px var(--accent); font-weight: 600; }
         .page   { max-width: 1200px; margin: 0 auto; padding: 2em 1em 3em; }
-        table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; }
-        th, td  { border: 1px solid #d0d5e8; padding: 0.45em 0.9em; text-align: right; }
-        th      { background: #eef2fa; color: #003d99; font-weight: 600; white-space: nowrap; }
+        table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; width: 100%; }
+        th, td  { border: none; border-bottom: 1px solid var(--border); padding: 0.5em 0.9em; text-align: right; }
+        th      { background: var(--surface-2); color: var(--text-muted); font-weight: 600; white-space: nowrap;
+                   font-size: .78em; letter-spacing: .04em; text-transform: uppercase; border-bottom: 1px solid var(--border-strong); }
         th.left, td.left { text-align: left; }
-        tr:hover td { background-color: #f6f8ff; }
-        tr:hover td[style] { filter: brightness(0.97); }
-        .pos    { color: #155724; }
-        .neg    { color: #721c24; }
+        tbody tr:hover td, tr:hover td { background-color: var(--surface-2); }
+        /* Zahlenspalten: mono + tabular-nums, erkannt an der uebliche Inline-Ausrichtung */
+        td[style*="text-align:right"], td[style*="text-align: right"],
+        td[style*="text-align:center"], td[style*="text-align: center"] {
+            font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+        }
+        .pos    { color: var(--success-text); }
+        .neg    { color: var(--danger-text); }
         .btn-sa {
             display: inline-block;
             padding: 2px 6px;
-            background-color: #0052cc;
+            background-color: var(--accent);
             color: #ffffff;
             font-size: 0.8em;
             border-radius: 4px;
             text-decoration: none;
         }
-        .btn-sa:hover { background-color: #003d99; }
+        .btn-sa:hover { background-color: var(--accent-text); }
         /* Leader cards */
         .leader-grid { width: 100%; border-collapse: collapse; }
         .leader-cell { width: 50%; padding: 5px; vertical-align: top; }
         .leader-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
             padding: 12px 14px;
-            background: #fff;
+            background: var(--surface);
         }
         /* Portfolio cards */
         .portfolio-summary {
-            background: #f5f7fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
             padding: 12px 16px;
             margin-bottom: 1em;
             border-collapse: separate;
@@ -96,13 +129,14 @@ HTML_TMPL = """
         }
         .portfolio-summary .summary-label {
             font-size: 0.75em;
-            color: #888;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
         .portfolio-summary .summary-value {
             font-size: 1.1em;
             font-weight: bold;
+            font-family: var(--font-mono);
         }
         @media only screen and (max-width: 600px) {
             body { margin: 0.8em; }
@@ -110,23 +144,28 @@ HTML_TMPL = """
             .portfolio-summary td { display: block !important; width: 100% !important; text-align: left; padding: 2px 0; }
         }
         th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-        th.sortable:hover { background: #dde6f5; }
-        th.sortable::after { content: ' ⇅'; font-size: 0.75em; color: #aaa; }
-        th.sortable.asc::after  { content: ' ▲'; color: #333; }
-        th.sortable.desc::after { content: ' ▼'; color: #333; }
+        th.sortable:hover { background: var(--accent-soft); color: var(--accent-text); }
+        th.sortable::after { content: ' ⇅'; font-size: 0.9em; color: var(--text-muted); }
+        th.sortable.asc::after  { content: ' ▲'; color: var(--accent); }
+        th.sortable.desc::after { content: ' ▼'; color: var(--accent); }
+        /* Meter-Balken fuer Score/RS-Zellen */
+        .meter { display: inline-flex; align-items: center; gap: .5em; justify-content: flex-end; }
+        .meter-track { width: 46px; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; flex-shrink: 0; }
+        .meter-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+        .meter-num { font-family: var(--font-mono); font-weight: 600; min-width: 1.6em; text-align: right; }
         /* Marktampel */
         .ampel-wrap { position: relative; display: inline-block; margin-bottom: 1.5em; }
         .ampel-badge {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 8px 18px; border-radius: 22px; font-weight: bold;
-            font-size: 1.05em; cursor: default; border: 1px solid rgba(0,0,0,0.1);
+            font-size: 1.05em; cursor: default; border: 1px solid var(--border);
             user-select: none;
         }
         .ampel-tooltip {
             display: none; position: absolute; left: 0; top: 115%;
-            background: #fff; border: 1px solid #d0d5e8; border-radius: 8px;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
             padding: 10px 16px; min-width: 300px; z-index: 100;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.13); font-size: 0.88em;
+            box-shadow: 0 8px 24px rgba(10,15,26,.18); font-size: 0.88em;
             white-space: nowrap;
         }
         .ampel-wrap:hover .ampel-tooltip { display: block; }
@@ -183,6 +222,13 @@ HTML_TMPL = """
     }
     </script>
 </head>
+{%- macro rs_meter(val) -%}
+  {%- if val is not none -%}
+  <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:{{ [val, 100] | min }}%"></div></div><span class="meter-num">{{ '%.0f' % val }}</span></div>
+  {%- else -%}
+  <span class="meter-num">–</span>
+  {%- endif -%}
+{%- endmacro -%}
 <body>
   <nav class="g-nav">
     <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
@@ -486,8 +532,8 @@ HTML_TMPL = """
         <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Industry", "–") }}</td>
         <td style="text-align:center">{{ row.get("score", "–") }}</td>
         <td style="text-align:right">{{ row.get("Close", "–") }}</td>
-        <td style="text-align:center;background:{% if rs_val != none and rs_val|float >= 70 %}#e8f5e9{% else %}transparent{% endif %}">
-          {{ rs_val if rs_val != none else "–" }}
+        <td style="text-align:center;background:{% if rs_val != none and rs_val|float >= 70 %}var(--success-bg){% else %}transparent{% endif %}">
+          {{ rs_meter(rs_val|float if rs_val != none else none) }}
         </td>
         <td style="text-align:center;color:{% if drs_val is not none and drs_val > 0 %}#2e7d32{% elif drs_val is not none and drs_val < 0 %}#c62828{% else %}#555{% endif %}">
           {% if drs_val is not none %}{% if drs_val > 0 %}+{% endif %}{{ "%.0f"|format(drs_val) }}{% else %}–{% endif %}
@@ -660,10 +706,10 @@ HTML_TMPL = """
           {%- else %}transparent{% endif %}">
           {{ '%.1f' % s.dist_52w_high_pct if s.dist_52w_high_pct is not none else '–' }}%</td>
         <td style="background-color:
-          {%- if s.rs_score is not none and s.rs_score >= 70 %}#d4edda
-          {%- elif s.rs_score is not none %}#f8d7da
+          {%- if s.rs_score is not none and s.rs_score >= 70 %}var(--success-bg)
+          {%- elif s.rs_score is not none %}var(--danger-bg)
           {%- else %}transparent{% endif %}">
-          <strong>{{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}</strong></td>
+          {{ rs_meter(s.rs_score) }}</td>
         <td style="background-color:
           {%- if s.rs_delta_4w and s.rs_delta_4w > 0 %}{{ COLOR_POSITIVE }}
           {%- elif s.rs_delta_4w and s.rs_delta_4w < 0 %}{{ COLOR_NEGATIVE }}
@@ -780,7 +826,7 @@ HTML_TMPL = """
           <!-- Score + RS + ΔRS -->
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
             <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ {{ row["score"] | int }}/8</span>
-            <span style="font-size:0.87em">RS&nbsp;<strong>{{ row["_card_rs"] }}</strong></span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;{{ rs_meter(row.get("RS (O'Neil)", none)) }}</span>
             <span style="font-size:0.87em;color:
               {%- if row["ΔRS 4W"] is number and row["ΔRS 4W"] > 0 %}#2e7d32
               {%- elif row["ΔRS 4W"] is number and row["ΔRS 4W"] < 0 %}#c62828
@@ -1848,53 +1894,64 @@ def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Weekly Screener – Dashboard</title>
   <style>
+    :root {{
+        --bg: #eef1f7; --surface: #ffffff; --surface-2: #f6f8fc;
+        --border: #dde3ef; --border-strong: #c3cde0;
+        --text: #10192b; --text-secondary: #4d5b73; --text-muted: #8593ab;
+        --accent: #1f4fa3; --accent-soft: #e8eefa; --accent-text: #163c80;
+        --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
+    }}
+    @media (prefers-color-scheme: dark) {{
+        :root {{
+            --bg: #0a0f1a; --surface: #121a2b; --surface-2: #0f1626;
+            --border: #223049; --border-strong: #2e4066;
+            --text: #e8edf7; --text-secondary: #a3b1c9; --text-muted: #6b7a97;
+            --accent: #6c9bef; --accent-soft: #16233e; --accent-text: #9dbdf5;
+        }}
+    }}
     *, *::before, *::after {{ box-sizing: border-box; }}
-    body {{ font-family: Arial, sans-serif; margin: 0; background: #f0f3fa; color: #333; }}
-    .g-nav   {{ background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
-                box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap;
-                position: sticky; top: 0; z-index: 100; }}
-    .g-brand {{ font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
-                margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
-                white-space: nowrap; font-size: .95em; }}
-    .g-nav a {{ color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+    body {{ font-family: var(--font-sans); margin: 0; background: var(--bg); color: var(--text); }}
+    .g-nav   {{ background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 1.5em;
+                flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }}
+    .g-brand {{ font-family: var(--font-mono); font-weight: 600; color: var(--text-muted); text-decoration: none;
+                padding: .72em 1.1em .72em 0; margin-right: .5em; border-right: 1px solid var(--border);
+                white-space: nowrap; font-size: .78em; letter-spacing: .05em; text-transform: uppercase; }}
+    .g-nav a {{ color: var(--text-secondary); text-decoration: none; padding: .72em .85em;
                 font-size: .84em; white-space: nowrap; }}
-    .g-nav a:hover  {{ color: #fff; background: rgba(255,255,255,.12); }}
-    .g-nav a.active {{ color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }}
+    .g-nav a:hover  {{ color: var(--accent); background: var(--accent-soft); }}
+    .g-nav a.active {{ color: var(--accent-text); box-shadow: inset 0 -2px var(--accent); font-weight: 600; }}
     .page {{ max-width: 900px; margin: 0 auto; padding: 2em 1em 3em; }}
-    .page-title {{ color: #003d99; font-size: 1.6em; margin: 0 0 .15em; }}
-    .page-sub   {{ color: #888; font-size: .88em; margin: 0 0 1.8em; }}
-    .section-h  {{ color: #003d99; font-size: .78em; text-transform: uppercase;
-                   letter-spacing: .08em; margin: 0 0 .75em;
-                   padding-bottom: .35em; border-bottom: 2px solid #003d99; }}
+    .page-title {{ color: var(--text); font-size: 1.6em; margin: 0 0 .15em; font-weight: 600; letter-spacing: -.01em; }}
+    .page-sub   {{ color: var(--text-muted); font-size: .88em; margin: 0 0 1.8em; }}
+    .section-h  {{ color: var(--text-muted); font-size: .78em; text-transform: uppercase;
+                   letter-spacing: .08em; margin: 0 0 .75em; font-weight: 600;
+                   padding-bottom: .35em; border-bottom: 1px solid var(--border-strong); }}
     .kpi-row {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: .85em; margin-bottom: 2.2em; }}
-    .kpi-card {{ background: #fff; border-radius: 8px; padding: .9em 1.1em;
-                 box-shadow: 0 1px 4px rgba(0,0,0,.07); border-top: 3px solid #003d99; }}
-    .kc-label {{ font-size: .72em; text-transform: uppercase; letter-spacing: .06em; color: #888; margin-bottom: .3em; }}
-    .kc-val   {{ font-size: 1.3em; font-weight: bold; color: #003d99; }}
-    .kc-sub   {{ font-size: .75em; color: #aaa; margin-top: .2em; }}
+    .kpi-card {{ background: var(--surface); border-radius: 10px; padding: .9em 1.1em;
+                 border: 1px solid var(--border); border-top: 2px solid var(--accent); }}
+    .kc-label {{ font-size: .72em; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: .3em; }}
+    .kc-val   {{ font-size: 1.3em; font-weight: 700; color: var(--text); font-family: var(--font-mono); }}
+    .kc-sub   {{ font-size: .75em; color: var(--text-muted); margin-top: .2em; }}
     .nav-row  {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: .85em; margin-bottom: 2.2em; }}
-    .nav-card {{ background: #fff; border-radius: 8px; padding: 1em 1.2em;
-                 box-shadow: 0 1px 4px rgba(0,0,0,.08); text-decoration: none; color: inherit;
-                 border-left: 4px solid #003d99; display: block;
-                 transition: box-shadow .15s, transform .12s; }}
-    .nav-card:hover {{ box-shadow: 0 4px 14px rgba(0,0,0,.13); transform: translateY(-1px); }}
-    .nc-title {{ font-weight: bold; color: #003d99; font-size: .92em; margin-bottom: .2em; }}
-    .nc-desc  {{ font-size: .79em; color: #999; }}
+    .nav-card {{ background: var(--surface); border-radius: 10px; padding: 1em 1.2em;
+                 border: 1px solid var(--border); text-decoration: none; color: inherit;
+                 border-left: 3px solid var(--accent); display: block;
+                 transition: border-color .15s, transform .12s; }}
+    .nav-card:hover {{ border-color: var(--accent); transform: translateY(-1px); }}
+    .nc-title {{ font-weight: 600; color: var(--text); font-size: .92em; margin-bottom: .2em; }}
+    .nc-desc  {{ font-size: .79em; color: var(--text-muted); }}
     .nav-card.nc-green  {{ border-left-color: #27ae60; }}
-    .nav-card.nc-green  .nc-title {{ color: #27ae60; }}
     .nav-card.nc-teal   {{ border-left-color: #16a085; }}
-    .nav-card.nc-teal   .nc-title {{ color: #16a085; }}
     .nav-card.nc-orange {{ border-left-color: #e67e22; }}
-    .nav-card.nc-orange .nc-title {{ color: #e67e22; }}
     .nav-card.nc-purple {{ border-left-color: #8e44ad; }}
-    .nav-card.nc-purple .nc-title {{ color: #8e44ad; }}
     .report-list {{ list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5em; }}
-    .report-item {{ background: #fff; border-radius: 8px; padding: .8em 1.1em;
-                    box-shadow: 0 1px 4px rgba(0,0,0,.07); }}
-    .report-item a {{ color: #003d99; text-decoration: none; font-weight: 600; font-size: .95em; }}
+    .report-item {{ background: var(--surface); border-radius: 10px; padding: .8em 1.1em;
+                    border: 1px solid var(--border); }}
+    .report-item a {{ color: var(--accent); text-decoration: none; font-weight: 600; font-size: .95em; }}
     .report-item a:hover {{ text-decoration: underline; }}
-    .ri-meta {{ font-size: .78em; color: #aaa; margin-top: .15em; }}
-    details summary {{ cursor: pointer; color: #003d99; font-size: .88em; padding: .4em 0; }}
+    .ri-meta {{ font-size: .78em; color: var(--text-muted); margin-top: .15em; }}
+    details summary {{ cursor: pointer; color: var(--accent); font-size: .88em; padding: .4em 0; }}
     details summary:hover {{ text-decoration: underline; }}
     @media (max-width: 680px) {{
       .kpi-row {{ grid-template-columns: 1fr 1fr; }}
