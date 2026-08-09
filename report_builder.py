@@ -1240,6 +1240,55 @@ def filter_rules_for_fails() -> dict:
     }
 
 
+def save_leaders_diagnostic(leaders: pd.DataFrame, *, sector_excluded: set,
+                            path) -> Path:
+    """Rohe Schwellenwert-Kennzahlen aller Score>=6-Leaders als JSON persistieren.
+
+    Anlass (2026-08-09): AVT und MTRN scheiterten im Report vom Samstag
+    beide an "EPS-Q < 20%", bestanden aber im Sonntagslauf trotz identischem
+    Kurs/Score/RS -- die Ursache (Yahoo liefert die EPS-Q-Kennzahl
+    inkonsistent zwischen Laeufen) liess sich nur durch manuellen Vergleich
+    zweier HTML-Reports finden. Diese Datei macht dieselbe Frage kuenftig zu
+    einem einfachen JSON-Diff zwischen zwei Tagen.
+    """
+    path = Path(path)
+    schwellen = filter_rules_for_fails()
+    rows: dict = {}
+
+    def _num(v):
+        try:
+            return None if pd.isna(v) else float(v)
+        except Exception:
+            return None
+
+    if leaders is not None and not leaders.empty and "score" in leaders.columns:
+        score_num = pd.to_numeric(leaders["score"], errors="coerce")
+        subset = leaders[score_num >= 6]
+        for ticker, row in subset.iterrows():
+            fails = compute_filter_fails(
+                row, sector_excluded=sector_excluded, html=False, **schwellen,
+            )
+            rows[str(ticker)] = {
+                "score":              _num(row.get("score")),
+                "rs":                 _num(row.get("RS (O'Neil)")),
+                "eps_growth_last_q":  _num(row.get("EPS Wachstum letztes Q YoY (%)")),
+                "revenue_growth":     _num(row.get("Revenue Wachstum TTM YoY (%)")),
+                "roe":                _num(row.get("ROE (%)")),
+                "industry_ranking":   _num(row.get("Industry Ranking")),
+                "atr_pct":            _num(row.get("ATR / Price (%)")),
+                "close":              _num(row.get("Close")),
+                "market_cap_mio":     _num(row.get("MarketCap (Mio USD)")),
+                "vol_breakout":       bool(row.get("Vol-Breakout", False)),
+                "macd_above_signal":  bool(row.get("MACD > Signal (W)", False)),
+                "fails":              fails,
+            }
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(rows, indent=2, ensure_ascii=False, sort_keys=True),
+                     encoding="utf-8")
+    return path
+
+
 def _tv_chart_id(prefix: str, ticker: str) -> str:
     """DOM-taugliche, eindeutige Widget-ID je Ticker und Sektion."""
     return f"{prefix}_{re.sub(r'[^A-Za-z0-9]', '_', str(ticker))}"

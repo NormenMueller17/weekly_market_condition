@@ -1,9 +1,28 @@
+import pickle
 import time
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+from pathlib import Path
 import yfinance as yf
 import pandas as pd
+from config import SETTINGS
 from rate_limit import RateLimiter, install_yfinance_limiter
+
+# TTL 24h, analog zum Wochenkerzen-Cache in data_sources.load_weekly_history.
+# Fundamentaldaten (v.a. EPS_GROWTH_LAST_Q_YOY) sind bei Yahoo deutlich
+# volatiler als Kursdaten -- zwei Laeufe am selben Tag lieferten schon
+# unterschiedliche Werte fuer dieselbe Kennzahl und liessen Kaufsignale
+# zwischen "0 gefunden" und "2 gefunden" hin- und herkippen (AVT/MTRN,
+# 2026-08-09, EPS-Q kippte ueber die 20%-Schwelle). Der Cache macht
+# Wiederholungslaeufe innerhalb der TTL deterministisch.
+_QUOTE_CACHE_TTL_HOURS = 24
+
+
+def _quote_cache_file() -> Path:
+    d = Path(SETTINGS.cache_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    return d / "quote_fundamentals.pkl"
 
 # 5 echte HTTP-Requests je Sekunde. Vorher standen hier 6 "Methodenaufrufe",
 # was gemessen ~13 Requests/s entsprach — mehr, als Yahoo von einer
@@ -54,17 +73,40 @@ def batch_fetch_quote_data(tickers) -> dict:
 
     CIRCUIT_BREAKER_THRESHOLD = 10  # Aufeinanderfolgende Vollausfälle bis Abbruch
 
-    results = {}
     tickers = list(dict.fromkeys(tickers))  # Duplikate raus
+
+    cache_file = _quote_cache_file()
+    cached: dict = {}
+    if cache_file.exists():
+        try:
+            payload = pickle.loads(cache_file.read_bytes())
+            age_h = (datetime.utcnow() - payload["fetched"]).total_seconds() / 3600
+            if age_h < _QUOTE_CACHE_TTL_HOURS:
+                cached = payload["data"]
+                print(f"[CACHE] Fundamentaldaten: {len(cached)} Ticker im Cache "
+                      f"(Alter: {age_h:.1f}h / TTL: {_QUOTE_CACHE_TTL_HOURS}h).")
+        except Exception as exc:
+            print(f"[CACHE] ⚠️  Fundamentaldaten-Cache beschaedigt, wird neu aufgebaut: {exc}")
+
+    results = {t: cached[t] for t in tickers if t in cached}
+    missing = [t for t in tickers if t not in cached]
+
+    if not missing:
+        print(f"[INFO] batch_fetch_quote_data: alle {len(tickers)} Ticker aus Cache, "
+              f"kein Yahoo-Abruf noetig.")
+        return results
+    if cached:
+        print(f"[CACHE] {len(missing)} von {len(tickers)} Tickern neu geholt, "
+              f"{len(tickers) - len(missing)} aus Cache uebernommen.")
 
     consecutive_failures = [0]   # list for mutability in closure
     circuit_open        = [False]
     lock                = threading.Lock()
 
     MAX_WORKERS = 5
-    max_workers = min(MAX_WORKERS, max(1, len(tickers)))
+    max_workers = min(MAX_WORKERS, max(1, len(missing)))
 
-    print(f"[INFO] Starte batch_fetch_quote_data für {len(tickers)} Ticker "
+    print(f"[INFO] Starte batch_fetch_quote_data für {len(missing)} Ticker "
           f"mit {max_workers} Threads ...")
 
     def _fetch(ticker: str) -> dict:
@@ -83,8 +125,9 @@ def batch_fetch_quote_data(tickers) -> dict:
                 consecutive_failures[0] = 0
         return data
 
+    fresh: dict = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_ticker = {executor.submit(_fetch, t): t for t in tickers}
+        future_to_ticker = {executor.submit(_fetch, t): t for t in missing}
 
         for future in as_completed(future_to_ticker):
             tkr = future_to_ticker[future]
@@ -93,7 +136,22 @@ def batch_fetch_quote_data(tickers) -> dict:
             except Exception as e:
                 print(f"[ERROR] batch_fetch_quote_data: {tkr} -> {e}")
                 data = dict(_EMPTY_QUOTE)
-            results[tkr] = data
+            fresh[tkr] = data
+    results.update(fresh)
+
+    # Nur erfolgreiche Abrufe cachen -- ein Totalausfall (z.B. durch den
+    # Circuit Breaker uebersprungen) soll beim naechsten Lauf erneut
+    # versucht werden statt 24h lang als "leer" eingefroren zu sein.
+    ok_fresh = {t: d for t, d in fresh.items() if any(v is not None for v in d.values())}
+    if ok_fresh:
+        try:
+            cache_file.write_bytes(pickle.dumps({
+                "fetched": datetime.utcnow(),
+                "data": {**cached, **ok_fresh},
+            }))
+        except Exception as exc:
+            print(f"[CACHE] ⚠️  Fundamentaldaten-Cache konnte nicht geschrieben werden: {exc}")
+
     return results
 
 # --- Aktuellen Schlusskurs & Marktkapitalisierung ergänzen ---

@@ -1165,6 +1165,20 @@ def run():
     print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden"
           + (f" — davon {_n_re} Wiedereinstieg(e)" if _n_re else ""))
 
+    # Diagnose-Snapshot aller Score>=6-Leaders (Rohwerte + Scheitert-an) —
+    # macht Tag-zu-Tag-Abweichungen wie am 2026-08-09 (AVT/MTRN kippten durch
+    # eine inkonsistente EPS-Q-Kennzahl) per JSON-Diff statt HTML-Vergleich
+    # nachvollziehbar.
+    try:
+        from report_builder import save_leaders_diagnostic
+        diag_path = save_leaders_diagnostic(
+            leaders, sector_excluded=sector_excluded,
+            path=Path("docs/data") / f"leaders_diagnostic_{report_date}.json",
+        )
+        print(f"[DIAG] Leaders-Diagnose gespeichert → {diag_path}")
+    except Exception as e:
+        print(f"[DIAG] ⚠️  Leaders-Diagnose konnte nicht geschrieben werden: {e}")
+
     out_dir = Path("artifacts")
     out_dir.mkdir(parents=True, exist_ok=True)
     signals_json = save_signals_json(signals, out_dir / f"signals_{report_date}.json")
