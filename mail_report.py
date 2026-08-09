@@ -704,7 +704,19 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
                             (profile.get(s.ticker, {}) or {}).get("_begruendung", []))
                 + '</div>'
             )
-        return _h2("3) Kaufsignale") + karten
+        from report_builder import build_tv_watchlist_string
+        tv_watchlist = build_tv_watchlist_string(signale)
+        watchlist_block = (
+            f'<div style="background:#f7f8fc;border:1px solid {RAHMEN};border-radius:6px;'
+            f'padding:.8em 1em;margin-bottom:1.4em;">'
+            f'<p style="font-size:.88em;color:{GRAU};margin:0 0 .5em 0;">'
+            f'📋 TradingView-Watchlist dieser Woche — markieren, kopieren und in TradingView unter '
+            f'<b>Watchlist → + → Liste importieren</b> einfügen:</p>'
+            f'<div style="font-family:monospace;font-size:.88em;background:#fff;'
+            f'border:1px solid {RAHMEN};border-radius:4px;padding:.5em .7em;">{tv_watchlist}</div>'
+            f'</div>'
+        ) if tv_watchlist else ""
+        return _h2("3) Kaufsignale") + karten + watchlist_block
 
     if not kandidaten:
         return (_h2("3) Kaufsignale")

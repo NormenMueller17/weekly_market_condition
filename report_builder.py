@@ -727,6 +727,27 @@ HTML_TMPL = """
       🔴 Max. Gap = Order verwerfen wenn Montag-Open über diesem Preis (Pivot +5%) &nbsp;|&nbsp;
       🟢/🔴 Scorecard = Minervini-Kriterien &nbsp;|&nbsp; Rot hinterlegt = Risiko/Equity &gt; 1.8%.
     </p>
+
+    {% if tv_watchlist %}
+    <div style="background:#f7f8fc;border:1px solid #dde2f0;border-radius:6px;padding:0.8em 1em;margin-bottom:1em">
+      <p style="font-size:0.9em;color:#555;margin:0 0 0.5em 0">
+        📋 TradingView-Watchlist dieser Woche — kopieren und in TradingView unter
+        <strong>Watchlist → + → Liste importieren</strong> einfügen:
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="tv_watchlist_signals" type="text" readonly value="{{ tv_watchlist }}"
+               onclick="this.select()"
+               style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;
+                      font-family:monospace;font-size:0.85em;background:#fff">
+        <button type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('tv_watchlist_signals').value)"
+                style="padding:6px 14px;background:#003d99;color:white;border:none;border-radius:4px;
+                       cursor:pointer;font-size:0.85em">
+          Kopieren
+        </button>
+      </div>
+    </div>
+    {% endif %}
     {% endif %}
 
     {% endif %}
@@ -1006,6 +1027,18 @@ def compute_ampel(breadth_snap: pd.DataFrame, idx: pd.DataFrame) -> dict:
 
     return {"score": score, "label": label, "color": color, "bg": bg,
             "emoji": emoji, "criteria": criteria}
+
+
+def build_tv_watchlist_string(signals: list) -> str:
+    """Komma-getrennte Tickerliste der Wochensignale fuer TradingView-Import.
+
+    TradingView bietet keine oeffentliche API zum Anlegen von Watchlists
+    (nur inoffizielle, session-cookie-basierte Endpunkte). Stattdessen laesst
+    sich eine komma-getrennte Symbolliste ueber "Watchlist → + → Liste
+    importieren" einfuegen — dieselbe rohe Tickerform, die auch das
+    Advanced-Chart-Widget schon verwendet (siehe `_tv_advanced_chart`).
+    """
+    return ",".join(dict.fromkeys(s.ticker for s in signals if getattr(s, "ticker", None)))
 
 
 def build_sector_rows(idx_data: dict) -> list:
@@ -1680,6 +1713,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         ampel              = ampel,
         sector_rows        = sector_rows or [],
         sector_bar_svg     = build_sector_bar_svg(sector_rows or []),
+        tv_watchlist       = build_tv_watchlist_string(signals or []),
         recent_trades      = recent_trades,
         profile_display    = profile_display,
         muster             = muster,
