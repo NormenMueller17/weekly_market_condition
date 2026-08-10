@@ -230,6 +230,53 @@ HTML_TMPL = """
   <span class="meter-num">–</span>
   {%- endif -%}
 {%- endmacro -%}
+{%- macro leader_card(idx, row) -%}
+        <div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">{{ idx }}</strong>
+              &nbsp;{{ row["SA"] | safe }}
+            </span>
+            <strong style="font-size:1.05em">{{ row["_card_close"] }}</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">{{ row["Company"] }}</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">{{ row["Industry"] }}</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ {{ row["score"] | int }}/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;{{ rs_meter(row.get("RS (O'Neil)", none)) }}</span>
+            <span style="font-size:0.87em;color:
+              {%- if row["ΔRS 4W"] is number and row["ΔRS 4W"] > 0 %}#2e7d32
+              {%- elif row["ΔRS 4W"] is number and row["ΔRS 4W"] < 0 %}#c62828
+              {%- else %}#555{% endif %}">
+              ΔRS&nbsp;<strong>{{ row["_card_drs"] }}</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;{{ row["_card_rev"] }}&nbsp;&nbsp;EPS:&nbsp;{{ row["_card_eps"] }}
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            {% if row["VCP"] or row["Launchpad"] %}
+            <span style="background:#fff8e1;padding:1px 6px;border-radius:3px">
+              📐&nbsp;{% if row["VCP"] and row["Launchpad"] %}VCP+Launchpad{% elif row["VCP"] %}VCP{% else %}Launchpad{% endif %}
+            </span>
+            {% endif %}
+            {% if row["_card_dist"] != '–' %}
+            <span>Dist 52W&nbsp;H:&nbsp;{{ row["_card_dist"] }}%</span>
+            {% endif %}
+          </div>
+          <!-- Kauf-Filter-Status -->
+          {% set fails = row.get("_filter_fails", "–") %}
+          <div style="font-size:0.78em;font-weight:bold;
+            {% if fails == '✅' %}color:#2e7d32{% else %}color:#c62828{% endif %}">
+            {% if fails == '✅' %}✅ Kaufkandidat{% else %}❌ {{ fails | safe }}{% endif %}
+          </div>
+        </div>
+{%- endmacro -%}
 <body>
   <nav class="g-nav">
     <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
@@ -819,57 +866,18 @@ HTML_TMPL = """
     {% if leaders.empty %}
     <p>Keine Aktien erfüllen alle 8 Minervini-Kriterien mit RS ≥ 85.</p>
     {% else %}
+    {% set _leader_count = leaders | length %}
+    <p style="font-size:0.9em;color:#555;margin-top:-0.6em;margin-bottom:0.8em">
+      <strong>{{ _leader_count }}</strong> Titel erfüllen aktuell alle 8 Minervini-Kriterien mit RS ≥ 85 —
+      ein Indikator für die Marktbreite auf der Long-Seite.
+    </p>
 
     {% set ns = namespace(col=0) %}
     <table class="leader-grid">
-    {% for idx, row in leaders.iterrows() %}
+    {% for idx, row in leaders.head(20).iterrows() %}
       {% if ns.col == 0 %}<tr>{% endif %}
       <td class="leader-cell">
-        <div class="leader-card">
-          <!-- Ticker + SA-Button + Close -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-            <span>
-              <strong style="font-size:1.05em;color:#003d99">{{ idx }}</strong>
-              &nbsp;{{ row["SA"] | safe }}
-            </span>
-            <strong style="font-size:1.05em">{{ row["_card_close"] }}</strong>
-          </div>
-          <!-- Unternehmensname + Branche -->
-          <div style="font-size:0.87em;color:#333;margin-bottom:1px">{{ row["Company"] }}</div>
-          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">{{ row["Industry"] }}</div>
-          <!-- Score + RS + ΔRS -->
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
-            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ {{ row["score"] | int }}/8</span>
-            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;{{ rs_meter(row.get("RS (O'Neil)", none)) }}</span>
-            <span style="font-size:0.87em;color:
-              {%- if row["ΔRS 4W"] is number and row["ΔRS 4W"] > 0 %}#2e7d32
-              {%- elif row["ΔRS 4W"] is number and row["ΔRS 4W"] < 0 %}#c62828
-              {%- else %}#555{% endif %}">
-              ΔRS&nbsp;<strong>{{ row["_card_drs"] }}</strong>
-            </span>
-          </div>
-          <!-- Fundamentaldaten -->
-          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
-            Rev:&nbsp;{{ row["_card_rev"] }}&nbsp;&nbsp;EPS:&nbsp;{{ row["_card_eps"] }}
-          </div>
-          <!-- Muster + Abstand 52W High -->
-          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
-            {% if row["VCP"] or row["Launchpad"] %}
-            <span style="background:#fff8e1;padding:1px 6px;border-radius:3px">
-              📐&nbsp;{% if row["VCP"] and row["Launchpad"] %}VCP+Launchpad{% elif row["VCP"] %}VCP{% else %}Launchpad{% endif %}
-            </span>
-            {% endif %}
-            {% if row["_card_dist"] != '–' %}
-            <span>Dist 52W&nbsp;H:&nbsp;{{ row["_card_dist"] }}%</span>
-            {% endif %}
-          </div>
-          <!-- Kauf-Filter-Status -->
-          {% set fails = row.get("_filter_fails", "–") %}
-          <div style="font-size:0.78em;font-weight:bold;
-            {% if fails == '✅' %}color:#2e7d32{% else %}color:#c62828{% endif %}">
-            {% if fails == '✅' %}✅ Kaufkandidat{% else %}❌ {{ fails | safe }}{% endif %}
-          </div>
-        </div>
+{{ leader_card(idx, row) }}
       </td>
       {% set ns.col = ns.col + 1 %}
       {% if ns.col == 2 %}
@@ -879,6 +887,37 @@ HTML_TMPL = """
     {% endfor %}
     {% if ns.col == 1 %}<td class="leader-cell"></td></tr>{% endif %}
     </table>
+
+    {% if _leader_count > 20 %}
+    <div id="leaders-extra" style="display:none">
+      {% set ns2 = namespace(col=0) %}
+      <table class="leader-grid">
+      {% for idx, row in leaders.iloc[20:].iterrows() %}
+        {% if ns2.col == 0 %}<tr>{% endif %}
+        <td class="leader-cell">
+{{ leader_card(idx, row) }}
+        </td>
+        {% set ns2.col = ns2.col + 1 %}
+        {% if ns2.col == 2 %}
+          </tr>
+          {% set ns2.col = 0 %}
+        {% endif %}
+      {% endfor %}
+      {% if ns2.col == 1 %}<td class="leader-cell"></td></tr>{% endif %}
+      </table>
+    </div>
+    <div style="text-align:center;margin:0.6em 0 1.2em">
+      <button type="button" id="leaders-toggle-btn"
+              onclick="var el=document.getElementById('leaders-extra');
+                       var show=el.style.display==='none';
+                       el.style.display=show?'block':'none';
+                       this.textContent=show?'Weniger anzeigen':'Weitere {{ _leader_count - 20 }} Leader anzeigen';"
+              style="padding:8px 20px;background:#f7f8fc;border:1px solid #dde2f0;color:#003d99;
+                     border-radius:6px;cursor:pointer;font-size:0.88em;font-weight:bold">
+        Weitere {{ _leader_count - 20 }} Leader anzeigen
+      </button>
+    </div>
+    {% endif %}
 
     {% if tv_watchlist_leaders %}
     <div style="background:#f7f8fc;border:1px solid #dde2f0;border-radius:6px;padding:0.8em 1em;margin-bottom:1em">
