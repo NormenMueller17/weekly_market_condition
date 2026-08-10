@@ -878,6 +878,11 @@ HTML_TMPL = """
     {% endif %}
 
     <h2>9) 🏢 Kaufsignale im Detail</h2>
+    <p style="font-size:0.85em;color:#777;margin-top:-0.6em;margin-bottom:0.8em">
+      Zeigt alle Kaufsignale dieser Woche, nicht nur die mit Auftrag. 🏆-Titel wurden tatsächlich geordert;
+      Titel ohne 🏆 erfüllen ebenfalls alle Kriterien, liegen aber außerhalb des wöchentlichen
+      Neukauf-Limits — für sie wurde <strong>kein Auftrag angelegt</strong>.
+    </p>
     {% if not signals %}
     <p style="color:#888">Keine Kaufsignale diese Woche — kein Steckbrief zu zeigen.</p>
     {% elif not profile_display %}
@@ -890,11 +895,24 @@ HTML_TMPL = """
       <div style="font-size:1.15em;font-weight:bold;margin-bottom:2px">
         <a href="{{ s.sa_link }}" target="_blank" style="color:#003d99;text-decoration:none">{{ s.ticker }}</a>
         &nbsp;—&nbsp;{{ s.company }}
+        {% if s.is_top_pick %}
+        <span style="background:#f5a623;color:white;padding:2px 7px;border-radius:10px;font-size:0.6em;vertical-align:middle;margin-left:6px">🏆 Rang {{ s.rank }} · Auftrag angelegt</span>
+        {% else %}
+        <span title="Kaufsignal erfüllt, aber diese Woche außerhalb des Neukauf-Limits — es wurde kein Auftrag angelegt"
+              style="background:#eee;color:#666;padding:2px 7px;border-radius:10px;font-size:0.6em;vertical-align:middle;margin-left:6px">Rang {{ s.rank }} · kein Auftrag angelegt</span>
+        {% endif %}
       </div>
       <div style="color:#888;font-size:0.85em;margin-bottom:10px">
         {{ pd_.kopfzeile }}{% if pd_.kopfzeile %} · {% endif %}RS {{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}
         · Muster {{ s.pattern }}
       </div>
+      {% if not s.is_top_pick %}
+      <p style="background:#fff8e1;border-left:3px solid #f5a623;padding:.5em .8em;margin:.2em 0 .8em;font-size:0.85em;color:#555">
+        ⚠️ Erfüllt alle Kaufkriterien, wurde aber <strong>nicht gekauft</strong> — Rang {{ s.rank }} liegt außerhalb
+        des wöchentlichen Neukauf-Limits (siehe Abschnitt 7). Entry/Buy-Stop unten sind die Werte, zu denen
+        <em>eingestiegen worden wäre</em>, kein aktiver Auftrag.
+      </p>
+      {% endif %}
       {{ tv_signal_charts.get(s.ticker, '') | safe }}
       {% if pd_.beschreibung %}
       <p style="margin:.4em 0">{{ pd_.beschreibung }}</p>
@@ -913,7 +931,9 @@ HTML_TMPL = """
       {% endif %}
       {% endfor %}
       {% if pd_.begruendung %}
-      <div style="font-weight:600;color:#003d99;margin-top:.6em">Warum im Depot</div>
+      <div style="font-weight:600;color:#003d99;margin-top:.6em">
+        {{ "Warum im Depot" if s.is_top_pick else "Warum ein Kaufsignal" }}
+      </div>
       <ul style="margin:.4em 0 0;padding-left:1.2em">
         {% for g in pd_.begruendung %}<li style="margin-bottom:.25em">{{ g }}</li>{% endfor %}
       </ul>
