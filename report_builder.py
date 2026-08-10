@@ -679,6 +679,11 @@ HTML_TMPL = """
             </span>
           {% else %}
             <span style="color:#aaa">{{ s.rank }}</span>
+            <span title="Außerhalb des wöchentlichen Neukauf-Limits — es wurde kein Auftrag angelegt"
+                  style="display:block;margin-top:2px;background:#eee;color:#666;padding:1px 5px;
+                         border-radius:8px;font-size:0.65em;font-weight:normal;white-space:nowrap">
+              kein Auftrag
+            </span>
           {% endif %}
         </td>
         <td class="left">
@@ -875,6 +880,27 @@ HTML_TMPL = """
     {% if ns.col == 1 %}<td class="leader-cell"></td></tr>{% endif %}
     </table>
 
+    {% if tv_watchlist_leaders %}
+    <div style="background:#f7f8fc;border:1px solid #dde2f0;border-radius:6px;padding:0.8em 1em;margin-bottom:1em">
+      <p style="font-size:0.9em;color:#555;margin:0 0 0.5em 0">
+        📋 TradingView-Watchlist Marktführer — kopieren und in TradingView unter
+        <strong>Watchlist → + → Liste importieren</strong> einfügen:
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="tv_watchlist_leaders" type="text" readonly value="{{ tv_watchlist_leaders }}"
+               onclick="this.select()"
+               style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;
+                      font-family:monospace;font-size:0.85em;background:#fff">
+        <button type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('tv_watchlist_leaders').value)"
+                style="padding:6px 14px;background:#003d99;color:white;border:none;border-radius:4px;
+                       cursor:pointer;font-size:0.85em">
+          Kopieren
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
     {% endif %}
 
     <h2>9) 🏢 Kaufsignale im Detail</h2>
@@ -990,6 +1016,28 @@ HTML_TMPL = """
       {% endfor %}
     </table>
     </div>
+
+    {% if tv_watchlist_muster %}
+    <div style="background:#f7f8fc;border:1px solid #dde2f0;border-radius:6px;padding:0.8em 1em;margin-bottom:1em">
+      <p style="font-size:0.9em;color:#555;margin:0 0 0.5em 0">
+        📋 TradingView-Watchlist Muster — kopieren und in TradingView unter
+        <strong>Watchlist → + → Liste importieren</strong> einfügen:
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="tv_watchlist_muster" type="text" readonly value="{{ tv_watchlist_muster }}"
+               onclick="this.select()"
+               style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;
+                      font-family:monospace;font-size:0.85em;background:#fff">
+        <button type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('tv_watchlist_muster').value)"
+                style="padding:6px 14px;background:#003d99;color:white;border:none;border-radius:4px;
+                       cursor:pointer;font-size:0.85em">
+          Kopieren
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
     {% endif %}
 
   </div><!-- .page -->
@@ -1106,16 +1154,27 @@ def compute_ampel(breadth_snap: pd.DataFrame, idx: pd.DataFrame) -> dict:
             "emoji": emoji, "criteria": criteria}
 
 
-def build_tv_watchlist_string(signals: list) -> str:
-    """Komma-getrennte Tickerliste der Wochensignale fuer TradingView-Import.
+def build_tv_watchlist_string(tickers: list) -> str:
+    """Komma-getrennte Tickerliste fuer TradingView-Import.
 
     TradingView bietet keine oeffentliche API zum Anlegen von Watchlists
     (nur inoffizielle, session-cookie-basierte Endpunkte). Stattdessen laesst
     sich eine komma-getrennte Symbolliste ueber "Watchlist → + → Liste
     importieren" einfuegen — dieselbe rohe Tickerform, die auch das
     Advanced-Chart-Widget schon verwendet (siehe `_tv_advanced_chart`).
+
+    Nimmt entweder rohe Ticker-Strings oder Objekte/Dicts mit `.ticker`
+    bzw. `["ticker"]` entgegen, damit Signals, Leaders-Zeilen und
+    Muster-Eintraege denselben Aufruf nutzen koennen.
     """
-    return ",".join(dict.fromkeys(s.ticker for s in signals if getattr(s, "ticker", None)))
+    def _ticker(t):
+        if isinstance(t, str):
+            return t
+        if isinstance(t, dict):
+            return t.get("ticker")
+        return getattr(t, "ticker", None)
+
+    return ",".join(dict.fromkeys(tk for t in tickers if (tk := _ticker(t))))
 
 
 def build_sector_rows(idx_data: dict) -> list:
@@ -1839,6 +1898,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         sector_rows        = sector_rows or [],
         sector_bar_svg     = build_sector_bar_svg(sector_rows or []),
         tv_watchlist       = build_tv_watchlist_string(signals or []),
+        tv_watchlist_leaders = build_tv_watchlist_string(list(leaders_html.index) if leaders_html is not None else []),
+        tv_watchlist_muster  = build_tv_watchlist_string(muster or []),
         recent_trades      = recent_trades,
         profile_display    = profile_display,
         muster             = muster,
