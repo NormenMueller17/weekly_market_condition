@@ -1794,6 +1794,9 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         if "RS (O'Neil)" in leaders_html.columns:
             leaders_html["_rs_num"] = pd.to_numeric(leaders_html["RS (O'Neil)"], errors="coerce")
             leaders_html = leaders_html[leaders_html["_rs_num"] >= 85]
+            # Score ist bei allen Zeilen 8/8 (konstant) — ohne expliziten
+            # Sort haengt die Reihenfolge sonst am zufaelligen Universums-Scan.
+            leaders_html = leaders_html.sort_values("_rs_num", ascending=False)
         leaders_html = leaders_html.drop(
             columns=[c for c in ("score_num", "_rs_num") if c in leaders_html.columns]
         )
