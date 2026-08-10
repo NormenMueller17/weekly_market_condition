@@ -772,6 +772,14 @@ HTML_TMPL = """
     <p style="font-size:0.82em;color:#777;margin-top:0.3em">
       Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%).
       🏆 = Top-{{ signals | selectattr("is_top_pick") | list | length }} Kaufkandidaten.
+      {% if max_new_per_week is not none %}
+      {% set _portfolio_remaining = (portfolio_max_positions - (alpaca_positions|length)) if portfolio_max_positions is not none else none %}
+      Begrenzt durch das <strong>wöchentliche Neukauf-Limit von {{ max_new_per_week }}</strong>
+      {%- if _portfolio_remaining is not none %} (nicht durch freie Portfolio-Plätze —
+      davon wären aktuell {{ _portfolio_remaining }} frei){% endif %}.
+      Niedriger gerankte Signale ohne 🏆 sind deshalb keine schlechteren Kandidaten,
+      sondern nur diese Woche außerhalb des Kaufbudgets — sie bleiben gültige Signale.
+      {% endif %}
       🔵 Buy-Stop = Einstiegsorder (max(Entry, Pivot) +0.1%) &nbsp;|&nbsp;
       🔴 Max. Gap = Order verwerfen wenn Montag-Open über diesem Preis (Pivot +5%) &nbsp;|&nbsp;
       🟢/🔴 Scorecard = Minervini-Kriterien &nbsp;|&nbsp; Rot hinterlegt = Risiko/Equity &gt; 1.8%.
@@ -1583,7 +1591,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
                       sector_excluded=None,
                       sp500_breadth_pct=None, min_breadth_pct=40,
                       test_mode=False, sector_rows=None,
-                      profile=None, muster=None):
+                      profile=None, muster=None,
+                      max_new_per_week=None, portfolio_max_positions=None):
     """Build the weekly HTML email.
 
     Parameters
@@ -1815,6 +1824,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         muster             = muster,
         tv_signal_charts   = tv_signal_charts,
         tv_muster_charts   = tv_muster_charts,
+        max_new_per_week        = max_new_per_week,
+        portfolio_max_positions = portfolio_max_positions,
     )
     return html
 

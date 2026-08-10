@@ -1318,6 +1318,9 @@ def run():
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
         test_mode=TEST_MODE, sector_rows=sector_rows,
         profile=profile, muster=muster,
+        max_new_per_week=(SETTINGS.max_new_per_week_bull if market_bullish
+                           else SETTINGS.max_new_per_week_bear),
+        portfolio_max_positions=SETTINGS.portfolio_max_positions,
     )
     docs_reports_dir = Path("docs/reports")
     docs_reports_dir.mkdir(parents=True, exist_ok=True)
