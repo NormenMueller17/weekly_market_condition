@@ -372,6 +372,31 @@ HTML_TMPL = """
     <div style="overflow-x:auto">{{ sector_bar_svg | safe }}</div>
     {% endif %}
 
+    {% if sector_heatmap and sector_heatmap.rows %}
+    <h2>1c) Sektor-Rotation ({{ sector_heatmap.dates|length }} Wochen)</h2>
+    <p style="color:var(--text-secondary);font-size:.9em;margin:-.4em 0 1em;">
+      Wochenrendite je Sektor-ETF, oben = aktuell stärkster Sektor. Zeigt, wie sich Führerschaft über Zeit verschiebt, nicht nur den Momentanzustand.
+    </p>
+    <div style="overflow-x:auto">
+    <table>
+      <tr>
+        <th class="left">Sektor</th>
+        {% for d in sector_heatmap.dates %}
+          <th style="text-align:center">{{ d }}</th>
+        {% endfor %}
+      </tr>
+      {% for row in sector_heatmap.rows %}
+      <tr>
+        <td class="left">{{ row.name }} <span style="color:var(--text-muted);font-size:.85em">{{ row.ticker }}</span></td>
+        {% for cell in row.cells %}
+          <td style="text-align:center;background-color:{{ cell.bg }};font-weight:600">{{ cell.label }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    {% endif %}
+
     <h2>2) Trend & Momentum (Weekly)</h2>
     <table>
         <tr>
@@ -1283,6 +1308,65 @@ def build_sector_rows(idx_data: dict) -> list:
     return rows
 
 
+def build_sector_heatmap(idx_data: dict, weeks: int = 13) -> dict:
+    """Sektor-Wochenrenditen der letzten `weeks` Wochen als Rotations-Heatmap.
+
+    Ergänzt 1b) (aktuelle Woche als Balken) um die Zeitdimension: zeigt, wie
+    sich die Sektor-Führerschaft über mehrere Wochen verschiebt, statt nur
+    den Momentanzustand. Nutzt dieselbe Rohquelle (idx_data mit wöchentlichen
+    Sektor-ETF-Kursen) wie build_sector_rows, damit beide Ansichten nicht
+    auseinanderlaufen können.
+    """
+    series_by_sym = {}
+    dates = None
+    for sym, name in SECTOR_ETFS.items():
+        df = idx_data.get(sym)
+        if df is None:
+            continue
+        close = _extract_close_series(df)
+        if len(close) < 2:
+            continue
+        rets = (close.pct_change() * 100).dropna().tail(weeks)
+        if rets.empty:
+            continue
+        series_by_sym[sym] = (name, rets)
+        if dates is None or len(rets.index) > len(dates):
+            dates = rets.index
+
+    if not series_by_sym or dates is None:
+        return {"dates": [], "rows": []}
+
+    max_abs = 0.0
+    for _, rets in series_by_sym.values():
+        vals = rets.reindex(dates).dropna()
+        if not vals.empty:
+            max_abs = max(max_abs, float(vals.abs().max()))
+    max_abs = max_abs or 1.0
+
+    rows = []
+    for sym, (name, rets) in series_by_sym.items():
+        vals = rets.reindex(dates)
+        cells = []
+        for d in dates:
+            v = vals.get(d)
+            if v is None or pd.isna(v):
+                cells.append({"bg": "transparent", "label": "–"})
+            else:
+                v = float(v)
+                alpha = 0.10 + 0.70 * min(abs(v) / max_abs, 1.0)
+                color = "28,124,77" if v > 0 else ("179,38,30" if v < 0 else "0,0,0")
+                bg = f"rgba({color},{alpha:.2f})" if v != 0 else "transparent"
+                cells.append({"bg": bg, "label": f"{v:+.1f}%"})
+        last = vals.dropna()
+        rows.append({
+            "ticker": sym, "name": name, "cells": cells,
+            "last": float(last.iloc[-1]) if not last.empty else None,
+        })
+
+    rows.sort(key=lambda r: r["last"] if r["last"] is not None else -999, reverse=True)
+    return {"dates": [d.strftime("%d.%m.") for d in dates], "rows": rows}
+
+
 def build_sector_bar_svg(sector_rows: list, width: int = 620, row_height: int = 26) -> str:
     """Sektor-Performance als horizontaler Balkenchart, Null in der Mitte.
 
@@ -1816,7 +1900,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
                       sector_excluded=None,
                       sp500_breadth_pct=None, min_breadth_pct=40,
-                      test_mode=False, sector_rows=None,
+                      test_mode=False, sector_rows=None, sector_heatmap=None,
                       profile=None, muster=None,
                       max_new_per_week=None, portfolio_max_positions=None):
     """Build the weekly HTML email.
@@ -2052,6 +2136,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         nhnl_badge         = nhnl_badge,
         breadth_sparklines = breadth_sparklines,
         sector_rows        = sector_rows or [],
+        sector_heatmap     = sector_heatmap or {"dates": [], "rows": []},
         sector_bar_svg     = build_sector_bar_svg(sector_rows or []),
         tv_watchlist       = build_tv_watchlist_string(signals or []),
         tv_watchlist_leaders = build_tv_watchlist_string(list(leaders_html.index) if leaders_html is not None else []),
