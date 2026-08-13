@@ -15,6 +15,7 @@ import math
 from pathlib import Path
 from typing import Optional
 
+import pandas as pd
 import yfinance as yf
 
 TRADES_FILE  = Path("docs/data/trades.json")
@@ -213,6 +214,87 @@ def _fetch_spy_benchmark(labels: list, start_equity: float) -> list:
         return []
 
 
+# ── Wochenrendite-Heatmap: Depot vs. SPY ────────────────────────────────────────
+
+def _heatmap_cell(v, max_abs: float) -> dict:
+    if v is None or (isinstance(v, float) and math.isnan(v)):
+        return {"bg": "transparent", "label": "–"}
+    alpha = 0.10 + 0.70 * min(abs(v) / max_abs, 1.0) if max_abs else 0.10
+    color = "26,138,26" if v > 0 else ("204,34,34" if v < 0 else "0,0,0")
+    bg = f"rgba({color},{alpha:.2f})" if v != 0 else "transparent"
+    return {"bg": bg, "label": f"{v:+.1f}%"}
+
+
+def _weekly_heatmap(labels: list, eq_values: list, spy_values: list, weeks: int = 13) -> dict:
+    """Wochenrendite Depot vs. SPY als Heatmap-Daten (letzte `weeks` Wochen).
+
+    Nutzt dieselbe tägliche Equity-Historie wie die Equity-Kurve und dieselbe
+    normierte SPY-Kurve aus `_fetch_spy_benchmark` (kein zweiter Datenabruf),
+    damit Chart und Heatmap nicht auseinanderlaufen können. Dritte Zeile
+    (Differenz) beantwortet direkt die eigentliche Frage — schlägt das Depot
+    den Markt in der jeweiligen Woche oder nicht.
+    """
+    if not labels or not eq_values:
+        return {"dates": [], "rows": []}
+
+    idx = pd.to_datetime(labels)
+    eq = pd.Series(eq_values, index=idx, dtype=float)
+    eq_w = eq.resample("W-FRI").last().dropna()
+    port_ret = (eq_w.pct_change() * 100).dropna().tail(weeks)
+    if port_ret.empty:
+        return {"dates": [], "rows": []}
+    dates = port_ret.index
+
+    rows = [{"label": "Depot", "series": port_ret}]
+
+    if spy_values and any(v is not None for v in spy_values):
+        spy = pd.Series(spy_values, index=idx, dtype=float)
+        spy_w = spy.resample("W-FRI").last().dropna()
+        spy_ret = (spy_w.pct_change() * 100).dropna().reindex(dates)
+        rows.append({"label": "S&P 500 (SPY)", "series": spy_ret})
+        rows.append({"label": "Differenz (Depot − SPY)", "series": port_ret - spy_ret})
+
+    max_abs = 0.0
+    for r in rows:
+        vals = r["series"].dropna()
+        if not vals.empty:
+            max_abs = max(max_abs, float(vals.abs().max()))
+    max_abs = max_abs or 1.0
+
+    out_rows = [
+        {"label": r["label"], "cells": [_heatmap_cell(r["series"].get(d), max_abs) for d in dates]}
+        for r in rows
+    ]
+    return {"dates": [d.strftime("%d.%m.") for d in dates], "rows": out_rows}
+
+
+def _heatmap_table_html(heatmap: dict) -> str:
+    if not heatmap.get("rows"):
+        return '<p class="empty-note">Noch keine ausreichende Wochenhistorie (mind. 2 Wochen Equity-Daten nötig).</p>'
+    head = "".join(
+        f'<th style="text-align:center;padding:.5em .6em;font-size:.72em;color:#888;'
+        f'text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;">{d}</th>'
+        for d in heatmap["dates"]
+    )
+    body_rows = []
+    for row in heatmap["rows"]:
+        cells = "".join(
+            f'<td style="text-align:center;padding:.5em .6em;background-color:{c["bg"]};'
+            f'font-weight:600;white-space:nowrap;">{c["label"]}</td>'
+            for c in row["cells"]
+        )
+        body_rows.append(
+            f'<tr><td style="text-align:left;padding:.5em .8em;white-space:nowrap;'
+            f'font-weight:600;">{row["label"]}</td>{cells}</tr>'
+        )
+    return (
+        '<table style="border-collapse:collapse;width:100%;font-size:.88em;">'
+        f'<tr><th style="text-align:left;padding:.5em .8em;"></th>{head}</tr>'
+        + "".join(body_rows) +
+        '</table>'
+    )
+
+
 # ── Formatting helpers ────────────────────────────────────────────────────────
 
 def _fmt(v, suffix="", decimals=1, plus=False):
@@ -292,6 +374,9 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     eq_min    = min(all_vals) * 0.98 if all_vals else 0
     eq_max    = max(all_vals) * 1.02 if all_vals else 100000
     eq_empty  = "true" if not em["chart_values"] else "false"
+
+    # ── Wochenrendite-Heatmap ────────────────────────────────────────────────
+    heatmap_html = _heatmap_table_html(_weekly_heatmap(em["chart_labels"], em["chart_values"], spy_vals))
 
     # ── Sector chart ──────────────────────────────────────────────────────────
     sec_labels, sec_values, sec_colors = _bar_chart_data(tm["by_sector"])
@@ -383,6 +468,12 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
   <div class="chart-box" style="margin-bottom:1.5em">
     <canvas id="chartEquity"></canvas>
     <p class="empty-note" id="emptyEquity" style="display:none">Noch keine Daten verfügbar.</p>
+  </div>
+
+  <!-- Wochenrendite Heatmap -->
+  <h2>Wochenrendite: Depot vs. S&amp;P 500 (13 Wochen)</h2>
+  <div class="chart-box" style="margin-bottom:1.5em;overflow-x:auto;">
+    {heatmap_html}
   </div>
 
   <!-- P&L by Sector + Pattern -->
