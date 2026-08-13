@@ -171,6 +171,9 @@ HTML_TMPL = """
         .ampel-wrap:hover .ampel-tooltip { display: block; }
         .ampel-tooltip table { border: none; margin: 4px 0 0 0; font-size: 1em; }
         .ampel-tooltip td { border: none; padding: 3px 8px; }
+        .ampel-dots { display: flex; gap: 5px; margin: 6px 2px 0; }
+        .ampel-dot  { width: 9px; height: 9px; border-radius: 50%; background: var(--success); }
+        .ampel-dot.unmet { background: transparent; border: 1.5px solid var(--border-strong); }
     </style>
     <script>
     function sortTable(th) {
@@ -294,23 +297,40 @@ HTML_TMPL = """
     <h1>Weekly US Market Report</h1>
     <p><strong>Report-Woche:</strong> {{ report_date }}</p>
 
-    {% if ampel %}
-    <div class="ampel-wrap">
-      <div class="ampel-badge" style="background:{{ ampel.bg }};color:{{ ampel.color }}">
-        {{ ampel.emoji }} Marktampel: <strong>{{ ampel.label }}</strong> &nbsp;({{ ampel.score }}/6)
-      </div>
-      <div class="ampel-tooltip">
-        <strong>Marktampel-Kriterien</strong>
-        <table>
+    {% if ampel or nhnl_badge %}
+    <div style="display:flex;flex-wrap:wrap;gap:1em;align-items:flex-start;">
+      {% if ampel %}
+      <div class="ampel-wrap">
+        <div class="ampel-badge" style="background:{{ ampel.bg }};color:{{ ampel.color }}">
+          {{ ampel.emoji }} Marktampel: <strong>{{ ampel.label }}</strong> &nbsp;({{ ampel.score }}/6)
+        </div>
+        <div class="ampel-dots">
           {% for c in ampel.criteria %}
-          <tr>
-            <td>{{ "✅" if c.met else "❌" }}</td>
-            <td>{{ c.name }}</td>
-            <td style="color:#888;padding-left:12px">{{ c.value }}</td>
-          </tr>
+          <span class="ampel-dot {{ '' if c.met else 'unmet' }}" title="{{ c.name }}: {{ c.value }}"></span>
           {% endfor %}
-        </table>
+        </div>
+        <div class="ampel-tooltip">
+          <strong>Marktampel-Kriterien</strong>
+          <table>
+            {% for c in ampel.criteria %}
+            <tr>
+              <td>{{ "✅" if c.met else "❌" }}</td>
+              <td>{{ c.name }}</td>
+              <td style="color:#888;padding-left:12px">{{ c.value }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </div>
       </div>
+      {% endif %}
+      {% if nhnl_badge %}
+      <div class="ampel-wrap">
+        <div class="ampel-badge" style="background:{{ nhnl_badge.bg }};color:{{ nhnl_badge.color }}">
+          {{ nhnl_badge.emoji }} NH/NL-Ratio: <strong>{{ "%.0f"|format(nhnl_badge.ratio) }}%</strong>
+          &nbsp;<span style="font-weight:normal;opacity:.8">({{ nhnl_badge.nh }} Hochs / {{ nhnl_badge.nl }} Tiefs)</span>
+        </div>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
 
@@ -1195,6 +1215,33 @@ def compute_ampel(breadth_snap: pd.DataFrame, idx: pd.DataFrame) -> dict:
             "emoji": emoji, "criteria": criteria}
 
 
+def compute_nhnl_badge(breadth_snap: pd.DataFrame) -> dict:
+    """NH/NL-Ratio als eigenständiges Badge, analog zur Marktampel.
+
+    Schwellen wie bei O'Neil/IBD gebräuchlich: ≥70% klar mehr neue Hochs als
+    Tiefs (bullish), ≤30% Umkehrung (defensiv), dazwischen neutral.
+    """
+    def _v(df, row, col, default=0.0):
+        try:
+            return float(df.loc[row, col])
+        except Exception:
+            return default
+
+    nh = _v(breadth_snap, "Neue 52W‑Hochs (Anzahl)", "Aktuelle Woche", 0)
+    nl = _v(breadth_snap, "Neue 52W‑Tiefs (Anzahl)", "Aktuelle Woche", 0)
+    ratio = _v(breadth_snap, "NH/(NH+NL) (%)", "Aktuelle Woche", 0)
+
+    if ratio >= 70:
+        label, color, bg, emoji = "Bullish",  "#155724", "#d4edda", "🟢"
+    elif ratio <= 30:
+        label, color, bg, emoji = "Defensiv", "#721c24", "#f8d7da", "🔴"
+    else:
+        label, color, bg, emoji = "Neutral",  "#856404", "#fff3cd", "🟡"
+
+    return {"ratio": ratio, "nh": int(nh), "nl": int(nl),
+            "label": label, "color": color, "bg": bg, "emoji": emoji}
+
+
 def build_tv_watchlist_string(tickers: list) -> str:
     """Komma-getrennte Tickerliste fuer TradingView-Import.
 
@@ -1869,6 +1916,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
 
     # Marktampel berechnen
     ampel = compute_ampel(breadth_snap, idx)
+    nhnl_badge = compute_nhnl_badge(breadth_snap)
 
     # Sparklines für die Breadth-Tabelle (13-Wochen-Trend je Zeile)
     breadth_sparklines = build_breadth_sparklines(weekly_data, breadth_snap)
@@ -2001,6 +2049,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         signal_criteria    = signal_criteria,
         test_mode          = test_mode,
         ampel              = ampel,
+        nhnl_badge         = nhnl_badge,
         breadth_sparklines = breadth_sparklines,
         sector_rows        = sector_rows or [],
         sector_bar_svg     = build_sector_bar_svg(sector_rows or []),
