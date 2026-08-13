@@ -34,6 +34,7 @@ from report_builder import (
     build_risk_rows,
     build_sector_rows,
     build_sector_heatmap,
+    build_rs_lines,
     heuristic_verdict,
     compute_ampel,
 )
@@ -659,6 +660,7 @@ def run():
     risk_rows    = build_risk_rows(idx_data)
     sector_rows  = build_sector_rows(idx_data)
     sector_heatmap = build_sector_heatmap(idx_data)
+    rs_lines = build_rs_lines(idx_data)
 
     # Market filter 1: S&P 500 10W EMA > 20W EMA
     market_bullish = is_market_bullish(idx_data.get("SPY"))
@@ -1319,6 +1321,7 @@ def run():
         sector_excluded=sector_excluded,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
         test_mode=TEST_MODE, sector_rows=sector_rows, sector_heatmap=sector_heatmap,
+        rs_lines=rs_lines,
         profile=profile, muster=muster,
         max_new_per_week=(SETTINGS.max_new_per_week_bull if market_bullish
                            else SETTINGS.max_new_per_week_bear),

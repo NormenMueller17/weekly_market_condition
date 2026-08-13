@@ -80,7 +80,7 @@ HTML_TMPL = """
         .g-nav a.active { color: var(--accent-text); box-shadow: inset 0 -2px var(--accent); font-weight: 600; }
         .page   { max-width: 1200px; margin: 0 auto; padding: 2em 1em 3em; }
         table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; width: 100%; }
-        th, td  { border: none; border-bottom: 1px solid var(--border); padding: 0.5em 0.9em; text-align: right; }
+        th, td  { border: none; border-bottom: 1px solid var(--border); padding: 0.5em 0.9em; text-align: center; }
         th      { background: var(--surface-2); color: var(--text-muted); font-weight: 600; white-space: nowrap;
                    font-size: .78em; letter-spacing: .04em; text-transform: uppercase; border-bottom: 1px solid var(--border-strong); }
         th.left, td.left { text-align: left; }
@@ -423,7 +423,28 @@ HTML_TMPL = """
     </table>
     <h3>Divergenzanalyse</h3>
     <p>{{ divergences | safe }}</p>
-        
+
+    {% if rs_lines %}
+    <h2>2b) Relative Stärke (13W)</h2>
+    <p style="color:var(--text-secondary);font-size:.9em;margin:-.4em 0 1em;">
+      Kursverhältnis zu SPY, nicht der Kurs selbst — steigende Linie heißt der Zähler schlägt den breiten Markt (Rotation Wachstum/Nebenwerte vs. Markt).
+    </p>
+    <table>
+      <tr>
+        <th class="left">Vergleich</th>
+        <th class="left">Verlauf</th>
+        <th class="left">Δ 13W</th>
+      </tr>
+      {% for r in rs_lines %}
+      <tr>
+        <td class="left">{{ r.label }}</td>
+        <td>{{ r.svg | safe }}</td>
+        <td style="color:{{ COLOR_POS_TEXT if r.chg > 0 else COLOR_NEG_TEXT if r.chg < 0 else 'inherit' }};font-weight:bold">{{ "%+.2f%%"|format(r.chg) }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+
     <h2>3) Risiko & Sentiment</h2>
     <table>
         <tr>
@@ -626,7 +647,7 @@ HTML_TMPL = """
         <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Company", "–") }}</td>
         <td class="left" style="font-size:0.85em;color:#555">{{ row.get("Industry", "–") }}</td>
         <td style="text-align:center">{{ row.get("score", "–") }}</td>
-        <td style="text-align:right">{{ row.get("Close", "–") }}</td>
+        <td style="text-align:center">{{ row.get("Close", "–") }}</td>
         <td style="text-align:center;background:{% if rs_val != none and rs_val|float >= 70 %}var(--success-bg){% else %}transparent{% endif %}">
           {{ rs_meter(rs_val|float if rs_val != none else none) }}
         </td>
@@ -645,7 +666,7 @@ HTML_TMPL = """
         <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:{% if vol_bo %}#e8f5e9{% else %}transparent{% endif %}">
           {% if vol_sc is not none and vol_sc != "–" %}{{ "%.2f"|format(vol_sc|float) }}{% else %}–{% endif %}
         </td>
-        <td style="text-align:right">{{ row.get("MarketCap (Mio USD)", "–") }}</td>
+        <td style="text-align:center">{{ row.get("MarketCap (Mio USD)", "–") }}</td>
         <td class="left" style="font-size:0.82em;{% if row.get('_filter_fails','') == '✅' %}color:#2e7d32;font-weight:bold{% else %}color:#c62828{% endif %}">
           {{ row.get("_filter_fails", "–") }}
         </td>
@@ -1367,6 +1388,44 @@ def build_sector_heatmap(idx_data: dict, weeks: int = 13) -> dict:
     return {"dates": [d.strftime("%d.%m.") for d in dates], "rows": rows}
 
 
+def build_rs_lines(idx_data: dict, weeks: int = 13) -> list:
+    """Relative-Stärke-Linien (Ratio-Charts) als Sparklines: QQQ/SPY und IWM/SPY.
+
+    Klassischer Mansfield-RS-Ansatz: eine steigende Linie heißt, der Zähler
+    schlägt SPY (nicht dass er selbst steigt) — zeigt Rotation zwischen
+    Wachstumswerten/Nebenwerten und dem breiten Markt.
+    """
+    def _close(sym):
+        df = idx_data.get(sym)
+        if df is None:
+            return None
+        s = _extract_close_series(df)
+        return s if len(s) else None
+
+    spy = _close("SPY")
+    if spy is None:
+        return []
+
+    rows = []
+    for sym, label in [("QQQ", "Nasdaq 100 (QQQ) vs. SPY"), ("IWM", "Russell 2000 (IWM) vs. SPY")]:
+        s = _close(sym)
+        if s is None:
+            continue
+        common = spy.index.intersection(s.index)
+        if len(common) < 2:
+            continue
+        ratio = (s.reindex(common) / spy.reindex(common)).dropna()
+        tail = ratio.tail(weeks)
+        if len(tail) < 2:
+            continue
+        chg = (float(tail.iloc[-1]) / float(tail.iloc[0]) - 1) * 100
+        rows.append({
+            "ticker": sym, "label": label, "chg": chg,
+            "svg": build_sparkline_svg(tail.tolist(), width=140, height=32),
+        })
+    return rows
+
+
 def build_sector_bar_svg(sector_rows: list, width: int = 620, row_height: int = 26) -> str:
     """Sektor-Performance als horizontaler Balkenchart, Null in der Mitte.
 
@@ -1900,7 +1959,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
                       sector_excluded=None,
                       sp500_breadth_pct=None, min_breadth_pct=40,
-                      test_mode=False, sector_rows=None, sector_heatmap=None,
+                      test_mode=False, sector_rows=None, sector_heatmap=None, rs_lines=None,
                       profile=None, muster=None,
                       max_new_per_week=None, portfolio_max_positions=None):
     """Build the weekly HTML email.
@@ -2137,6 +2196,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         breadth_sparklines = breadth_sparklines,
         sector_rows        = sector_rows or [],
         sector_heatmap     = sector_heatmap or {"dates": [], "rows": []},
+        rs_lines           = rs_lines or [],
         sector_bar_svg     = build_sector_bar_svg(sector_rows or []),
         tv_watchlist       = build_tv_watchlist_string(signals or []),
         tv_watchlist_leaders = build_tv_watchlist_string(list(leaders_html.index) if leaders_html is not None else []),
