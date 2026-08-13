@@ -321,6 +321,7 @@ HTML_TMPL = """
             {% for col in breadth_snap.columns %}
               <th class="left">{{ col }}</th>
             {% endfor %}
+            <th class="left">Trend (13W)</th>
         </tr>
         {% for row in breadth_snap.index %}
         <tr>
@@ -341,6 +342,7 @@ HTML_TMPL = """
                 <td>{{ '%.2f%%' % val if '%' in row else val|int }}</td>
               {% endif %}
             {% endfor %}
+            <td>{{ breadth_sparklines.get(row, "") | safe }}</td>
         </tr>
         {% endfor %}
     </table>
@@ -1288,6 +1290,65 @@ def build_sector_bar_svg(sector_rows: list, width: int = 620, row_height: int = 
     return "".join(parts)
 
 
+def build_sparkline_svg(values: list, width: int = 90, height: int = 24) -> str:
+    """13-Wochen-Trendverlauf einer Breadth-Metrik als Inline-SVG-Sparkline.
+
+    Grün/Rot zeigt nur die Richtung (letzter Wert vs. erster Wert der Reihe),
+    nicht ob der Wert für die Metrik günstig ist — das übernimmt weiterhin
+    die Zellenfarbe in der Tabelle (siehe is_high_good im Template).
+    """
+    vals = [float(v) for v in values if v is not None and not (isinstance(v, float) and pd.isna(v))]
+    if len(vals) < 2:
+        return ""
+    lo, hi = min(vals), max(vals)
+    span = (hi - lo) or 1.0
+    pad = 3
+    n = len(vals)
+    step = (width - 2 * pad) / (n - 1)
+    color = COLOR_POS_TEXT if vals[-1] > vals[0] else (COLOR_NEG_TEXT if vals[-1] < vals[0] else "#999")
+
+    pts = []
+    for i, v in enumerate(vals):
+        x = pad + i * step
+        y = height - pad - (v - lo) / span * (height - 2 * pad)
+        pts.append(f"{x:.1f},{y:.1f}")
+    last_x, last_y = pts[-1].split(",")
+
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
+        f'width="{width}" height="{height}" style="vertical-align:middle;">'
+        f'<polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="1.5" '
+        f'stroke-linejoin="round" stroke-linecap="round"/>'
+        f'<circle cx="{last_x}" cy="{last_y}" r="2" fill="{color}"/>'
+        f'</svg>'
+    )
+
+
+def build_breadth_sparklines(weekly_data: dict, breadth_snap: pd.DataFrame, weeks: int = 13) -> dict:
+    """Sparkline-SVG je Breadth-Zeile über die letzten `weeks` Wochen.
+
+    Nutzt dieselbe Snapshot-Funktion wie die Vergleichstabelle, nur mit
+    Offsets 0..weeks-1 (statt nur 0/1/4) — damit keine zweite Berechnung der
+    Breadth-Logik entsteht, die später auseinanderlaufen könnte.
+    """
+    trend = compute_breadth_snapshots(weekly_data, offsets=list(range(weeks - 1, -1, -1)))
+    if trend.empty:
+        return {}
+
+    try:
+        nh_t = trend.loc["Neue 52W‑Hochs (Anzahl)"].astype(float)
+        nl_t = trend.loc["Neue 52W‑Tiefs (Anzahl)"].astype(float)
+        tot_t = nh_t + nl_t
+        trend.loc["NH/(NH+NL) (%)"] = nh_t.where(tot_t == 0, other=nh_t / tot_t.where(tot_t > 0, 1) * 100)
+    except Exception:
+        pass
+
+    return {
+        row: build_sparkline_svg(trend.loc[row].tolist())
+        for row in breadth_snap.index if row in trend.index
+    }
+
+
 def compute_filter_fails(row, *, sector_excluded: set, min_rs: float,
                          max_rank: float, max_atr: float, min_price: float,
                          min_cap: float, min_rev_growth: float,
@@ -1809,6 +1870,9 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     # Marktampel berechnen
     ampel = compute_ampel(breadth_snap, idx)
 
+    # Sparklines für die Breadth-Tabelle (13-Wochen-Trend je Zeile)
+    breadth_sparklines = build_breadth_sparklines(weekly_data, breadth_snap)
+
     # 2) Leaders: Screener-Kandidaten Score ≥ 6, Top 20 nach Score/RS; echte Leader nur Score 8/8 + RS ≥ 85
     all_leaders_html = leaders.copy()
     if "score" in all_leaders_html.columns:
@@ -1937,6 +2001,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         signal_criteria    = signal_criteria,
         test_mode          = test_mode,
         ampel              = ampel,
+        breadth_sparklines = breadth_sparklines,
         sector_rows        = sector_rows or [],
         sector_bar_svg     = build_sector_bar_svg(sector_rows or []),
         tv_watchlist       = build_tv_watchlist_string(signals or []),
