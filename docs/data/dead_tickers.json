@@ -1,4 +1,10 @@
 {
-  "tickers": {},
-  "updated": "2026-08-09"
+  "tickers": {
+    "SVREW": {
+      "fails": 1,
+      "zuerst": "2026-08-15",
+      "zuletzt": "2026-08-15"
+    }
+  },
+  "updated": "2026-08-15"
 }
