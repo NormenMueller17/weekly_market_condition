@@ -1,10 +1,15 @@
 {
   "tickers": {
-    "SVREW": {
+    "KYIVW": {
       "fails": 1,
-      "zuerst": "2026-08-15",
-      "zuletzt": "2026-08-15"
+      "zuerst": "2026-08-22",
+      "zuletzt": "2026-08-22"
+    },
+    "PCTTW": {
+      "fails": 1,
+      "zuerst": "2026-08-22",
+      "zuletzt": "2026-08-22"
     }
   },
-  "updated": "2026-08-15"
+  "updated": "2026-08-22"
 }
