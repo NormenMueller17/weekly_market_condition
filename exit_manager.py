@@ -116,18 +116,26 @@ def _place_market_sell(client, symbol: str, qty: int) -> bool:
         return False
 
 
-def _replace_stop_qty(client, order_id: str, new_qty: int) -> bool:
-    """Reduce (or restore) the share quantity of an existing stop order."""
+def _resubmit_stop(client, symbol: str, qty: int, stop_price: float) -> "object | None":
+    """Cancel-and-recreate is required instead of Replace: Alpaca rejects qty
+    changes on OTO/bracket child orders ("qty cannot be changed for advanced
+    orders", code 42210000) even though price replacement on the same order
+    works fine. A plain re-submitted StopOrderRequest has no such restriction.
+    Returns the new order object, or None on failure.
+    """
     try:
-        from alpaca.trading.requests import ReplaceOrderRequest
-        client.replace_order_by_id(
-            order_id   = order_id,
-            order_data = ReplaceOrderRequest(qty=int(new_qty)),
-        )
-        return True
+        from alpaca.trading.requests import StopOrderRequest
+        from alpaca.trading.enums import OrderSide, TimeInForce
+        return client.submit_order(StopOrderRequest(
+            symbol        = symbol,
+            qty           = int(qty),
+            side          = OrderSide.SELL,
+            time_in_force = TimeInForce.GTC,
+            stop_price    = round(stop_price, 2),
+        ))
     except Exception as e:
-        print(f"[EXIT] _replace_stop_qty({order_id}, {new_qty}): {e}")
-        return False
+        print(f"[EXIT] _resubmit_stop({symbol}, {qty}): {e}")
+        return None
 
 
 def _place_partial_sell(client, symbol: str, qty: int) -> bool:
@@ -136,41 +144,47 @@ def _place_partial_sell(client, symbol: str, qty: int) -> bool:
     A GTC stop-loss order holds the ENTIRE position as collateral
     ("held_for_orders"). Alpaca rejects a market sell for any quantity while
     that hold covers all shares — it has 0 "available". So before selling, the
-    stop order's qty is reduced by the amount we're about to sell; the stop
-    price is left untouched. If the market sell then fails, the stop qty is
-    restored so the remaining position stays protected.
+    stop order is cancelled and re-submitted at the reduced quantity (same
+    stop price). If the market sell then fails, a fresh stop at the original
+    quantity is submitted so the remaining position stays protected.
     """
     stop_order = _find_stop_order(client, symbol)
     if stop_order is None:
         # No competing hold found — try the sell directly.
         return _place_market_sell(client, symbol, qty)
 
-    held_qty = int(float(getattr(stop_order, "qty", 0) or 0))
-    remaining = held_qty - qty
+    held_qty   = int(float(getattr(stop_order, "qty", 0) or 0))
+    stop_price = float(getattr(stop_order, "stop_price", 0) or 0)
+    remaining  = held_qty - qty
     if remaining < 0:
         print(f"[PROFIT] _place_partial_sell({symbol}): Verkaufsmenge {qty} "
               f"> Stop-Order-Menge {held_qty} — Abbruch")
         return False
 
-    if remaining == 0:
-        # Selling the whole held quantity — cancel the stop, it would be a
-        # zero-qty order otherwise.
-        try:
-            client.cancel_order_by_id(str(stop_order.id))
-        except Exception as e:
-            print(f"[EXIT] cancel_order_by_id({stop_order.id}): {e}")
-            return False
-    elif not _replace_stop_qty(client, str(stop_order.id), remaining):
+    try:
+        client.cancel_order_by_id(str(stop_order.id))
+    except Exception as e:
+        print(f"[EXIT] cancel_order_by_id({stop_order.id}): {e}")
+        return False
+
+    if remaining > 0 and _resubmit_stop(client, symbol, remaining, stop_price) is None:
+        # Couldn't shrink the stop — restore full coverage and abort the sell.
+        _resubmit_stop(client, symbol, held_qty, stop_price)
         return False
 
     ok = _place_market_sell(client, symbol, qty)
-    if not ok and remaining != held_qty:
-        # Roll back the qty reduction so the rest of the position stays protected.
-        if remaining == 0:
-            print(f"[PROFIT] {symbol}: Market-Sell fehlgeschlagen nach Stop-Order-"
-                  f"Stornierung — Stop muss manuell neu gesetzt werden!")
-        else:
-            _replace_stop_qty(client, str(stop_order.id), held_qty)
+    if not ok:
+        # Roll back: re-cover the full position since the sell didn't happen.
+        print(f"[PROFIT] {symbol}: Market-Sell fehlgeschlagen nach Stop-Order-"
+              f"Reduzierung — Stop wird auf {held_qty} Stück zurückgesetzt.")
+        if remaining > 0:
+            new_stop = _find_stop_order(client, symbol)
+            if new_stop is not None:
+                try:
+                    client.cancel_order_by_id(str(new_stop.id))
+                except Exception as e:
+                    print(f"[EXIT] cancel_order_by_id({new_stop.id}): {e}")
+        _resubmit_stop(client, symbol, held_qty, stop_price)
     return ok
 
 
