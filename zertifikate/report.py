@@ -132,7 +132,7 @@ def _wrap_html(body: str, report_date: str) -> str:
 </head>
 <body>
   <nav class="g-nav">
-    <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="../index.html" class="g-brand"><svg class="g-brand-icon" viewBox="0 0 24 24" width="15" height="15" fill="none"><circle cx="10" cy="10" r="6.3" stroke="currentColor" stroke-width="2"/><line x1="14.6" y1="14.6" x2="20.5" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><polyline points="6.3,11.6 8.7,8.6 10.9,10.2 13.4,6.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Weekly Screener</a>
     <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
     <div class="g-nav-links">
       <a href="../trades.html">Trade Journal</a>
@@ -169,7 +169,9 @@ def _css() -> str:
                --gnav-accent:#6c9bef; --gnav-accent-soft:#16233e; --gnav-accent-text:#9dbdf5; }
     }
     .g-brand { font-weight: 700; color: var(--gnav-text-muted); text-decoration: none; padding: .72em 0;
-               margin-right: auto; white-space: nowrap; font-size: .95em; }
+               margin-right: auto; white-space: nowrap; font-size: .95em;
+               display: inline-flex; align-items: center; gap: .4em; }
+    .g-brand-icon { flex-shrink: 0; }
     .g-nav-toggle { display: none; background: none; border: none; font-size: 1.4em; line-height: 1;
                color: var(--gnav-text); cursor: pointer; padding: .5em .2em; }
     .g-nav-links  { display: flex; flex-wrap: wrap; }
@@ -1301,7 +1303,9 @@ def _update_index(report_date: str, out_dir: Path) -> None:
                 position: sticky; top: 0; z-index: 100; }}
     .g-brand {{ font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
                 margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
-                white-space: nowrap; font-size: .95em; }}
+                white-space: nowrap; font-size: .95em;
+                display: inline-flex; align-items: center; gap: .4em; }}
+    .g-brand-icon {{ flex-shrink: 0; }}
     .g-nav a {{ color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
                 font-size: .84em; white-space: nowrap; }}
     .g-nav a:hover  {{ color: #fff; background: rgba(255,255,255,.12); }}
@@ -1339,7 +1343,7 @@ def _update_index(report_date: str, out_dir: Path) -> None:
 </head>
 <body>
   <nav class="g-nav">
-    <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
+    <a href="../index.html" class="g-brand"><svg class="g-brand-icon" viewBox="0 0 24 24" width="15" height="15" fill="none"><circle cx="10" cy="10" r="6.3" stroke="currentColor" stroke-width="2"/><line x1="14.6" y1="14.6" x2="20.5" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><polyline points="6.3,11.6 8.7,8.6 10.9,10.2 13.4,6.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Weekly Screener</a>
     <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
     <div class="g-nav-links">
       <a href="../trades.html">Trade Journal</a>

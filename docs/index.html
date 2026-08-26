@@ -28,7 +28,7 @@
                 flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }
     .g-brand { font-family: var(--font-mono); font-weight: 600; color: var(--text-muted); text-decoration: none;
                 padding: .72em 1.1em .72em 0; margin-right: auto; border-right: 1px solid var(--border);
-                white-space: nowrap; font-size: .78em; letter-spacing: .05em; text-transform: uppercase; }
+                white-space: nowrap; font-size: .78em; letter-spacing: .05em; text-transform: uppercase; display: inline-flex; align-items: center; gap: .4em; display: inline-flex; align-items: center; gap: .4em; }
     .g-nav-toggle { display: none; background: none; border: none; font-size: 1.4em; line-height: 1;
                 color: var(--text-secondary); cursor: pointer; padding: .5em .2em; }
     .g-nav-links  { display: flex; flex-wrap: wrap; }
@@ -86,7 +86,7 @@
 </head>
 <body>
   <nav class="g-nav">
-    <a href="index.html" class="g-brand active">📈 Weekly Screener</a>
+    <a href="index.html" class="g-brand active"><svg class="g-brand-icon" viewBox="0 0 24 24" width="15" height="15" fill="none"><circle cx="10" cy="10" r="6.3" stroke="currentColor" stroke-width="2"/><line x1="14.6" y1="14.6" x2="20.5" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><polyline points="6.3,11.6 8.7,8.6 10.9,10.2 13.4,6.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Weekly Screener</a>
     <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
     <div class="g-nav-links">
       <a href="reports/2026-08-22.html">Aktueller Report</a>
@@ -97,7 +97,7 @@
     </div>
   </nav>
   <div class="page">
-    <h1 class="page-title">📈 Weekly Screener</h1>
+    <h1 class="page-title"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" style="vertical-align:-4px;margin-right:.15em"><circle cx="10" cy="10" r="6.3" stroke="currentColor" stroke-width="2"/><line x1="14.6" y1="14.6" x2="20.5" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><polyline points="6.3,11.6 8.7,8.6 10.9,10.2 13.4,6.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Weekly Screener</h1>
     <p class="page-sub">Growth Stock Portfolio — automatischer Wochenreport</p>
 
     <h2 class="section-h">Depot-Überblick</h2>
