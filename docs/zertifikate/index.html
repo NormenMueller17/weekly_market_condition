@@ -7,16 +7,30 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body { font-family: Arial, sans-serif; margin: 0; background: #f0f3fa; color: #333; }
-    .g-nav   { background: #003d99; display: flex; align-items: center; padding: 0 1.5em;
-                box-shadow: 0 2px 6px rgba(0,0,0,.22); flex-wrap: wrap;
+    .g-nav   { --gnav-bg:#fff; --gnav-border:#dde3ef; --gnav-text:#4d5b73; --gnav-text-muted:#8593ab;
+                --gnav-accent:#1f4fa3; --gnav-accent-soft:#e8eefa; --gnav-accent-text:#163c80;
+                background: var(--gnav-bg); border-bottom: 1px solid var(--gnav-border);
+                display: flex; align-items: center; padding: 0 1.5em; flex-wrap: wrap;
                 position: sticky; top: 0; z-index: 100; }
-    .g-brand { font-weight: bold; color: #fff; text-decoration: none; padding: .72em 1.1em .72em 0;
-                margin-right: .5em; border-right: 1px solid rgba(255,255,255,.25);
-                white-space: nowrap; font-size: .95em; }
-    .g-nav a { color: rgba(255,255,255,.82); text-decoration: none; padding: .72em .85em;
+    @media (prefers-color-scheme: dark) {
+      .g-nav { --gnav-bg:#121a2b; --gnav-border:#223049; --gnav-text:#a3b1c9; --gnav-text-muted:#6b7a97;
+                --gnav-accent:#6c9bef; --gnav-accent-soft:#16233e; --gnav-accent-text:#9dbdf5; }
+    }
+    .g-brand { font-weight: 700; color: var(--gnav-text-muted); text-decoration: none; padding: .72em 0;
+                margin-right: auto; white-space: nowrap; font-size: .95em; }
+    .g-nav-toggle { display: none; background: none; border: none; font-size: 1.4em; line-height: 1;
+                color: var(--gnav-text); cursor: pointer; padding: .5em .2em; }
+    .g-nav-links  { display: flex; flex-wrap: wrap; }
+    .g-nav a { color: var(--gnav-text); text-decoration: none; padding: .72em .85em;
                 font-size: .84em; white-space: nowrap; }
-    .g-nav a:hover  { color: #fff; background: rgba(255,255,255,.12); }
-    .g-nav a.active { color: #fff; box-shadow: inset 0 -3px rgba(255,255,255,.8); font-weight: 600; }
+    .g-nav a:hover  { color: var(--gnav-accent); background: var(--gnav-accent-soft); }
+    .g-nav a.active { color: var(--gnav-accent-text); box-shadow: inset 0 -2px var(--gnav-accent); font-weight: 600; }
+    @media (max-width: 720px) {
+      .g-nav-toggle { display: block; }
+      .g-nav-links  { display: none; width: 100%; flex-direction: column; border-top: 1px solid var(--gnav-border); }
+      .g-nav.open .g-nav-links { display: flex; }
+      .g-nav a { padding: .85em 1em; }
+    }
     .page { max-width: 800px; margin: 0 auto; padding: 2em 1em 3em; }
     .page-title { color: #003d99; font-size: 1.5em; margin: 0 0 .2em; }
     .page-sub   { color: #888; font-size: .88em; margin: 0 0 1.8em; }
@@ -51,10 +65,15 @@
 <body>
   <nav class="g-nav">
     <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
-    <a href="../trades.html">Trade Journal</a>
-    <a href="../performance.html">Performance</a>
-    <a href="index.html" class="active">Zertifikate</a>
-    <a href="../blueprint.html">Blueprint</a>
+    <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
+    <div class="g-nav-links">
+      <a href="../trades.html">Trade Journal</a>
+      <a href="../performance.html">Performance</a>
+      <a href="index.html" class="active">Zertifikate</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="regelwerk.html">Regelwerk</a>
+      <a href="../blueprint.html">Blueprint</a>
+    </div>
   </nav>
 
   <div class="page">

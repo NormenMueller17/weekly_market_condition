@@ -72,12 +72,21 @@ HTML_TMPL = """
         .g-nav   { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 1.5em;
                    flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }
         .g-brand { font-family: var(--font-mono); font-weight: 600; color: var(--text-muted); text-decoration: none;
-                   padding: .72em 1.1em .72em 0; margin-right: .5em; border-right: 1px solid var(--border);
+                   padding: .72em 1.1em .72em 0; margin-right: auto; border-right: 1px solid var(--border);
                    white-space: nowrap; font-size: .78em; letter-spacing: .05em; text-transform: uppercase; }
+        .g-nav-toggle { display: none; background: none; border: none; font-size: 1.4em; line-height: 1;
+                   color: var(--text-secondary); cursor: pointer; padding: .5em .2em; }
+        .g-nav-links  { display: flex; flex-wrap: wrap; }
         .g-nav a { color: var(--text-secondary); text-decoration: none; padding: .72em .85em;
                    font-size: .84em; white-space: nowrap; }
         .g-nav a:hover  { color: var(--accent); background: var(--accent-soft); }
         .g-nav a.active { color: var(--accent-text); box-shadow: inset 0 -2px var(--accent); font-weight: 600; }
+        @media (max-width: 720px) {
+          .g-nav-toggle { display: block; }
+          .g-nav-links  { display: none; width: 100%; flex-direction: column; border-top: 1px solid var(--border); }
+          .g-nav.open .g-nav-links { display: flex; }
+          .g-nav a { padding: .85em 1em; }
+        }
         .page   { max-width: 1200px; margin: 0 auto; padding: 2em 1em 3em; }
         table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; width: 100%; }
         th, td  { border: none; border-bottom: 1px solid var(--border); padding: 0.5em 0.9em; text-align: center; }
@@ -283,10 +292,13 @@ HTML_TMPL = """
 <body>
   <nav class="g-nav">
     <a href="../index.html" class="g-brand">📈 Weekly Screener</a>
-    <a href="../trades.html">Trade Journal</a>
-    <a href="../performance.html">Performance</a>
-    <a href="../zertifikate/index.html">Zertifikate</a>
-    <a href="../blueprint.html">Blueprint</a>
+    <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
+    <div class="g-nav-links">
+      <a href="../trades.html">Trade Journal</a>
+      <a href="../performance.html">Performance</a>
+      <a href="../zertifikate/index.html">Zertifikate</a>
+      <a href="../blueprint.html">Blueprint</a>
+    </div>
   </nav>
   <div class="page">
     {% if test_mode %}
@@ -2358,12 +2370,21 @@ def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
     .g-nav   {{ background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 1.5em;
                 flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }}
     .g-brand {{ font-family: var(--font-mono); font-weight: 600; color: var(--text-muted); text-decoration: none;
-                padding: .72em 1.1em .72em 0; margin-right: .5em; border-right: 1px solid var(--border);
+                padding: .72em 1.1em .72em 0; margin-right: auto; border-right: 1px solid var(--border);
                 white-space: nowrap; font-size: .78em; letter-spacing: .05em; text-transform: uppercase; }}
+    .g-nav-toggle {{ display: none; background: none; border: none; font-size: 1.4em; line-height: 1;
+                color: var(--text-secondary); cursor: pointer; padding: .5em .2em; }}
+    .g-nav-links  {{ display: flex; flex-wrap: wrap; }}
     .g-nav a {{ color: var(--text-secondary); text-decoration: none; padding: .72em .85em;
                 font-size: .84em; white-space: nowrap; }}
     .g-nav a:hover  {{ color: var(--accent); background: var(--accent-soft); }}
     .g-nav a.active {{ color: var(--accent-text); box-shadow: inset 0 -2px var(--accent); font-weight: 600; }}
+    @media (max-width: 720px) {{
+      .g-nav-toggle {{ display: block; }}
+      .g-nav-links  {{ display: none; width: 100%; flex-direction: column; border-top: 1px solid var(--border); }}
+      .g-nav.open .g-nav-links {{ display: flex; }}
+      .g-nav a {{ padding: .85em 1em; }}
+    }}
     .page {{ max-width: 900px; margin: 0 auto; padding: 2em 1em 3em; }}
     .page-title {{ color: var(--text); font-size: 1.6em; margin: 0 0 .15em; font-weight: 600; letter-spacing: -.01em; }}
     .page-sub   {{ color: var(--text-muted); font-size: .88em; margin: 0 0 1.8em; }}
@@ -2409,11 +2430,14 @@ def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
 <body>
   <nav class="g-nav">
     <a href="index.html" class="g-brand active">📈 Weekly Screener</a>
-    <a href="{latest_rpt}">Aktueller Report</a>
-    <a href="trades.html">Trade Journal</a>
-    <a href="performance.html">Performance</a>
-    <a href="zertifikate/index.html">Zertifikate</a>
-    <a href="blueprint.html">Blueprint</a>
+    <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
+    <div class="g-nav-links">
+      <a href="{latest_rpt}">Aktueller Report</a>
+      <a href="trades.html">Trade Journal</a>
+      <a href="performance.html">Performance</a>
+      <a href="zertifikate/index.html">Zertifikate</a>
+      <a href="blueprint.html">Blueprint</a>
+    </div>
   </nav>
   <div class="page">
     <h1 class="page-title">📈 Weekly Screener</h1>
