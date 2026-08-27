@@ -1334,9 +1334,10 @@ def run():
     print(f"[PAGES] Report gespeichert → {report_file}")
 
     # Index-Seite aktualisieren
-    from report_builder import build_index_page
+    from report_builder import build_index_page, save_ampel_snapshot
     _breadth_snap = compute_breadth_snapshots(weekly, offsets=[0, 1, 4])
     _ampel_result = compute_ampel(_breadth_snap, idx_df)
+    save_ampel_snapshot(_ampel_result)
     index_path = Path("docs/index.html")
     index_path.write_text(
         build_index_page(docs_reports_dir, PAGES_BASE_URL, ampel=_ampel_result),

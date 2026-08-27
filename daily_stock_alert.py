@@ -85,9 +85,13 @@ _ACTION_LABEL = {
 
 
 def build_mail(pt_results: list[dict], uncovered: list[dict],
-               refreshed: list[dict], dry_run: bool) -> str:
+               refreshed: list[dict], dry_run: bool,
+               dashboard_error: str | None = None) -> str:
     banner = ("<p style='background:#fff3cd;border:1px solid #ffeeba;padding:.6em;'>"
               "⚠️ TEST-MODUS — nichts wurde geändert</p>") if dry_run else ""
+    if dashboard_error:
+        banner += ("<p style='background:#f8d7da;border:1px solid #f5c6cb;padding:.6em;'>"
+                   f"⚠️ Dashboard-Aktualisierung fehlgeschlagen: {dashboard_error}</p>")
 
     cover_html = ""
     if uncovered:
@@ -216,15 +220,51 @@ def run(dry_run: bool) -> int:
         acts = r.get("actions_taken", [])
         print(f"[PROFIT] {r['symbol']}: {', '.join(acts) if acts else 'keine Aktion'}")
 
+    # 5. Dashboard aktualisieren (Depot-Equity, Performance-Seite, Index).
+    #    Nur bei echtem Lauf — im Dry-Run soll nichts auf der Seite landen,
+    #    was nicht tatsaechlich passiert ist. Der volle Report inkl. Marktampel
+    #    bleibt Samstag vorbehalten (main.py); hier wird nur die zuletzt
+    #    gespeicherte Ampel (docs/data/ampel.json) weiterverwendet.
+    #
+    #    Fehler hier duerfen NICHT die Mail mit den tatsaechlich ausgefuehrten
+    #    Stop-/Profit-Taking-Aktionen verschlucken (die sind bereits passiert
+    #    und muessen gemeldet werden) — deshalb kein harter Abbruch, aber der
+    #    Fehler wird sichtbar in die Mail aufgenommen statt nur ins Log.
+    dashboard_error = None
+    if not dry_run:
+        try:
+            _refresh_dashboard(journal_data)
+        except Exception as e:
+            dashboard_error = str(e)
+            print(f"[DASHBOARD] Aktualisierung fehlgeschlagen: {e}")
+
     actions_any = any(r.get("actions_taken") for r in pt_results)
-    if not (actions_any or uncovered or refreshed):
+    if not (actions_any or uncovered or refreshed or dashboard_error):
         print("[DAILY] Keine Aktion noetig — keine Mail.")
         return 0
 
-    send_email(build_mail(pt_results, uncovered, refreshed, dry_run),
+    send_email(build_mail(pt_results, uncovered, refreshed, dry_run, dashboard_error),
                subject_suffix="Depot-Alert")
     print("[DAILY] Mail verschickt.")
     return 0
+
+
+def _refresh_dashboard(journal_data: dict) -> None:
+    from pathlib import Path
+    import portfolio_performance
+    from report_builder import build_index_page
+
+    trade_journal.build_and_save_html(journal_data)
+
+    port_history = alpaca_client.get_portfolio_history()
+    portfolio_performance.build_and_save(port_history)
+
+    docs_reports_dir = Path("docs/reports")
+    Path("docs/index.html").write_text(
+        build_index_page(docs_reports_dir, "https://weekly-market-condition.pages.dev"),
+        encoding="utf-8",
+    )
+    print("[DASHBOARD] Depot-Equity, Performance-Seite und Index aktualisiert.")
 
 
 def main() -> int:

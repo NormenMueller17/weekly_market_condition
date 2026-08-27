@@ -1277,6 +1277,27 @@ def compute_ampel(breadth_snap: pd.DataFrame, idx: pd.DataFrame) -> dict:
             "emoji": emoji, "criteria": criteria}
 
 
+AMPEL_FILE = Path("docs/data/ampel.json")
+
+
+def save_ampel_snapshot(ampel: dict) -> None:
+    """Persistiert die zuletzt berechnete Marktampel (nur samstags berechnet),
+    damit werktags aktualisierte Dashboards sie weiterhin anzeigen koennen."""
+    if not ampel:
+        return
+    AMPEL_FILE.parent.mkdir(parents=True, exist_ok=True)
+    AMPEL_FILE.write_text(json.dumps(ampel, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _load_ampel_snapshot() -> Optional[dict]:
+    if AMPEL_FILE.exists():
+        try:
+            return json.loads(AMPEL_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return None
+
+
 def compute_nhnl_badge(breadth_snap: pd.DataFrame) -> dict:
     """NH/NL-Ratio als eigenständiges Badge, analog zur Marktampel.
 
@@ -2281,6 +2302,9 @@ def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
     reports_dir  = Path(reports_dir)
     report_files = sorted(reports_dir.glob("????-??-??.html"), reverse=True)
     latest_rpt   = f"reports/{report_files[0].name}" if report_files else "reports/"
+
+    if ampel is None:
+        ampel = _load_ampel_snapshot()
 
     # ── KPI data from portfolio_performance ──────────────────────────────────────
     try:
