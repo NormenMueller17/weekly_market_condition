@@ -7,29 +7,146 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-           background: #f5f6fa; color: #2c3e50; font-size: 14px; line-height: 1.6; }
-    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+           background: #f5f6fa; color: #2c3e50; font-size: 14px; }
+    .g-nav   { --gnav-bg:#fff; --gnav-border:#dde3ef; --gnav-text:#4d5b73; --gnav-text-muted:#8593ab;
+               --gnav-accent:#1f4fa3; --gnav-accent-soft:#e8eefa; --gnav-accent-text:#163c80;
+               background: var(--gnav-bg); border-bottom: 1px solid var(--gnav-border);
+               display: flex; align-items: center; padding: 0 1.5em; flex-wrap: wrap;
+               position: sticky; top: 0; z-index: 100; }
+    @media (prefers-color-scheme: dark) {
+      .g-nav { --gnav-bg:#121a2b; --gnav-border:#223049; --gnav-text:#a3b1c9; --gnav-text-muted:#6b7a97;
+               --gnav-accent:#6c9bef; --gnav-accent-soft:#16233e; --gnav-accent-text:#9dbdf5; }
+    }
+    .g-brand { font-weight: 700; color: var(--gnav-text-muted); text-decoration: none; padding: .72em 0;
+               margin-right: auto; white-space: nowrap; font-size: .95em;
+               display: inline-flex; align-items: center; gap: .4em; }
+    .g-brand-icon { flex-shrink: 0; }
+    .g-nav-toggle { display: none; background: none; border: none; font-size: 1.4em; line-height: 1;
+               color: var(--gnav-text); cursor: pointer; padding: .5em .2em; }
+    .g-nav-links  { display: flex; flex-wrap: wrap; }
+    .g-nav a { color: var(--gnav-text); text-decoration: none; padding: .72em .85em;
+               font-size: .84em; white-space: nowrap; }
+    .g-nav a:hover  { color: var(--gnav-accent); background: var(--gnav-accent-soft); }
+    .g-nav a.active { color: var(--gnav-accent-text); box-shadow: inset 0 -2px var(--gnav-accent); font-weight: 600; }
+    @media (max-width: 720px) {
+      .g-nav-toggle { display: block; }
+      .g-nav-links  { display: none; width: 100%; flex-direction: column; border-top: 1px solid var(--gnav-border); }
+      .g-nav.open .g-nav-links { display: flex; }
+      .g-nav a { padding: .85em 1em; }
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
     header { background: #2c3e50; color: white; padding: 20px 24px;
              border-radius: 8px; margin-bottom: 20px; }
     header h1 { font-size: 1.6em; margin-bottom: 4px; }
-    header .subtitle { opacity: 0.8; font-size: 0.9em; margin-bottom: 8px; }
-    header nav a { color: #7fb3d3; text-decoration: none; font-size: 0.85em; }
-    header nav a:hover { color: white; }
-    .footer { text-align:center;color:#95a5a6;font-size:0.8em;padding:16px 0 8px; }
+    header .subtitle { opacity: 0.8; font-size: 0.9em; }
+    .section { background: white; border-radius: 8px; padding: 20px;
+               margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .section h2 { font-size: 1.1em; margin-bottom: 14px; padding-bottom: 8px;
+                  border-bottom: 2px solid #ecf0f1; color: #2c3e50; }
+    .ampel-box { border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; }
+    .ampel-gruen { background: #d5f5e3; border-left: 5px solid #27ae60; }
+    .ampel-gelb  { background: #fef9e7; border-left: 5px solid #f39c12; }
+    .ampel-rot   { background: #fadbd8; border-left: 5px solid #e74c3c; }
+    .ampel-status { font-size: 1.3em; font-weight: 700; margin-bottom: 4px; }
+    .ampel-aktion { font-size: 0.9em; opacity: 0.85; }
+    .ampel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .ampel-card { border-radius: 6px; padding: 12px; text-align: center; }
+    .ampel-card .label { font-size: 0.75em; text-transform: uppercase;
+                         letter-spacing: 0.05em; opacity: 0.7; margin-bottom: 4px; }
+    .ampel-card .value { font-size: 1.05em; font-weight: 600; }
+    .warnung { background: #fadbd8; border: 2px solid #e74c3c; border-radius: 8px;
+               padding: 16px; font-weight: 600; color: #922b21; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
+    th { background: #2c3e50; color: white; padding: 8px 10px;
+         text-align: left; font-weight: 600; white-space: nowrap; }
+    td { padding: 7px 10px; border-bottom: 1px solid #ecf0f1; vertical-align: middle; }
+    tr:hover td { background: #f8f9fa; }
+    tr:last-child td { border-bottom: none; }
+    .score-bar { display: inline-block; height: 8px; border-radius: 4px;
+                 background: #27ae60; vertical-align: middle; margin-right: 6px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px;
+             font-size: 0.78em; font-weight: 600; }
+    .badge-gruen { background: #d5f5e3; color: #1e8449; }
+    .badge-gelb  { background: #fef9e7; color: #9a7d0a; }
+    .badge-rot   { background: #fadbd8; color: #922b21; }
+    .badge-grau  { background: #eaecee; color: #555; }
+    .os-empfehlung { font-size: 0.82em; color: #2980b9; font-style: italic; }
+    .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+                 margin-bottom: 16px; }
+    .info-card { background: #f8f9fa; border-radius: 6px; padding: 10px 14px; }
+    .info-card .label { font-size: 0.75em; color: #7f8c8d; margin-bottom: 2px; }
+    .info-card .value { font-size: 1.1em; font-weight: 700; }
+    .keine { color: #7f8c8d; font-style: italic; padding: 8px 0; }
+    .footer { text-align: center; color: #95a5a6; font-size: 0.8em; padding: 16px 0 8px; }
+
+    /* ── Kachel-Layout (Kaufkandidaten & Top-Titel) ─────────────────────── */
+    .kachel-grid { display: grid; gap: 14px;
+                   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    /* Kaufkandidaten: breiter als Top-Titel, damit der TradingView-Chart und
+       die Balkendiagramme mehr Platz haben — bei 0-5 Kandidaten/Woche kostet
+       das keine Spalten, die man sonst gebraucht haette. */
+    .kachel-grid-breit { grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); }
+    .kachel { border: 1px solid #e1e5ea; border-radius: 8px; overflow: hidden;
+              background: #fff; display: flex; flex-direction: column;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .kachel-head { display: flex; align-items: baseline; gap: 8px;
+                   padding: 10px 14px; border-bottom: 1px solid #ecf0f1; }
+    .kachel-ticker { font-size: 1.15em; font-weight: 700; color: #2c3e50; }
+    .kachel-name { font-size: 0.8em; color: #7f8c8d; overflow: hidden;
+                   text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .kachel-score { margin-left: auto; font-size: 0.85em; font-weight: 700;
+                    border-radius: 12px; padding: 2px 10px; white-space: nowrap; }
+    .kachel-sub { padding: 4px 14px 0; font-size: 0.76em; color: #7f8c8d;
+                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kachel-metrics { display: grid; grid-template-columns: repeat(4, 1fr);
+                      gap: 1px; background: #ecf0f1; margin: 10px 0 0; }
+    .kachel-metrics .m { background: #fff; padding: 7px 4px; text-align: center; }
+    .kachel-metrics .m .k { font-size: 0.66em; text-transform: uppercase;
+                            letter-spacing: .04em; color: #95a5a6; }
+    .kachel-metrics .m .v { font-size: 0.92em; font-weight: 600; margin-top: 1px; }
+    .m-ok   { background: #eafaf1 !important; }
+    .m-ok   .v { color: #1e8449; }
+    .m-bad  { background: #fdeeec !important; }
+    .m-bad  .v { color: #922b21; }
+    .kachel-foot { margin-top: auto; padding: 8px 14px; background: #f8f9fa;
+                   font-size: 0.76em; color: #2980b9; border-top: 1px solid #ecf0f1; }
+    .kachel-e3 { padding: 8px 14px; font-size: 0.78em; color: #555;
+                 display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .e3-chip { border-radius: 10px; padding: 1px 8px; font-size: 0.95em; }
+    .e3-on  { background: #d5f5e3; color: #1e8449; }
+    .e3-off { background: #eaecee; color: #7f8c8d; }
+    .mode-badge { background: #e8f4fd; color: #1a5276; border: 1px solid #aed6f1;
+                  border-radius: 3px; padding: 1px 5px; font-size: 0.7em; }
+    .kachel-chart { padding: 10px 14px 12px; border-top: 1px solid #ecf0f1; }
+    .kachel-chart-label { font-size: 0.72em; font-weight: 700; color: #2980b9;
+                          text-transform: uppercase; letter-spacing: .03em;
+                          margin: 8px 0 2px; }
+    .kachel-chart-label:first-child { margin-top: 0; }
+
+    @media (max-width: 700px) {
+      .ampel-grid, .info-grid { grid-template-columns: 1fr 1fr; }
+      table { font-size: 0.8em; }
+      .kachel-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
+  <nav class="g-nav">
+    <a href="../index.html" class="g-brand"><svg class="g-brand-icon" viewBox="0 0 24 24" width="15" height="15" fill="none"><circle cx="10" cy="10" r="6.3" stroke="currentColor" stroke-width="2"/><line x1="14.6" y1="14.6" x2="20.5" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><polyline points="6.3,11.6 8.7,8.6 10.9,10.2 13.4,6.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Weekly Screener</a>
+    <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
+    <div class="g-nav-links">
+      <a href="../trades.html">Trade Journal</a>
+      <a href="../performance.html">Performance</a>
+      <a href="index.html">Zertifikate</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="regelwerk.html" class="active">Regelwerk</a>
+      <a href="../blueprint.html">Blueprint</a>
+    </div>
+  </nav>
   <div class="container">
     <header>
       <h1>📋 Regelwerk — Zertifikate-Scanner</h1>
       <p class="subtitle">Drei-Ebenen-Screening-System &mdash; Low-Vol Momentum Screener</p>
-      <nav>
-        <a href="index.html">← Alle Reports</a>
-        &nbsp;|&nbsp;
-        <a href="../zertifikate/portfolio.html">Portfolio verwalten</a>
-        &nbsp;|&nbsp;
-        <a href="../index.html">Hauptreport</a>
-      </nav>
     </header>
 
     
@@ -303,7 +420,7 @@
   </table>
 </div>
 
-    <div class="footer">Generiert am 2026-08-22 &mdash; Alle Schwellenwerte aus zertifikate/rules.json</div>
+    <div class="footer">Generiert am 2026-08-27 &mdash; Alle Schwellenwerte aus zertifikate/rules.json</div>
   </div>
 </body>
 </html>

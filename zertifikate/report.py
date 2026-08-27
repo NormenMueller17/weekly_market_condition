@@ -1192,32 +1192,25 @@ def build_regelwerk_page(rules: dict) -> str:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Regelwerk — Zertifikate-Scanner</title>
-  <style>
-    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-           background: #f5f6fa; color: #2c3e50; font-size: 14px; line-height: 1.6; }}
-    .container {{ max-width: 900px; margin: 0 auto; padding: 20px; }}
-    header {{ background: #2c3e50; color: white; padding: 20px 24px;
-             border-radius: 8px; margin-bottom: 20px; }}
-    header h1 {{ font-size: 1.6em; margin-bottom: 4px; }}
-    header .subtitle {{ opacity: 0.8; font-size: 0.9em; margin-bottom: 8px; }}
-    header nav a {{ color: #7fb3d3; text-decoration: none; font-size: 0.85em; }}
-    header nav a:hover {{ color: white; }}
-    .footer {{ text-align:center;color:#95a5a6;font-size:0.8em;padding:16px 0 8px; }}
-  </style>
+  {_css()}
 </head>
 <body>
+  <nav class="g-nav">
+    <a href="../index.html" class="g-brand"><svg class="g-brand-icon" viewBox="0 0 24 24" width="15" height="15" fill="none"><circle cx="10" cy="10" r="6.3" stroke="currentColor" stroke-width="2"/><line x1="14.6" y1="14.6" x2="20.5" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><polyline points="6.3,11.6 8.7,8.6 10.9,10.2 13.4,6.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Weekly Screener</a>
+    <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
+    <div class="g-nav-links">
+      <a href="../trades.html">Trade Journal</a>
+      <a href="../performance.html">Performance</a>
+      <a href="index.html">Zertifikate</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="regelwerk.html" class="active">Regelwerk</a>
+      <a href="../blueprint.html">Blueprint</a>
+    </div>
+  </nav>
   <div class="container">
     <header>
       <h1>📋 Regelwerk — Zertifikate-Scanner</h1>
       <p class="subtitle">Drei-Ebenen-Screening-System &mdash; Low-Vol Momentum Screener</p>
-      <nav>
-        <a href="index.html">← Alle Reports</a>
-        &nbsp;|&nbsp;
-        <a href="../zertifikate/portfolio.html">Portfolio verwalten</a>
-        &nbsp;|&nbsp;
-        <a href="../index.html">Hauptreport</a>
-      </nav>
     </header>
 
     {body}
