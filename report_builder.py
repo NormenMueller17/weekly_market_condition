@@ -299,6 +299,8 @@ HTML_TMPL = """
       <a href="../trades.html">Trade Journal</a>
       <a href="../performance.html">Performance</a>
       <a href="../zertifikate/index.html">Zertifikate</a>
+      <a href="../zertifikate/portfolio.html">Portfolio</a>
+      <a href="../zertifikate/regelwerk.html">Regelwerk</a>
       <a href="../blueprint.html">Blueprint</a>
     </div>
   </nav>
@@ -2440,6 +2442,8 @@ def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
       <a href="trades.html">Trade Journal</a>
       <a href="performance.html">Performance</a>
       <a href="zertifikate/index.html">Zertifikate</a>
+      <a href="zertifikate/portfolio.html">Portfolio</a>
+      <a href="zertifikate/regelwerk.html">Regelwerk</a>
       <a href="blueprint.html">Blueprint</a>
     </div>
   </nav>

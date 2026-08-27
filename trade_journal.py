@@ -959,6 +959,8 @@ def build_html(data: dict) -> str:
       <a href="trades.html" class="active">Trade Journal</a>
       <a href="performance.html">Performance</a>
       <a href="zertifikate/index.html">Zertifikate</a>
+      <a href="zertifikate/portfolio.html">Portfolio</a>
+      <a href="zertifikate/regelwerk.html">Regelwerk</a>
       <a href="blueprint.html">Blueprint</a>
     </div>
   </nav>

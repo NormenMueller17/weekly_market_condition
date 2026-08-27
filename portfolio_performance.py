@@ -455,6 +455,8 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
       <a href="trades.html">Trade Journal</a>
       <a href="performance.html" class="active">Performance</a>
       <a href="zertifikate/index.html">Zertifikate</a>
+      <a href="zertifikate/portfolio.html">Portfolio</a>
+      <a href="zertifikate/regelwerk.html">Regelwerk</a>
       <a href="blueprint.html">Blueprint</a>
     </div>
   </nav>
