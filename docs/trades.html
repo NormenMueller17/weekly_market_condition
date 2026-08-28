@@ -18,7 +18,9 @@
                 --gnav-accent:#6c9bef; --gnav-accent-soft:#16233e; --gnav-accent-text:#9dbdf5; }
     }
     .g-brand  { font-weight: 700; color: var(--gnav-text-muted); text-decoration: none; padding: .72em 0;
-                 margin-right: auto; white-space: nowrap; font-size: .95em; display: inline-flex; align-items: center; gap: .4em; display: inline-flex; align-items: center; gap: .4em; }
+                 margin-right: auto; white-space: nowrap; font-size: .95em;
+                 display: inline-flex; align-items: center; gap: .4em; }
+    .g-brand-icon { flex-shrink: 0; }
     .g-nav-toggle { display: none; background: none; border: none; font-size: 1.4em; line-height: 1;
                  color: var(--gnav-text); cursor: pointer; padding: .5em .2em; }
     .g-nav-links  { display: flex; flex-wrap: wrap; }
@@ -87,20 +89,20 @@
   </nav>
   <div class="page">
   <h1>Tradetagebuch</h1>
-  <p class="meta">Stand: 2026-08-26 &nbsp;|&nbsp; 21 abgeschlossene Trades &nbsp;|&nbsp; 5 offene Positionen</p>
+  <p class="meta">Stand: 2026-08-28 &nbsp;|&nbsp; 22 abgeschlossene Trades &nbsp;|&nbsp; 4 offene Positionen</p>
 
   <div class="summary">
-    <div class="kpi"><div class="val">3/21</div><div class="lbl">Wins / Gesamt</div></div>
-    <div class="kpi"><div class="val">14%</div><div class="lbl">Win Rate</div></div>
-    <div class="kpi"><div class="val" style="color:#cc2222">-8,866 $</div><div class="lbl">Realized P&amp;L</div></div>
-    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+2,426 $</div><div class="lbl">Unrealized P&amp;L</div></div>
-    <div class="kpi"><div class="val" style="color:#1a8a1a">+27.4%</div><div class="lbl">Ø Gewinner</div></div>
+    <div class="kpi"><div class="val">4/22</div><div class="lbl">Wins / Gesamt</div></div>
+    <div class="kpi"><div class="val">18%</div><div class="lbl">Win Rate</div></div>
+    <div class="kpi"><div class="val" style="color:#cc2222">-8,205 $</div><div class="lbl">Realized P&amp;L</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a;font-weight:600">+1,420 $</div><div class="lbl">Unrealized P&amp;L</div></div>
+    <div class="kpi"><div class="val" style="color:#1a8a1a">+21.8%</div><div class="lbl">Ø Gewinner</div></div>
     <div class="kpi"><div class="val" style="color:#cc2222">-9.1%</div><div class="lbl">Ø Verlierer</div></div>
   </div>
 
   <div class="section-header">
     <h2>Offene Positionen</h2>
-    <button class="dl-btn" onclick="exportTable('tbl-open','offene_positionen_2026-08-26.xlsx')">&#8595; Excel</button>
+    <button class="dl-btn" onclick="exportTable('tbl-open','offene_positionen_2026-08-28.xlsx')">&#8595; Excel</button>
   </div>
   <div class="tbl-wrap">
   <table id="tbl-open">
@@ -130,11 +132,11 @@
           <td>269.01</td>
           <td>33</td>
           <td>235.72</td>
-          <td style="color:#1a8a1a;font-weight:600">↑ 304.99</td>
-          <td>337.28</td>
-          <td style="color:#1a8a1a;font-weight:600">+25.4%</td>
-          <td style="color:#1a8a1a;font-weight:600">+2,253</td>
-          <td class="left" style="font-size:.8em">&#x2705; Breakeven<br>&frac13; TV1 2026-08-25<br>&#x1F4C9; Trail $304.99<br>&#x1F4B0; +1,071$ realisiert</td>
+          <td style="color:#1a8a1a;font-weight:600">↑ 306.10</td>
+          <td>338.70</td>
+          <td style="color:#1a8a1a;font-weight:600">+25.9%</td>
+          <td style="color:#1a8a1a;font-weight:600">+2,300</td>
+          <td class="left" style="font-size:.8em">&#x2705; Breakeven<br>&frac13; TV1 2026-08-25<br>&#x1F4C9; Trail $306.10<br>&#x1F4B0; +1,071$ realisiert</td>
         </tr>
         <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
           <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_NTRA"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "NTRA", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_NTRA"});</script></div></div></div>
@@ -150,32 +152,13 @@
           <td>202</td>
           <td>66.60</td>
           <td style="">66.60</td>
-          <td>75.02</td>
-          <td style="color:#1a8a1a;font-weight:600">+0.8%</td>
-          <td style="color:#1a8a1a;font-weight:600">+128</td>
+          <td>74.65</td>
+          <td style="color:#1a8a1a;font-weight:600">+0.4%</td>
+          <td style="color:#1a8a1a;font-weight:600">+55</td>
           <td class="left" style="font-size:.8em">–</td>
         </tr>
         <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
           <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_SUN"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "SUN", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_SUN"});</script></div></div></div>
-        </td></tr>
-        <tr>
-          <td class="left"><strong>CORT</strong><br>
-            <span style="font-size:.8em;color:#666"></span></td>
-          <td class="left" style="font-size:.85em">–</td>
-          <td style="text-align:center">–</td>
-          <td class="left">–</td>
-          <td>2026-08-03</td>
-          <td>114.66</td>
-          <td>116</td>
-          <td>–</td>
-          <td style="color:#1a8a1a;font-weight:600">↑ 120.52</td>
-          <td>121.27</td>
-          <td style="color:#1a8a1a;font-weight:600">+5.8%</td>
-          <td style="color:#1a8a1a;font-weight:600">+767</td>
-          <td class="left" style="font-size:.8em">&#x1F4C9; Trail $120.52</td>
-        </tr>
-        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
-          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_CORT"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "CORT", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_CORT"});</script></div></div></div>
         </td></tr>
         <tr>
           <td class="left"><strong>MBIN</strong><br>
@@ -188,9 +171,9 @@
           <td>271</td>
           <td>49.66</td>
           <td style="">49.66</td>
-          <td>53.66</td>
-          <td style="color:#cc2222;font-weight:600">-5.0%</td>
-          <td style="color:#cc2222;font-weight:600">-765</td>
+          <td>53.26</td>
+          <td style="color:#cc2222;font-weight:600">-5.7%</td>
+          <td style="color:#cc2222;font-weight:600">-873</td>
           <td class="left" style="font-size:.8em">–</td>
         </tr>
         <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
@@ -207,9 +190,9 @@
           <td>510</td>
           <td>21.00</td>
           <td style="">21.00</td>
-          <td>23.57</td>
-          <td style="color:#1a8a1a;font-weight:600">+0.4%</td>
-          <td style="color:#1a8a1a;font-weight:600">+43</td>
+          <td>23.37</td>
+          <td style="color:#cc2222;font-weight:600">-0.5%</td>
+          <td style="color:#cc2222;font-weight:600">-61</td>
           <td class="left" style="font-size:.8em">–</td>
         </tr>
         <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
@@ -220,7 +203,7 @@
 
   <div class="section-header">
     <h2>Abgeschlossene Trades</h2>
-    <button class="dl-btn" onclick="exportTable('tbl-closed','abgeschlossene_trades_2026-08-26.xlsx')">&#8595; Excel</button>
+    <button class="dl-btn" onclick="exportTable('tbl-closed','abgeschlossene_trades_2026-08-28.xlsx')">&#8595; Excel</button>
   </div>
   <div class="tbl-wrap">
   <table id="tbl-closed">
@@ -239,6 +222,24 @@
       <th>P&amp;L $</th>
     </tr>
     
+        <tr>
+          <td class="left"><strong>CORT</strong><br>
+            <span style="font-size:.8em;color:#666"></span></td>
+          <td class="left" style="font-size:.85em">–</td>
+          <td style="text-align:center">–</td>
+          <td class="left">–</td>
+          <td>2026-08-03</td>
+          <td>2026-08-26</td>
+          <td>114.66</td>
+          <td>120.35</td>
+          <td>116</td>
+          <td class="left">Stop Hit</td>
+          <td style="color:#1a8a1a;font-weight:600">+5.0%</td>
+          <td style="color:#1a8a1a;font-weight:600">+661</td>
+        </tr>
+        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+          <div class="trade-charts"><div class="chart-col"><div class="chart-label">Jetzt</div><div class="tradingview-widget-container" style="margin:.6em 0 1em;"><div id="tv_trade_CORT"></div><script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script><script type="text/javascript">new TradingView.widget({"autosize": false, "width": "100%", "height": 260, "symbol": "CORT", "interval": "W", "timezone": "Etc/UTC", "theme": "light", "style": "1", "locale": "de_DE", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": false, "studies": [{"id": "MASimple@tv-basicstudies", "inputs": {"length": 10}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 30}}, {"id": "MASimple@tv-basicstudies", "inputs": {"length": 40}}], "container_id": "tv_trade_CORT"});</script></div></div></div>
+        </td></tr>
         <tr>
           <td class="left"><strong>AVT</strong><br>
             <span style="font-size:.8em;color:#666">Avnet Inc.</span></td>
