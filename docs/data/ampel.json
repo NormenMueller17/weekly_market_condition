@@ -1,0 +1,39 @@
+{
+  "score": 3,
+  "label": "Neutral",
+  "color": "#856404",
+  "bg": "#fff3cd",
+  "emoji": "🟡",
+  "criteria": [
+    {
+      "name": "SPY über 10W MA",
+      "met": true,
+      "value": "+2.21%"
+    },
+    {
+      "name": "QQQ über 10W MA",
+      "met": true,
+      "value": "+1.55%"
+    },
+    {
+      "name": "Marktbreite >55% über 10W EMA",
+      "met": false,
+      "value": "52.4%"
+    },
+    {
+      "name": "Wochenkursgewinner >55%",
+      "met": false,
+      "value": "39.3%"
+    },
+    {
+      "name": "New Highs > New Lows",
+      "met": true,
+      "value": "NH=200, NL=124"
+    },
+    {
+      "name": "SPY MACD-Momentum positiv",
+      "met": false,
+      "value": "-0.1668"
+    }
+  ]
+}

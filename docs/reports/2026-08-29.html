@@ -1,0 +1,2793 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><circle cx='10' cy='10' r='6.3' stroke='%231f4fa3' stroke-width='2'/><line x1='14.6' y1='14.6' x2='20.5' y2='20.5' stroke='%231f4fa3' stroke-width='2.4' stroke-linecap='round'/><polyline points='6.3,11.6 8.7,8.6 10.9,10.2 13.4,6.4' fill='none' stroke='%231f4fa3' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg: #eef1f7; --surface: #ffffff; --surface-2: #f6f8fc;
+            --border: #dde3ef; --border-strong: #c3cde0;
+            --text: #10192b; --text-secondary: #4d5b73; --text-muted: #8593ab;
+            --accent: #1f4fa3; --accent-soft: #e8eefa; --accent-text: #163c80;
+            --success: #1c7c4d; --success-bg: #e6f6ec; --success-text: #145c39;
+            --danger: #b3261e; --danger-bg: #fcebea; --danger-text: #8f1e18;
+            --gold: #9a7b1f; --silver: #6b7688;
+            --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0a0f1a; --surface: #121a2b; --surface-2: #0f1626;
+                --border: #223049; --border-strong: #2e4066;
+                --text: #e8edf7; --text-secondary: #a3b1c9; --text-muted: #6b7a97;
+                --accent: #6c9bef; --accent-soft: #16233e; --accent-text: #9dbdf5;
+                --success: #4cbf83; --success-bg: #12291d; --success-text: #6fd4a0;
+                --danger: #e5716a; --danger-bg: #2c1414; --danger-text: #ef938d;
+                --gold: #d4b04a; --silver: #9aa5b8;
+            }
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body    { font-family: var(--font-sans); margin: 0; background: var(--bg); color: var(--text); }
+        h1, h2, h3 { font-weight: 600; letter-spacing: -.01em; text-wrap: balance; color: var(--text); }
+        h2 { font-size: 1.3em; margin: 1.8em 0 .7em; padding-bottom: .35em; border-bottom: 1px solid var(--border); }
+        a { color: var(--accent); }
+        .g-nav   { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 1.5em;
+                   flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }
+        .g-brand { font-family: var(--font-mono); font-weight: 600; color: var(--text-muted); text-decoration: none;
+                   padding: .72em 1.1em .72em 0; margin-right: auto; border-right: 1px solid var(--border);
+                   white-space: nowrap; font-size: .78em; letter-spacing: .05em; text-transform: uppercase;
+                   display: inline-flex; align-items: center; gap: .45em; }
+        .g-brand-icon { flex-shrink: 0; }
+        .g-nav-toggle { display: none; background: none; border: none; font-size: 1.4em; line-height: 1;
+                   color: var(--text-secondary); cursor: pointer; padding: .5em .2em; }
+        .g-nav-links  { display: flex; flex-wrap: wrap; }
+        .g-nav a { color: var(--text-secondary); text-decoration: none; padding: .72em .85em;
+                   font-size: .84em; white-space: nowrap; }
+        .g-nav a:hover  { color: var(--accent); background: var(--accent-soft); }
+        .g-nav a.active { color: var(--accent-text); box-shadow: inset 0 -2px var(--accent); font-weight: 600; }
+        @media (max-width: 720px) {
+          .g-nav-toggle { display: block; }
+          .g-nav-links  { display: none; width: 100%; flex-direction: column; border-top: 1px solid var(--border); }
+          .g-nav.open .g-nav-links { display: flex; }
+          .g-nav a { padding: .85em 1em; }
+        }
+        .page   { max-width: 1200px; margin: 0 auto; padding: 2em 1em 3em; }
+        table   { border-collapse: collapse; margin-bottom: 2em; font-size: 0.93em; width: 100%; }
+        th, td  { border: none; border-bottom: 1px solid var(--border); padding: 0.5em 0.9em; text-align: center; }
+        th      { background: var(--surface-2); color: var(--text-muted); font-weight: 600; white-space: nowrap;
+                   font-size: .78em; letter-spacing: .04em; text-transform: uppercase; border-bottom: 1px solid var(--border-strong); }
+        th.left, td.left { text-align: left; }
+        tbody tr:hover td, tr:hover td { background-color: var(--surface-2); }
+        /* Zahlenspalten: mono + tabular-nums, erkannt an der uebliche Inline-Ausrichtung */
+        td[style*="text-align:right"], td[style*="text-align: right"],
+        td[style*="text-align:center"], td[style*="text-align: center"] {
+            font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+        }
+        .pos    { color: var(--success-text); }
+        .neg    { color: var(--danger-text); }
+        .btn-sa {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: var(--accent);
+            color: #ffffff;
+            font-size: 0.8em;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .btn-sa:hover { background-color: var(--accent-text); }
+        /* Leader cards */
+        .leader-grid { width: 100%; border-collapse: collapse; }
+        .leader-cell { width: 50%; padding: 5px; vertical-align: top; }
+        .leader-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            background: var(--surface);
+        }
+        /* Portfolio cards */
+        .portfolio-summary {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 1em;
+            border-collapse: separate;
+            width: 100%;
+        }
+        .portfolio-summary td {
+            border: none;
+            text-align: center;
+            padding: 4px 12px;
+            font-size: 0.95em;
+        }
+        .portfolio-summary .summary-label {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .portfolio-summary .summary-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            font-family: var(--font-mono);
+        }
+        @media only screen and (max-width: 600px) {
+            body { margin: 0.8em; }
+            .leader-cell { display: block !important; width: 100% !important; box-sizing: border-box; }
+            .portfolio-summary td { display: block !important; width: 100% !important; text-align: left; padding: 2px 0; }
+        }
+        th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        th.sortable:hover { background: var(--accent-soft); color: var(--accent-text); }
+        th.sortable::after { content: ' ⇅'; font-size: 0.9em; color: var(--text-muted); }
+        th.sortable.asc::after  { content: ' ▲'; color: var(--accent); }
+        th.sortable.desc::after { content: ' ▼'; color: var(--accent); }
+        /* Meter-Balken fuer Score/RS-Zellen */
+        .meter { display: inline-flex; align-items: center; gap: .5em; justify-content: flex-end; }
+        .meter-track { width: 46px; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; flex-shrink: 0; }
+        .meter-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+        .meter-num { font-family: var(--font-mono); font-weight: 600; min-width: 1.6em; text-align: right; }
+        /* Marktampel */
+        .ampel-wrap { position: relative; display: inline-block; margin-bottom: 1.5em; }
+        .ampel-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; border-radius: 22px; font-weight: bold;
+            font-size: 1.05em; cursor: default; border: 1px solid var(--border);
+            user-select: none;
+        }
+        .ampel-tooltip {
+            display: none; position: absolute; left: 0; top: 115%;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+            padding: 10px 16px; min-width: 300px; z-index: 100;
+            box-shadow: 0 8px 24px rgba(10,15,26,.18); font-size: 0.88em;
+            white-space: nowrap;
+        }
+        .ampel-wrap:hover .ampel-tooltip { display: block; }
+        .ampel-tooltip table { border: none; margin: 4px 0 0 0; font-size: 1em; }
+        .ampel-tooltip td { border: none; padding: 3px 8px; }
+        .ampel-dots { display: flex; gap: 5px; margin: 6px 2px 0; }
+        .ampel-dot  { width: 9px; height: 9px; border-radius: 50%; background: var(--success); }
+        .ampel-dot.unmet { background: transparent; border: 1.5px solid var(--border-strong); }
+    </style>
+    <script>
+    function sortTable(th) {
+        var table = th.closest('table');
+        var tbody = table.querySelector('tbody') || table;
+        var col   = th.cellIndex;
+        var asc   = th.classList.toggle('asc');
+        if (!asc) th.classList.toggle('desc');
+        else th.classList.remove('desc');
+
+        // Collect sortable row-groups (data row + optional scorecard row)
+        var allRows = Array.from(tbody.querySelectorAll('tr')).slice(1); // skip header
+        var groups = [];
+        var i = 0;
+        while (i < allRows.length) {
+            var group = [allRows[i]];
+            // If next row is a scorecard row (has colspan), attach it to this group
+            if (allRows[i+1]) {
+                var cells = allRows[i+1].querySelectorAll('td');
+                if (cells.length === 1 && cells[0].colSpan > 1) {
+                    group.push(allRows[i+1]);
+                    i++;
+                }
+            }
+            groups.push(group);
+            i++;
+        }
+
+        var parse = function(txt) {
+            var s = txt.replace(/[+%$,]/g, '').trim();
+            var n = parseFloat(s);
+            return isNaN(n) ? s.toLowerCase() : n;
+        };
+
+        groups.sort(function(a, b) {
+            var ta = parse(a[0].cells[col] ? a[0].cells[col].innerText : '');
+            var tb = parse(b[0].cells[col] ? b[0].cells[col].innerText : '');
+            if (ta < tb) return asc ? -1 : 1;
+            if (ta > tb) return asc ? 1 : -1;
+            return 0;
+        });
+
+        // Clear header sort indicators on siblings
+        th.closest('tr').querySelectorAll('th').forEach(function(t) {
+            if (t !== th) { t.classList.remove('asc'); t.classList.remove('desc'); }
+        });
+
+        groups.forEach(function(g) { g.forEach(function(r) { tbody.appendChild(r); }); });
+    }
+    </script>
+</head><body>
+  <nav class="g-nav">
+    <a href="../index.html" class="g-brand"><svg class="g-brand-icon" viewBox="0 0 24 24" width="15" height="15" fill="none"><circle cx="10" cy="10" r="6.3" stroke="currentColor" stroke-width="2"/><line x1="14.6" y1="14.6" x2="20.5" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><polyline points="6.3,11.6 8.7,8.6 10.9,10.2 13.4,6.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Weekly Screener</a>
+    <button type="button" class="g-nav-toggle" aria-label="Menü" onclick="this.closest('.g-nav').classList.toggle('open')">☰</button>
+    <div class="g-nav-links">
+      <a href="../trades.html">Trade Journal</a>
+      <a href="../performance.html">Performance</a>
+      <a href="../zertifikate/index.html">Zertifikate</a>
+      <a href="../zertifikate/portfolio.html">Portfolio</a>
+      <a href="../zertifikate/regelwerk.html">Regelwerk</a>
+      <a href="../blueprint.html">Blueprint</a>
+    </div>
+  </nav>
+  <div class="page">
+    
+    <h1>Weekly US Market Report</h1>
+    <p><strong>Report-Woche:</strong> 2026-08-29</p>
+
+    
+    <div style="display:flex;flex-wrap:wrap;gap:1em;align-items:flex-start;">
+      
+      <div class="ampel-wrap">
+        <div class="ampel-badge" style="background:#fff3cd;color:#856404">
+          🟡 Marktampel: <strong>Neutral</strong> &nbsp;(3/6)
+        </div>
+        <div class="ampel-dots">
+          
+          <span class="ampel-dot " title="SPY über 10W MA: +2.21%"></span>
+          
+          <span class="ampel-dot " title="QQQ über 10W MA: +1.55%"></span>
+          
+          <span class="ampel-dot unmet" title="Marktbreite >55% über 10W EMA: 52.4%"></span>
+          
+          <span class="ampel-dot unmet" title="Wochenkursgewinner >55%: 39.3%"></span>
+          
+          <span class="ampel-dot " title="New Highs > New Lows: NH=200, NL=124"></span>
+          
+          <span class="ampel-dot unmet" title="SPY MACD-Momentum positiv: -0.1668"></span>
+          
+        </div>
+        <div class="ampel-tooltip">
+          <strong>Marktampel-Kriterien</strong>
+          <table>
+            
+            <tr>
+              <td>✅</td>
+              <td>SPY über 10W MA</td>
+              <td style="color:#888;padding-left:12px">+2.21%</td>
+            </tr>
+            
+            <tr>
+              <td>✅</td>
+              <td>QQQ über 10W MA</td>
+              <td style="color:#888;padding-left:12px">+1.55%</td>
+            </tr>
+            
+            <tr>
+              <td>❌</td>
+              <td>Marktbreite >55% über 10W EMA</td>
+              <td style="color:#888;padding-left:12px">52.4%</td>
+            </tr>
+            
+            <tr>
+              <td>❌</td>
+              <td>Wochenkursgewinner >55%</td>
+              <td style="color:#888;padding-left:12px">39.3%</td>
+            </tr>
+            
+            <tr>
+              <td>✅</td>
+              <td>New Highs > New Lows</td>
+              <td style="color:#888;padding-left:12px">NH=200, NL=124</td>
+            </tr>
+            
+            <tr>
+              <td>❌</td>
+              <td>SPY MACD-Momentum positiv</td>
+              <td style="color:#888;padding-left:12px">-0.1668</td>
+            </tr>
+            
+          </table>
+        </div>
+      </div>
+      
+      
+      <div class="ampel-wrap">
+        <div class="ampel-badge" style="background:#fff3cd;color:#856404">
+          🟡 NH/NL-Ratio: <strong>62%</strong>
+          &nbsp;<span style="font-weight:normal;opacity:.8">(200 Hochs / 124 Tiefs)</span>
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <h2>1) Marktbreite – Vergleich</h2>
+    <table>
+        <tr>
+            <th class="left"></th>
+            
+              <th class="left">Aktuelle Woche</th>
+            
+              <th class="left">Woche −1</th>
+            
+              <th class="left">Woche −4</th>
+            
+            <th class="left">Trend (13W)</th>
+        </tr>
+        
+        <tr>
+            <td class="left">% über 10‑Wochen‑EMA</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">52.36%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>56.97%</td>
+              
+            
+              
+              
+              
+              
+                <td>53.57%</td>
+              
+            
+            <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 24" width="90" height="24" style="vertical-align:middle;"><polyline points="3.0,21.0 10.0,10.3 17.0,15.5 24.0,8.5 31.0,7.8 38.0,9.3 45.0,11.7 52.0,17.5 59.0,16.2 66.0,4.3 73.0,3.0 80.0,12.6 87.0,17.5" fill="none" stroke="var(--success-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="87.0" cy="17.5" r="2" fill="var(--success-text)"/></svg></td>
+        </tr>
+        
+        <tr>
+            <td class="left">% über 21‑Wochen‑EMA</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">56.83%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>60.97%</td>
+              
+            
+              
+              
+              
+              
+                <td>55.97%</td>
+              
+            
+            <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 24" width="90" height="24" style="vertical-align:middle;"><polyline points="3.0,21.0 10.0,12.3 17.0,16.6 24.0,10.3 31.0,8.4 38.0,8.9 45.0,11.0 52.0,15.1 59.0,15.8 66.0,4.8 73.0,3.0 80.0,9.6 87.0,14.7" fill="none" stroke="var(--success-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="87.0" cy="14.7" r="2" fill="var(--success-text)"/></svg></td>
+        </tr>
+        
+        <tr>
+            <td class="left">% über 50‑Wochen‑MA</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">59.80%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>61.40%</td>
+              
+            
+              
+              
+              
+              
+                <td>57.59%</td>
+              
+            
+            <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 24" width="90" height="24" style="vertical-align:middle;"><polyline points="3.0,21.0 10.0,21.0 17.0,4.6 24.0,3.8 31.0,3.6 38.0,3.8 45.0,3.9 52.0,4.5 59.0,4.4 66.0,3.0 73.0,3.0 80.0,3.3 87.0,3.7" fill="none" stroke="var(--success-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="87.0" cy="3.7" r="2" fill="var(--success-text)"/></svg></td>
+        </tr>
+        
+        <tr>
+            <td class="left">Neue 52W‑Hochs (Anzahl)</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">200</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>308</td>
+              
+            
+              
+              
+              
+              
+                <td>324</td>
+              
+            
+            <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 24" width="90" height="24" style="vertical-align:middle;"><polyline points="3.0,21.0 10.0,21.0 17.0,21.0 24.0,21.0 31.0,4.0 38.0,11.4 45.0,5.0 52.0,10.9 59.0,9.0 66.0,4.5 73.0,3.0 80.0,9.6 87.0,13.6" fill="none" stroke="var(--success-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="87.0" cy="13.6" r="2" fill="var(--success-text)"/></svg></td>
+        </tr>
+        
+        <tr>
+            <td class="left">Neue 52W‑Tiefs (Anzahl)</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">124</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>120</td>
+              
+            
+              
+              
+              
+              
+                <td>126</td>
+              
+            
+            <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 24" width="90" height="24" style="vertical-align:middle;"><polyline points="3.0,21.0 10.0,21.0 17.0,21.0 24.0,21.0 31.0,13.3 38.0,10.5 45.0,8.5 52.0,3.0 59.0,7.7 66.0,13.8 73.0,12.3 80.0,8.3 87.0,7.9" fill="none" stroke="var(--success-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="87.0" cy="7.9" r="2" fill="var(--success-text)"/></svg></td>
+        </tr>
+        
+        <tr>
+            <td class="left">1W-Kursgewinner (%)</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">39.29%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>41.53%</td>
+              
+            
+              
+              
+              
+              
+                <td>54.92%</td>
+              
+            
+            <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 24" width="90" height="24" style="vertical-align:middle;"><polyline points="3.0,20.9 10.0,3.0 17.0,18.1 24.0,8.2 31.0,10.4 38.0,18.4 45.0,13.8 52.0,20.0 59.0,12.0 66.0,4.6 73.0,11.1 80.0,19.7 87.0,21.0" fill="none" stroke="var(--danger-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="87.0" cy="21.0" r="2" fill="var(--danger-text)"/></svg></td>
+        </tr>
+        
+        <tr>
+            <td class="left">NH/(NH+NL) (%)</td>
+            
+              
+              
+              
+              
+                
+                  <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">61.73%</td>
+                
+              
+            
+              
+              
+              
+              
+                <td>71.96%</td>
+              
+            
+              
+              
+              
+              
+                <td>72.00%</td>
+              
+            
+            <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 24" width="90" height="24" style="vertical-align:middle;"><polyline points="3.0,21.0 10.0,21.0 17.0,21.0 24.0,21.0 31.0,3.1 38.0,6.0 45.0,4.7 52.0,8.2 59.0,6.1 66.0,3.0 73.0,3.3 80.0,6.1 87.0,8.2" fill="none" stroke="var(--success-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="87.0" cy="8.2" r="2" fill="var(--success-text)"/></svg></td>
+        </tr>
+        
+    </table>
+    
+    
+    <h2>1b) Sektor-Performance (Wochenbasis)</h2>
+    <div style="overflow-x:auto"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 302" width="100%" height="302" style="max-width:620px;font-family:Arial;"><line x1="355.0" y1="8" x2="355.0" y2="294" stroke="#c9d2e8" stroke-width="1"/><text x="142" y="25.0" font-size="12" fill="#333" text-anchor="end">Technology <tspan fill="#999" font-size="10">XLK</tspan></text><rect x="355.0" y="13.8" width="184.5" height="14.3" fill="var(--success-text)" rx="2"/><text x="544.5" y="25.0" font-size="12" fill="var(--success-text)" font-weight="bold" text-anchor="start">+2.89%</text><text x="142" y="51.0" font-size="12" fill="#333" text-anchor="end">Utilities <tspan fill="#999" font-size="10">XLU</tspan></text><rect x="355.0" y="39.9" width="61.2" height="14.3" fill="var(--success-text)" rx="2"/><text x="421.2" y="51.0" font-size="12" fill="var(--success-text)" font-weight="bold" text-anchor="start">+0.96%</text><text x="142" y="77.0" font-size="12" fill="#333" text-anchor="end">Financials <tspan fill="#999" font-size="10">XLF</tspan></text><rect x="355.0" y="65.8" width="44.4" height="14.3" fill="var(--success-text)" rx="2"/><text x="404.4" y="77.0" font-size="12" fill="var(--success-text)" font-weight="bold" text-anchor="start">+0.70%</text><text x="142" y="103.0" font-size="12" fill="#333" text-anchor="end">Communication <tspan fill="#999" font-size="10">XLC</tspan></text><rect x="355.0" y="91.8" width="0.6" height="14.3" fill="var(--success-text)" rx="2"/><text x="360.6" y="103.0" font-size="12" fill="var(--success-text)" font-weight="bold" text-anchor="start">+0.01%</text><text x="142" y="129.0" font-size="12" fill="#333" text-anchor="end">Materials <tspan fill="#999" font-size="10">XLB</tspan></text><rect x="318.1" y="117.8" width="36.9" height="14.3" fill="var(--danger-text)" rx="2"/><text x="313.1" y="129.0" font-size="12" fill="var(--danger-text)" font-weight="bold" text-anchor="end">-0.58%</text><text x="142" y="155.0" font-size="12" fill="#333" text-anchor="end">Industrials <tspan fill="#999" font-size="10">XLI</tspan></text><rect x="303.7" y="143.8" width="51.3" height="14.3" fill="var(--danger-text)" rx="2"/><text x="298.7" y="155.0" font-size="12" fill="var(--danger-text)" font-weight="bold" text-anchor="end">-0.80%</text><text x="142" y="181.0" font-size="12" fill="#333" text-anchor="end">Real Estate <tspan fill="#999" font-size="10">XLRE</tspan></text><rect x="295.5" y="169.8" width="59.5" height="14.3" fill="var(--danger-text)" rx="2"/><text x="290.5" y="181.0" font-size="12" fill="var(--danger-text)" font-weight="bold" text-anchor="end">-0.93%</text><text x="142" y="207.0" font-size="12" fill="#333" text-anchor="end">Consumer Staples <tspan fill="#999" font-size="10">XLP</tspan></text><rect x="287.5" y="195.8" width="67.5" height="14.3" fill="var(--danger-text)" rx="2"/><text x="282.5" y="207.0" font-size="12" fill="var(--danger-text)" font-weight="bold" text-anchor="end">-1.06%</text><text x="142" y="233.0" font-size="12" fill="#333" text-anchor="end">Health Care <tspan fill="#999" font-size="10">XLV</tspan></text><rect x="243.9" y="221.8" width="111.1" height="14.3" fill="var(--danger-text)" rx="2"/><text x="238.9" y="233.0" font-size="12" fill="var(--danger-text)" font-weight="bold" text-anchor="end">-1.74%</text><text x="142" y="259.0" font-size="12" fill="#333" text-anchor="end">Consumer Discret. <tspan fill="#999" font-size="10">XLY</tspan></text><rect x="239.3" y="247.8" width="115.7" height="14.3" fill="var(--danger-text)" rx="2"/><text x="234.3" y="259.0" font-size="12" fill="var(--danger-text)" font-weight="bold" text-anchor="end">-1.81%</text><text x="142" y="285.0" font-size="12" fill="#333" text-anchor="end">Energy <tspan fill="#999" font-size="10">XLE</tspan></text><rect x="219.6" y="273.9" width="135.4" height="14.3" fill="var(--danger-text)" rx="2"/><text x="214.6" y="285.0" font-size="12" fill="var(--danger-text)" font-weight="bold" text-anchor="end">-2.12%</text></svg></div>
+    
+
+    
+    <h2>1c) Sektor-Rotation (13 Wochen)</h2>
+    <p style="color:var(--text-secondary);font-size:.9em;margin:-.4em 0 1em;">
+      Wochenrendite je Sektor-ETF, oben = aktuell stärkster Sektor. Zeigt, wie sich Führerschaft über Zeit verschiebt, nicht nur den Momentanzustand.
+    </p>
+    <div style="overflow-x:auto">
+    <table>
+      <tr>
+        <th class="left">Sektor</th>
+        
+          <th style="text-align:center">05.06.</th>
+        
+          <th style="text-align:center">12.06.</th>
+        
+          <th style="text-align:center">19.06.</th>
+        
+          <th style="text-align:center">26.06.</th>
+        
+          <th style="text-align:center">03.07.</th>
+        
+          <th style="text-align:center">10.07.</th>
+        
+          <th style="text-align:center">17.07.</th>
+        
+          <th style="text-align:center">24.07.</th>
+        
+          <th style="text-align:center">31.07.</th>
+        
+          <th style="text-align:center">07.08.</th>
+        
+          <th style="text-align:center">14.08.</th>
+        
+          <th style="text-align:center">21.08.</th>
+        
+          <th style="text-align:center">28.08.</th>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Technology <span style="color:var(--text-muted);font-size:.85em">XLK</span></td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.61);font-weight:600">-5.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.33);font-weight:600">+2.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.43);font-weight:600">+3.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.59);font-weight:600">-5.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.13);font-weight:600">-0.3%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.36);font-weight:600">+2.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.60);font-weight:600">-5.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.12);font-weight:600">+0.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.13);font-weight:600">-0.3%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.76);font-weight:600">+7.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.20);font-weight:600">+1.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.42);font-weight:600">-3.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.36);font-weight:600">+2.9%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Utilities <span style="color:var(--text-muted);font-size:.85em">XLU</span></td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.11);font-weight:600">-0.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.14);font-weight:600">+0.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.15);font-weight:600">+0.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.39);font-weight:600">+3.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.19);font-weight:600">-1.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.17);font-weight:600">-0.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.15);font-weight:600">-0.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.33);font-weight:600">+2.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.48);font-weight:600">-4.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.25);font-weight:600">-1.7%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.25);font-weight:600">+1.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.42);font-weight:600">-3.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.19);font-weight:600">+1.0%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Financials <span style="color:var(--text-muted);font-size:.85em">XLF</span></td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.23);font-weight:600">+1.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.28);font-weight:600">+2.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.14);font-weight:600">+0.4%</td>
+        
+          <td style="text-align:center;background-color:transparent;font-weight:600">+0.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.45);font-weight:600">+3.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.11);font-weight:600">+0.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.19);font-weight:600">+1.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.11);font-weight:600">+0.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.20);font-weight:600">+1.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.21);font-weight:600">+1.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.19);font-weight:600">+1.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.21);font-weight:600">-1.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.16);font-weight:600">+0.7%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Communication <span style="color:var(--text-muted);font-size:.85em">XLC</span></td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.42);font-weight:600">-3.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.10);font-weight:600">-0.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.28);font-weight:600">-2.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.37);font-weight:600">-3.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.39);font-weight:600">+3.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.27);font-weight:600">+1.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.18);font-weight:600">-0.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.46);font-weight:600">-3.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.27);font-weight:600">+1.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.35);font-weight:600">+2.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.24);font-weight:600">+1.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.23);font-weight:600">-1.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.10);font-weight:600">+0.0%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Materials <span style="color:var(--text-muted);font-size:.85em">XLB</span></td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.19);font-weight:600">-1.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.38);font-weight:600">+3.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.16);font-weight:600">-0.7%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.14);font-weight:600">-0.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.17);font-weight:600">+0.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.30);font-weight:600">-2.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.16);font-weight:600">-0.7%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.23);font-weight:600">+1.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.25);font-weight:600">-1.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.54);font-weight:600">+4.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.16);font-weight:600">-0.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.27);font-weight:600">+1.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.15);font-weight:600">-0.6%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Industrials <span style="color:var(--text-muted);font-size:.85em">XLI</span></td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.16);font-weight:600">+0.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.20);font-weight:600">+1.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.35);font-weight:600">+2.7%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.11);font-weight:600">+0.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.24);font-weight:600">+1.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.20);font-weight:600">-1.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.23);font-weight:600">-1.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.27);font-weight:600">+1.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.24);font-weight:600">-1.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.37);font-weight:600">+3.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.17);font-weight:600">+0.7%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.41);font-weight:600">-3.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.17);font-weight:600">-0.8%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Real Estate <span style="color:var(--text-muted);font-size:.85em">XLRE</span></td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.25);font-weight:600">+1.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.23);font-weight:600">+1.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.40);font-weight:600">-3.3%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.39);font-weight:600">+3.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.21);font-weight:600">-1.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.15);font-weight:600">-0.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.30);font-weight:600">+2.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.21);font-weight:600">+1.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.27);font-weight:600">-1.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.12);font-weight:600">-0.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.16);font-weight:600">+0.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.14);font-weight:600">-0.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.19);font-weight:600">-0.9%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Consumer Staples <span style="color:var(--text-muted);font-size:.85em">XLP</span></td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.16);font-weight:600">+0.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.36);font-weight:600">+2.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.37);font-weight:600">-2.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.25);font-weight:600">+1.7%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.13);font-weight:600">+0.3%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.19);font-weight:600">-1.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.22);font-weight:600">+1.3%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.21);font-weight:600">-1.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.20);font-weight:600">+1.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.11);font-weight:600">+0.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.20);font-weight:600">+1.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.11);font-weight:600">-0.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.20);font-weight:600">-1.1%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Health Care <span style="color:var(--text-muted);font-size:.85em">XLV</span></td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.32);font-weight:600">+2.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.15);font-weight:600">+0.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.36);font-weight:600">-2.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.77);font-weight:600">+7.3%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.29);font-weight:600">+2.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.26);font-weight:600">-1.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.11);font-weight:600">+0.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.18);font-weight:600">+0.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.10);font-weight:600">-0.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.28);font-weight:600">+1.9%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.19);font-weight:600">+1.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.50);font-weight:600">+4.3%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.26);font-weight:600">-1.7%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Consumer Discret. <span style="color:var(--text-muted);font-size:.85em">XLY</span></td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.55);font-weight:600">-5.0%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.24);font-weight:600">+1.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.14);font-weight:600">+0.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.32);font-weight:600">-2.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.32);font-weight:600">+2.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.11);font-weight:600">+0.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.24);font-weight:600">-1.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.58);font-weight:600">-5.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.66);font-weight:600">+6.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.40);font-weight:600">+3.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.23);font-weight:600">-1.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.11);font-weight:600">-0.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.27);font-weight:600">-1.8%</td>
+        
+      </tr>
+      
+      <tr>
+        <td class="left">Energy <span style="color:var(--text-muted);font-size:.85em">XLE</span></td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.32);font-weight:600">+2.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.12);font-weight:600">-0.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.70);font-weight:600">-6.6%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.11);font-weight:600">+0.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.21);font-weight:600">-1.2%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.42);font-weight:600">+3.5%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.53);font-weight:600">+4.7%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.41);font-weight:600">+3.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.11);font-weight:600">-0.1%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.41);font-weight:600">-3.4%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.80);font-weight:600">+7.7%</td>
+        
+          <td style="text-align:center;background-color:rgba(28,124,77,0.36);font-weight:600">+2.8%</td>
+        
+          <td style="text-align:center;background-color:rgba(179,38,30,0.29);font-weight:600">-2.1%</td>
+        
+      </tr>
+      
+    </table>
+    </div>
+    
+
+    <h2>2) Trend & Momentum (Weekly)</h2>
+    <table>
+        <tr>
+            <th class="left">Metrik</th>
+            
+                <th class="left">S&P 500 (SPY)</th>
+            
+                <th class="left">Nasdaq 100 (QQQ)</th>
+            
+                <th class="left">Russell 2000 (IWM)</th>
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Close</td>
+            
+                
+                
+                    <td>771.10</td>
+                
+            
+                
+                
+                    <td>721.11</td>
+                
+            
+                
+                
+                    <td>299.81</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Δ WoW</td>
+            
+                
+                
+                    <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">0.70%</td>
+                
+            
+                
+                
+                    <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">1.08%</td>
+                
+            
+                
+                
+                    <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">-0.05%</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">RSI(14)</td>
+            
+                
+                
+                    <td>58.4</td>
+                
+            
+                
+                
+                    <td>50.7</td>
+                
+            
+                
+                
+                    <td>62.2</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Δ RSI</td>
+            
+                
+                
+                    <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">-0.30%</td>
+                
+            
+                
+                
+                    <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">-0.18%</td>
+                
+            
+                
+                
+                    <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">-4.35%</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">MACD</td>
+            
+                
+                
+                    <td>20.87</td>
+                
+            
+                
+                
+                    <td>22.75</td>
+                
+            
+                
+                
+                    <td>10.59</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Signal</td>
+            
+                
+                
+                    <td>19.87</td>
+                
+            
+                
+                
+                    <td>25.20</td>
+                
+            
+                
+                
+                    <td>10.97</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">Δ MACD</td>
+            
+                
+                
+                    <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">-0.17%</td>
+                
+            
+                
+                
+                    <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">0.05%</td>
+                
+            
+                
+                
+                    <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">-0.27%</td>
+                
+            
+        </tr>
+        
+        <tr>
+            <td class="left">vs 10W MA</td>
+            
+                
+                
+                    <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">2.21%</td>
+                
+            
+                
+                
+                    <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">1.55%</td>
+                
+            
+                
+                
+                    <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">0.73%</td>
+                
+            
+        </tr>
+        
+    </table>
+    <h3>Divergenzanalyse</h3>
+    <p><b>S&P 500 (SPY)</b>: Kursanstieg bei fallendem RSI → möglicher Momentumverlust<br><b>Nasdaq 100 (QQQ)</b>: Kursanstieg bei fallendem RSI → möglicher Momentumverlust / RSI fällt, aber MACD steigt → mögliches Rebound-Signal</p>
+
+    
+    <h2>2b) Relative Stärke (13W)</h2>
+    <p style="color:var(--text-secondary);font-size:.9em;margin:-.4em 0 1em;">
+      Kursverhältnis zu SPY, nicht der Kurs selbst — steigende Linie heißt der Zähler schlägt den breiten Markt (Rotation Wachstum/Nebenwerte vs. Markt).
+    </p>
+    <table>
+      <tr>
+        <th class="left">Vergleich</th>
+        <th class="left">Verlauf</th>
+        <th class="left">Δ 13W</th>
+      </tr>
+      
+      <tr>
+        <td class="left">Nasdaq 100 (QQQ) vs. SPY</td>
+        <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 32" width="140" height="32" style="vertical-align:middle;"><polyline points="3.0,16.2 14.2,10.1 25.3,3.0 36.5,11.3 47.7,15.9 58.8,14.3 70.0,23.7 81.2,27.2 92.3,29.0 103.5,23.8 114.7,21.4 125.8,25.1 137.0,23.8" fill="none" stroke="var(--danger-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="137.0" cy="23.8" r="2" fill="var(--danger-text)"/></svg></td>
+        <td style="color:var(--danger-text);font-weight:bold">-2.17%</td>
+      </tr>
+      
+      <tr>
+        <td class="left">Russell 2000 (IWM) vs. SPY</td>
+        <td><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 32" width="140" height="32" style="vertical-align:middle;"><polyline points="3.0,29.0 14.2,17.4 25.3,16.7 36.5,3.0 47.7,13.4 58.8,20.0 70.0,16.9 81.2,18.2 92.3,22.0 103.5,21.8 114.7,19.2 125.8,20.3 137.0,22.9" fill="none" stroke="var(--success-text)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="137.0" cy="22.9" r="2" fill="var(--success-text)"/></svg></td>
+        <td style="color:var(--success-text);font-weight:bold">+1.82%</td>
+      </tr>
+      
+    </table>
+    
+
+    <h2>3) Risiko & Sentiment</h2>
+    <table>
+        <tr>
+            <th class="left">Metrik</th>
+            <th>Aktuell</th>
+            <th>Vorwoche</th>
+            <th>Δ</th>
+        </tr>
+        
+        
+        
+        
+        <tr>
+            <td class="left">Volatility Index (VIX)</td>
+            <td>14.51</td>
+            <td>15.13</td>
+            <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">
+                -4.10
+            </td>
+        </tr>
+        
+        
+        
+        
+        <tr>
+            <td class="left">10Y Interest Rate</td>
+            <td>4.67</td>
+            <td>4.74</td>
+            <td style="background-color:var(--danger-bg);color:var(--danger-text);font-weight:bold">
+                -1.39
+            </td>
+        </tr>
+        
+        
+        
+        
+        <tr>
+            <td class="left">US Dollar Index (UUP)</td>
+            <td>28.02</td>
+            <td>27.90</td>
+            <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">
+                0.43
+            </td>
+        </tr>
+        
+    </table>
+
+    <h2>4) Fazit</h2>
+    <p>Neutral: Selektiv vorgehen, auf Bestätigungen warten.</p>
+
+    
+    <h2>5) 📋 Portfolio Trades – letzte Woche</h2>
+    <table>
+      <tr>
+        <th class="left">Symbol</th>
+        <th class="left">Unternehmen</th>
+        <th class="left">Muster</th>
+        <th>Entry</th>
+        <th>Exit</th>
+        <th>Entry $</th>
+        <th>Exit $</th>
+        <th>P&amp;L $</th>
+        <th>P&amp;L %</th>
+        <th class="left">Grund</th>
+      </tr>
+      
+      
+      <tr>
+        <td class="left"><strong style="color:#003d99">CORT</strong></td>
+        <td class="left" style="font-size:0.85em;color:#555">–</td>
+        <td class="left" style="font-size:0.85em">–</td>
+        <td>2026-08-03</td>
+        <td>2026-08-26</td>
+        <td>$114.66</td>
+        <td>$120.35</td>
+        <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">
+          +$661
+        </td>
+        <td style="background-color:var(--success-bg);color:var(--success-text);font-weight:bold">
+          +5.0%
+        </td>
+        <td class="left" style="font-size:0.85em">Initialer Stop Loss</td>
+      </tr>
+      
+    </table>
+    
+
+    
+    <h2>6) 💼 Alpaca Portfolio</h2>
+
+    
+    
+    
+    <table class="portfolio-summary">
+      <tr>
+        <td>
+          <div class="summary-label">Cash</div>
+          <div class="summary-value">$48,430</div>
+        </td>
+        <td>
+          <div class="summary-label">Equity</div>
+          <div class="summary-value">$89,835</div>
+        </td>
+        <td>
+          <div class="summary-label">Unrealized P&amp;L</div>
+          <div class="summary-value pos">
+            +$1,446
+            &nbsp;(+1.6%)
+          </div>
+        </td>
+        <td>
+          <div class="summary-label">Positionen</div>
+          <div class="summary-value">5</div>
+        </td>
+      </tr>
+    </table>
+
+    
+    
+    
+    <table class="leader-grid">
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">AVNS</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            608 Stk &nbsp;·&nbsp; Ø $24.64
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$24.99</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$213
+            &nbsp;&nbsp;
+            +1.4%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $15,194</div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">SUN</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            202 Stk &nbsp;·&nbsp; Ø $74.38
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$74.65</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$55
+            &nbsp;&nbsp;
+            +0.4%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $15,079</div>
+        </div>
+      </td>
+      
+      </tr>
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">MBIN</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            271 Stk &nbsp;·&nbsp; Ø $56.48
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$53.41</strong>
+          </div>
+          <div class="neg" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            $-833
+            &nbsp;&nbsp;
+            -5.4%
+            ▼
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $14,474</div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">CBLL</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            510 Stk &nbsp;·&nbsp; Ø $23.49
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$23.73</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$122
+            &nbsp;&nbsp;
+            +1.0%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $12,102</div>
+        </div>
+      </td>
+      
+      </tr>
+    
+      <tr>
+      <td class="leader-cell">
+        <div class="leader-card">
+          <div style="font-size:1.05em;font-weight:bold;margin-bottom:2px">NTRA</div>
+          <div style="color:#888;font-size:0.82em;margin-bottom:6px">
+            33 Stk &nbsp;·&nbsp; Ø $269.01
+          </div>
+          <div style="margin-bottom:4px">
+            Aktuell: <strong>$326.26</strong>
+          </div>
+          <div class="pos" style="font-size:1.05em;font-weight:bold;margin-bottom:4px">
+            +$1,889
+            &nbsp;&nbsp;
+            +21.3%
+            ▲
+          </div>
+          <div style="color:#888;font-size:0.82em">Marktwert: $10,767</div>
+        </div>
+      </td>
+      
+      
+    
+    <td class="leader-cell"></td></tr>
+    </table>
+    
+
+    
+
+    <h2>7) 📈 Kaufsignale (Blueprint-Regelwerk)</h2>
+
+    
+    
+    <p style="color:#888">
+        Keine Kaufsignale diese Woche —
+        
+        Kriterien (Score ≥ 6/8 + Vol-Breakout + RS ≥ 70 + Industry Top 50) nicht erfüllt.
+        
+    </p>
+
+    
+    
+    <p style="font-size:0.9em;color:#555;margin-bottom:0.6em">
+        Screener-Kandidaten (Score ≥ 6/8, Top 20 nach Score/RS) — sortierbar, kein Handelssignal diese Woche:
+    </p>
+    <div style="overflow-x:auto">
+    <table>
+      <tr>
+        <th class="left sortable" onclick="sortTable(this)">Ticker</th>
+        <th class="left sortable" onclick="sortTable(this)">Unternehmen</th>
+        <th class="left sortable" onclick="sortTable(this)">Industry</th>
+        <th class="sortable" onclick="sortTable(this)">Score</th>
+        <th class="sortable" onclick="sortTable(this)">Close</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0">RS</th>
+        <th class="sortable" onclick="sortTable(this)">ΔRS 4W</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0;width:1px;white-space:normal;padding-left:0.4em;padding-right:0.4em">Dist 52W H %</th>
+        <th class="sortable" onclick="sortTable(this)" style="color:#1565c0;width:1px;white-space:normal;padding-left:0.4em;padding-right:0.4em">Ind. Rank</th>
+        <th class="sortable" onclick="sortTable(this)">ATR %</th>
+        <th class="sortable" onclick="sortTable(this)" style="width:1px;white-space:normal;padding-left:0.4em;padding-right:0.4em">Vol-Score</th>
+        <th class="sortable" onclick="sortTable(this)">MarketCap<br>(Mio $)</th>
+        <th class="left sortable" onclick="sortTable(this)" style="color:#c62828">Scheitert an</th>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/RVMD" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">RVMD</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Revolution Medicines Inc.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Biotechnology: Biological Products (No Diagnostic Substances)</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">207.88</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:98.0%"></div></div><span class="meter-num">98</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +0
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.41
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          10
+        </td>
+        <td style="text-align:center">3.54</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.30
+        </td>
+        <td style="text-align:center">44,556</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          Rev&nbsp;fehlt
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/BUUU" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">BUUU</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">BUUU Group Limited Class A Ordinary Share</td>
+        <td class="left" style="font-size:0.85em;color:#555">Services-Misc. Amusement & Recreation</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">28.70</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:98.0%"></div></div><span class="meter-num">98</span></div>
+        </td>
+        <td style="text-align:center;color:#555">
+          nan
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          18.15
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          27
+        </td>
+        <td style="text-align:center">14.22</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.41
+        </td>
+        <td style="text-align:center">479</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          ATR&nbsp;&gt;&nbsp;8% · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;fehlt
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/NBTX" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">NBTX</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Nanobiotix S.A.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Biotechnology: Pharmaceutical Preparations</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">41.23</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:98.0%"></div></div><span class="meter-num">98</span></div>
+        </td>
+        <td style="text-align:center;color:#c62828">
+          -0
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          20.97
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          6
+        </td>
+        <td style="text-align:center">7.25</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.32
+        </td>
+        <td style="text-align:center">2,095</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          MACD fällt · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;fehlt
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/PRE" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">PRE</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Prenetics Global Limited Class A Ordinary Share</td>
+        <td class="left" style="font-size:0.85em;color:#555">Blank Checks</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">25.76</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:96.0%"></div></div><span class="meter-num">96</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +7
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          0.94
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          2
+        </td>
+        <td style="text-align:center">6.81</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          2.27
+        </td>
+        <td style="text-align:center">432</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          EPS-Q&nbsp;fehlt
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/IFRX" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">IFRX</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">InflaRx N.V.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Biotechnology: Pharmaceutical Preparations</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">2.23</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:95.0%"></div></div><span class="meter-num">95</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +5
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          23.02
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          6
+        </td>
+        <td style="text-align:center">6.56</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.50
+        </td>
+        <td style="text-align:center">329</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          MACD fällt · Kurs&nbsp;&lt;&nbsp;$5 · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/OKTA" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">OKTA</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Okta Inc. Class A</td>
+        <td class="left" style="font-size:0.85em;color:#555">Computer Software: Prepackaged Software</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">166.23</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:94.0%"></div></div><span class="meter-num">94</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +6
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.11
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          18
+        </td>
+        <td style="text-align:center">5.35</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.84
+        </td>
+        <td style="text-align:center">29,060</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          Rev&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/CRWD" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">CRWD</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">CrowdStrike Holdings Inc. Class A</td>
+        <td class="left" style="font-size:0.85em;color:#555">Computer Software: Prepackaged Software</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">218.40</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:94.0%"></div></div><span class="meter-num">94</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +4
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          0.49
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          18
+        </td>
+        <td style="text-align:center">5.01</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.49
+        </td>
+        <td style="text-align:center">223,627</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/TRVG" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">TRVG</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">trivago N.V.</td>
+        <td class="left" style="font-size:0.85em;color:#555">EDP Services</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">6.00</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:91.0%"></div></div><span class="meter-num">91</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +3
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          7.87
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          19
+        </td>
+        <td style="text-align:center">6.05</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.69
+        </td>
+        <td style="text-align:center">423</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/OOMA" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">OOMA</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Ooma Inc.</td>
+        <td class="left" style="font-size:0.85em;color:#555">EDP Services</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">22.91</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:91.0%"></div></div><span class="meter-num">91</span></div>
+        </td>
+        <td style="text-align:center;color:#c62828">
+          -0
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          12.03
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          19
+        </td>
+        <td style="text-align:center">5.61</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.52
+        </td>
+        <td style="text-align:center">629</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/FRO" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">FRO</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Frontline Plc</td>
+        <td class="left" style="font-size:0.85em;color:#555">Marine Transportation</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">44.19</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:90.0%"></div></div><span class="meter-num">90</span></div>
+        </td>
+        <td style="text-align:center;color:#c62828">
+          -0
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          3.40
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          21
+        </td>
+        <td style="text-align:center">3.60</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.38
+        </td>
+        <td style="text-align:center">9,838</td>
+        <td class="left" style="font-size:0.82em;color:#2e7d32;font-weight:bold">
+          ✅
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/BLFS" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">BLFS</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">BioLife Solutions Inc.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Biotechnology: Electromedical & Electrotherapeutic Apparatus</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">36.38</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:86.0%"></div></div><span class="meter-num">86</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +3
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          2.36
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          3
+        </td>
+        <td style="text-align:center">2.62</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.53
+        </td>
+        <td style="text-align:center">1,779</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/TENB" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">TENB</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Tenable Holdings Inc.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Computer Software: Prepackaged Software</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">37.67</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:85.0%"></div></div><span class="meter-num">85</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +14
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          13.85
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          18
+        </td>
+        <td style="text-align:center">5.97</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.97
+        </td>
+        <td style="text-align:center">4,149</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/S" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">S</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">SentinelOne Inc. Class A</td>
+        <td class="left" style="font-size:0.85em;color:#555">Computer Software: Prepackaged Software</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">21.54</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:83.0%"></div></div><span class="meter-num">83</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +22
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          5.18
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          18
+        </td>
+        <td style="text-align:center">4.91</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.30
+        </td>
+        <td style="text-align:center">7,384</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/MTLS" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">MTLS</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Materialise NV</td>
+        <td class="left" style="font-size:0.85em;color:#555">Computer Software: Prepackaged Software</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">7.02</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:80.0%"></div></div><span class="meter-num">80</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +19
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.07
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          18
+        </td>
+        <td style="text-align:center">2.98</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          2.11
+        </td>
+        <td style="text-align:center">406</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/BNED" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">BNED</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Barnes & Noble Education Inc</td>
+        <td class="left" style="font-size:0.85em;color:#555">Other Specialty Stores</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">11.97</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:79.0%"></div></div><span class="meter-num">79</span></div>
+        </td>
+        <td style="text-align:center;color:#c62828">
+          -0
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          17.08
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:transparent">
+          62
+        </td>
+        <td style="text-align:center">3.95</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.49
+        </td>
+        <td style="text-align:center">415</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          MACD fällt · Rank&nbsp;&gt;&nbsp;50 · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;fehlt
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/BNS" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">BNS</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Bank Nova Scotia Halifax Pfd 3</td>
+        <td class="left" style="font-size:0.85em;color:#555">Major Banks</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">92.39</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:78.0%"></div></div><span class="meter-num">78</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +0
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          2.14
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          41
+        </td>
+        <td style="text-align:center">2.07</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.36
+        </td>
+        <td style="text-align:center">112,608</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          Rev&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/NTNX" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">NTNX</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Nutanix Inc. Class A</td>
+        <td class="left" style="font-size:0.85em;color:#555">Computer Software: Prepackaged Software</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">69.16</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:77.0%"></div></div><span class="meter-num">77</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +23
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          15.26
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          18
+        </td>
+        <td style="text-align:center">3.65</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.49
+        </td>
+        <td style="text-align:center">18,695</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/FBIZ" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">FBIZ</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">First Business Financial Services Inc.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Major Banks</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">70.85</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:75.0%"></div></div><span class="meter-num">75</span></div>
+        </td>
+        <td style="text-align:center;color:#c62828">
+          -3
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          3.62
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          41
+        </td>
+        <td style="text-align:center">2.02</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.32
+        </td>
+        <td style="text-align:center">593</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          Rev&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/RUM" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">RUM</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">RUM Group Inc. Class A</td>
+        <td class="left" style="font-size:0.85em;color:#555">Computer Software: Programming Data Processing</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">8.98</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:75.0%"></div></div><span class="meter-num">75</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +63
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          11.00
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          45
+        </td>
+        <td style="text-align:center">8.16</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.36
+        </td>
+        <td style="text-align:center">4,452</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          ATR&nbsp;&gt;&nbsp;8%
+        </td>
+      </tr>
+      
+      
+      
+      
+      
+      
+      
+      <tr>
+        <td class="left">
+          <a href="https://stockanalysis.com/stocks/BHVN" target="_blank"
+             style="color:#003d99;font-weight:bold;text-decoration:none">BHVN</a>
+          
+        </td>
+        <td class="left" style="font-size:0.85em;color:#555">Biohaven Ltd.</td>
+        <td class="left" style="font-size:0.85em;color:#555">Biotechnology: Pharmaceutical Preparations</td>
+        <td style="text-align:center">8</td>
+        <td style="text-align:center">15.41</td>
+        <td style="text-align:center;background:var(--success-bg)">
+          <div class="meter"><div class="meter-track"><div class="meter-fill" style="width:71.0%"></div></div><span class="meter-num">71</span></div>
+        </td>
+        <td style="text-align:center;color:#2e7d32">
+          +27
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          13.17
+        </td>
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          6
+        </td>
+        <td style="text-align:center">7.12</td>
+        
+        
+        <td style="text-align:center;white-space:nowrap;padding-left:0.4em;padding-right:0.4em;background:#e8f5e9">
+          1.99
+        </td>
+        <td style="text-align:center">2,328</td>
+        <td class="left" style="font-size:0.82em;color:#c62828">
+          Rev&nbsp;fehlt · EPS-Q&nbsp;&lt;&nbsp;20%
+        </td>
+      </tr>
+      
+    </table>
+    </div>
+    
+
+    
+
+    <h2>8) Marktführer nach Minervini (Score 8/8, RS ≥ 85)</h2>
+
+    
+    
+    <p style="font-size:0.9em;color:#555;margin-top:-0.6em;margin-bottom:0.8em">
+      <strong>12</strong> Titel erfüllen aktuell alle 8 Minervini-Kriterien mit RS ≥ 85 —
+      ein Indikator für die Marktbreite auf der Long-Seite.
+    </p>
+
+    
+    <table class="leader-grid">
+    
+      <tr>
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">RVMD</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/RVMD" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">207.88</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Revolution Medicines Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Biotechnology: Biological Products (No Diagnostic Substances)</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:98.0%"></div></div><span class="meter-num">98</span></div></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+0</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;–&nbsp;&nbsp;EPS:&nbsp;-32
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;1.4%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;fehlt
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">NBTX</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/NBTX" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">41.23</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Nanobiotix S.A.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Biotechnology: Pharmaceutical Preparations</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:98.0%"></div></div><span class="meter-num">98</span></div></span>
+            <span style="font-size:0.87em;color:#c62828">
+              ΔRS&nbsp;<strong>-0</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;-355&nbsp;&nbsp;EPS:&nbsp;-42
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;21.0%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ MACD fällt · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;fehlt
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">BUUU</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/BUUU" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">28.70</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">BUUU Group Limited Class A Ordinary Share</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Services-Misc. Amusement & Recreation</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:98.0%"></div></div><span class="meter-num">98</span></div></span>
+            <span style="font-size:0.87em;color:#555">
+              ΔRS&nbsp;<strong>–</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+12&nbsp;&nbsp;EPS:&nbsp;–
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;18.1%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ ATR&nbsp;&gt;&nbsp;8% · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;fehlt
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">PRE</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/PRE" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">25.76</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Prenetics Global Limited Class A Ordinary Share</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Blank Checks</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:96.0%"></div></div><span class="meter-num">96</span></div></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+7</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+211&nbsp;&nbsp;EPS:&nbsp;-21
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;0.9%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ EPS-Q&nbsp;fehlt
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">IFRX</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/IFRX" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">2.23</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">InflaRx N.V.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Biotechnology: Pharmaceutical Preparations</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:95.0%"></div></div><span class="meter-num">95</span></div></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+5</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;-82&nbsp;&nbsp;EPS:&nbsp;-29
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;23.0%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ MACD fällt · Kurs&nbsp;&lt;&nbsp;$5 · Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">CRWD</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/CRWD" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">218.40</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">CrowdStrike Holdings Inc. Class A</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Computer Software: Prepackaged Software</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:94.0%"></div></div><span class="meter-num">94</span></div></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+4</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+26&nbsp;&nbsp;EPS:&nbsp;+3213
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;0.5%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">OKTA</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/OKTA" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">166.23</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Okta Inc. Class A</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Computer Software: Prepackaged Software</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:94.0%"></div></div><span class="meter-num">94</span></div></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+6</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+11&nbsp;&nbsp;EPS:&nbsp;+173
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;1.1%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">TRVG</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/TRVG" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">6.00</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">trivago N.V.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">EDP Services</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:91.0%"></div></div><span class="meter-num">91</span></div></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+3</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+21&nbsp;&nbsp;EPS:&nbsp;-35
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;7.9%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">OOMA</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/OOMA" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">22.91</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Ooma Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">EDP Services</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:91.0%"></div></div><span class="meter-num">91</span></div></span>
+            <span style="font-size:0.87em;color:#c62828">
+              ΔRS&nbsp;<strong>-0</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+25&nbsp;&nbsp;EPS:&nbsp;+287
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;12.0%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">FRO</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/FRO" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">44.19</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Frontline Plc</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Marine Transportation</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:90.0%"></div></div><span class="meter-num">90</span></div></span>
+            <span style="font-size:0.87em;color:#c62828">
+              ΔRS&nbsp;<strong>-0</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+67&nbsp;&nbsp;EPS:&nbsp;+6
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;3.4%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#2e7d32">
+            ✅ Kaufkandidat
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+      <tr>
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">BLFS</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/BLFS" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">36.38</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">BioLife Solutions Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Biotechnology: Electromedical & Electrotherapeutic Apparatus</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:86.0%"></div></div><span class="meter-num">86</span></div></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+3</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+22&nbsp;&nbsp;EPS:&nbsp;-67
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;2.4%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+    
+      
+      <td class="leader-cell">
+<div class="leader-card">
+          <!-- Ticker + SA-Button + Close -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span>
+              <strong style="font-size:1.05em;color:#003d99">TENB</strong>
+              &nbsp;<a href="https://stockanalysis.com/stocks/TENB" target="_blank" style="display:inline-block;padding:4px 8px;background-color:#007bff;color:white;text-decoration:none;border-radius:4px;font-size:12px;">SA</a>
+            </span>
+            <strong style="font-size:1.05em">37.67</strong>
+          </div>
+          <!-- Unternehmensname + Branche -->
+          <div style="font-size:0.87em;color:#333;margin-bottom:1px">Tenable Holdings Inc.</div>
+          <div style="font-size:0.78em;color:#aaa;margin-bottom:8px">Computer Software: Prepackaged Software</div>
+          <!-- Score + RS + ΔRS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:5px">
+            <span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;border-radius:4px;font-weight:bold;font-size:0.82em">⭐ 8/8</span>
+            <span style="font-size:0.87em;display:inline-flex;align-items:center;gap:.4em">RS&nbsp;<div class="meter"><div class="meter-track"><div class="meter-fill" style="width:85.0%"></div></div><span class="meter-num">85</span></div></span>
+            <span style="font-size:0.87em;color:#2e7d32">
+              ΔRS&nbsp;<strong>+14</strong>
+            </span>
+          </div>
+          <!-- Fundamentaldaten -->
+          <div style="font-size:0.82em;color:#555;margin-bottom:5px">
+            Rev:&nbsp;+9&nbsp;&nbsp;EPS:&nbsp;+3541
+          </div>
+          <!-- Muster + Abstand 52W High -->
+          <div style="font-size:0.82em;color:#555;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+            
+            
+            <span>Dist 52W&nbsp;H:&nbsp;13.8%</span>
+            
+          </div>
+          <!-- Kauf-Filter-Status -->
+          
+          <div style="font-size:0.78em;font-weight:bold;
+            color:#c62828">
+            ❌ Rev&nbsp;&lt;&nbsp;20% · EPS-Q&nbsp;&lt;&nbsp;20%
+          </div>
+        </div>
+      </td>
+      
+      
+        </tr>
+        
+      
+    
+    
+    </table>
+
+    
+
+    
+    <div style="background:#f7f8fc;border:1px solid #dde2f0;border-radius:6px;padding:0.8em 1em;margin-bottom:1em">
+      <p style="font-size:0.9em;color:#555;margin:0 0 0.5em 0">
+        📋 TradingView-Watchlist Marktführer — kopieren und in TradingView unter
+        <strong>Watchlist → + → Liste importieren</strong> einfügen:
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="tv_watchlist_leaders" type="text" readonly value="RVMD,NBTX,BUUU,PRE,IFRX,CRWD,OKTA,TRVG,OOMA,FRO,BLFS,TENB"
+               onclick="this.select()"
+               style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;
+                      font-family:monospace;font-size:0.85em;background:#fff">
+        <button type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('tv_watchlist_leaders').value)"
+                style="padding:6px 14px;background:#003d99;color:white;border:none;border-radius:4px;
+                       cursor:pointer;font-size:0.85em">
+          Kopieren
+        </button>
+      </div>
+    </div>
+    
+
+    
+
+    <h2>9) 🏢 Kaufsignale im Detail</h2>
+    <p style="font-size:0.85em;color:#777;margin-top:-0.6em;margin-bottom:0.8em">
+      Zeigt alle Kaufsignale dieser Woche, nicht nur die mit Auftrag. 🏆-Titel wurden tatsächlich geordert;
+      Titel ohne 🏆 erfüllen ebenfalls alle Kriterien, liegen aber außerhalb des wöchentlichen
+      Neukauf-Limits — für sie wurde <strong>kein Auftrag angelegt</strong>.
+    </p>
+    
+    <p style="color:#888">Keine Kaufsignale diese Woche — kein Steckbrief zu zeigen.</p>
+    
+
+    <h2>10) 📐 Muster zum Ansehen</h2>
+    <p style="font-size:0.88em;color:#555;margin-top:-1em;margin-bottom:0.8em">
+      Titel mit erkanntem VCP oder Launchpad — unabhängig davon, ob daraus ein Kaufsignal wurde.
+      Bewusst nicht auf Kaufsignale eingeschränkt: gefragt ist das Muster, nicht der Ausbruch.
+    </p>
+    
+    <p style="color:#888">Diese Woche kein VCP und kein Launchpad im Universum erkannt.</p>
+    
+
+  </div><!-- .page -->
+</body>
+</html>

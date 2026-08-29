@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-28",
+  "generated": "2026-08-29",
   "open": [
     {
       "symbol": "NTRA",
@@ -14,8 +14,8 @@
       "initial_stop": 235.72,
       "current_stop": 306.1,
       "stop_raised_date": "2026-08-28",
-      "current_price": 326.2695,
-      "unrealized_pl": 1889.42,
+      "current_price": 326.26,
+      "unrealized_pl": 1889.1,
       "unrealized_plpc": 21.28,
       "pt_original_qty": 50.0,
       "pt_is_fast_mover": false,
