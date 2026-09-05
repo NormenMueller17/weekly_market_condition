@@ -124,7 +124,7 @@ def _trade_metrics(closed: list, open_: list) -> dict:
 def _equity_metrics(history: Optional[dict], trim_from: Optional[str] = None) -> dict:
     empty = {"max_drawdown_pct": None, "cagr": None,
              "current_equity": None, "start_equity": None,
-             "chart_labels": [], "chart_values": []}
+             "chart_labels": [], "chart_values": [], "eingefroren": 0.0}
     if not history:
         return empty
 
@@ -180,7 +180,37 @@ def _equity_metrics(history: Optional[dict], trim_from: Optional[str] = None) ->
         "start_equity":     values[0],
         "chart_labels":     labels,
         "chart_values":     values,
+        "eingefroren":      0.0,
     }
+
+
+def _apply_live_equity(em: dict, live_portfolio: Optional[dict]) -> dict:
+    """Ersetzt current_equity durch die echte Live-Equity aus Alpaca, statt dem
+    letzten Punkt der taeglichen Alpaca-Portfolio-Historie.
+
+    Warum: get_portfolio_history() lag nach dem AVNS-Delisting (2026-07-27) bis zu
+    6 Tage hinter dem echten Konto zurueck, wenn Positionen ausserhalb des
+    normalen Order-Flows dazukamen ("eingebucht"). get_portfolio()/get_account()
+    ist immer aktuell.
+
+    current_equity bleibt die ECHTE Kontoequity (matcht Alpaca 1:1) — es wird
+    NICHTS abgezogen. Der Anteil, der in delisteten Positionen zum letzten
+    bekannten Kurs eingefroren ist (Alpaca storniert sie nie, siehe delisted.py),
+    wird nur zusaetzlich ausgewiesen (em["eingefroren"]), fuer die Fussnote in
+    build_html — nicht um die Hauptzahl zu ersetzen. Eine niedrigere Zahl als
+    das, was im Alpaca-Konto steht, anzuzeigen, waere schlicht falsch.
+    """
+    if not live_portfolio or live_portfolio.get("equity") is None:
+        return em
+    try:
+        import delisted
+        eingefroren = delisted.eingefrorener_wert(live_portfolio.get("positions", []))
+    except Exception:
+        eingefroren = 0.0
+    em = dict(em)
+    em["current_equity"] = float(live_portfolio["equity"])
+    em["eingefroren"]    = eingefroren
+    return em
 
 
 def _fetch_spy_benchmark(labels: list, start_equity: float) -> list:
@@ -359,6 +389,19 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     cagr_str = _fmt(em["cagr"], "%", 1, plus=True)
     eq_str   = _fmt_money(em["current_equity"])
 
+    eingefroren_hinweis = ""
+    if em.get("eingefroren") and em.get("current_equity"):
+        anteil = em["eingefroren"] / em["current_equity"] * 100
+        handelbar = em["current_equity"] - em["eingefroren"]
+        eingefroren_hinweis = (
+            f'<p style="background:#fff3cd;border-left:4px solid #ffc107;'
+            f'padding:.6em .9em;font-size:.9em;margin:-.6em 0 1.4em;">'
+            f'Darin enthalten: {_fmt_money(em["eingefroren"])} ({anteil:.0f} %) in delisteten '
+            f'Positionen (Übernahme), die Alpaca zum letzten bekannten Kurs eingefroren hat — '
+            f'nicht handelbar, kein Cash-Ausstieg (siehe delisted.py). '
+            f'Handelbare Equity ohne diesen Block: {_fmt_money(handelbar)}.</p>'
+        )
+
     rpl_color     = _color(tm["total_realized_pl"])
     upl_color     = _color(tm["unrealized_pl"])
     latest_report = _latest_report_link()
@@ -483,6 +526,7 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     {kpi(dd_str,  "Max. Drawdown", "color:#cc2222" if em["max_drawdown_pct"] else "")}
     {kpi(cagr_str,"CAGR (ann.)", "color:#1a8a1a" if em["cagr"] and em["cagr"] > 0 else "")}
   </div>
+  {eingefroren_hinweis}
 
   <!-- Equity Chart -->
   <h2>Equity-Kurve</h2>
@@ -606,8 +650,15 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-def build_and_save(portfolio_history: Optional[dict] = None) -> Path:
-    """Compute metrics, save equity history, write docs/performance.html."""
+def build_and_save(portfolio_history: Optional[dict] = None,
+                    live_portfolio: Optional[dict] = None) -> Path:
+    """Compute metrics, save equity history, write docs/performance.html.
+
+    live_portfolio: optionales alpaca_client.get_portfolio()-Ergebnis (frischer
+    als portfolio_history, siehe _apply_live_equity). Wenn der Aufrufer es schon
+    fuer den Coverage-Check/Journal-Sync geholt hat, hier durchreichen statt
+    erneut abzufragen.
+    """
     if portfolio_history is not None:
         save_equity_history(portfolio_history)
 
@@ -620,6 +671,7 @@ def build_and_save(portfolio_history: Optional[dict] = None) -> Path:
 
     tm = _trade_metrics(trades.get("closed", []), trades.get("open", []))
     em = _equity_metrics(eq_history, trim_from=trim_from)
+    em = _apply_live_equity(em, live_portfolio)
     spy = _fetch_spy_benchmark(em["chart_labels"], em["start_equity"] or 100_000)
 
     PERF_HTML.parent.mkdir(parents=True, exist_ok=True)

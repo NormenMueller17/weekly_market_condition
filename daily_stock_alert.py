@@ -233,7 +233,7 @@ def run(dry_run: bool) -> int:
     dashboard_error = None
     if not dry_run:
         try:
-            _refresh_dashboard(journal_data)
+            _refresh_dashboard(journal_data, portfolio)
         except Exception as e:
             dashboard_error = str(e)
             print(f"[DASHBOARD] Aktualisierung fehlgeschlagen: {e}")
@@ -249,7 +249,7 @@ def run(dry_run: bool) -> int:
     return 0
 
 
-def _refresh_dashboard(journal_data: dict) -> None:
+def _refresh_dashboard(journal_data: dict, portfolio: dict) -> None:
     from pathlib import Path
     import portfolio_performance
     from report_builder import build_index_page
@@ -257,7 +257,7 @@ def _refresh_dashboard(journal_data: dict) -> None:
     trade_journal.build_and_save_html(journal_data)
 
     port_history = alpaca_client.get_portfolio_history()
-    portfolio_performance.build_and_save(port_history)
+    portfolio_performance.build_and_save(port_history, live_portfolio=portfolio)
 
     docs_reports_dir = Path("docs/reports")
     Path("docs/index.html").write_text(

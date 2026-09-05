@@ -1077,7 +1077,7 @@ def run():
         # ── Performance Dashboard ─────────────────────────────────────────────
         import portfolio_performance
         port_history = alpaca_client.get_portfolio_history()
-        portfolio_performance.build_and_save(port_history)
+        portfolio_performance.build_and_save(port_history, live_portfolio=alpaca_portfolio)
     else:
         print("[JOURNAL] Kein Alpaca-Portfolio — Journal-Sync übersprungen")
         import portfolio_performance
