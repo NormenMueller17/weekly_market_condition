@@ -1,10 +1,4 @@
 {
-  "tickers": {
-    "KYIVW": {
-      "fails": 2,
-      "zuerst": "2026-08-22",
-      "zuletzt": "2026-08-29"
-    }
-  },
-  "updated": "2026-08-29"
+  "tickers": {},
+  "updated": "2026-09-05"
 }
