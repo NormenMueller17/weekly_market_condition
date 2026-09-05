@@ -63,6 +63,7 @@ from signal_generator import (
     TradeSignal,
     _stop_default,
     apply_stop_bounds,
+    save_signals_json,
     size_position,
 )
 
@@ -403,6 +404,19 @@ def run(dry_run: bool) -> int:
     results = alpaca_client.place_signal_orders(signals, dry_run=dry_run)
     for res in results:
         print(f"[MIDWEEK] Order {res['ticker']}: {res['status']}")
+
+    # Metadaten persistieren, damit trade_journal._find_signal_meta() Sektor,
+    # Pattern und RS spaeter findet. Ohne diese Datei bleiben mittwochs
+    # gekaufte Titel dauerhaft mit leeren Attributen im Journal: sobald sie
+    # im Depot sind, schliesst build_midweek_watchlist() sie als `held` aus
+    # jeder kuenftigen Kandidatenliste aus, der Nachtrag in trade_journal.sync()
+    # findet also nie wieder eine Quelle. Kein Schreiben im Dry-Run — es gibt
+    # dann keine echte Position, auf die sich die Datei beziehen koennte.
+    if not dry_run:
+        meta_path = save_signals_json(
+            signals, Path("docs/data") / f"signals_meta_{date.today().isoformat()}.json",
+        )
+        print(f"[MIDWEEK] Signal-Metadaten gespeichert → {meta_path}")
 
     send_email(build_mail(signals, results, note, dry_run),
                subject_suffix=f"Mid-Week-Entry — {len(signals)} Ausbruch"
