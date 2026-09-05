@@ -797,16 +797,23 @@ HTML_TMPL = """
         <th class="sortable" onclick="sortTable(this)">Position</th>
         <th class="sortable" onclick="sortTable(this)">Risiko / Equity</th>
       </tr>
-      {% for s in signals %}
+      {% for s in signals_display %}
       {% set stop_pct_display  = (s.stop_loss_pct * 100)      | round(1) %}
       {% set risk_pct_display  = (s.risk_on_equity_pct * 100) | round(2) %}
       {% set risk_high         = s.risk_on_equity_pct > 0.018 %}
-      {% set row_bg = "#fffbea" if s.is_top_pick else "transparent" %}
-      <tr style="background-color:{{ row_bg }}">
+      {% set row_bg = "#fffbea" if s.is_top_pick else ("#fdecea" if s.dropped else "transparent") %}
+      <tr style="background-color:{{ row_bg }}{% if s.dropped %};opacity:0.7{% endif %}">
         <td style="text-align:center;font-weight:bold">
           {% if s.is_top_pick %}
             <span style="background:#f5a623;color:white;padding:2px 7px;border-radius:10px;font-size:0.85em">
               🏆 {{ s.rank }}
+            </span>
+          {% elif s.dropped %}
+            <span style="color:#aaa;text-decoration:line-through">{{ s.rank }}</span>
+            <span title="{{ s.drop_reason }}"
+                  style="display:block;margin-top:2px;background:#f5c6cb;color:#721c24;padding:1px 5px;
+                         border-radius:8px;font-size:0.65em;font-weight:normal;white-space:nowrap">
+              ⛔ verworfen
             </span>
           {% else %}
             <span style="color:#aaa">{{ s.rank }}</span>
@@ -819,7 +826,7 @@ HTML_TMPL = """
         </td>
         <td class="left">
           <a href="{{ s.sa_link }}" target="_blank"
-             style="font-weight:bold;color:{% if s.is_top_pick %}#b35900{% else %}#003d99{% endif %}">
+             style="font-weight:bold;color:{% if s.is_top_pick %}#b35900{% elif s.dropped %}#721c24{% else %}#003d99{% endif %}">
             {{ s.ticker }}
           </a>
         </td>
@@ -903,6 +910,14 @@ HTML_TMPL = """
         </td>
       </tr>
       {% endif %}
+      {# ── Verworfen-Begründung (Sektor-Limit) ── #}
+      {% if s.dropped %}
+      <tr style="background-color:{{ row_bg }}">
+        <td colspan="22" style="border-top:none;padding:3px 8px 7px 8px;text-align:left;font-size:0.8em;color:#721c24">
+          ⛔ <strong>Verworfen, kein Auftrag angelegt:</strong> {{ s.drop_reason }}
+        </td>
+      </tr>
+      {% endif %}
       {% endfor %}
     </table>
     <p style="font-size:0.82em;color:#777;margin-top:0.3em">
@@ -915,6 +930,10 @@ HTML_TMPL = """
       davon wären aktuell {{ _portfolio_remaining }} frei){% endif %}.
       Niedriger gerankte Signale ohne 🏆 sind deshalb keine schlechteren Kandidaten,
       sondern nur diese Woche außerhalb des Kaufbudgets — sie bleiben gültige Signale.
+      {% endif %}
+      {% if dropped_signals %}
+      ⛔ = wegen Sektor-Limit verworfen (Begründung in der Zeile) — deshalb fehlt der
+      Rang in der Zählung; zählen nicht zu den {{ signals | length }} aktiven Signalen.
       {% endif %}
       🔵 Buy-Stop = Einstiegsorder (max(Entry, Pivot) +0.1%) &nbsp;|&nbsp;
       🔴 Max. Gap = Order verwerfen wenn Montag-Open über diesem Preis (Pivot +5%) &nbsp;|&nbsp;
@@ -1994,7 +2013,7 @@ def _format_profile_for_report(profile: dict) -> dict:
 def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, leaders,
                       signals=None, pages_url=None,
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
-                      sector_excluded=None,
+                      sector_excluded=None, dropped_signals=None,
                       sp500_breadth_pct=None, min_breadth_pct=40,
                       test_mode=False, sector_rows=None, sector_heatmap=None, rs_lines=None,
                       profile=None, muster=None,
@@ -2006,6 +2025,11 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     signals : list[TradeSignal] | None
         Buy signals produced by signal_generator.generate_signals().
         Shown in Section 5 of the email; pass None or [] for "no signals".
+    dropped_signals : list[TradeSignal] | None
+        Signals ranked but then dropped by the sector-concentration cap
+        (dropped=True, drop_reason set). Shown in the full GitHub-Pages table
+        at their original rank so a missing rank number always comes with an
+        explanation instead of an unexplained gap.
     alpaca_cash : float | None
         Available buying power from Alpaca paper account.
     alpaca_positions : list[str] | None
@@ -2018,6 +2042,13 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         Quelle fuer Abschnitt 10.
     """
     signals = signals or []
+    dropped_signals = dropped_signals or []
+    # Nur für die vollständige Tabelle: verworfene Signale an ihrem Rang wieder
+    # einsortieren, damit eine Ranglücke immer mit Begründung erscheint statt
+    # kommentarlos zu verschwinden. `signals` selbst bleibt unverändert, weil
+    # es an anderer Stelle (Positionsgröße, TV-Charts, Signalanzahl) die
+    # tatsächlich kaufbaren Signale meint.
+    signals_display = sorted(list(signals) + list(dropped_signals), key=lambda s: s.rank)
     profile_display = _format_profile_for_report(profile or {})
     muster = muster or []
 
@@ -2073,7 +2104,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         "Vol-Breakout", "Close > Vorwoche",
     ]
     signal_criteria: dict = {}
-    for sig in signals:
+    for sig in signals_display:
         if sig.ticker in leaders.index:
             row = leaders.loc[sig.ticker]
             signal_criteria[sig.ticker] = {
@@ -2214,6 +2245,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         leaders          = leaders_html,
         all_leaders      = all_leaders_html,
         signals            = signals,
+        signals_display    = signals_display,
+        dropped_signals    = dropped_signals,
         market_bullish     = market_bullish,
         sp500_breadth_pct  = sp500_breadth_pct,
         min_breadth_pct    = min_breadth_pct,

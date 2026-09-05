@@ -1152,7 +1152,7 @@ def run():
             print(f"[REENTRY] Watchlist konnte nicht gebaut werden: {e}")
 
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
-    signals, _signal_candidates, sector_excluded = generate_signals(
+    signals, _signal_candidates, sector_excluded, dropped_signals = generate_signals(
         leaders,
         market_bullish  = market_bullish,
         account_equity  = SETTINGS.account_equity,
@@ -1318,7 +1318,7 @@ def run():
         breadth_df, idx_df, risk_df, summary, report_date,
         weekly, leaders_html, signals=signals, pages_url=None,
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
-        sector_excluded=sector_excluded,
+        sector_excluded=sector_excluded, dropped_signals=dropped_signals,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
         test_mode=TEST_MODE, sector_rows=sector_rows, sector_heatmap=sector_heatmap,
         rs_lines=rs_lines,

@@ -474,7 +474,7 @@ def _filter_sector_limit(
     signals:        list["TradeSignal"],
     max_per_sector: int,
     initial_counts: dict[str, int] | None = None,
-) -> tuple[list["TradeSignal"], set[str], set[str]]:
+) -> tuple[list["TradeSignal"], list["TradeSignal"], set[str]]:
     """Drop lower-ranked signals that exceed the per-sector cap (preserves rank order).
 
     `initial_counts` bringt die Sektoren der SCHON GEHALTENEN Positionen mit.
@@ -487,11 +487,16 @@ def _filter_sector_limit(
     stattdessen zurueckgemeldet: Sie gegeneinander zu deckeln waere eine
     erfundene Beschraenkung, sie still durchzulassen ein unsichtbares Loch.
 
-    Returns (kept_signals, dropped_tickers, tickers_ohne_sektor).
+    Verworfene Signale werden nicht nur als Ticker gemeldet, sondern bleiben
+    als vollstaendige TradeSignal-Objekte (dropped=True, drop_reason gesetzt)
+    erhalten, damit der Report sie mit Begruendung statt als Ranglueke zeigen
+    kann.
+
+    Returns (kept_signals, dropped_signals, tickers_ohne_sektor).
     """
     sector_count: dict[str, int] = dict(initial_counts or {})
     kept:    list["TradeSignal"] = []
-    dropped: set[str]            = set()
+    dropped: list["TradeSignal"] = []
     unknown: set[str]            = set()
     for sig in signals:
         sector = _norm_sector(sig.sector)
@@ -504,7 +509,13 @@ def _filter_sector_limit(
             kept.append(sig)
             sector_count[sector] = count + 1
         else:
-            dropped.add(sig.ticker)
+            sig.dropped     = True
+            sig.is_top_pick = False
+            sig.drop_reason = (
+                f"Sektor-Limit erreicht: {sector} bereits {max_per_sector}x vertreten "
+                f"(offene Positionen + ranghöhere Signale dieser Woche)"
+            )
+            dropped.append(sig)
     return kept, dropped, unknown
 
 
@@ -785,6 +796,11 @@ class TradeSignal:
     rank:               int             = 0
     is_top_pick:        bool            = False
 
+    # Nach dem Ranking verworfen (z.B. Sektor-Limit) — bleibt fuer die Report-
+    # Transparenz sichtbar statt spurlos aus der Liste zu verschwinden
+    dropped:            bool            = False
+    drop_reason:        str             = ""
+
     # Meta
     market_regime:      str  = "bullish"   # "bullish" | "bearish" — regime when signal was generated
     sa_link:            str  = ""
@@ -805,14 +821,19 @@ def generate_signals(
     open_positions:          list[str] | None = None,
     reentry_watchlist:       dict[str, dict] | None = None,
     open_sectors:            dict[str, str] | None = None,
-) -> tuple[list[TradeSignal], pd.DataFrame]:
+) -> tuple[list[TradeSignal], pd.DataFrame, set[str], list[TradeSignal]]:
     """Apply Blueprint buy rules to the leaders DataFrame.
 
     Returns
     -------
-    signals    : list[TradeSignal]   — ranked buy candidates with sizing
-                                       (best first; is_top_pick=True for top N)
-    candidates : pd.DataFrame        — filtered rows (for email / audit)
+    signals         : list[TradeSignal]   — ranked, kept buy candidates with sizing
+                                            (best first; is_top_pick=True for top N)
+    candidates      : pd.DataFrame        — filtered rows (for email / audit)
+    sector_excluded : set[str]            — tickers dropped for the sector cap
+    dropped_signals : list[TradeSignal]   — full objects for the tickers above
+                                            (dropped=True, drop_reason set) — kept
+                                            around so the report can show WHY a
+                                            rank is missing instead of a silent gap
     """
     r             = {**DEFAULT_RULES, **(rules or {})}
     market_regime = "bullish" if market_bullish else "bearish"
@@ -991,6 +1012,7 @@ def generate_signals(
     # sonst gilt der Cap nur je Wochenliste und das Depot klumpt ueber die Zeit.
     max_per_sector = _RULES_JSON.get("portfolio", {}).get("max_positions_per_sector", 3)
     sector_excluded: set[str] = set()
+    dropped_signals: list["TradeSignal"] = []
     if max_per_sector > 0:
         initial_counts: dict[str, int] = {}
         for tkr in (open_positions or []):
@@ -1007,9 +1029,10 @@ def generate_signals(
             print(f"[SEKTOR] WARNUNG: Bestand ohne Sektorzuordnung, zaehlt NICHT "
                   f"gegen den Cap: {', '.join(sorted(fehlend))}")
 
-        signals, sector_excluded, ohne_sektor = _filter_sector_limit(
+        signals, dropped_signals, ohne_sektor = _filter_sector_limit(
             signals, max_per_sector=max_per_sector, initial_counts=initial_counts,
         )
+        sector_excluded = {s.ticker for s in dropped_signals}
         if ohne_sektor:
             print(f"[SEKTOR] WARNUNG: Signale ohne Sektor, nicht gedeckelt: "
                   f"{', '.join(sorted(ohne_sektor))}")
@@ -1017,7 +1040,7 @@ def generate_signals(
             print(f"[SEKTOR] {len(sector_excluded)} Signal(e) wegen Sektorgrenze "
                   f"verworfen: {', '.join(sorted(sector_excluded))}")
 
-    return signals, candidates, sector_excluded
+    return signals, candidates, sector_excluded, dropped_signals
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────
