@@ -151,30 +151,11 @@ def _equity_metrics(history: Optional[dict], trim_from: Optional[str] = None) ->
             anchor = max(0, idx - 1)
             labels = labels[anchor:]
             values = values[anchor:]
-            pairs  = pairs[anchor:]
 
-    # Max drawdown
-    peak   = values[0]
-    max_dd = 0.0
-    for v in values:
-        peak = max(peak, v)
-        dd   = (peak - v) / peak * 100 if peak > 0 else 0
-        max_dd = max(max_dd, dd)
-
-    # CAGR
-    cagr = None
-    if len(pairs) >= 2:
-        try:
-            t0    = datetime.datetime.utcfromtimestamp(int(pairs[0][0]))
-            t1    = datetime.datetime.utcfromtimestamp(int(pairs[-1][0]))
-            years = (t1 - t0).days / 365.25
-            if years > 0.02 and values[0] > 0:  # at least ~1 week of data
-                cagr = round(((values[-1] / values[0]) ** (1 / years) - 1) * 100, 1)
-        except Exception:
-            pass
+    max_dd, cagr = _drawdown_and_cagr(labels, values)
 
     return {
-        "max_drawdown_pct": round(max_dd, 2) if max_dd else None,
+        "max_drawdown_pct": max_dd,
         "cagr":             cagr,
         "current_equity":   values[-1],
         "start_equity":     values[0],
@@ -184,12 +165,72 @@ def _equity_metrics(history: Optional[dict], trim_from: Optional[str] = None) ->
     }
 
 
-def _apply_live_equity(em: dict, live_portfolio: Optional[dict]) -> dict:
-    """Ersetzt current_equity durch die echte Live-Equity aus Alpaca, statt dem
-    letzten Punkt der taeglichen Alpaca-Portfolio-Historie.
+def _drawdown_and_cagr(labels: list, values: list) -> tuple:
+    """Max Drawdown (%) und CAGR (%) aus einer Equity-Zeitreihe. labels sind
+    'YYYY-MM-DD'-Strings, parallel zu values."""
+    if not values:
+        return None, None
 
-    Warum: get_portfolio_history() lag nach dem AVNS-Delisting (2026-07-27) bis zu
-    6 Tage hinter dem echten Konto zurueck, wenn Positionen ausserhalb des
+    peak   = values[0]
+    max_dd = 0.0
+    for v in values:
+        peak = max(peak, v)
+        dd   = (peak - v) / peak * 100 if peak > 0 else 0
+        max_dd = max(max_dd, dd)
+
+    cagr = None
+    if len(values) >= 2:
+        try:
+            t0    = datetime.date.fromisoformat(labels[0])
+            t1    = datetime.date.fromisoformat(labels[-1])
+            years = (t1 - t0).days / 365.25
+            if years > 0.02 and values[0] > 0:  # at least ~1 week of data
+                cagr = round(((values[-1] / values[0]) ** (1 / years) - 1) * 100, 1)
+        except Exception:
+            pass
+
+    return (round(max_dd, 2) if max_dd else None), cagr
+
+
+def _reconcile_frozen_gap(values: list, eingefroren: float) -> list:
+    """Rechnet den eingefrorenen Block wieder in die Historie ein, ab dem Tag,
+    an dem Alpacas eigene portfolio_history ihn stillschweigend fallen liess.
+
+    Anlass (2026-09-05): Nach dem AVNS-Delisting (2026-07-27) enthielt
+    get_portfolio_history() die eingefrorene Position zunaechst weiter (Kurve
+    lag bei ~90-92k, wie die Live-Equity). Am 2026-08-19 fiel die Kurve
+    einmalig um ~16.5k -- fast exakt der eingefrorene Betrag -- auf ~75-76k
+    und blieb seitdem dort, obwohl sich am realen Bestand nichts geaendert
+    hat. Ohne Korrektur zeigt die Kurve einen Kurssturz, den es nie gab, UND
+    ihr letzter Punkt weicht dauerhaft von der (jetzt live berechneten) KPI
+    "Aktuelles Depot-Equity" ab.
+
+    Statt das Delisting-Datum hart zu verdrahten, wird der Bruch empirisch
+    gesucht: der groesste Ein-Tages-Ruecksetzer, dessen Betrag in der
+    Groessenordnung von `eingefroren` liegt (0.5x-2x, um etwas normales
+    Trading-Rauschen am selben Tag zuzulassen). Ab dort wird `eingefroren`
+    auf jeden Punkt bis heute aufaddiert. Kein Fund -> Werte unveraendert.
+    """
+    if not values or not eingefroren:
+        return values
+    lo, hi = 0.5 * eingefroren, 2.0 * eingefroren
+    break_idx = None
+    for i in range(1, len(values)):
+        drop = values[i - 1] - values[i]
+        if lo <= drop <= hi:
+            break_idx = i  # letzten (juengsten) passenden Bruch nehmen
+    if break_idx is None:
+        return values
+    return values[:break_idx] + [round(v + eingefroren, 2) for v in values[break_idx:]]
+
+
+def _apply_live_equity(em: dict, live_portfolio: Optional[dict]) -> dict:
+    """Ersetzt current_equity durch die echte Live-Equity aus Alpaca und zieht
+    die Kurve nach, statt dem letzten Punkt der taeglichen Alpaca-Portfolio-
+    Historie blind zu vertrauen.
+
+    Warum: get_portfolio_history() lag nach dem AVNS-Delisting (2026-07-27) bis
+    zu 6 Tage hinter dem echten Konto zurueck, wenn Positionen ausserhalb des
     normalen Order-Flows dazukamen ("eingebucht"). get_portfolio()/get_account()
     ist immer aktuell.
 
@@ -199,6 +240,13 @@ def _apply_live_equity(em: dict, live_portfolio: Optional[dict]) -> dict:
     wird nur zusaetzlich ausgewiesen (em["eingefroren"]), fuer die Fussnote in
     build_html — nicht um die Hauptzahl zu ersetzen. Eine niedrigere Zahl als
     das, was im Alpaca-Konto steht, anzuzeigen, waere schlicht falsch.
+
+    Die Kurve wird per `_reconcile_frozen_gap` um denselben eingefrorenen
+    Betrag korrigiert (siehe dort) und ihr letzter Punkt exakt auf die Live-
+    Equity gesetzt, damit Kurve und KPI nie wieder auseinanderlaufen. Max
+    Drawdown/CAGR werden aus der korrigierten Kurve neu berechnet, sonst
+    wuerde der Alpaca-interne Bruch als realer Verlust in die Kennzahlen
+    einfliessen.
     """
     if not live_portfolio or live_portfolio.get("equity") is None:
         return em
@@ -207,9 +255,19 @@ def _apply_live_equity(em: dict, live_portfolio: Optional[dict]) -> dict:
         eingefroren = delisted.eingefrorener_wert(live_portfolio.get("positions", []))
     except Exception:
         eingefroren = 0.0
+
+    live_equity = float(live_portfolio["equity"])
     em = dict(em)
-    em["current_equity"] = float(live_portfolio["equity"])
+    em["current_equity"] = live_equity
     em["eingefroren"]    = eingefroren
+
+    values = _reconcile_frozen_gap(em.get("chart_values") or [], eingefroren)
+    if values:
+        values = values[:-1] + [round(live_equity, 2)]
+        em["chart_values"] = values
+        em["max_drawdown_pct"], em["cagr"] = _drawdown_and_cagr(
+            em.get("chart_labels") or [], values
+        )
     return em
 
 
