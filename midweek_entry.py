@@ -285,10 +285,36 @@ def build_signal(item: dict, breakout: dict, equity: float,
         rank              = 0,
         is_top_pick       = True,   # nur Treffer kommen bis hierher
         signal_date       = date.today().isoformat(),
+        criteria          = item.get("criteria", {}),
     )
 
 
 # ── Mail ──────────────────────────────────────────────────────────────────────
+
+_CRITERIA_COLS = 10  # Anzahl Tabellenspalten — fuer den colspan der Kriterienzeile
+
+
+def _criteria_badges(criteria: dict) -> str:
+    """Scorecard-Badges wie im Samstags-Report (dieselbe MINERVINI_CRITERIA-Liste).
+
+    Zeigt bei jedem Mid-Week-Treffer typischerweise 1-2 rote Kriterien: die
+    Watchlist enthaelt nur Titel, denen am Samstag noch der Ausbruch fehlte
+    (Vol-Breakout und/oder Close > Vorwoche) — das ist kein Makel, sondern
+    genau die Luecke, die der heutige Ausbruch gerade geschlossen hat.
+    """
+    if not criteria:
+        return ""
+    spans = "".join(
+        f"<span style='display:inline-block;margin:2px 4px 2px 0;padding:1px 7px;"
+        f"border-radius:3px;font-size:.82em;font-weight:bold;"
+        f"background:{'#d4edda' if ok else '#f8d7da'};"
+        f"color:{'#155724' if ok else '#721c24'}'>"
+        f"{'✅' if ok else '❌'}&nbsp;{name}</span>"
+        for name, ok in criteria.items()
+    )
+    return (f"<tr><td colspan='{_CRITERIA_COLS}' style='text-align:left;"
+            f"border-top:none;padding:2px 8px 8px 8px'>{spans}</td></tr>")
+
 
 def _rows(signals: list[TradeSignal], results: list[dict]) -> str:
     by_ticker = {r["ticker"]: r for r in results}
@@ -309,6 +335,7 @@ def _rows(signals: list[TradeSignal], results: list[dict]) -> str:
             f"<td class='left'>{res.get('status', 'n/a')}</td>"
             "</tr>"
         )
+        out.append(_criteria_badges(s.criteria))
     return "\n".join(out)
 
 

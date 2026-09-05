@@ -9,6 +9,7 @@ from jinja2 import Template
 
 from indicators import rsi, macd, pct_above_ma
 from breadth import compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
+from signal_generator import MINERVINI_CRITERIA
 
 
 # Token-Referenzen statt fester Hex-Werte, damit Positiv-/Negativ-Faerbung
@@ -2098,17 +2099,12 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     market_bullish = True   # assume bullish; generator already filtered if bearish
 
     # Build Minervini criteria lookup for the Cloudflare Pages scorecard row
-    _MINERVINI_CRITERIA = [
-        "SMA10W steigend", "SMA30W steigend", "SMA40W steigend",
-        "MA-Ordnung 10>30>40", "52W Range OK", "RS-Trend ↑",
-        "Vol-Breakout", "Close > Vorwoche",
-    ]
     signal_criteria: dict = {}
     for sig in signals_display:
         if sig.ticker in leaders.index:
             row = leaders.loc[sig.ticker]
             signal_criteria[sig.ticker] = {
-                c: bool(row[c]) for c in _MINERVINI_CRITERIA if c in leaders.columns
+                c: bool(row[c]) for c in MINERVINI_CRITERIA if c in leaders.columns
             }
 
     # 1) Divergenzen & Breadth-Snapshots

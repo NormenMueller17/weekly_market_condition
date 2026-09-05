@@ -136,7 +136,7 @@ def _find_initial_stop(symbol: str, weeks_back: int = 16) -> Optional[float]:
 
 
 def _find_signal_meta(symbol: str, weeks_back: int = 16) -> dict:
-    """Return pattern, company, rs_score, market_regime from the most recent signal."""
+    """Return pattern, company, rs_score, market_regime, criteria from the most recent signal."""
     for f in _signal_files(weeks_back):
         try:
             payload = json.loads(f.read_text(encoding="utf-8"))
@@ -149,11 +149,12 @@ def _find_signal_meta(symbol: str, weeks_back: int = 16) -> dict:
                         "rs_score":      sig.get("rs_score"),
                         "market_regime": sig.get("market_regime", "bullish"),
                         "signal_date":   payload.get("generated", ""),
+                        "criteria":      sig.get("criteria") or {},
                     }
         except Exception:
             continue
     return {"pattern": "–", "company": "", "sector": "", "rs_score": None,
-            "market_regime": "bullish", "signal_date": ""}
+            "market_regime": "bullish", "signal_date": "", "criteria": {}}
 
 
 def _find_buy_stop(symbol: str, weeks_back: int = 52) -> Optional[float]:
@@ -430,6 +431,7 @@ def sync(
             "pattern":          meta["pattern"],
             "market_regime":    meta["market_regime"],
             "rs_score":         meta["rs_score"],
+            "criteria":         meta.get("criteria") or {},
             "entry_date":       entry_date,
             "entry_price":      pos["avg_entry_price"],
             "qty":              pos["qty"],
@@ -525,13 +527,14 @@ def sync(
                     trade["current_stop"] = stop
                 print(f"[JOURNAL] 🔁 {trade['symbol']} initial_stop nachgetragen: {stop}")
 
-    # 5. Backfill rs_score / pattern / company / sector for existing trades where missing
+    # 5. Backfill rs_score / pattern / company / sector / criteria for existing trades where missing
     for trade in data["open"]:
         needs_meta = (
             trade.get("rs_score") is None
             or trade.get("pattern") in (None, "–", "")
             or not trade.get("company")
             or not trade.get("sector")
+            or not trade.get("criteria")
         )
         if needs_meta:
             meta = _find_signal_meta(trade["symbol"])
@@ -544,6 +547,9 @@ def sync(
                 trade["company"] = meta["company"]
             if meta.get("sector") and not trade.get("sector"):
                 trade["sector"] = meta["sector"]
+            if meta.get("criteria") and not trade.get("criteria"):
+                trade["criteria"] = meta["criteria"]
+                print(f"[JOURNAL] 🔁 {trade['symbol']} Scorecard-Kriterien nachgetragen")
 
     # Sort closed: newest exit first
     data["closed"].sort(key=lambda t: t.get("exit_date", ""), reverse=True)
@@ -751,6 +757,26 @@ def _latest_report_link() -> str:
     return "reports/"
 
 
+def _criteria_badges_html(criteria: dict) -> str:
+    """Scorecard-Badges (✅/❌ je Minervini-Kriterium) fuer eine Position.
+
+    Dieselbe Darstellung wie im Samstags-Report (Abschnitt 9); Mid-Week-Kaeufe
+    fuellen `criteria` aus der Watchlist statt aus `leaders`, siehe
+    signal_generator.build_midweek_watchlist().
+    """
+    if not criteria:
+        return ""
+    spans = "".join(
+        f"<span style='display:inline-block;margin:2px 4px 2px 0;padding:1px 7px;"
+        f"border-radius:3px;font-size:.78em;font-weight:bold;"
+        f"background:{'#d4edda' if ok else '#f8d7da'};"
+        f"color:{'#155724' if ok else '#721c24'}'>"
+        f"{'✅' if ok else '❌'}&nbsp;{name}</span>"
+        for name, ok in criteria.items()
+    )
+    return f"<div style='margin-top:6px'>{spans}</div>"
+
+
 def _pt_status(t: dict) -> str:
     parts = []
     if t.get("pt_is_fast_mover"):
@@ -840,6 +866,7 @@ def build_html(data: dict) -> str:
         </tr>
         <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
           {_trade_chart_block(t.get('symbol',''), t.get('chart_before_path'))}
+          {_criteria_badges_html(t.get('criteria'))}
         </td></tr>"""
 
     if not open_rows:

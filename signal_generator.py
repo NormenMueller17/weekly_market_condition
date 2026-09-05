@@ -35,6 +35,16 @@ from typing import Optional
 import pandas as pd
 
 
+# Scorecard-Kriterien fuer die Report-Anzeige (✅/❌ je Titel). Geteilt zwischen
+# dem Samstags-Report (report_builder.py) und der Mid-Week-Watchlist, damit
+# beide dieselbe Aufschluesselung zeigen statt zweier gepflegter Kopien.
+MINERVINI_CRITERIA = [
+    "SMA10W steigend", "SMA30W steigend", "SMA40W steigend",
+    "MA-Ordnung 10>30>40", "52W Range OK", "RS-Trend ↑",
+    "Vol-Breakout", "Close > Vorwoche",
+]
+
+
 def _filter_earnings_blackout(tickers: list[str], window_days: int = 7) -> list[str]:
     """Return tickers whose next earnings date is more than window_days away (or unknown).
 
@@ -716,6 +726,8 @@ def build_midweek_watchlist(
             "score":             _safe_int(row.get("score")),
             "industry_ranking":  _safe_int(row.get("Industry Ranking")),
             "sa_link":           str(row.get("SA", "")),
+            "criteria":          {c: bool(row[c]) for c in MINERVINI_CRITERIA
+                                  if c in pending.columns},
         })
     return out
 
@@ -800,6 +812,12 @@ class TradeSignal:
     # Transparenz sichtbar statt spurlos aus der Liste zu verschwinden
     dropped:            bool            = False
     drop_reason:        str             = ""
+
+    # Minervini-Scorecard je Kriterium (MINERVINI_CRITERIA) — bei Samstags-
+    # Signalen wird das aus `leaders` fuers Reporting nachgeschlagen (siehe
+    # report_builder.build_html_report); Mid-Week-Signale fuellen es direkt
+    # aus der Watchlist, weil sie nie durch die `leaders`-Tabelle laufen.
+    criteria:           dict            = field(default_factory=dict)
 
     # Meta
     market_regime:      str  = "bullish"   # "bullish" | "bearish" — regime when signal was generated
