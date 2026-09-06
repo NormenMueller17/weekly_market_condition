@@ -286,6 +286,7 @@ def build_signal(item: dict, breakout: dict, equity: float,
         is_top_pick       = True,   # nur Treffer kommen bis hierher
         signal_date       = date.today().isoformat(),
         criteria          = item.get("criteria", {}),
+        resistance_note   = item.get("resistance_note", ""),
     )
 
 
@@ -316,6 +317,19 @@ def _criteria_badges(criteria: dict) -> str:
             f"border-top:none;padding:2px 8px 8px 8px'>{spans}</td></tr>")
 
 
+def _resistance_row(resistance_note: str) -> str:
+    """Analog zu _criteria_badges: Hinweiszeile, wenn der Buy-Stop wegen eines
+    mehrfach getesteten, ungebrochenen Widerstands angehoben wurde (siehe
+    signal_generator._resistance_ceiling)."""
+    if not resistance_note:
+        return ""
+    return (f"<tr><td colspan='{_CRITERIA_COLS}' style='text-align:left;"
+            f"border-top:none;padding:2px 8px 8px 8px'>"
+            f"<span style='display:inline-block;padding:1px 7px;border-radius:3px;"
+            f"font-size:.82em;font-weight:bold;background:#ffe0b2;color:#8a4b00'>"
+            f"⛰&nbsp;{resistance_note}</span></td></tr>")
+
+
 def _rows(signals: list[TradeSignal], results: list[dict]) -> str:
     by_ticker = {r["ticker"]: r for r in results}
     out = []
@@ -336,6 +350,7 @@ def _rows(signals: list[TradeSignal], results: list[dict]) -> str:
             "</tr>"
         )
         out.append(_criteria_badges(s.criteria))
+        out.append(_resistance_row(s.resistance_note))
     return "\n".join(out)
 
 

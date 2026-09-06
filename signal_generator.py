@@ -768,10 +768,27 @@ def build_midweek_watchlist(
     buf = 1.0 + r.get("buy_stop_buffer_pct", 0.1) / 100.0
     out: list[dict] = []
     for ticker, row in pending.iterrows():
-        pivot = (_safe_float(row.get("VCP Breakout Level"))
-                 or _safe_float(row.get("Launchpad Pivot"))
-                 or _safe_float(row.get("Week High")))
-        close = _safe_float(row.get("Close"))
+        muster_pivot = (_safe_float(row.get("VCP Breakout Level"))
+                        or _safe_float(row.get("Launchpad Pivot")))
+        week_high = _safe_float(row.get("Week High"))
+        close     = _safe_float(row.get("Close"))
+
+        # Musterlose Titel liefen bisher einfach auf das Hoch der letzten
+        # Woche — dasselbe blinde Loch wie in generate_signals() (siehe
+        # _resistance_ceiling): ein mehrfach getesteter Widerstand OBERHALB
+        # dieses Wochenhochs blieb unsichtbar. Gilt genauso fuer den
+        # Mittwochslauf, denn der uebernimmt den Pivot 1:1 aus dieser Liste.
+        resistance_note = ""
+        pivot = muster_pivot or week_high
+        if muster_pivot is None and close is not None and close > 0:
+            res = _resistance_ceiling(str(ticker), close)
+            if res and (pivot is None or res["level"] > pivot):
+                pivot = res["level"]
+                resistance_note = (
+                    f'Buy-Stop auf ${res["level"]:.2f} angehoben — '
+                    f'{res["tests"]}x als Widerstand getestet, zuletzt {res["last_test_date"]}'
+                )
+
         if pivot is None or pivot <= 0 or close is None or close <= 0:
             continue
         out.append({
@@ -781,6 +798,7 @@ def build_midweek_watchlist(
             "sector":            str(row.get("Sektor", "")),
             "pivot":             round(pivot, 4),
             "buy_stop":          round(pivot * buf, 4),
+            "resistance_note":   resistance_note,
             "close_saturday":    round(close, 4),
             "atr_pct":           _safe_float(row.get("ATR / Price (%)")),
             "rs_score":          _safe_float(row.get("RS (O'Neil)")),
