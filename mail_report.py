@@ -634,8 +634,14 @@ def _reihen_tabelle(titel: str, reihe: list, waehrung: str,
     )
 
 
-def _portraet(s, profil: dict, begruendung: list) -> str:
-    """Unternehmensportraet zu einem Kaufsignal."""
+def _portraet(s, profil: dict, begruendung: list, ist_top_pick: bool = True) -> str:
+    """Unternehmensportraet zu einem Kaufsignal.
+
+    `ist_top_pick` steuert nur die Ueberschrift der Begruendungsliste: Bei
+    Signalen ohne 🏆 (ausserhalb des wöchentlichen Neukauf-Limits, siehe
+    _kandidaten_block) waere "Warum im Depot" schlicht falsch — der Titel
+    wurde diese Woche nicht gekauft, erfuellt aber dieselben Kriterien.
+    """
     if not profil and not begruendung:
         return ""
     waehrung = (profil or {}).get("waehrung") or "USD"
@@ -656,8 +662,9 @@ def _portraet(s, profil: dict, begruendung: list) -> str:
     )
 
     gruende = "".join(f"<li style='margin-bottom:.25em;'>{g}</li>" for g in begruendung)
+    ueberschrift = "Warum im Depot" if ist_top_pick else "Warum dieses Signal die Kriterien erfüllt"
     gruende_html = (
-        f'<div style="font-weight:600;color:{BLAU};margin-top:.6em;">Warum im Depot</div>'
+        f'<div style="font-weight:600;color:{BLAU};margin-top:.6em;">{ueberschrift}</div>'
         f'<ul style="margin:.4em 0 .2em;padding-left:1.2em;">{gruende}</ul>'
         if gruende else ""
     )
@@ -674,21 +681,44 @@ def _portraet(s, profil: dict, begruendung: list) -> str:
     )
 
 
+_ORANGE = "#f5a623"
+
+
 def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
                       profile: Optional[dict] = None) -> str:
     if signale:
         profile = profile or {}
         karten = ""
         for s in signale:
+            top_pick = bool(getattr(s, "is_top_pick", True))
             link = (f'<a href="{s.sa_link}" style="color:{BLAU};text-decoration:none;">'
                     f'{s.ticker}</a>' if s.sa_link else s.ticker)
+            if top_pick:
+                badge = (f'<span style="background:{_ORANGE};color:#fff;padding:1px 8px;'
+                         f'border-radius:10px;font-size:.7em;font-weight:bold;'
+                         f'vertical-align:middle;margin-left:6px;">🏆 Gekauft</span>')
+                rand = GRUEN
+                hinweis = ""
+            else:
+                badge = (f'<span style="background:#eee;color:{GRAU};padding:1px 8px;'
+                         f'border-radius:10px;font-size:.7em;font-weight:normal;'
+                         f'vertical-align:middle;margin-left:6px;">kein Auftrag</span>')
+                rand = "#aaa"
+                hinweis = (
+                    f'<p style="background:#fff8e1;border-left:3px solid {_ORANGE};'
+                    f'padding:.5em .8em;margin:.2em 0 .8em;font-size:.85em;color:{GRAU};">'
+                    f'⚠️ Erfüllt alle Kaufkriterien, wurde aber <b>nicht gekauft</b> — liegt '
+                    f'außerhalb des wöchentlichen Neukauf-Limits. Kurs/Buy-Stop unten sind die '
+                    f'Werte, zu denen <i>eingestiegen worden wäre</i>, kein aktiver Auftrag.</p>'
+                )
             karten += (
-                f'<div style="border:1px solid {RAHMEN};border-left:4px solid {GRUEN};'
+                f'<div style="border:1px solid {RAHMEN};border-left:4px solid {rand};'
                 f'padding:.9em 1.1em;margin-bottom:1.4em;">'
                 f'<div style="font-size:1.1em;font-weight:bold;color:{BLAU};">'
-                f'{link} — {s.company}</div>'
+                f'{link} — {s.company}{badge}</div>'
                 f'<div style="color:{GRAU};font-size:.88em;margin-bottom:.5em;">'
                 f'{s.industry} · Muster {s.pattern} · RS {_rs(s.rs_score)}</div>'
+                + hinweis +
                 f'<table style="{_TABLE}margin-bottom:.8em;">'
                 f'<tr><th style="{_TH}">Kurs</th><th style="{_TH}">Buy-Stop</th>'
                 f'<th style="{_TH}">Stop</th><th style="{_TH}">Risiko</th>'
@@ -701,7 +731,8 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
                 f'<td style="{_TD}">{_geld(s.position_value)}</td></tr>'
                 f'</table>'
                 + _portraet(s, profile.get(s.ticker, {}),
-                            (profile.get(s.ticker, {}) or {}).get("_begruendung", []))
+                            (profile.get(s.ticker, {}) or {}).get("_begruendung", []),
+                            ist_top_pick=top_pick)
                 + '</div>'
             )
         from report_builder import build_tv_watchlist_string

@@ -546,13 +546,19 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
     # Depot gegen SPY
     perf, svg = {}, ""
     try:
-        from portfolio_performance import (_equity_metrics, _fetch_spy_benchmark,
-                                           _load_equity_history)
+        from portfolio_performance import (_apply_live_equity, _equity_metrics,
+                                           _fetch_spy_benchmark, _load_equity_history)
         _hist  = _load_equity_history()
         # Auf den ersten echten Trade zuschneiden — sonst vergleicht der Brief
         # wenige Monate Handel gegen ein volles Indexjahr. Siehe
         # mail_report.handelsstart().
         em     = _equity_metrics(_hist, trim_from=mail_report.handelsstart(_hist))
+        # Dieselbe Live-Korrektur wie auf docs/performance.html (siehe
+        # portfolio_performance.build_and_save) — sonst zeigt Abschnitt 2 der
+        # Mail (Positionen, Live-Equity aus Alpaca) eine andere Zahl als
+        # Abschnitt 1 (Depot-Kurve aus der taeglichen Portfolio-Historie),
+        # die nach einem Delisting mehrere Tage nachhinkt.
+        em     = _apply_live_equity(em, alpaca_portfolio)
         labels = em.get("chart_labels", [])
         werte  = em.get("chart_values", [])
         spy    = _fetch_spy_benchmark(labels, em.get("start_equity") or 0) if labels else []
