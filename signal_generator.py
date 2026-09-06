@@ -8,7 +8,7 @@ Buy criteria (Financial Wisdom Blueprint by FinancialWisdomTV):
   4. ATR/Price < 8 %               (NATR threshold, Blueprint requirement)
   5. ROE  >= min_roe               (0 = disabled; quality captured by score)
   6. Operating Margin >= min_op_margin  (0 = disabled)
-  7. Revenue growth  >= min_rev_growth
+  7. Revenue growth >= min_rev_growth  OR  EPS-Q growth >= min_eps_growth_last_q
   8. Industry Ranking <= max_industry_rank  (only leading sectors)
   9. Market filter: S&P 500 10W EMA > 20W EMA
   Pattern (VCP/Launchpad) is a ranking bonus — not a hard requirement.
@@ -640,10 +640,25 @@ def _thesis_mask(df: pd.DataFrame, r: dict) -> pd.Series:
     mask &= _num("ATR / Price (%)", 999) < r["max_atr_pct"]
 
     # 6. Fundamental quality filters
-    if r["min_roe"]               > 0: mask &= _num("ROE (%)")                        >= r["min_roe"]
-    if r["min_op_margin"]         > 0: mask &= _num("Operating Margin (%)")           >= r["min_op_margin"]
-    if r["min_rev_growth"]        > 0: mask &= _num("Revenue Wachstum TTM YoY (%)")   >= r["min_rev_growth"]
-    if r["min_eps_growth_last_q"] > 0: mask &= _num("EPS Wachstum letztes Q YoY (%)") >= r["min_eps_growth_last_q"]
+    if r["min_roe"]       > 0: mask &= _num("ROE (%)")             >= r["min_roe"]
+    if r["min_op_margin"] > 0: mask &= _num("Operating Margin (%)") >= r["min_op_margin"]
+
+    # Umsatz- ODER EPS-Wachstum statt UND (2026-09-06). Die UND-Verknuepfung
+    # verlangte robustes Umsatz- UND Quartals-EPS-Wachstum gleichzeitig -- in
+    # der Marktfuehrer-Analyse scheiterten 78 % der echten Top-60-Performer im
+    # Universum am EPS-Q-Kriterium allein, meist wegen eines volatilen
+    # Vorjahresvergleichs (Basiseffekt, Einmaleffekt) trotz explosiver
+    # Kursentwicklung. Ein strengerer Ersatz (Minervini-Score 8/8 statt 6/8,
+    # um die Lockerung "auszugleichen") wurde an den eigenen 28 Trades
+    # getestet und verschlechterte das Ergebnis (Score 8: Trefferquote 33 %,
+    # Median -10,7 % / Score 7: 55 %, Median +1,6 %) -- die Lockerung bleibt
+    # daher gezielt bei den Fundamentaldaten, der Score-Schwellwert bleibt 6.
+    min_rev, min_eps = r["min_rev_growth"], r["min_eps_growth_last_q"]
+    if min_rev > 0 or min_eps > 0:
+        false_col = pd.Series(False, index=df.index)
+        rev_ok = _num("Revenue Wachstum TTM YoY (%)")   >= min_rev if min_rev > 0 else false_col
+        eps_ok = _num("EPS Wachstum letztes Q YoY (%)") >= min_eps if min_eps > 0 else false_col
+        mask &= (rev_ok | eps_ok) if (min_rev > 0 and min_eps > 0) else (rev_ok if min_rev > 0 else eps_ok)
 
     # 7. Industry Ranking filter  (lower rank number = stronger industry)
     #    NaN industry rank → pass (fail-open: computation failure ≠ bad industry)

@@ -1653,18 +1653,22 @@ def compute_filter_fails(row, *, sector_excluded: set, min_rs: float,
     cap = _n("MarketCap (Mio USD)")
     if not pd.isna(cap) and cap < min_cap:
         fails.append(f"MCap{sp}{lt}{sp}{min_cap:.0f}M")
-    if min_rev_growth > 0:
-        rev = _n("Revenue Wachstum TTM YoY (%)")
-        if pd.isna(rev):
-            fails.append(f"Rev{sp}fehlt")
-        elif rev < min_rev_growth:
-            fails.append(f"Rev{sp}{lt}{sp}{min_rev_growth:.0f}%")
-    if min_eps_growth > 0:
-        eps = _n("EPS Wachstum letztes Q YoY (%)")
-        if pd.isna(eps):
-            fails.append(f"EPS-Q{sp}fehlt")
-        elif eps < min_eps_growth:
-            fails.append(f"EPS-Q{sp}{lt}{sp}{min_eps_growth:.0f}%")
+    # Umsatz- ODER EPS-Q-Wachstum (2026-09-06, siehe signal_generator._thesis_mask):
+    # nur ein Fail-Text, wenn BEIDE aktiven Schwellen scheitern — sonst wuerde
+    # die Diagnose "Rev < 20%" zeigen, obwohl der Titel ueber EPS-Q laengst
+    # durchkommt.
+    if min_rev_growth > 0 or min_eps_growth > 0:
+        rev = _n("Revenue Wachstum TTM YoY (%)") if min_rev_growth > 0 else None
+        eps = _n("EPS Wachstum letztes Q YoY (%)") if min_eps_growth > 0 else None
+        rev_ok = min_rev_growth > 0 and not pd.isna(rev) and rev >= min_rev_growth
+        eps_ok = min_eps_growth > 0 and not pd.isna(eps) and eps >= min_eps_growth
+        if not (rev_ok or eps_ok):
+            teile = []
+            if min_rev_growth > 0:
+                teile.append(f"Rev{sp}fehlt" if pd.isna(rev) else f"Rev{sp}{lt}{sp}{min_rev_growth:.0f}%")
+            if min_eps_growth > 0:
+                teile.append(f"EPS-Q{sp}fehlt" if pd.isna(eps) else f"EPS-Q{sp}{lt}{sp}{min_eps_growth:.0f}%")
+            fails.append(f"Rev{sp}oder{sp}EPS-Q" if len(teile) > 1 else teile[0])
     return " · ".join(fails) if fails else "✅"
 
 
