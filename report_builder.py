@@ -742,6 +742,11 @@ HTML_TMPL = """
                   style="background:#ede7f6;color:#4527a0;padding:2px 7px;border-radius:4px;
                          font-size:0.82em;font-weight:bold">↻ Versuch {{ s.reentry_attempt }}</span>
             {%- endif %}
+            {%- if s.resistance_note %}
+            <span title="{{ s.resistance_note }}"
+                  style="background:#ffe0b2;color:#8a4b00;padding:2px 7px;border-radius:4px;
+                         font-size:0.82em;font-weight:bold">⛰ Widerstand ${{ '%.2f' % s.breakout_level }}</span>
+            {%- endif %}
             <span style="font-size:0.87em">RS&nbsp;<strong>{{ '%.0f' % s.rs_score if s.rs_score is not none else '–' }}</strong></span>
             <span style="font-size:0.87em;color:
               {%- if s.rs_delta_4w is not none and s.rs_delta_4w > 0 %}#2e7d32
@@ -840,7 +845,14 @@ HTML_TMPL = """
           <span title="Wiedereinstieg nach Ausstoppung — alter Pivot zurückerobert"
                 style="color:#4527a0">↻{{ s.reentry_attempt }}</span>{% endif %}</td>
         <td><strong>{{ '%.2f' % s.entry_price }}</strong></td>
-        <td style="background-color:#e8f4fd;font-weight:bold">{{ '%.2f' % s.buy_stop }}</td>
+        <td style="background-color:#e8f4fd;font-weight:bold">{{ '%.2f' % s.buy_stop }}
+          {%- if s.resistance_note %}
+          <span title="{{ s.resistance_note }}"
+                style="display:block;margin-top:2px;background:#ffe0b2;color:#8a4b00;
+                       padding:1px 5px;border-radius:8px;font-size:0.62em;font-weight:normal;
+                       white-space:nowrap">⛰ Widerstand</span>
+          {%- endif %}
+        </td>
         <td style="background-color:#fdecea;font-weight:bold" title="Order verwerfen wenn Montag-Open über diesem Preis">{{ '%.2f' % s.max_gap_price }}</td>
         <td style="background-color:#fff3e0">{{ '%.2f' % s.stop_loss }}</td>
         <td style="background-color:#fff3e0">{{ stop_pct_display }}%</td>

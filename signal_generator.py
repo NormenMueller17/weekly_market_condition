@@ -225,6 +225,67 @@ def is_market_bullish(spy_df: pd.DataFrame | None) -> bool:
     return bool(ema10.iloc[-1] > ema20.iloc[-1])
 
 
+# ── Widerstand fuer musterlose Signale ────────────────────────────────────────
+
+def _resistance_ceiling(
+    ticker:         str,
+    entry:          float,
+    lookback_weeks: int = 26,
+    tolerance_pct:  float = 1.5,
+    min_tests:      int   = 2,
+) -> Optional[dict]:
+    """Findet einen mehrfach getesteten, noch ungebrochenen Widerstand.
+
+    Anlass (2026-09-06): SU wurde als musterloses Signal (kein VCP/Launchpad,
+    also kein `breakout_level`) mit Buy-Stop knapp ueber dem aktuellen Kurs
+    gekauft — obwohl der Kurs seit April dreimal bei $69-69,4 abgewiesen wurde.
+    Ohne erkanntes Muster kennt `generate_signals` keinen Pivot ausser dem
+    aktuellen Kurs (siehe `pivot = bl if bl else entry`) und "sieht" solche
+    Deckel schlicht nicht.
+
+    Sucht im wöchentlichen High der letzten `lookback_weeks` (ohne die
+    laufende Woche, die ist der Entry selbst) das Maximum und zaehlt, wie oft
+    das High in den `tolerance_pct` % darunter lag. Bei >= `min_tests` Treffern
+    UND `entry` noch unterhalb dieses Maximums: Widerstand nicht gebrochen.
+
+    Returns
+    -------
+    dict mit "level", "tests", "last_test_date" — oder None, wenn kein
+    mehrfach getesteter, ungebrochener Widerstand gefunden wurde (inkl. jedes
+    Fehlerfalls: fail-open, ein Datenproblem darf den Kauf nicht blockieren).
+    """
+    try:
+        import data_sources
+        hist = data_sources.load_weekly_history([ticker], weeks=lookback_weeks + 1)
+        df = hist.get(ticker)
+        if df is None or df.empty or "High" not in df.columns:
+            return None
+        high = pd.to_numeric(df["High"], errors="coerce").dropna()
+        if len(high) < min_tests + 1:
+            return None
+
+        window = high.iloc[:-1].tail(lookback_weeks)  # ohne laufende Woche
+        if window.empty:
+            return None
+        level = float(window.max())
+        if entry >= level:
+            return None  # bereits ausgebrochen — kein Thema mehr
+
+        threshold = level * (1.0 - tolerance_pct / 100.0)
+        hits = window[window >= threshold]
+        if len(hits) < min_tests:
+            return None
+
+        return {
+            "level":           level,
+            "tests":           int(len(hits)),
+            "last_test_date":  hits.index[-1].strftime("%d.%m."),
+        }
+    except Exception as e:
+        print(f"[RESISTANCE] ⚠️  {ticker}: Widerstands-Check uebersprungen ({e})")
+        return None
+
+
 # ── Stop-loss helpers ─────────────────────────────────────────────────────────
 
 def _stop_launchpad(pivot: float, range_pct: float) -> Optional[float]:
@@ -813,6 +874,14 @@ class TradeSignal:
     dropped:            bool            = False
     drop_reason:        str             = ""
 
+    # Musterlose Signale (pattern == "–"): Buy-Stop wurde von "aktueller Kurs"
+    # auf einen mehrfach getesteten, noch ungebrochenen Widerstand angehoben
+    # (siehe _resistance_ceiling). Der Titel wird NICHT verworfen — er bleibt
+    # ein aktives Signal, nur der Trigger verlangt einen echten Ausbruch statt
+    # der blossen Fortsetzung dieser Woche. Fuellt der Buy-Stop nicht, verfaellt
+    # er wie jeder andere unerfuellte Auftrag auch.
+    resistance_note:    str             = ""
+
     # Minervini-Scorecard je Kriterium (MINERVINI_CRITERIA) — bei Samstags-
     # Signalen wird das aus `leaders` fuers Reporting nachgeschlagen (siehe
     # report_builder.build_html_report); Mid-Week-Signale fuellen es direkt
@@ -936,6 +1005,22 @@ def generate_signals(
         else:
             pattern = "–"
 
+        # Musterlose Signale kennen sonst keinen Pivot ausser dem aktuellen
+        # Kurs (siehe unten `pivot = bl if bl else entry`) und wuerden einen
+        # mehrfach getesteten, ungebrochenen Widerstand direkt darueber
+        # ignorieren. Gefundener Widerstand wird als `bl` gesetzt -- der
+        # Buy-Stop unten verlangt dann einen echten Ausbruch statt nur der
+        # Fortsetzung dieser Woche.
+        resistance_note = ""
+        if bl is None:
+            res = _resistance_ceiling(str(ticker), entry)
+            if res:
+                bl = res["level"]
+                resistance_note = (
+                    f'Buy-Stop auf ${res["level"]:.2f} angehoben — '
+                    f'{res["tests"]}x als Widerstand getestet, zuletzt {res["last_test_date"]}'
+                )
+
         # Muster-Geometrie kann NaN liefern (fehlender Pivot, kaputte Range).
         # Auf None normalisieren, damit der Default-Pfad greift — sonst würden
         # Floor und Cap unten stillschweigend übersprungen.
@@ -1017,6 +1102,7 @@ def generate_signals(
             is_reentry         = bool(reentry_ok.get(ticker, False)),
             reentry_attempt    = int((watch.get(str(ticker), {}) or {})
                                      .get("attempts", 0)) + 1,
+            resistance_note    = resistance_note,
         ))
 
     # ── Fundamental scores (percentile-based within this signal set) ─────────

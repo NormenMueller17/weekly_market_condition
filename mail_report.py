@@ -711,6 +711,21 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
                     f'außerhalb des wöchentlichen Neukauf-Limits. Kurs/Buy-Stop unten sind die '
                     f'Werte, zu denen <i>eingestiegen worden wäre</i>, kein aktiver Auftrag.</p>'
                 )
+
+            # Musterlose Signale mit mehrfach getestetem, ungebrochenem
+            # Widerstand: Buy-Stop wurde ueber den Widerstand statt ueber den
+            # aktuellen Kurs gelegt (siehe signal_generator._resistance_ceiling).
+            # Der Titel gilt weiter als Kaufkandidat/-position — nur der
+            # Trigger verlangt einen echten Ausbruch. Ohne diesen Hinweis sieht
+            # der hohe Buy-Stop wie eine Verfolgung des Kurses aus.
+            if getattr(s, "resistance_note", ""):
+                hinweis += (
+                    f'<p style="background:#fff3e0;border-left:3px solid #ff9800;'
+                    f'padding:.5em .8em;margin:.2em 0 .8em;font-size:.85em;color:{GRAU};">'
+                    f'⛰️ Kein erkanntes Muster — {s.resistance_note}. Kein Rabatt auf die '
+                    f'Fundamentaldaten, nur ein strengerer Einstieg: Buy-Stop verlangt den '
+                    f'Ausbruch über den Widerstand statt der blossen Fortsetzung.</p>'
+                )
             karten += (
                 f'<div style="border:1px solid {RAHMEN};border-left:4px solid {rand};'
                 f'padding:.9em 1.1em;margin-bottom:1.4em;">'
