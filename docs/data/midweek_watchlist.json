@@ -12,10 +12,20 @@
       "buy_stop": 13.4935,
       "close_saturday": 13.45,
       "atr_pct": 5.549654277101741,
-      "rs_score": 97.33851370443628,
+      "rs_score": 97.33898305084746,
       "score": 7,
-      "industry_ranking": 36,
-      "sa_link": "https://stockanalysis.com/stocks/PAYS"
+      "industry_ranking": 35,
+      "sa_link": "https://stockanalysis.com/stocks/PAYS",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      }
     },
     {
       "ticker": "PSNL",
@@ -26,10 +36,20 @@
       "buy_stop": 17.3934,
       "close_saturday": 17.2,
       "atr_pct": 5.592189505914032,
-      "rs_score": 97.14467363662051,
+      "rs_score": 97.14519774011299,
       "score": 7,
       "industry_ranking": 6,
-      "sa_link": "https://stockanalysis.com/stocks/PSNL"
+      "sa_link": "https://stockanalysis.com/stocks/PSNL",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      }
     },
     {
       "ticker": "NESR",
@@ -40,10 +60,20 @@
       "buy_stop": 35.5055,
       "close_saturday": 34.75,
       "atr_pct": 4.177185246780255,
-      "rs_score": 97.00621644532355,
+      "rs_score": 97.00677966101695,
       "score": 7,
-      "industry_ranking": 28,
-      "sa_link": "https://stockanalysis.com/stocks/NESR"
+      "industry_ranking": 40,
+      "sa_link": "https://stockanalysis.com/stocks/NESR",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      }
     },
     {
       "ticker": "TVTX",
@@ -54,10 +84,20 @@
       "buy_stop": 68.098,
       "close_saturday": 65.28,
       "atr_pct": 3.071929534285694,
-      "rs_score": 96.81237637750777,
+      "rs_score": 96.81299435028248,
       "score": 6,
       "industry_ranking": 10,
-      "sa_link": "https://stockanalysis.com/stocks/TVTX"
+      "sa_link": "https://stockanalysis.com/stocks/TVTX",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": false
+      }
     },
     {
       "ticker": "NTAP",
@@ -68,10 +108,20 @@
       "buy_stop": 191.191,
       "close_saturday": 185.59,
       "atr_pct": 4.603467272208896,
-      "rs_score": 86.84345860412546,
+      "rs_score": 86.84689265536724,
       "score": 7,
       "industry_ranking": 11,
-      "sa_link": "https://stockanalysis.com/stocks/NTAP"
+      "sa_link": "https://stockanalysis.com/stocks/NTAP",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": true,
+        "Close > Vorwoche": false
+      }
     }
   ]
 }
