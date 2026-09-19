@@ -121,6 +121,23 @@ def _trade_metrics(closed: list, open_: list) -> dict:
     }
 
 
+def _sitzungsdatum(ts) -> str:
+    """Handelstag (YYYY-MM-DD), dessen Schlusskurs ein Punkt der Alpaca-Historie zeigt.
+
+    Alpaca stempelt die Tagespunkte von get_portfolio_history() auf 00:00 UTC des
+    *Folgetags*: das Label D ist der Schlusskurs von D-1. Belegt an den echten
+    Daten: es gibt nur Labels von Di bis Sa (nie Mo/So), nach Feiertagen fehlt
+    das Label des Folgetags (Labor Day 2026-09-07 -> kein Label 09-08).
+
+    Ohne diese Korrektur liegt jeder Depotpunkt einen Tag neben dem SPY-Kurs, den
+    Yahoo unter dem echten Datum liefert, und ein Resample auf Freitags-Wochen
+    schneidet Do->Do statt Fr->Fr (Stand 2026-09-19: Mail +2,53 % gegen
+    Heatmap -0,5 % fuer dieselbe Woche).
+    """
+    d = datetime.datetime.utcfromtimestamp(int(ts)) - datetime.timedelta(days=1)
+    return d.strftime("%Y-%m-%d")
+
+
 def _equity_metrics(history: Optional[dict], trim_from: Optional[str] = None) -> dict:
     empty = {"max_drawdown_pct": None, "cagr": None,
              "current_equity": None, "start_equity": None,
@@ -138,7 +155,7 @@ def _equity_metrics(history: Optional[dict], trim_from: Optional[str] = None) ->
     values = []
     for t, e in pairs:
         try:
-            d = datetime.datetime.utcfromtimestamp(int(t)).strftime("%Y-%m-%d")
+            d = _sitzungsdatum(t)
         except Exception:
             d = str(t)
         labels.append(d)
@@ -224,7 +241,8 @@ def _reconcile_frozen_gap(values: list, eingefroren: float) -> list:
     return values[:break_idx] + [round(v + eingefroren, 2) for v in values[break_idx:]]
 
 
-def _apply_live_equity(em: dict, live_portfolio: Optional[dict]) -> dict:
+def _apply_live_equity(em: dict, live_portfolio: Optional[dict],
+                       today: Optional[datetime.date] = None) -> dict:
     """Ersetzt current_equity durch die echte Live-Equity aus Alpaca und zieht
     die Kurve nach, statt dem letzten Punkt der taeglichen Alpaca-Portfolio-
     Historie blind zu vertrauen.
@@ -242,11 +260,16 @@ def _apply_live_equity(em: dict, live_portfolio: Optional[dict]) -> dict:
     das, was im Alpaca-Konto steht, anzuzeigen, waere schlicht falsch.
 
     Die Kurve wird per `_reconcile_frozen_gap` um denselben eingefrorenen
-    Betrag korrigiert (siehe dort) und ihr letzter Punkt exakt auf die Live-
-    Equity gesetzt, damit Kurve und KPI nie wieder auseinanderlaufen. Max
-    Drawdown/CAGR werden aus der korrigierten Kurve neu berechnet, sonst
-    wuerde der Alpaca-interne Bruch als realer Verlust in die Kennzahlen
-    einfliessen.
+    Betrag korrigiert (siehe dort) und um die Live-Equity ergaenzt, damit Kurve
+    und KPI nie wieder auseinanderlaufen. Max Drawdown/CAGR werden aus der
+    korrigierten Kurve neu berechnet, sonst wuerde der Alpaca-interne Bruch als
+    realer Verlust in die Kennzahlen einfliessen.
+
+    Ergaenzen heisst: an einem Wochentag, dessen Schlusskurs die Historie noch
+    nicht kennt (siehe `_sitzungsdatum`: der letzte Punkt ist der Vortag), kommt
+    die Live-Equity als neuer Punkt fuer heute dazu. Sonst -- Wochenende, oder
+    Historie schon auf dem neuesten Stand -- ersetzt sie den letzten Punkt.
+    Blind zu ersetzen wuerde den Vortag mit dem heutigen Kurs ueberschreiben.
     """
     if not live_portfolio or live_portfolio.get("equity") is None:
         return em
@@ -263,7 +286,15 @@ def _apply_live_equity(em: dict, live_portfolio: Optional[dict]) -> dict:
 
     values = _reconcile_frozen_gap(em.get("chart_values") or [], eingefroren)
     if values:
-        values = values[:-1] + [round(live_equity, 2)]
+        live_val = round(live_equity, 2)
+        labels   = list(em.get("chart_labels") or [])
+        heute    = today or datetime.date.today()
+        if heute.weekday() < 5 and heute.isoformat() > labels[-1]:
+            values = values + [live_val]
+            labels = labels + [heute.isoformat()]
+        else:
+            values = values[:-1] + [live_val]
+        em["chart_labels"] = labels
         em["chart_values"] = values
         em["max_drawdown_pct"], em["cagr"] = _drawdown_and_cagr(
             em.get("chart_labels") or [], values

@@ -186,11 +186,13 @@ def handelsstart(history: Optional[dict]) -> Optional[str]:
     base = history.get("base_value")
     if base is None or not ts:
         return None
+    from portfolio_performance import _sitzungsdatum
     for t, v in zip(ts, eq):
         if v is None or abs(v - base) <= 0.01:
             continue
         try:
-            return datetime.datetime.utcfromtimestamp(int(t)).strftime("%Y-%m-%d")
+            # Gleiche Datumslogik wie die Kurve, sonst schneidet trim_from einen Tag daneben.
+            return _sitzungsdatum(t)
         except (ValueError, OSError):
             return None
     return None
