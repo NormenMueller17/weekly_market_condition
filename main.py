@@ -515,6 +515,27 @@ def _build_signal_extras(signals, leaders_html) -> tuple:
     return profile, muster
 
 
+def _sizing_equity(alpaca_portfolio, fallback: float) -> tuple[float, str]:
+    """Basis fuer die Positionsgroesse: Live-Equity aus Alpaca, sonst `fallback`.
+
+    Vorher galt immer die feste Einstellung account_equity (100.000 $), auch als
+    das Konto laengst bei ~93.000 $ stand -- Positionsgroesse, Positionscap und
+    das ausgewiesene Risiko bezogen sich auf ein Kapital, das es nicht mehr gab.
+    Der Mid-Week-Lauf nutzte die Live-Equity schon (midweek_entry.py).
+
+    Der Rueckfall ist sichtbar: Er wird im Log und in der zweiten Rueckgabe
+    benannt, nicht als vermeintlich normale Zahl durchgereicht.
+    """
+    eq = (alpaca_portfolio or {}).get("equity")
+    try:
+        eq = float(eq) if eq is not None else None
+    except (TypeError, ValueError):
+        eq = None
+    if eq and eq > 0:
+        return eq, "live"
+    return fallback, "fallback"
+
+
 def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
                         signals, leaders_html, alpaca_portfolio, alpaca_cash,
                         report_url, test_mode, profile, muster, rs_now_map=None,
@@ -1162,10 +1183,17 @@ def run():
             print(f"[REENTRY] Watchlist konnte nicht gebaut werden: {e}")
 
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
+    sizing_equity, _sizing_quelle = _sizing_equity(alpaca_portfolio, SETTINGS.account_equity)
+    if _sizing_quelle == "live":
+        print(f"[SIZING] Basis: Live-Equity ${sizing_equity:,.0f} "
+              f"(Einstellung account_equity ${SETTINGS.account_equity:,.0f} nicht verwendet)")
+    else:
+        print(f"[SIZING] ⚠️  Live-Equity nicht verfügbar — Fallback auf account_equity "
+              f"${sizing_equity:,.0f} aus den Einstellungen")
     signals, _signal_candidates, sector_excluded, dropped_signals = generate_signals(
         leaders,
         market_bullish  = market_bullish,
-        account_equity  = SETTINGS.account_equity,
+        account_equity  = sizing_equity,
         portfolio_max_positions = SETTINGS.portfolio_max_positions,
         max_new_per_week_bull   = SETTINGS.max_new_per_week_bull,
         max_new_per_week_bear   = SETTINGS.max_new_per_week_bear,

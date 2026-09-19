@@ -31,7 +31,7 @@
     "max_new_per_week_bull":    "Max. neue Buy-Orders pro Woche im bullischen Markt (10W-EMA > 20W-EMA + Breadth OK).",
     "max_new_per_week_bear":    "Max. neue Buy-Orders pro Woche im bärischen Markt. Konservativ halten (1 = empfohlen).",
     "bearish_risk_fraction":  "Multiplikator auf max_risk_per_trade_pct im bärischen Markt. 0.5 = halbes Risiko. Hieß früher bearish_kelly_fraction und wurde unter diesem Namen nie gelesen; der alte Name wird noch akzeptiert.",
-    "account_equity":         "Kontogröße in EUR/USD für die Positionsgröße.",
+    "account_equity":         "Rückfall-Kontogröße in USD für die Positionsgröße, nur wenn die Live-Equity aus Alpaca nicht abrufbar ist (Wochen- und Mid-Week-Lauf nutzen sonst die Live-Equity).",
     "_sizing_hinweis":        "win_rate, win_loss_ratio und kelly_fraction steuern NICHTS — das Sizing ist risk-first (position = max_risk_per_trade_pct / stop_pct, gedeckelt auf max_position_pct). Sie sind Referenzwerte zur Plausibilisierung von max_risk_per_trade_pct. Abgleich mit der eigenen Historie: python kelly_check.py",
     "win_rate":               "Unterstellte Trefferquote (0-1). Blueprint: 0.59. Realisiert 2026-07-28: 0.12 bei n=17 (Wilson-Intervall 3-34 %, also noch nicht aussagekräftig).",
     "win_loss_ratio":         "Unterstelltes Gewinn/Verlust-Verhältnis. Blueprint: 4.04. Realisiert 2026-07-28: 4.44 — die Auszahlungsstruktur stimmt, nur die Trefferquote nicht.",
