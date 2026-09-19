@@ -708,8 +708,11 @@ HTML_TMPL = """
         &nbsp;→&nbsp;<strong>{% if market_bullish %}Kauffilter erfüllt: bis zu {{ max_new_per_week }} Neukäufe/Woche{% else %}Kauffilter nicht erfüllt: höchstens {{ max_new_per_week }} Neukauf/Woche, halbes Risiko{% endif %}</strong>
         {% endif %}
         &nbsp;|&nbsp;
-        <strong>Position:</strong> {{ (signals[0].position_size_pct * 100) | round(1) }}% des Kapitals
-        ({{ "{:,.0f}".format(signals[0].position_value) }} €/$) &nbsp;|&nbsp;
+        {% set _pcts = signals | map(attribute="position_size_pct") | list %}
+        {% set _vals = signals | map(attribute="position_value") | list %}
+        <strong>Position je Signal:</strong>
+        {{ (_pcts | min * 100) | round(1) }}{% if (_pcts | min * 100) | round(1) != (_pcts | max * 100) | round(1) %}–{{ (_pcts | max * 100) | round(1) }}{% endif %}% des Kapitals
+        ({{ "{:,.0f}".format(_vals | min) }}{% if (_vals | min) | round(0) != (_vals | max) | round(0) %}–{{ "{:,.0f}".format(_vals | max) }}{% endif %} $) &nbsp;|&nbsp;
         <strong>Risiko je Trade:</strong> {{ risk_budget_pct | round(2) }}% des Depots
         (Positionscap {{ max_position_pct | round(0) | int }}%) &nbsp;|&nbsp;
         <strong>Signale gesamt:</strong> {{ signals | length }}

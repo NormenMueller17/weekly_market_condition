@@ -413,6 +413,12 @@ def size_position(stop_pct: float, account_equity: float, market_bullish: bool,
 
     Gibt `(pos_size_pct, position_value)` zurueck. Im baerischen Markt wird das
     Risikobudget mit `bearish_risk_fraction` skaliert.
+
+    `pos_size_pct` ist der Anteil, der TATSAECHLICH gekauft wird, also nach dem
+    Cash-Deckel. Vorher blieb er auf dem risiko-/capbasierten Wert (z.B. 15 %),
+    waehrend `position_value` schon auf Cash je Platz gekappt war (10.720 $ bei
+    100.000 $ Konto = 10,7 %). Der Report zeigte dann "15 % des Kapitals
+    (10.720 $)" und daneben ein Risiko, das zu 10,7 % gehoert (2026-09-19).
     """
     max_risk_pct = r.get("max_risk_per_trade_pct", 1.5) / 100.0
     max_pos_pct  = r.get("max_position_pct",       15.0) / 100.0
@@ -424,6 +430,8 @@ def size_position(stop_pct: float, account_equity: float, market_bullish: bool,
     if available_cash is not None:
         cash_per_slot  = available_cash / max(1, remaining_slots)
         position_value = min(position_value, cash_per_slot)
+        if account_equity:
+            pos_size_pct = position_value / account_equity
     return pos_size_pct, position_value
 
 
