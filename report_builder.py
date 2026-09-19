@@ -609,14 +609,17 @@ HTML_TMPL = """
     </p>
     {% endif %}
     <p style="color:#888">
-        Keine Kaufsignale diese Woche —
+        Keine Kaufsignale diese Woche — kein Titel erfüllt die Kriterien
+        (Score ≥ 6/8 + Vol-Breakout + RS ≥ 70 + Industry Top 50).
         {% if not market_bullish %}
-        <strong>Marktfilter aktiv</strong>: S&amp;P 500 10W EMA &lt; 20W EMA
-        {% if sp500_breadth_pct is not none and sp500_breadth_pct < min_breadth_pct %}
-        und Marktbreite {{ "%.1f"|format(sp500_breadth_pct) }}% &lt; {{ min_breadth_pct }}%.
-        {% else %}.{% endif %}
-        {% else %}
-        Kriterien (Score ≥ 6/8 + Vol-Breakout + RS ≥ 70 + Industry Top 50) nicht erfüllt.
+        <br><strong>Kauffilter nicht erfüllt</strong>:
+        {% if not trend_bullish %}S&amp;P 500 10W EMA &lt; 20W EMA{% endif %}
+        {%- if not trend_bullish and sp500_breadth_pct is not none and sp500_breadth_pct < min_breadth_pct %} und {% endif %}
+        {%- if sp500_breadth_pct is not none and sp500_breadth_pct < min_breadth_pct %}Marktbreite {{ "%.1f"|format(sp500_breadth_pct) }}% &lt; {{ min_breadth_pct }}%{% endif %}
+        — selbst bei Treffern wären
+        {% if max_new_per_week is not none %}höchstens {{ max_new_per_week }} {{ "Neukauf" if max_new_per_week == 1 else "Neukäufe" }}
+        {%- else %}nur wenige Neukäufe{% endif %}
+        pro Woche bei halbem Risiko zulässig.
         {% endif %}
     </p>
 
@@ -695,10 +698,14 @@ HTML_TMPL = """
 
     {% else %}
     <p style="margin-bottom:0.8em">
-        <strong>Marktfilter:</strong> S&amp;P 500 10W EMA &gt; 20W EMA ✅
+        <strong>Marktfilter:</strong> S&amp;P 500 10W EMA {{ "&gt;" if trend_bullish else "&lt;" }} 20W EMA
+        {{ "✅" if trend_bullish else "❌" }}
         {% if sp500_breadth_pct is not none %}
         &nbsp;|&nbsp;<strong>Marktbreite:</strong> {{ "%.1f"|format(sp500_breadth_pct) }}% über 200d
-        {% if sp500_breadth_pct >= min_breadth_pct %}✅{% else %}⚠️{% endif %}
+        {% if sp500_breadth_pct >= min_breadth_pct %}✅{% else %}❌{% endif %}
+        {% endif %}
+        {% if max_new_per_week is not none %}
+        &nbsp;→&nbsp;<strong>{% if market_bullish %}Kauffilter erfüllt: bis zu {{ max_new_per_week }} Neukäufe/Woche{% else %}Kauffilter nicht erfüllt: höchstens {{ max_new_per_week }} Neukauf/Woche, halbes Risiko{% endif %}</strong>
         {% endif %}
         &nbsp;|&nbsp;
         <strong>Position:</strong> {{ (signals[0].position_size_pct * 100) | round(1) }}% des Kapitals
@@ -2042,6 +2049,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
                       sector_excluded=None, dropped_signals=None,
                       sp500_breadth_pct=None, min_breadth_pct=40,
+                      market_bullish=True, trend_bullish=True,
                       test_mode=False, sector_rows=None, sector_heatmap=None, rs_lines=None,
                       profile=None, muster=None,
                       max_new_per_week=None, portfolio_max_positions=None):
@@ -2119,10 +2127,9 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     except Exception:
         pass
 
-    # Derive market_bullish from the signal list:
-    # if the market filter was active, generate_signals returns an empty list.
-    # We surface this to the template so it can show the right "why no signals" text.
-    market_bullish = True   # assume bullish; generator already filtered if bearish
+    # market_bullish (Kauffilter gesamt) und trend_bullish (nur 10W>20W-EMA)
+    # kommen vom Aufrufer. Frueher stand hier fest True, weshalb der Report
+    # "Marktfilter ✅" auch dann zeigte, wenn der Filter nicht erfuellt war.
 
     # Build Minervini criteria lookup for the Cloudflare Pages scorecard row
     signal_criteria: dict = {}
@@ -2270,6 +2277,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         signals_display    = signals_display,
         dropped_signals    = dropped_signals,
         market_bullish     = market_bullish,
+        trend_bullish      = trend_bullish,
         sp500_breadth_pct  = sp500_breadth_pct,
         min_breadth_pct    = min_breadth_pct,
         COLOR_POSITIVE     = COLOR_POSITIVE,

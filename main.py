@@ -671,6 +671,7 @@ def run():
 
     # Market filter 1: S&P 500 10W EMA > 20W EMA
     market_bullish = is_market_bullish(idx_data.get("SPY"))
+    trend_bullish  = market_bullish   # bleibt unveraendert, wenn unten die Marktbreite market_bullish kippt
     print(f"[SIGNALS] Marktfilter 10EMA>20EMA: "
           + ("✅ BULLISH" if market_bullish else
              f"❌ BÄRISCH – höchstens {SETTINGS.max_new_per_week_bear} Neukauf/Woche, halbes Risiko"))
@@ -1329,6 +1330,7 @@ def run():
         alpaca_cash=alpaca_cash, alpaca_positions=alpaca_positions, alpaca_portfolio=alpaca_portfolio,
         sector_excluded=sector_excluded, dropped_signals=dropped_signals,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
+        market_bullish=market_bullish, trend_bullish=trend_bullish,
         test_mode=TEST_MODE, sector_rows=sector_rows, sector_heatmap=sector_heatmap,
         rs_lines=rs_lines,
         profile=profile, muster=muster,
