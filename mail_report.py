@@ -706,12 +706,16 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
                          f'border-radius:10px;font-size:.7em;font-weight:normal;'
                          f'vertical-align:middle;margin-left:6px;">kein Auftrag</span>')
                 rand = "#aaa"
+                # Konkreter Grund aus dem Signalgenerator; der Pauschaltext nur
+                # als Rueckfall fuer Signale ohne no_order_reason.
+                grund = (getattr(s, "no_order_reason", "")
+                         or "liegt außerhalb des wöchentlichen Neukauf-Limits.")
                 hinweis = (
                     f'<p style="background:#fff8e1;border-left:3px solid {_ORANGE};'
                     f'padding:.5em .8em;margin:.2em 0 .8em;font-size:.85em;color:{GRAU};">'
-                    f'⚠️ Erfüllt alle Kaufkriterien, wurde aber <b>nicht gekauft</b> — liegt '
-                    f'außerhalb des wöchentlichen Neukauf-Limits. Kurs/Buy-Stop unten sind die '
-                    f'Werte, zu denen <i>eingestiegen worden wäre</i>, kein aktiver Auftrag.</p>'
+                    f'⚠️ Erfüllt alle Kaufkriterien, wurde aber <b>nicht gekauft</b> — {grund} '
+                    f'Kurs/Buy-Stop unten sind die Werte, zu denen <i>eingestiegen worden '
+                    f'wäre</i>, kein aktiver Auftrag.</p>'
                 )
 
             # Musterlose Signale mit mehrfach getestetem, ungebrochenem

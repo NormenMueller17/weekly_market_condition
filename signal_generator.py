@@ -826,6 +826,47 @@ def build_midweek_watchlist(
     return out
 
 
+def _assign_top_picks(
+    signals:             list["TradeSignal"],
+    slots:               int,
+    weekly_limit:        int,
+    portfolio_remaining: int,
+) -> list["TradeSignal"]:
+    """Vergibt die Kaufplaetze an die ersten `slots` Signale der uebergebenen Liste.
+
+    Gehoert NACH den Sektor-Filter. `rank_signals` vergibt die Plaetze schon
+    vorher auf Basis der Rangfolge; sind die Top-Raenge dann sektorgesperrt,
+    bleibt kein Top-Pick uebrig und die Plaetze verfallen ungenutzt. Am
+    2026-09-19 waren die Raenge 1-4 durch Healthcare/Energy gesperrt: 3 freie
+    Plaetze, 10 gueltige Signale (ECO Rang 5 ...), null Kaeufe. Hier zaehlen nur
+    noch handelbare Signale; die Rangnummern bleiben unveraendert.
+
+    Fuer Signale ohne Platz wird `no_order_reason` gesetzt -- mit dem konkreten
+    Grund statt des frueheren Pauschaltexts "ausserhalb des Neukauf-Limits".
+    """
+    for i, sig in enumerate(signals):
+        sig.is_top_pick     = i < slots
+        sig.no_order_reason = ""
+
+    if len(signals) <= slots:
+        return signals
+
+    top = [s.ticker for s in signals[:slots]]
+    if not top:
+        grund = (f"Diese Woche kein Kaufplatz frei (Neukauf-Limit {weekly_limit}, "
+                 f"freie Portfolio-Plätze {portfolio_remaining}).")
+    elif weekly_limit <= portfolio_remaining:
+        grund = (f"Wöchentliches Neukauf-Limit von {weekly_limit} ausgeschöpft — die "
+                 f"Plätze gingen an die höher gerankten handelbaren Signale "
+                 f"{', '.join(top)}.")
+    else:
+        grund = (f"Nur {portfolio_remaining} freie Portfolio-Plätze — vergeben an die "
+                 f"höher gerankten handelbaren Signale {', '.join(top)}.")
+    for sig in signals[slots:]:
+        sig.no_order_reason = grund
+    return signals
+
+
 def rank_signals(
     signals:       list["TradeSignal"],
     max_positions: int = 5,
@@ -906,6 +947,10 @@ class TradeSignal:
     # Transparenz sichtbar statt spurlos aus der Liste zu verschwinden
     dropped:            bool            = False
     drop_reason:        str             = ""
+
+    # Gueltiges Signal ohne Auftrag: warum die Kaufplaetze anderweitig gingen
+    # (siehe _assign_top_picks). Leer bei Top-Picks und verworfenen Signalen.
+    no_order_reason:    str             = ""
 
     # Musterlose Signale (pattern == "–"): Buy-Stop wurde von "aktueller Kurs"
     # auf einen mehrfach getesteten, noch ungebrochenen Widerstand angehoben
@@ -1176,6 +1221,13 @@ def generate_signals(
         if sector_excluded:
             print(f"[SEKTOR] {len(sector_excluded)} Signal(e) wegen Sektorgrenze "
                   f"verworfen: {', '.join(sorted(sector_excluded))}")
+
+    # Kaufplaetze erst jetzt vergeben, damit sektorgesperrte Signale keinen
+    # Platz belegen (siehe _assign_top_picks).
+    signals = _assign_top_picks(
+        signals, slots=remaining_slots,
+        weekly_limit=max_new_this_week, portfolio_remaining=portfolio_remaining,
+    )
 
     return signals, candidates, sector_excluded, dropped_signals
 

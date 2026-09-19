@@ -923,6 +923,14 @@ HTML_TMPL = """
         </td>
       </tr>
       {% endif %}
+      {# ── Begründung für gültige Signale ohne Auftrag ── #}
+      {% if not s.is_top_pick and not s.dropped and s.no_order_reason %}
+      <tr style="background-color:{{ row_bg }}">
+        <td colspan="22" style="border-top:none;padding:3px 8px 7px 8px;text-align:left;font-size:0.8em;color:#666">
+          <strong>Kein Auftrag angelegt:</strong> {{ s.no_order_reason }}
+        </td>
+      </tr>
+      {% endif %}
       {# ── Verworfen-Begründung (Sektor-Limit) ── #}
       {% if s.dropped %}
       <tr style="background-color:{{ row_bg }}">
@@ -1089,8 +1097,10 @@ HTML_TMPL = """
       </div>
       {% if not s.is_top_pick %}
       <p style="background:#fff8e1;border-left:3px solid #f5a623;padding:.5em .8em;margin:.2em 0 .8em;font-size:0.85em;color:#555">
-        ⚠️ Erfüllt alle Kaufkriterien, wurde aber <strong>nicht gekauft</strong> — Rang {{ s.rank }} liegt außerhalb
-        des wöchentlichen Neukauf-Limits (siehe Abschnitt 7). Entry/Buy-Stop unten sind die Werte, zu denen
+        ⚠️ Erfüllt alle Kaufkriterien, wurde aber <strong>nicht gekauft</strong> —
+        {% if s.no_order_reason %}{{ s.no_order_reason }}{% else %}Rang {{ s.rank }} liegt außerhalb
+        des wöchentlichen Neukauf-Limits (siehe Abschnitt 7).{% endif %}
+        Entry/Buy-Stop unten sind die Werte, zu denen
         <em>eingestiegen worden wäre</em>, kein aktiver Auftrag.
       </p>
       {% endif %}
