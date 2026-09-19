@@ -8,32 +8,32 @@
     {
       "name": "SPY über 10W MA",
       "met": true,
-      "value": "+0.52%"
+      "value": "+0.09%"
     },
     {
       "name": "QQQ über 10W MA",
       "met": true,
-      "value": "+0.53%"
+      "value": "+1.52%"
     },
     {
       "name": "Marktbreite >55% über 10W EMA",
       "met": false,
-      "value": "38.8%"
+      "value": "32.5%"
     },
     {
       "name": "Wochenkursgewinner >55%",
       "met": false,
-      "value": "24.3%"
+      "value": "31.4%"
     },
     {
       "name": "New Highs > New Lows",
       "met": false,
-      "value": "NH=159, NL=287"
+      "value": "NH=157, NL=367"
     },
     {
       "name": "SPY MACD-Momentum positiv",
       "met": false,
-      "value": "-0.8056"
+      "value": "-0.8387"
     }
   ]
 }
