@@ -1339,8 +1339,11 @@ def run():
     report_file.write_text(html_full, encoding="utf-8")
     print(f"[PAGES] Report gespeichert → {report_file}")
 
+    # Feste Adresse fuer "Aktueller Report" in allen Navigationen
+    from report_builder import build_index_page, save_ampel_snapshot, write_latest_redirect
+    write_latest_redirect(docs_reports_dir)
+
     # Index-Seite aktualisieren
-    from report_builder import build_index_page, save_ampel_snapshot
     _breadth_snap = compute_breadth_snapshots(weekly, offsets=[0, 1, 4])
     _ampel_result = compute_ampel(_breadth_snap, idx_df)
     save_ampel_snapshot(_ampel_result)

@@ -2339,6 +2339,37 @@ def heuristic_verdict(breadth: pd.DataFrame, idx_rows: List[Tuple[str, dict]]) -
         return "Distribution/Schutzmodus: Risiko reduzieren, Stops nachziehen, Neuzukäufe selektiv."
     return "Neutral: Selektiv vorgehen, auf Bestätigungen warten."
 
+LATEST_REPORT_NAME = "latest.html"
+
+
+def write_latest_redirect(reports_dir) -> Optional[Path]:
+    """Schreibt reports/latest.html als Weiterleitung auf den neuesten Wochenreport.
+
+    Grund: trades.html und performance.html werden vor dem Wochenreport gebaut
+    und trugen deshalb bis zum naechsten Werktag-Lauf den Link auf den
+    Vor-Samstag ("Aktueller Report" zeigte am 2026-09-19 noch den 09-12).
+    Statt jede Seite nach dem Report nachzubauen, zeigen alle Navigationen auf
+    diesen festen Pfad. Das Glob `????-??-??.html` der Report-Listen erfasst die
+    Datei nicht.
+    """
+    reports_dir = Path(reports_dir)
+    neueste = sorted(reports_dir.glob("????-??-??.html"), reverse=True)
+    if not neueste:
+        return None
+    ziel = neueste[0].name
+    html = (
+        '<!DOCTYPE html>\n<html lang="de"><head><meta charset="utf-8">\n'
+        f'<meta http-equiv="refresh" content="0; url={ziel}">\n'
+        f'<link rel="canonical" href="{ziel}">\n'
+        '<title>Aktueller Report</title>\n'
+        f'<script>location.replace("{ziel}");</script>\n'
+        f'</head><body><p><a href="{ziel}">Aktueller Report ({neueste[0].stem})</a></p></body></html>\n'
+    )
+    pfad = reports_dir / LATEST_REPORT_NAME
+    pfad.write_text(html, encoding="utf-8")
+    return pfad
+
+
 def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
     """Erzeugt das Dashboard (docs/index.html) mit Mini-KPIs, Nav-Karten und Report-Archiv."""
     from pathlib import Path

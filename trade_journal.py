@@ -750,6 +750,9 @@ def _exit_reason_label(r):
 def _latest_report_link() -> str:
     """Return relative path to the most recent weekly report, or 'reports/' as fallback."""
     reports_dir = Path("docs/reports")
+    # Fester Pfad statt Datum, siehe report_builder.write_latest_redirect.
+    if (reports_dir / "latest.html").exists():
+        return "reports/latest.html"
     if reports_dir.exists():
         htmls = sorted(reports_dir.glob("????-??-??.html"), reverse=True)
         if htmls:

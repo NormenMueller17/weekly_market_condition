@@ -449,6 +449,10 @@ def _bar_chart_data(by_dict: dict) -> tuple[list, list, list]:
 
 def _latest_report_link() -> str:
     reports_dir = Path("docs/reports")
+    # Fester Pfad statt Datum: diese Seite wird vor dem Wochenreport gebaut, ein
+    # eingetragenes Datum waere bis zum naechsten Werktag-Lauf veraltet.
+    if (reports_dir / "latest.html").exists():
+        return "reports/latest.html"
     if reports_dir.exists():
         htmls = sorted(reports_dir.glob("????-??-??.html"), reverse=True)
         if htmls:
