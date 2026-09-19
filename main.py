@@ -518,7 +518,7 @@ def _build_signal_extras(signals, leaders_html) -> tuple:
 def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
                         signals, leaders_html, alpaca_portfolio, alpaca_cash,
                         report_url, test_mode, profile, muster, rs_now_map=None,
-                        sector_excluded=None) -> str:
+                        sector_excluded=None, kauffilter=None) -> str:
     """Traegt die Daten fuer den Boersenbrief zusammen und rendert ihn.
 
     Bewusst hier statt in mail_report: das Modul soll rendern, nicht Daten
@@ -592,6 +592,7 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
         ampel, perf, positionen, len(signals or []),
         _breadth_wert(breadth_snap, "Aktuelle Woche"),
         _breadth_wert(breadth_snap, "Woche −1"),
+        kauffilter=kauffilter,
     )
 
     return mail_report.build_boersenbrief(
@@ -670,7 +671,9 @@ def run():
 
     # Market filter 1: S&P 500 10W EMA > 20W EMA
     market_bullish = is_market_bullish(idx_data.get("SPY"))
-    print(f"[SIGNALS] Marktfilter 10EMA>20EMA: {'✅ BULLISH' if market_bullish else '❌ BÄRISCH – keine Kaufsignale'}")
+    print(f"[SIGNALS] Marktfilter 10EMA>20EMA: "
+          + ("✅ BULLISH" if market_bullish else
+             f"❌ BÄRISCH – höchstens {SETTINGS.max_new_per_week_bear} Neukauf/Woche, halbes Risiko"))
 
     # Market filter 2: S&P 500 Marktbreite (% Aktien über 200d-MA)
     from signal_generator import _RULES_JSON as _rules_json
@@ -1364,6 +1367,11 @@ def run():
         alpaca_portfolio=alpaca_portfolio, alpaca_cash=alpaca_cash,
         report_url=report_url, test_mode=TEST_MODE, rs_now_map=_rs_now_map,
         profile=profile, muster=muster, sector_excluded=sector_excluded,
+        kauffilter={
+            "bullish": bool(market_bullish),
+            "max_neu": (SETTINGS.max_new_per_week_bull if market_bullish
+                        else SETTINGS.max_new_per_week_bear),
+        },
     )
 
     # E-Mail Betreff zeigt Signalanzahl + TEST-MODUS-Hinweis

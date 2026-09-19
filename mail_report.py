@@ -398,26 +398,45 @@ def muster_liste(leaders, limit: int = 12) -> list:
 
 
 def lagebericht(ampel: dict, perf: dict, positionen: list,
-                n_signale: int, breadth_jetzt, breadth_vor) -> str:
+                n_signale: int, breadth_jetzt, breadth_vor,
+                kauffilter: Optional[dict] = None) -> str:
     """Der eine Absatz, der sagt was los ist — in ganzen Saetzen.
 
     Ersetzt das alte Einzeiler-Fazit. Alles hier ist aus den Zahlen abgeleitet,
     nichts geraten.
+
+    `kauffilter` = {"bullish": bool, "max_neu": int} ist der Zustand, der die
+    Orders tatsaechlich steuert (S&P-500-Trend + Marktbreite, siehe
+    signal_generator.generate_signals). Die Sechs-Kriterien-Ampel ist reine
+    Lagebeurteilung und sperrt nichts. Der Text hielt das frueher auseinander
+    nicht: "Defensiv ... keine Neueinstiege" stand in einer Woche, in der der
+    Kauffilter bullisch war und bis zu drei Kaeufe zulaesst (2026-09-19).
     """
     s = []
     score = ampel.get("score", 0)
     label = ampel.get("label", "Neutral")
     if label == "Bullish":
-        s.append(f"Der Markt trägt: {score} von 6 Ampelkriterien sind erfüllt, "
-                 f"Neueinstiege sind zulässig.")
+        s.append(f"Der Markt trägt: {score} von 6 Ampelkriterien sind erfüllt.")
     elif label == "Defensiv":
-        s.append(f"Der Markt ist defensiv: nur {score} von 6 Kriterien sind "
-                 f"erfüllt — keine Neueinstiege.")
+        s.append(f"Die Marktlage ist defensiv: nur {score} von 6 Ampelkriterien sind erfüllt.")
     else:
         s.append(f"Der Markt ist uneinheitlich: {score} von 6 Kriterien sind erfüllt. "
                  f"Nicht erfüllt: "
                  + ", ".join(k["name"] for k in ampel.get("criteria", []) if not k["met"])
                  + ".")
+
+    if kauffilter is not None:
+        n = kauffilter.get("max_neu")
+        if kauffilter.get("bullish"):
+            satz = (f"Der Kauffilter (S&P-500-Trend und Marktbreite) ist erfüllt: bis zu {n} "
+                    f"Neukäufe pro Woche bei voller Positionsgröße.")
+            if label != "Bullish":
+                satz += " Die Ampel ist eine Lagebeurteilung und sperrt keine Käufe."
+        else:
+            satz = (f"Der Kauffilter (S&P-500-Trend und Marktbreite) ist nicht erfüllt: "
+                    f"höchstens {n} {'Neukauf' if n == 1 else 'Neukäufe'} pro Woche "
+                    f"bei halbem Risiko.")
+        s.append(satz)
 
     if breadth_jetzt is not None and breadth_vor is not None:
         delta = breadth_jetzt - breadth_vor
