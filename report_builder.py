@@ -9,7 +9,7 @@ from jinja2 import Template
 
 from indicators import rsi, macd, pct_above_ma
 from breadth import compute_breadth_snapshots_with_advancers as compute_breadth_snapshots
-from signal_generator import MINERVINI_CRITERIA
+from signal_generator import MINERVINI_CRITERIA, DEFAULT_RULES
 
 
 # Token-Referenzen statt fester Hex-Werte, damit Positiv-/Negativ-Faerbung
@@ -710,7 +710,8 @@ HTML_TMPL = """
         &nbsp;|&nbsp;
         <strong>Position:</strong> {{ (signals[0].position_size_pct * 100) | round(1) }}% des Kapitals
         ({{ "{:,.0f}".format(signals[0].position_value) }} €/$) &nbsp;|&nbsp;
-        <strong>Kelly-Fraction:</strong> 1/3 &nbsp;|&nbsp;
+        <strong>Risiko je Trade:</strong> {{ risk_budget_pct | round(2) }}% des Depots
+        (Positionscap {{ max_position_pct | round(0) | int }}%) &nbsp;|&nbsp;
         <strong>Signale gesamt:</strong> {{ signals | length }}
         {% if alpaca_cash is not none %}
         &nbsp;|&nbsp;<strong>Alpaca Cash:</strong> ${{ "{:,.0f}".format(alpaca_cash) }}
@@ -2127,6 +2128,11 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     except Exception:
         pass
 
+    # Risikobudget je Trade, wie size_position() es ansetzt (risk-first, kein Kelly):
+    # im nicht-bullischen Markt um bearish_risk_fraction gekuerzt.
+    risk_budget_pct = (DEFAULT_RULES.get("max_risk_per_trade_pct", 1.5)
+                       * (1.0 if market_bullish else DEFAULT_RULES.get("bearish_risk_fraction", 0.5)))
+
     # market_bullish (Kauffilter gesamt) und trend_bullish (nur 10W>20W-EMA)
     # kommen vom Aufrufer. Frueher stand hier fest True, weshalb der Report
     # "Marktfilter ✅" auch dann zeigte, wenn der Filter nicht erfuellt war.
@@ -2278,6 +2284,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         dropped_signals    = dropped_signals,
         market_bullish     = market_bullish,
         trend_bullish      = trend_bullish,
+        risk_budget_pct    = risk_budget_pct,
+        max_position_pct   = DEFAULT_RULES.get("max_position_pct", 15.0),
         sp500_breadth_pct  = sp500_breadth_pct,
         min_breadth_pct    = min_breadth_pct,
         COLOR_POSITIVE     = COLOR_POSITIVE,

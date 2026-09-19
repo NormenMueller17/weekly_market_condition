@@ -18,7 +18,8 @@ Per candidate the generator computes:
   - Stop-loss level  (Muster-Geometrie, aber nie enger als der einheitliche
                       Floor max(min_stop_pct, stop_atr_mult × ATR) und nie
                       weiter als max_stop_pct — siehe generate_signals())
-  - Position size    (fractional Kelly criterion)
+  - Position size    (risk-first: max_risk_per_trade_pct / stop_pct, gedeckelt auf
+                      max_position_pct — kein Kelly, siehe size_position())
   - Risk per trade   (€/$ at risk + % of total equity)
   - Composite rank   (RS momentum + pattern quality + tightness + industry)
 """
