@@ -1271,6 +1271,26 @@ def run():
         # Fehlen darf den Wochenlauf nicht kippen — aber es muss sichtbar sein.
         print(f"[MIDWEEK] ⚠️  Watchlist konnte nicht gebaut werden: {e}")
 
+    # ── Beobachtungsmodus: offenes Portfoliorisiko (steuert NICHTS) ───────────
+    # Berechnet vor der Orderplatzierung, was eine Obergrenze fuer das Risiko bis
+    # zu den Stops mit den geplanten Kaeufen taete, und protokolliert es nach
+    # docs/data/heat_shadow.jsonl. Siehe portfolio_heat.py. Fehler hier duerfen die
+    # Orders nicht verhindern.
+    try:
+        import delisted
+        import portfolio_heat
+        portfolio_heat.run_shadow(
+            alpaca_portfolio, trade_journal.load().get("open", []),
+            [s for s in signals if s.is_top_pick],
+            equity=sizing_equity if _sizing_quelle == "live" else 0.0,
+            market_bullish=market_bullish,
+            ampel_score=(_ampel_result or {}).get("score"),
+            report_date=report_date, frozen=delisted.symbols(),
+            persist=not TEST_MODE,
+        )
+    except Exception as e:
+        print(f"[HEAT] ⚠️  Beobachtungsmodus fehlgeschlagen (Orders unberührt): {e}")
+
     # ── Alpaca: OTO Orders sofort platzieren ODER als Pending zurückhalten ─────
     top_picks = [s for s in signals if s.is_top_pick]
     if sell_symbols and top_picks and alpaca_portfolio is not None:
