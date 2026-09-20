@@ -443,6 +443,17 @@ def run(dry_run: bool) -> int:
         print("[MIDWEEK] Kein Ausbruch — keine Mail, keine Order.")
         return 0
 
+    # Ampel vom letzten Samstagslauf (nur samstags berechnet, siehe
+    # report_builder.save_ampel_snapshot) -- nur zur spaeteren Auswertung.
+    try:
+        from report_builder import _load_ampel_snapshot
+        _amp = _load_ampel_snapshot() or {}
+        for _s in signals:
+            _s.ampel_score = _amp.get("score")
+            _s.ampel_label = _amp.get("label", "")
+    except Exception as e:
+        print(f"[MIDWEEK] ⚠️  Ampel-Snapshot nicht lesbar ({e}) — Signale ohne ampel_score")
+
     results = alpaca_client.place_signal_orders(signals, dry_run=dry_run)
     for res in results:
         print(f"[MIDWEEK] Order {res['ticker']}: {res['status']}")

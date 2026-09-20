@@ -148,13 +148,16 @@ def _find_signal_meta(symbol: str, weeks_back: int = 16) -> dict:
                         "sector":        sig.get("sector", ""),
                         "rs_score":      sig.get("rs_score"),
                         "market_regime": sig.get("market_regime", "bullish"),
+                        "ampel_score":   sig.get("ampel_score"),
+                        "ampel_label":   sig.get("ampel_label", ""),
                         "signal_date":   payload.get("generated", ""),
                         "criteria":      sig.get("criteria") or {},
                     }
         except Exception:
             continue
     return {"pattern": "–", "company": "", "sector": "", "rs_score": None,
-            "market_regime": "bullish", "signal_date": "", "criteria": {}}
+            "market_regime": "bullish", "ampel_score": None, "ampel_label": "",
+            "signal_date": "", "criteria": {}}
 
 
 def _find_buy_stop(symbol: str, weeks_back: int = 52) -> Optional[float]:
@@ -430,6 +433,8 @@ def sync(
             "sector":           meta.get("sector", ""),
             "pattern":          meta["pattern"],
             "market_regime":    meta["market_regime"],
+            "ampel_score":      meta.get("ampel_score"),
+            "ampel_label":      meta.get("ampel_label", ""),
             "rs_score":         meta["rs_score"],
             "criteria":         meta.get("criteria") or {},
             "entry_date":       entry_date,
@@ -550,6 +555,9 @@ def sync(
             if meta.get("criteria") and not trade.get("criteria"):
                 trade["criteria"] = meta["criteria"]
                 print(f"[JOURNAL] 🔁 {trade['symbol']} Scorecard-Kriterien nachgetragen")
+            if meta.get("ampel_score") is not None and trade.get("ampel_score") is None:
+                trade["ampel_score"] = meta["ampel_score"]
+                trade["ampel_label"] = meta.get("ampel_label", "")
 
     # Sort closed: newest exit first
     data["closed"].sort(key=lambda t: t.get("exit_date", ""), reverse=True)

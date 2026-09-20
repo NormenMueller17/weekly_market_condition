@@ -977,6 +977,11 @@ class TradeSignal:
 
     # Meta
     market_regime:      str  = "bullish"   # "bullish" | "bearish" — regime when signal was generated
+    # Sechs-Kriterien-Marktampel zum Signalzeitpunkt. Steuert nichts (siehe
+    # main.py, Kauffilter), wird nur mitgeschrieben, damit sich spaeter direkt
+    # auswerten laesst, ob Einstiege unter schwacher Ampel schlechter laufen.
+    ampel_score:        Optional[int] = None   # 0-6
+    ampel_label:        str  = ""              # "Bullish" | "Neutral" | "Defensiv"
     sa_link:            str  = ""
     signal_date:        str  = field(default_factory=lambda: date.today().isoformat())
 

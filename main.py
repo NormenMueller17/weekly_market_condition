@@ -1207,6 +1207,22 @@ def run():
     print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden"
           + (f" — davon {_n_re} Wiedereinstieg(e)" if _n_re else ""))
 
+    # Marktampel zum Signalzeitpunkt mitschreiben (nur zur spaeteren Auswertung,
+    # steuert keine Orders). Fehlertolerant: ein Fehler hier darf den Lauf VOR
+    # der Orderplatzierung nicht kippen; weiter unten wird sie dann wie bisher
+    # neu berechnet.
+    _breadth_snap = _ampel_result = None
+    try:
+        _breadth_snap = compute_breadth_snapshots(weekly, offsets=[0, 1, 4])
+        _ampel_result = compute_ampel(_breadth_snap, idx_df)
+        for _s in list(signals) + list(dropped_signals or []):
+            _s.ampel_score = _ampel_result.get("score")
+            _s.ampel_label = _ampel_result.get("label", "")
+    except Exception as e:
+        print(f"[AMPEL] ⚠️  Ampel vor der Signalvergabe nicht berechenbar: {e} — "
+              f"Signale ohne ampel_score")
+        _breadth_snap = _ampel_result = None
+
     # Diagnose-Snapshot aller Score>=6-Leaders (Rohwerte + Scheitert-an) —
     # macht Tag-zu-Tag-Abweichungen wie am 2026-08-09 (AVT/MTRN kippten durch
     # eine inkonsistente EPS-Q-Kennzahl) per JSON-Diff statt HTML-Vergleich
@@ -1377,8 +1393,9 @@ def run():
     write_latest_redirect(docs_reports_dir)
 
     # Index-Seite aktualisieren
-    _breadth_snap = compute_breadth_snapshots(weekly, offsets=[0, 1, 4])
-    _ampel_result = compute_ampel(_breadth_snap, idx_df)
+    if _ampel_result is None:
+        _breadth_snap = compute_breadth_snapshots(weekly, offsets=[0, 1, 4])
+        _ampel_result = compute_ampel(_breadth_snap, idx_df)
     save_ampel_snapshot(_ampel_result)
     index_path = Path("docs/index.html")
     index_path.write_text(
