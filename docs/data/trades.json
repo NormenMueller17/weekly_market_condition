@@ -214,14 +214,23 @@
     {
       "symbol": "CDNA",
       "chart_before_path": "data/trade_charts/CDNA_2026-09-24.svg",
-      "company": "",
-      "sector": "",
-      "pattern": "–",
+      "company": "CareDx Inc.",
+      "sector": "Healthcare",
+      "pattern": "Mid-Week",
       "market_regime": "bullish",
       "ampel_score": null,
       "ampel_label": "",
-      "rs_score": null,
-      "criteria": {},
+      "rs_score": 98.08125,
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend ↑": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      },
       "entry_date": "2026-09-24",
       "entry_price": 55.98,
       "qty": 246.0,
@@ -242,19 +251,29 @@
       "pt_partial_2_qty": 0,
       "pt_partial_2_date": null,
       "pt_trailing_stop": null,
-      "pt_breakeven_alpaca_confirmed": true
+      "pt_breakeven_alpaca_confirmed": true,
+      "meta_quelle": "rekonstruiert aus midweek_watchlist (2026-09-20, git 8974861)"
     },
     {
       "symbol": "QMCO",
       "chart_before_path": "data/trade_charts/QMCO_2026-09-24.svg",
-      "company": "",
-      "sector": "",
-      "pattern": "–",
+      "company": "Quantum Corporation",
+      "sector": "Technology",
+      "pattern": "Mid-Week",
       "market_regime": "bullish",
       "ampel_score": null,
       "ampel_label": "",
-      "rs_score": null,
-      "criteria": {},
+      "rs_score": 98.13693181818182,
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend ↑": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      },
       "entry_date": "2026-09-24",
       "entry_price": 26.6,
       "qty": 230.0,
@@ -277,19 +296,29 @@
       "pt_trailing_stop": null,
       "pt_breakeven_alpaca_confirmed": true,
       "pt_partial_1_price": 31.93,
-      "realized_pl_partial": 612.95
+      "realized_pl_partial": 612.95,
+      "meta_quelle": "rekonstruiert aus midweek_watchlist (2026-09-20, git 8974861)"
     },
     {
       "symbol": "TRLV",
       "chart_before_path": "data/trade_charts/TRLV_2026-09-24.svg",
-      "company": "",
-      "sector": "",
-      "pattern": "–",
+      "company": "Trulieve Cannabis Corp. Subordinate Voting Shares",
+      "sector": "Healthcare",
+      "pattern": "Mid-Week",
       "market_regime": "bullish",
       "ampel_score": null,
       "ampel_label": "",
-      "rs_score": null,
-      "criteria": {},
+      "rs_score": 88.19772727272728,
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend ↑": true,
+        "Vol-Breakout": true,
+        "Close > Vorwoche": false
+      },
       "entry_date": "2026-09-24",
       "entry_price": 12.57,
       "qty": 846.0,
@@ -309,7 +338,8 @@
       "pt_partial_2_done": false,
       "pt_partial_2_qty": 0,
       "pt_partial_2_date": null,
-      "pt_trailing_stop": null
+      "pt_trailing_stop": null,
+      "meta_quelle": "rekonstruiert aus midweek_watchlist (2026-09-20, git 8974861)"
     }
   ],
   "closed": [
@@ -320,7 +350,7 @@
       "sector": "Energy",
       "pattern": "Mid-Week",
       "market_regime": "bullish",
-      "rs_score": null,
+      "rs_score": 91.15223542727787,
       "entry_date": "2026-09-03",
       "entry_price": 7.1,
       "qty": 957.0,
@@ -342,7 +372,8 @@
       "exit_reason": "stop_hit",
       "exit_order_id": "f14801cf-a4f4-49f5-a59f-ff6b3e5fda43",
       "realized_pl": 526.35,
-      "realized_plpc": 7.75
+      "realized_plpc": 7.75,
+      "meta_quelle": "rekonstruiert aus midweek_watchlist (2026-08-29, git 2fdbc81)"
     },
     {
       "symbol": "MBIN",
@@ -380,7 +411,7 @@
       "sector": "Consumer Defensive",
       "pattern": "Mid-Week",
       "market_regime": "bullish",
-      "rs_score": null,
+      "rs_score": 86.71533672891907,
       "entry_date": "2026-09-03",
       "entry_price": 209.98,
       "qty": 32.0,
@@ -401,7 +432,8 @@
       "exit_reason": "stop_hit",
       "exit_order_id": "e09be493-ed33-493a-877a-70622b01f539",
       "realized_pl": -1067.08,
-      "realized_plpc": -15.88
+      "realized_plpc": -15.88,
+      "meta_quelle": "rekonstruiert aus midweek_watchlist (2026-08-29, git 2fdbc81)"
     },
     {
       "symbol": "DELL",
@@ -410,7 +442,7 @@
       "sector": "Technology",
       "pattern": "Mid-Week",
       "market_regime": "bullish",
-      "rs_score": null,
+      "rs_score": 97.91850594227503,
       "entry_date": "2026-09-03",
       "entry_price": 485.196667,
       "qty": 12.0,
@@ -433,7 +465,8 @@
       "exit_reason": "stop_hit",
       "exit_order_id": "98b4e13d-2e9c-49a8-aa30-1ae92d90b6f7",
       "realized_pl": 454.7,
-      "realized_plpc": 7.81
+      "realized_plpc": 7.81,
+      "meta_quelle": "rekonstruiert aus midweek_watchlist (2026-08-29, git 2fdbc81)"
     },
     {
       "symbol": "CORT",
@@ -558,11 +591,11 @@
     },
     {
       "symbol": "ACRS",
-      "company": "",
+      "company": "Aclaris Therapeutics Inc.",
       "sector": "Healthcare",
-      "pattern": "–",
+      "pattern": "Mid-Week",
       "market_regime": "bullish",
-      "rs_score": null,
+      "rs_score": 96.43949394939493,
       "entry_date": "2026-08-06",
       "entry_price": 6.41,
       "qty": 1891.0,
@@ -583,7 +616,8 @@
       "exit_reason": "stop_hit",
       "exit_order_id": "fcfd5740-75ee-41bd-9375-1e1522e4d65d",
       "realized_pl": -1456.07,
-      "realized_plpc": -12.01
+      "realized_plpc": -12.01,
+      "meta_quelle": "rekonstruiert aus midweek_watchlist (2026-08-01, git d727b62)"
     },
     {
       "symbol": "AVNS",

@@ -203,6 +203,58 @@ def place_signal_orders(signals: list, dry_run: bool = False) -> list[dict]:
     return results
 
 
+def find_initial_stops(entry_dates: dict, days_back: int = 60) -> dict:
+    """Initialer Stop je Symbol aus den Kindorders der Kauforder (OTO/Bracket).
+
+    entry_dates -- {Symbol: Einstiegsdatum "YYYY-MM-DD"}; bei mehreren Kaeufen desselben
+                   Titels zaehlt der zeitlich naechste an diesem Datum.
+
+    Der Stop-Preis der urspruenglichen Kindorder bleibt an der Kauforder stehen, auch wenn
+    der Stop spaeter angehoben wurde -- anders als bei der offenen Stop-Order. Fehlt die
+    Kindorder (kein OTO) oder der Abruf schlaegt fehl, fehlt das Symbol im Ergebnis; es
+    wird nichts geraten.
+    """
+    import datetime
+    client = _get_trading_client()
+    if client is None or not entry_dates:
+        return {}
+    try:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import QueryOrderStatus
+        after = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_back)
+        orders = client.get_orders(GetOrdersRequest(
+            status=QueryOrderStatus.ALL, symbols=list(entry_dates), after=after,
+            nested=True, limit=500))
+    except Exception as e:
+        print(f"[ALPACA] ⚠️  Kauforders fuer initiale Stops nicht abrufbar: {e}")
+        return {}
+
+    def _tag(ts):
+        return ts.date() if hasattr(ts, "date") else None
+
+    best: dict = {}   # symbol -> (abstand_in_tagen, stop)
+    for o in orders:
+        # Enum-Stringify: str(OrderSide.BUY) ist "OrderSide.BUY", nicht "buy" -- daher endswith.
+        if not str(o.side).lower().endswith("buy") or not o.legs:
+            continue
+        sym = o.symbol
+        try:
+            ziel = datetime.date.fromisoformat(entry_dates[sym])
+        except (KeyError, ValueError, TypeError):
+            continue
+        ref = _tag(getattr(o, "filled_at", None)) or _tag(getattr(o, "submitted_at", None))
+        if ref is None:
+            continue
+        stops = [float(l.stop_price) for l in o.legs
+                 if str(l.side).lower().endswith("sell") and l.stop_price is not None]
+        if not stops:
+            continue
+        abstand = abs((ref - ziel).days)
+        if abstand <= 3 and (sym not in best or abstand < best[sym][0]):
+            best[sym] = (abstand, stops[0])
+    return {s: v[1] for s, v in best.items()}
+
+
 def get_filled_orders(side: str = "sell", days_back: int = 365) -> list[dict]:
     """Return filled buy or sell orders from Alpaca order history.
 

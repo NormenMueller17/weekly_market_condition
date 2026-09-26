@@ -545,6 +545,26 @@ def sync(
                     trade["current_stop"] = stop
                 print(f"[JOURNAL] 🔁 {trade['symbol']} initial_stop nachgetragen: {stop}")
 
+    # 4b. Weiterhin ohne initialen Stop: Mittwochskaeufe, deren signals_meta verloren
+    # ging (midweek-entry.yml checkte sie bis 2026-09-26 nicht ein). Der Stop steht
+    # dann nur noch in den Kindorders der Kauforder beim Broker.
+    fehlend = {t["symbol"]: t.get("entry_date") for t in data["open"]
+               if t.get("initial_stop") is None and t.get("entry_date")}
+    if fehlend:
+        try:
+            import alpaca_client
+            stops = alpaca_client.find_initial_stops(fehlend)
+        except Exception as e:
+            print(f"[JOURNAL] ⚠️  Initiale Stops aus den Broker-Orders nicht ermittelbar: {e}")
+            stops = {}
+        for trade in data["open"]:
+            stop = stops.get(trade["symbol"])
+            if trade.get("initial_stop") is None and stop is not None:
+                trade["initial_stop"] = stop
+                if trade.get("current_stop") is None:
+                    trade["current_stop"] = stop
+                print(f"[JOURNAL] 🔁 {trade['symbol']} initial_stop aus Broker-Orders nachgetragen: {stop}")
+
     # 5. Backfill rs_score / pattern / company / sector / criteria for existing trades where missing
     for trade in data["open"]:
         needs_meta = (
@@ -553,7 +573,6 @@ def sync(
             or not trade.get("company")
             or not trade.get("sector")
             or not trade.get("criteria")
-            or not trade.get("initial_stop")
         )
         if needs_meta:
             meta = _find_signal_meta(trade["symbol"])
@@ -569,11 +588,6 @@ def sync(
             if meta.get("criteria") and not trade.get("criteria"):
                 trade["criteria"] = meta["criteria"]
                 print(f"[JOURNAL] 🔁 {trade['symbol']} Scorecard-Kriterien nachgetragen")
-            if not trade.get("initial_stop"):
-                stop0 = _find_initial_stop(trade["symbol"])
-                if stop0:
-                    trade["initial_stop"] = stop0
-                    print(f"[JOURNAL] 🔁 {trade['symbol']} initialer Stop nachgetragen: {stop0}")
             if meta.get("ampel_score") is not None and trade.get("ampel_score") is None:
                 trade["ampel_score"] = meta["ampel_score"]
                 trade["ampel_label"] = meta.get("ampel_label", "")
