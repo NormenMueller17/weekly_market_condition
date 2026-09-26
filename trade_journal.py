@@ -160,6 +160,19 @@ def _find_signal_meta(symbol: str, weeks_back: int = 16) -> dict:
             "signal_date": "", "criteria": {}}
 
 
+def _find_signal(symbol: str, weeks_back: int = 16) -> Optional[dict]:
+    """Das vollstaendige, juengste Signal zu *symbol* (alle Felder), oder None."""
+    for f in _signal_files(weeks_back):
+        try:
+            payload = json.loads(f.read_text(encoding="utf-8"))
+            for sig in payload.get("signals", []):
+                if sig.get("ticker") == symbol:
+                    return sig
+        except Exception:
+            continue
+    return None
+
+
 def _find_buy_stop(symbol: str, weeks_back: int = 52) -> Optional[float]:
     """Buy-Stop (= Pivot) des urspruenglichen Signals von *symbol*."""
     for f in _signal_files(weeks_back):
@@ -540,6 +553,7 @@ def sync(
             or not trade.get("company")
             or not trade.get("sector")
             or not trade.get("criteria")
+            or not trade.get("initial_stop")
         )
         if needs_meta:
             meta = _find_signal_meta(trade["symbol"])
@@ -555,6 +569,11 @@ def sync(
             if meta.get("criteria") and not trade.get("criteria"):
                 trade["criteria"] = meta["criteria"]
                 print(f"[JOURNAL] 🔁 {trade['symbol']} Scorecard-Kriterien nachgetragen")
+            if not trade.get("initial_stop"):
+                stop0 = _find_initial_stop(trade["symbol"])
+                if stop0:
+                    trade["initial_stop"] = stop0
+                    print(f"[JOURNAL] 🔁 {trade['symbol']} initialer Stop nachgetragen: {stop0}")
             if meta.get("ampel_score") is not None and trade.get("ampel_score") is None:
                 trade["ampel_score"] = meta["ampel_score"]
                 trade["ampel_label"] = meta.get("ampel_label", "")

@@ -488,8 +488,12 @@ HTML_TMPL = """
     <h2>4) Fazit</h2>
     <p>{{ summary }}</p>
 
+    {% if recent_trades or new_buys %}
+    <h2>5) 📋 Portfolio-Trades der letzten 7 Tage</h2>
+    {% endif %}
+
     {% if recent_trades %}
-    <h2>5) 📋 Portfolio Trades – letzte Woche</h2>
+    <h3 style="margin:1em 0 .4em;font-size:1em;color:#003d99">Abgeschlossen (Verkäufe)</h3>
     <table>
       <tr>
         <th class="left">Symbol</th>
@@ -523,6 +527,46 @@ HTML_TMPL = """
       </tr>
       {% endfor %}
     </table>
+    {% endif %}
+
+    {% if new_buys %}
+    <h3 style="margin:1.2em 0 .4em;font-size:1em;color:#003d99">Neu gekauft</h3>
+    <p style="font-size:0.85em;color:#777;margin:0 0 .8em">
+      Käufe der letzten 7 Tage, Wochenlauf und Mittwochslauf. Die Begründung stammt aus dem
+      Signal zum Kaufzeitpunkt, nicht aus heutigen Zahlen.
+    </p>
+    {% for b in new_buys %}
+    <div class="leader-card" style="max-width:820px;margin-bottom:1em">
+      <div style="font-size:1.1em;font-weight:bold;margin-bottom:2px">
+        <a href="{{ b.sa_link }}" target="_blank" style="color:#003d99;text-decoration:none">{{ b.symbol }}</a>
+        {% if b.company %}&nbsp;—&nbsp;{{ b.company }}{% endif %}
+        <span style="background:#e8f0fe;color:#003d99;padding:2px 7px;border-radius:10px;font-size:0.6em;vertical-align:middle;margin-left:6px">
+          Kauf {{ b.entry_date }} · {{ "Mittwochslauf" if b.midweek else "Wochenlauf" }}</span>
+        {% if b.status == "geschlossen" %}
+        <span style="background:#eee;color:#666;padding:2px 7px;border-radius:10px;font-size:0.6em;vertical-align:middle;margin-left:4px">bereits wieder verkauft</span>
+        {% endif %}
+      </div>
+      <div style="color:#888;font-size:0.85em;margin-bottom:6px">
+        {{ b.kopfzeile }}{% if b.kopfzeile %} · {% endif %}RS {{ '%.0f' % b.rs_score if b.rs_score is not none else '–' }}
+        · Muster {{ b.pattern }}
+      </div>
+      <div style="font-size:0.9em;margin-bottom:6px">
+        Einstieg ${{ "%.2f"|format(b.entry_price) }} × {{ "{:,.0f}".format(b.menge) }} Stück
+        = ${{ "{:,.0f}".format(b.wert) }}
+        {% if b.stop %} &nbsp;|&nbsp; Stop ${{ "%.2f"|format(b.stop) }}{% if b.stop_pct is not none %} ({{ "%.1f"|format(b.stop_pct) }} %){% endif %}{% endif %}
+      </div>
+      {% if b.beschreibung %}
+      <p style="margin:.4em 0;font-size:0.92em">{{ b.beschreibung }}
+        <span style="color:#aaa;font-size:0.85em">(Original, englisch, gekürzt)</span></p>
+      {% endif %}
+      {% if b.begruendung %}
+      <div style="font-weight:600;color:#003d99;margin-top:.5em;font-size:.9em">Warum gekauft</div>
+      <ul style="margin:.3em 0 0;padding-left:1.2em;font-size:0.9em">
+        {% for g in b.begruendung %}<li style="margin-bottom:.2em">{{ g }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
     {% endif %}
 
     {% if alpaca_portfolio %}
@@ -2021,6 +2065,77 @@ def _price_history_svg(perioden: list, close: list, volumen: Optional[list] = No
     return "".join(teile)
 
 
+def _collect_new_buys(trades: dict, today, days: int = 7, profile: Optional[dict] = None,
+                      fetch_profiles=None, find_signal=None) -> list:
+    """Kaeufe der letzten `days` Tage fuer Abschnitt 5 — offene UND schon wieder
+    geschlossene, jeweils mit kurzem Unternehmensportraet und Kaufbegruendung.
+
+    Bisher zeigte Abschnitt 5 nur Verkaeufe (geschlossene Trades der letzten 7 Tage);
+    ein Kauf in derselben Woche, etwa ein Mittwochskauf, tauchte dort nirgends auf.
+    Portraet und Begruendung kommen wie bei den Kaufkandidaten aus company_profile;
+    die Begruendung stammt aus dem ORIGINALSIGNAL (signals_meta), nicht aus heutigen
+    Zahlen. Fehlt eines von beiden, erscheint der Kauf trotzdem, nur ohne diesen Teil.
+    """
+    if fetch_profiles is None:
+        import company_profile
+        fetch_profiles = company_profile.fetch_profiles
+    if find_signal is None:
+        import trade_journal
+        find_signal = trade_journal._find_signal
+    cutoff = (today - dt.timedelta(days=days)).isoformat()
+
+    hits = [(t, "offen") for t in trades.get("open", []) if (t.get("entry_date") or "") >= cutoff]
+    hits += [(t, "geschlossen") for t in trades.get("closed", []) if (t.get("entry_date") or "") >= cutoff]
+    hits.sort(key=lambda x: (x[0].get("entry_date") or "", x[0].get("symbol") or ""))
+    if not hits:
+        return []
+
+    profile = dict(profile or {})
+    fehlend = [t["symbol"] for t, _ in hits if t["symbol"] not in profile]
+    if fehlend:
+        try:
+            profile.update(fetch_profiles(fehlend))
+        except Exception as e:
+            print(f"[REPORT] ⚠️  Portraets der neuen Kaeufe nicht ladbar: {e}")
+    formatiert = _format_profile_for_report(profile)
+
+    out = []
+    for t, status in hits:
+        sym = t["symbol"]
+        p = formatiert.get(sym, {})
+        sig = None
+        begruendung = []
+        try:
+            sig = find_signal(sym)
+            if sig:
+                from signal_generator import TradeSignal
+                import company_profile
+                begruendung = company_profile.kaufbegruendung(TradeSignal(**sig))
+        except Exception as e:
+            print(f"[REPORT] ⚠️  Kaufbegruendung fuer {sym} nicht baubar: {e}")
+        menge = t.get("pt_original_qty") or t.get("qty") or 0
+        entry, stop = t.get("entry_price"), t.get("initial_stop")
+        out.append({
+            "symbol":      sym,
+            "company":     t.get("company") or (sig or {}).get("company") or "",
+            "sa_link":     (sig or {}).get("sa_link") or f"https://seekingalpha.com/symbol/{sym}",
+            "entry_date":  t.get("entry_date"),
+            "entry_price": entry,
+            "menge":       menge,
+            "wert":        (entry or 0) * menge,
+            "stop":        stop,
+            "stop_pct":    ((entry - stop) / entry * 100) if entry and stop else None,
+            "pattern":     t.get("pattern") or "–",
+            "rs_score":    t.get("rs_score"),
+            "midweek":     (t.get("pattern") == "Mid-Week"),
+            "status":      status,
+            "kopfzeile":   p.get("kopfzeile", ""),
+            "beschreibung": p.get("beschreibung", ""),
+            "begruendung": begruendung,
+        })
+    return out
+
+
 def _format_profile_for_report(profile: dict) -> dict:
     """Unternehmensportraets fuer den Web-Report vorformatieren.
 
@@ -2109,8 +2224,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         "manual_market": "Manuell",
     }
     recent_trades = []
+    _tf = Path(__file__).parent / "docs" / "data" / "trades.json"
     try:
-        _tf = Path(__file__).parent / "docs" / "data" / "trades.json"
         if _tf.exists():
             _all = json.loads(_tf.read_text(encoding="utf-8")).get("closed", [])
             _cutoff = (dt.date.today() - dt.timedelta(days=7)).isoformat()
@@ -2130,6 +2245,15 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
             recent_trades.sort(key=lambda x: x.exit_date, reverse=True)
     except Exception:
         pass
+
+    # Kaeufe der letzten 7 Tage (offen oder schon wieder verkauft), mit Kurzportraet
+    new_buys = []
+    try:
+        if _tf.exists():
+            new_buys = _collect_new_buys(json.loads(_tf.read_text(encoding="utf-8")),
+                                         dt.date.today(), profile=profile)
+    except Exception as e:
+        print(f"[REPORT] ⚠️  Neue Kaeufe nicht ermittelbar: {e}")
 
     # Risikobudget je Trade, wie size_position() es ansetzt (risk-first, kein Kelly):
     # im nicht-bullischen Markt um bearish_risk_fraction gekuerzt.
@@ -2313,6 +2437,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         tv_watchlist_leaders = build_tv_watchlist_string(list(leaders_html.index) if leaders_html is not None else []),
         tv_watchlist_muster  = build_tv_watchlist_string(muster or []),
         recent_trades      = recent_trades,
+        new_buys           = new_buys,
         profile_display    = profile_display,
         muster             = muster,
         tv_signal_charts   = tv_signal_charts,

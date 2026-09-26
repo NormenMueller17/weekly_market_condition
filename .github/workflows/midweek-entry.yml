@@ -14,7 +14,7 @@ on:
         default: ''
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   midweek-entry:
@@ -55,3 +55,23 @@ jobs:
           else
             python midweek_entry.py
           fi
+
+      # Ohne diesen Schritt ging signals_meta_<Datum>.json mit dem Runner verloren:
+      # Mittwochskaeufe standen im Journal ohne Firma, Sektor, Muster, RS und
+      # initialen Stop (CDNA, QMCO, TRLV am 2026-09-24). midweek_entry.py schreibt die
+      # Datei seit 14d3a96, nur landete sie nie im Repo. Nur diese Datei wird
+      # eingecheckt, nichts sonst.
+      - name: Signal-Metadaten einchecken
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git ls-files --others --modified --exclude-standard docs/data             | { grep "signals_meta_" || true; } | xargs -r git add
+          git diff --staged --quiet || git commit -m "midweek: Signal-Metadaten $(date +%Y-%m-%d)"
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "Push abgelehnt (Versuch $i) — hole und rebase auf origin/main..."
+            git fetch origin main
+            git rebase origin/main || { echo "Rebase fehlgeschlagen"; git rebase --abort; exit 1; }
+            sleep $((i * 5))
+          done
