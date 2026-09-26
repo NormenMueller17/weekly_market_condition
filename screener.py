@@ -6,9 +6,14 @@ from pathlib import Path
 from data_sources import get_universe
 from detect_vcp import detect_vcp
 from launchpad_detection import detect_launchpad, compute_launchpad_score
+import volume_events
 
 _rules_json = json.loads((Path(__file__).parent / "rules.json").read_text(encoding="utf-8"))
 _VOLUME_BREAKOUT_SCORE: float = _rules_json.get("filters", {}).get("volume_breakout_score", 1.3)
+# Quartalsverfall und Russell-Anpassung aus dem Volumenkriterium herausrechnen (siehe
+# volume_events.py). Abschaltbar, zusaetzliche Tage ueber volume_event_days_extra.
+_EXCLUDE_EVENT_DAYS: bool = bool(_rules_json.get("filters", {}).get("volume_exclude_event_days", True))
+_EVENT_DAYS_EXTRA: list = list(_rules_json.get("filters", {}).get("volume_event_days_extra", []))
 
 
 def _macd_above_signal_weekly(df: pd.DataFrame, price_col: str = "Close",
@@ -216,12 +221,26 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
 
     # --- Volume (holiday-aware): compare avg DAILY volume of last trading week vs MA20 of DAILY volume ---
     daily_vol = pd.to_numeric(df["Volume"], errors="coerce").dropna() if "Volume" in df.columns else pd.Series(dtype=float)
+    vol_event_days, vol_event_last = 0, ""
     if len(daily_vol) >= 20:
-        vol20_val = float(daily_vol.rolling(20).mean().iloc[-1])
+        # Quartalsverfall/Russell-Tag: weder im Wochenmittel noch im 20-Tage-Schnitt.
+        # Sonst genuegt ein Freitag mit 1,9x Volumen, um das Wochenmittel um ~18 % zu heben
+        # (2026-09-18: Ausbruchsquote 15 % -> 39 %).
+        ev = (volume_events.event_mask(daily_vol.index, _EVENT_DAYS_EXTRA)
+              if _EXCLUDE_EVENT_DAYS else np.zeros(len(daily_vol), dtype=bool))
+        vol_ohne = daily_vol[~ev]
+        vol20_val = float((vol_ohne if len(vol_ohne) >= 20 else daily_vol).rolling(20).mean().iloc[-1])
         # Last (completed) trading week based on last available trading day (W-FRI).
         week_id = daily_vol.index.to_period("W-FRI")
         last_week = week_id[-1]
-        vol_week = daily_vol[week_id == last_week].dropna()
+        in_woche = np.asarray(week_id == last_week)
+        vol_week = daily_vol[in_woche & ~ev].dropna()
+        if vol_week.empty:                       # ganze Woche = Ereignistag: nichts wegzurechnen
+            vol_week = daily_vol[in_woche].dropna()
+        else:
+            vol_event_days = int((in_woche & ev).sum())
+            if vol_event_days:
+                vol_event_last = str(daily_vol.index[in_woche & ev][-1])[:10]
         n_days = int(len(vol_week))
         if n_days > 0 and (not pd.isna(vol20_val)) and vol20_val != 0:
             avg_daily_week_vol = float(vol_week.sum() / n_days)
@@ -284,6 +303,8 @@ def compute_minervini_template(df: pd.DataFrame) -> dict:
         "Dist to 52W High (%)": dist_to_52w_high_pct,
         "vol20": vol20_val,
         "vol_score": vol_score,
+        "vol_event_days": vol_event_days,
+        "vol_event_last": vol_event_last,
         "close_weekly_now": close_weekly_now,
         "close_weekly_prev": close_weekly_prev,
         "close_weekly_change_pct": close_weekly_change_pct,

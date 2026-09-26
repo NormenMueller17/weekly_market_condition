@@ -55,6 +55,7 @@ import pandas as pd
 import yfinance as yf
 
 import alpaca_client
+import volume_events
 from config import SETTINGS
 from emailer import send_email
 from signal_generator import (
@@ -200,7 +201,14 @@ def check_breakout(ticker: str, buy_stop: float, r: dict) -> dict | None:
     day_high = float(high.iloc[-1])
     day_close = float(close.iloc[-1])
     day_vol  = float(volume.iloc[-1])
-    vol20    = float(volume.rolling(20).mean().iloc[-2])   # ohne den laufenden Tag
+    # 20-Tage-Schnitt ohne den laufenden Tag und ohne Quartalsverfall-/Russell-Tage
+    # (siehe volume_events.py), damit er wie im Wochenlauf nicht von mechanischem
+    # Sondervolumen aufgeblaeht wird.
+    _ev = (volume_events.event_mask(volume.index, r.get("volume_event_days_extra", []))
+           if r.get("volume_exclude_event_days", True) else None)
+    _vol_basis = volume[~_ev] if _ev is not None else volume
+    _vol_basis = _vol_basis[_vol_basis.index < volume.index[-1]]
+    vol20    = float(_vol_basis.tail(20).mean()) if len(_vol_basis) >= 20         else float(volume.rolling(20).mean().iloc[-2])
     vol_mult = r.get("volume_breakout_score", 1.3)
 
     pivot_taken = day_high >= buy_stop

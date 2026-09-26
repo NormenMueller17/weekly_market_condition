@@ -145,6 +145,8 @@ DEFAULT_RULES: dict = {
     "require_macd_above_signal": _f.get("require_macd_above_signal", True),
     "require_vol_breakout":   _f.get("require_vol_breakout",   True),
     "midweek_watchlist_max":  _f.get("midweek_watchlist_max",   60),
+    "volume_exclude_event_days": _f.get("volume_exclude_event_days", True),
+    "volume_event_days_extra":   _f.get("volume_event_days_extra",   []),
     "reentry_enabled":        _f.get("reentry_enabled",       True),
     "reentry_max_attempts":   _f.get("reentry_max_attempts",     3),
     "reentry_cooldown_days":  _f.get("reentry_cooldown_days",   28),

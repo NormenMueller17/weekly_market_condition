@@ -760,6 +760,25 @@ def run():
     # Timing warten, bekamen nie einen Namen. Der Filter sitzt jetzt in
     # signal_generator._timing_mask (rules.json → require_vol_breakout).
     leaders = screen_universe_minervini(universe, min_score=0, require_vol_breakout=False)
+
+    # Hinweis fuer den Report, wenn die Woche einen Quartalsverfall-/Russell-Tag enthielt:
+    # er ist aus dem Volumenkriterium herausgerechnet (volume_events.py).
+    _vol_event_note = ""
+    try:
+        if not leaders.empty and "vol_event_last" in leaders.columns:
+            _ev_tage = leaders["vol_event_last"][leaders["vol_event_last"].astype(bool)]
+            if not _ev_tage.empty:
+                _d = pd.Timestamp(_ev_tage.mode().iloc[0])
+                _vol_event_note = (
+                    f"Die Woche enthielt einen Tag mit mechanischem Sondervolumen "
+                    f"(Quartalsverfall bzw. Indexanpassung, {_d.strftime('%d.%m.')}). Er ist aus dem "
+                    f"Volumenkriterium herausgerechnet, damit Optionsverfall und Indexumschichtung "
+                    f"keine Ausbrüche vortäuschen."
+                )
+                print(f"[VOLUMEN] Ereignistag {_d.date()} aus dem Volumenkriterium herausgerechnet "
+                      f"({len(_ev_tage)} Titel betroffen)")
+    except Exception as e:
+        print(f"[VOLUMEN] ⚠️  Hinweis zum Ereignistag nicht baubar: {e}")
     info_map = get_company_info_map()
     # NEU: Launchpad Quality Filter
     # Strenger Filter: Score ≥90 UND Range <8%
@@ -1395,6 +1414,7 @@ def run():
         sector_excluded=sector_excluded, dropped_signals=dropped_signals,
         sp500_breadth_pct=sp500_breadth_pct, min_breadth_pct=_min_breadth,
         market_bullish=market_bullish, trend_bullish=trend_bullish,
+        volume_event_note=_vol_event_note,
         test_mode=TEST_MODE, sector_rows=sector_rows, sector_heatmap=sector_heatmap,
         rs_lines=rs_lines,
         profile=profile, muster=muster,

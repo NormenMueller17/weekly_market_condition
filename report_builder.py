@@ -996,6 +996,9 @@ HTML_TMPL = """
       {% endif %}
       {% endfor %}
     </table>
+    {% if volume_event_note %}
+    <p style="font-size:0.82em;color:#777;margin:0.3em 0 0">ℹ️ {{ volume_event_note }}</p>
+    {% endif %}
     <p style="font-size:0.82em;color:#777;margin-top:0.3em">
       Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%).
       🏆 = Top-{{ signals | selectattr("is_top_pick") | list | length }} Kaufkandidaten.
@@ -2168,7 +2171,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
                       alpaca_cash=None, alpaca_positions=None, alpaca_portfolio=None,
                       sector_excluded=None, dropped_signals=None,
                       sp500_breadth_pct=None, min_breadth_pct=40,
-                      market_bullish=True, trend_bullish=True,
+                      market_bullish=True, trend_bullish=True, volume_event_note="",
                       test_mode=False, sector_rows=None, sector_heatmap=None, rs_lines=None,
                       profile=None, muster=None,
                       max_new_per_week=None, portfolio_max_positions=None):
@@ -2411,6 +2414,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         dropped_signals    = dropped_signals,
         market_bullish     = market_bullish,
         trend_bullish      = trend_bullish,
+        volume_event_note  = volume_event_note,
         risk_budget_pct    = risk_budget_pct,
         max_position_pct   = DEFAULT_RULES.get("max_position_pct", 15.0),
         sp500_breadth_pct  = sp500_breadth_pct,
