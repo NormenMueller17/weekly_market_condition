@@ -1,7 +1,7 @@
 {
-  "generated": "2026-09-26",
+  "generated": "2026-09-27",
   "market_bullish": true,
-  "count": 24,
+  "count": 29,
   "watchlist": [
     {
       "ticker": "IOVA",
@@ -15,7 +15,7 @@
       "atr_pct": 5.500002650471476,
       "rs_score": 98.55289421157684,
       "score": 7,
-      "industry_ranking": 26,
+      "industry_ranking": 23,
       "sa_link": "https://stockanalysis.com/stocks/IOVA",
       "criteria": {
         "SMA10W steigend": true,
@@ -40,7 +40,7 @@
       "atr_pct": 5.699918505785532,
       "rs_score": 98.30139720558883,
       "score": 6,
-      "industry_ranking": 8,
+      "industry_ranking": 7,
       "sa_link": "https://stockanalysis.com/stocks/DELL",
       "criteria": {
         "SMA10W steigend": true,
@@ -65,7 +65,7 @@
       "atr_pct": 6.572591920967978,
       "rs_score": 97.938123752495,
       "score": 7,
-      "industry_ranking": 22,
+      "industry_ranking": 35,
       "sa_link": "https://stockanalysis.com/stocks/BE",
       "criteria": {
         "SMA10W steigend": true,
@@ -90,7 +90,7 @@
       "atr_pct": 5.778596790127991,
       "rs_score": 97.43512974051896,
       "score": 6,
-      "industry_ranking": 12,
+      "industry_ranking": 16,
       "sa_link": "https://stockanalysis.com/stocks/BDSX",
       "criteria": {
         "SMA10W steigend": true,
@@ -115,7 +115,7 @@
       "atr_pct": 4.8184555196343055,
       "rs_score": 97.35129740518963,
       "score": 7,
-      "industry_ranking": 40,
+      "industry_ranking": 41,
       "sa_link": "https://stockanalysis.com/stocks/ETON",
       "criteria": {
         "SMA10W steigend": true,
@@ -140,7 +140,7 @@
       "atr_pct": 6.524175494796509,
       "rs_score": 97.29540918163673,
       "score": 6,
-      "industry_ranking": 7,
+      "industry_ranking": 8,
       "sa_link": "https://stockanalysis.com/stocks/SMTC",
       "criteria": {
         "SMA10W steigend": true,
@@ -165,7 +165,7 @@
       "atr_pct": 6.806835812252829,
       "rs_score": 97.1556886227545,
       "score": 7,
-      "industry_ranking": 10,
+      "industry_ranking": 13,
       "sa_link": "https://stockanalysis.com/stocks/FEIM",
       "criteria": {
         "SMA10W steigend": true,
@@ -190,7 +190,7 @@
       "atr_pct": 4.45536840785878,
       "rs_score": 97.07185628742515,
       "score": 6,
-      "industry_ranking": 12,
+      "industry_ranking": 16,
       "sa_link": "https://stockanalysis.com/stocks/GH",
       "criteria": {
         "SMA10W steigend": true,
@@ -215,7 +215,7 @@
       "atr_pct": 4.099761314489568,
       "rs_score": 96.90419161676647,
       "score": 7,
-      "industry_ranking": 37,
+      "industry_ranking": 30,
       "sa_link": "https://stockanalysis.com/stocks/HBB",
       "criteria": {
         "SMA10W steigend": true,
@@ -240,7 +240,7 @@
       "atr_pct": 6.137365157942522,
       "rs_score": 96.84830339321357,
       "score": 7,
-      "industry_ranking": 19,
+      "industry_ranking": 15,
       "sa_link": "https://stockanalysis.com/stocks/HPE",
       "criteria": {
         "SMA10W steigend": true,
@@ -265,7 +265,7 @@
       "atr_pct": 5.838073773775912,
       "rs_score": 96.82035928143712,
       "score": 7,
-      "industry_ranking": 26,
+      "industry_ranking": 23,
       "sa_link": "https://stockanalysis.com/stocks/AGEN",
       "criteria": {
         "SMA10W steigend": true,
@@ -290,7 +290,7 @@
       "atr_pct": 2.6774875572063914,
       "rs_score": 96.76447105788424,
       "score": 7,
-      "industry_ranking": 12,
+      "industry_ranking": 16,
       "sa_link": "https://stockanalysis.com/stocks/PSNL",
       "criteria": {
         "SMA10W steigend": true,
@@ -340,7 +340,7 @@
       "atr_pct": 4.507428241019935,
       "rs_score": 96.65269461077844,
       "score": 7,
-      "industry_ranking": 45,
+      "industry_ranking": 49,
       "sa_link": "https://stockanalysis.com/stocks/RNG",
       "criteria": {
         "SMA10W steigend": true,
@@ -365,7 +365,7 @@
       "atr_pct": 5.692709388654695,
       "rs_score": 96.624750499002,
       "score": 7,
-      "industry_ranking": 18,
+      "industry_ranking": 22,
       "sa_link": "https://stockanalysis.com/stocks/AYA",
       "criteria": {
         "SMA10W steigend": true,
@@ -390,7 +390,7 @@
       "atr_pct": 5.513450448804231,
       "rs_score": 96.59680638722556,
       "score": 6,
-      "industry_ranking": 21,
+      "industry_ranking": 18,
       "sa_link": "https://stockanalysis.com/stocks/ACHV",
       "criteria": {
         "SMA10W steigend": true,
@@ -415,7 +415,7 @@
       "atr_pct": 3.771063798453352,
       "rs_score": 96.42914171656686,
       "score": 7,
-      "industry_ranking": 13,
+      "industry_ranking": 9,
       "sa_link": "https://stockanalysis.com/stocks/FET",
       "criteria": {
         "SMA10W steigend": true,
@@ -440,7 +440,7 @@
       "atr_pct": 4.045618950681313,
       "rs_score": 96.37325349301398,
       "score": 6,
-      "industry_ranking": 32,
+      "industry_ranking": 29,
       "sa_link": "https://stockanalysis.com/stocks/NESR",
       "criteria": {
         "SMA10W steigend": true,
@@ -465,7 +465,7 @@
       "atr_pct": 5.073853252610055,
       "rs_score": 96.1497005988024,
       "score": 7,
-      "industry_ranking": 45,
+      "industry_ranking": 49,
       "sa_link": "https://stockanalysis.com/stocks/PAYS",
       "criteria": {
         "SMA10W steigend": true,
@@ -490,7 +490,7 @@
       "atr_pct": 5.20858818997683,
       "rs_score": 96.00998003992017,
       "score": 7,
-      "industry_ranking": 33,
+      "industry_ranking": 32,
       "sa_link": "https://stockanalysis.com/stocks/OKTA",
       "criteria": {
         "SMA10W steigend": true,
@@ -515,8 +515,33 @@
       "atr_pct": 4.8246937729139905,
       "rs_score": 95.89820359281437,
       "score": 7,
-      "industry_ranking": 33,
+      "industry_ranking": 32,
       "sa_link": "https://stockanalysis.com/stocks/CRWD",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      }
+    },
+    {
+      "ticker": "ALNT",
+      "company": "Allient Inc.",
+      "industry": "Electrical Products",
+      "sector": "Technology",
+      "pivot": 118.67,
+      "buy_stop": 118.7887,
+      "resistance_note": "Buy-Stop auf $118.67 angehoben \u2014 2x als Widerstand getestet, zuletzt 10.08.",
+      "close_saturday": 116.01,
+      "atr_pct": 4.5870438439378045,
+      "rs_score": 95.78642714570857,
+      "score": 7,
+      "industry_ranking": 13,
+      "sa_link": "https://stockanalysis.com/stocks/ALNT",
       "criteria": {
         "SMA10W steigend": true,
         "SMA30W steigend": true,
@@ -540,7 +565,7 @@
       "atr_pct": 4.83073650602811,
       "rs_score": 95.73053892215569,
       "score": 7,
-      "industry_ranking": 41,
+      "industry_ranking": 39,
       "sa_link": "https://stockanalysis.com/stocks/ECO",
       "criteria": {
         "SMA10W steigend": true,
@@ -551,6 +576,56 @@
         "RS-Trend \u2191": true,
         "Vol-Breakout": true,
         "Close > Vorwoche": false
+      }
+    },
+    {
+      "ticker": "ADPT",
+      "company": "Adaptive Biotechnologies Corporation",
+      "industry": "Biotechnology: Biological Products (No Diagnostic Substances)",
+      "sector": "Healthcare",
+      "pivot": 29.96,
+      "buy_stop": 29.99,
+      "resistance_note": "",
+      "close_saturday": 29.43,
+      "atr_pct": 4.313625218561357,
+      "rs_score": 95.6187624750499,
+      "score": 7,
+      "industry_ranking": 23,
+      "sa_link": "https://stockanalysis.com/stocks/ADPT",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      }
+    },
+    {
+      "ticker": "NUTX",
+      "company": "Nutex Health Inc.",
+      "industry": "Business Services",
+      "sector": "Healthcare",
+      "pivot": 222.0,
+      "buy_stop": 222.222,
+      "resistance_note": "",
+      "close_saturday": 220.11,
+      "atr_pct": 5.244456194662602,
+      "rs_score": 95.562874251497,
+      "score": 7,
+      "industry_ranking": 46,
+      "sa_link": "https://stockanalysis.com/stocks/NUTX",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
       }
     },
     {
@@ -579,19 +654,19 @@
       }
     },
     {
-      "ticker": "ARGX",
-      "company": "argenx SE",
-      "industry": "Biotechnology: Biological Products (No Diagnostic Substances)",
-      "sector": "Healthcare",
-      "pivot": 1072.75,
-      "buy_stop": 1073.8227,
-      "resistance_note": "Buy-Stop auf $1072.75 angehoben \u2014 3x als Widerstand getestet, zuletzt 31.08.",
-      "close_saturday": 959.49,
-      "atr_pct": 2.2642838840752315,
-      "rs_score": 77.53892215568862,
+      "ticker": "DK",
+      "company": "Delek US Holdings Inc.",
+      "industry": "Integrated oil Companies",
+      "sector": "Energy",
+      "pivot": 79.17,
+      "buy_stop": 79.2492,
+      "resistance_note": "",
+      "close_saturday": 67.84,
+      "atr_pct": 6.629043388135121,
+      "rs_score": 93.01996007984032,
       "score": 7,
-      "industry_ranking": 26,
-      "sa_link": "https://stockanalysis.com/stocks/ARGX",
+      "industry_ranking": 17,
+      "sa_link": "https://stockanalysis.com/stocks/DK",
       "criteria": {
         "SMA10W steigend": true,
         "SMA30W steigend": true,
@@ -599,6 +674,56 @@
         "MA-Ordnung 10>30>40": true,
         "52W Range OK": true,
         "RS-Trend \u2191": true,
+        "Vol-Breakout": true,
+        "Close > Vorwoche": false
+      }
+    },
+    {
+      "ticker": "FDMT",
+      "company": "4D Molecular Therapeutics Inc.",
+      "industry": "Biotechnology: Biological Products (No Diagnostic Substances)",
+      "sector": "Healthcare",
+      "pivot": 16.23,
+      "buy_stop": 16.2462,
+      "resistance_note": "",
+      "close_saturday": 14.47,
+      "atr_pct": 6.795338943933526,
+      "rs_score": 88.8562874251497,
+      "score": 7,
+      "industry_ranking": 23,
+      "sa_link": "https://stockanalysis.com/stocks/FDMT",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": true,
+        "Close > Vorwoche": false
+      }
+    },
+    {
+      "ticker": "IDYA",
+      "company": "IDEAYA Biosciences Inc.",
+      "industry": "Biotechnology: Pharmaceutical Preparations",
+      "sector": "Healthcare",
+      "pivot": 40.0,
+      "buy_stop": 40.04,
+      "resistance_note": "",
+      "close_saturday": 36.69,
+      "atr_pct": 3.752481881524081,
+      "rs_score": 74.91217564870259,
+      "score": 6,
+      "industry_ranking": 41,
+      "sa_link": "https://stockanalysis.com/stocks/IDYA",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": false,
         "Vol-Breakout": true,
         "Close > Vorwoche": false
       }

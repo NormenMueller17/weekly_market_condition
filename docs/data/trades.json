@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-26",
+  "generated": "2026-09-27",
   "open": [
     {
       "symbol": "NTRA",
@@ -234,7 +234,7 @@
       "entry_date": "2026-09-24",
       "entry_price": 55.98,
       "qty": 246.0,
-      "initial_stop": null,
+      "initial_stop": 55.98,
       "current_stop": 55.98,
       "stop_raised_date": "2026-09-24",
       "current_price": 63.68,
@@ -277,7 +277,7 @@
       "entry_date": "2026-09-24",
       "entry_price": 26.6,
       "qty": 230.0,
-      "initial_stop": null,
+      "initial_stop": 26.6,
       "current_stop": 26.6,
       "stop_raised_date": "2026-09-24",
       "current_price": 31.68,
@@ -322,8 +322,8 @@
       "entry_date": "2026-09-24",
       "entry_price": 12.57,
       "qty": 846.0,
-      "initial_stop": null,
-      "current_stop": null,
+      "initial_stop": 10.93,
+      "current_stop": 10.93,
       "stop_raised_date": null,
       "current_price": 12.21,
       "unrealized_pl": -304.56,
