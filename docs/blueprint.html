@@ -538,7 +538,7 @@
     <p>Diese drei Werte werden zu einem Composite Industry Score zusammengefasst und in eine Rangliste überführt. Nur Aktien aus den Top-50-%-Branchen kommen für ein Kaufsignal in Frage.</p>
 
     <h2 id="s16">Schritt 16 — Signal-Generator: Kaufkriterien</h2>
-    <p>Alle Aktien, die den Minervini-Screener und die Fundamentalprüfung überstanden haben, durchlaufen nun 16 Kauffilter. Alle Filter müssen erfüllt sein:</p>
+    <p>Alle Aktien, die den Minervini-Screener und die Fundamentalprüfung überstanden haben, durchlaufen nun 17 Kauffilter. Alle Filter müssen erfüllt sein:</p>
 
     <div class="tbl-wrap">
       <table>
@@ -554,19 +554,21 @@
           <tr><td>6</td><td>Branchen-Ranking</td><td>Top 50 % aller Branchen im Universum</td></tr>
           <tr><td>7</td><td>Mindestkurs</td><td>≥ 5 $ (kein Penny Stock)</td></tr>
           <tr><td>8</td><td>Marktkapitalisierung</td><td>≥ 300 Mio. $ (kein Micro Cap)</td></tr>
-          <tr><td>9</td><td>Earnings-Blackout</td><td>Nächste Ergebnispublikation &gt; 14 Tage entfernt</td></tr>
-          <tr><td>10</td><td>Wöchentlicher MACD</td><td>&gt; Signallinie (positives Momentum)</td></tr>
-          <tr><td>11</td><td>Marktfilter (Trendfilter)</td><td>S&amp;P 500: 10W-EMA &gt; 20W-EMA (sonst halbe Positionsgröße)</td></tr>
-          <tr><td>12</td><td>Nicht im Portfolio</td><td>Position darf nicht bereits gehalten werden</td></tr>
-          <tr><td>13</td><td>Sektor-Konzentrationslimit</td><td>Maximal 3 Positionen pro Sektor</td></tr>
-          <tr><td>14</td><td>Marktbreite</td><td>≥ 40 % der S&amp;P-500-Aktien über ihrem 200-Tage-MA</td></tr>
-          <tr><td>15</td><td>Umsatzwachstum (TTM, YoY) <strong>ODER</strong> EPS-Wachstum (letztes Quartal, YoY)</td><td>≥ 20 % bei mindestens einem der beiden (Stand 2026-09-06, vorher UND-verknüpft)</td></tr>
-          <tr><td>16</td><td>Wochenkurs steigend</td><td>Schlusskurs &gt; Schlusskurs der Vorwoche</td></tr>
+          <tr><td>9</td><td>Mindest-Liquidität</td><td>Ø-Tagesdollarvolumen (20-Tage-Ø-Volumen × Kurs) ≥ 500.000 $</td></tr>
+          <tr><td>10</td><td>Earnings-Blackout</td><td>Nächste Ergebnispublikation &gt; 14 Tage entfernt</td></tr>
+          <tr><td>11</td><td>Wöchentlicher MACD</td><td>&gt; Signallinie (positives Momentum)</td></tr>
+          <tr><td>12</td><td>Marktfilter (Trendfilter)</td><td>S&amp;P 500: 10W-EMA &gt; 20W-EMA (sonst halbe Positionsgröße)</td></tr>
+          <tr><td>13</td><td>Nicht im Portfolio</td><td>Position darf nicht bereits gehalten werden</td></tr>
+          <tr><td>14</td><td>Sektor-Konzentrationslimit</td><td>Maximal 3 Positionen pro Sektor</td></tr>
+          <tr><td>15</td><td>Marktbreite</td><td>≥ 40 % der S&amp;P-500-Aktien über ihrem 200-Tage-MA</td></tr>
+          <tr><td>16</td><td>Umsatzwachstum (TTM, YoY) <strong>ODER</strong> EPS-Wachstum (letztes Quartal, YoY)</td><td>≥ 20 % bei mindestens einem der beiden (Stand 2026-09-06, vorher UND-verknüpft)</td></tr>
+          <tr><td>17</td><td>Wochenkurs steigend</td><td>Schlusskurs &gt; Schlusskurs der Vorwoche</td></tr>
         </tbody>
       </table>
     </div>
     <p><em>Hinweis: Rentabilitätskennzahlen wie ROE und operative Marge sind als Filter vorhanden, aber derzeit deaktiviert. Sie können bei Bedarf aktiviert werden.</em></p>
     <p><em>Änderung 2026-09-06: Umsatz- und EPS-Wachstum waren bis dahin UND-verknüpft — ein Titel musste beide Schwellen gleichzeitig erreichen. Das schloss einen Großteil echter Marktführer aus, deren Quartals-EPS wegen eines volatilen Vorjahresvergleichs trotz starkem Kurs negativ war. Ein strengerer Ausgleich (Minervini-Score 8/8 statt 6/8) wurde geprüft und an den eigenen Trades getestet — er verschlechterte die Ergebnisse (Trefferquote 33 % statt 55 % bei Score 7) und blieb deshalb unverändert bei 6/8.</em></p>
+    <p><em>Änderung 2026-09-27: Neuer Liquiditätsfilter (Ø-Tagesdollarvolumen), Auslöser war SENEB (stop_hit, −15,9 %, nur 1.250 Aktien/Woche gehandelt). Bewusst als Dollar-Umsatz statt als reine Stückzahl umgesetzt: eine feste Stückzahl-Schwelle ist preisabhängig und hätte bei einer Gegenprobe an den eigenen Trades den Gewinner QCRH (482.550 Stück/Woche, aber $9,16 Mio Ø-Tagesdollarvolumen) fälschlich ausgeschlossen.</em></p>
 
     <span class="sub-bold">Positionsgröße: Risk-First-Methode</span>
     <p>Die Positionsgröße wird so berechnet, dass maximal 1,5 % des Gesamtportfolios pro Trade riskiert werden. Das Verlustrisiko ist damit von vornherein begrenzt:</p>
