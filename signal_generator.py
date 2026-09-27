@@ -140,6 +140,7 @@ DEFAULT_RULES: dict = {
     "earnings_blackout_days": _f.get("earnings_blackout_days", 7),
     "min_price":              _f.get("min_price",              5.0),
     "min_market_cap_mio":     _f.get("min_market_cap_mio",    300.0),
+    "min_avg_dollar_volume":  _f.get("min_avg_dollar_volume", 500_000.0),
     "buy_stop_buffer_pct":    _f.get("buy_stop_buffer_pct",   0.1),
     "gap_limit_pct":          _f.get("gap_limit_pct",         5.0),
     "require_macd_above_signal": _f.get("require_macd_above_signal", True),
@@ -695,6 +696,17 @@ def _thesis_mask(df: pd.DataFrame, r: dict) -> pd.Series:
             df.get("MarketCap (Mio USD)", pd.Series(index=df.index)), errors="coerce"
         )
         mask &= cap_raw.isna() | (cap_raw >= r["min_market_cap_mio"])
+
+    # 11. Minimum liquidity — Ø-Tagesdollarvolumen (vol20 x Close), nicht rohe
+    #     Stueckzahl: eine Stueckschwelle ist preisabhaengig (SENEB-Fall, siehe
+    #     project_min_volume_threshold). vol20 ist bereits event-tag-bereinigt
+    #     (volume_events.py). Fail-open bei NaN — Datenluecke ist kein Beleg fuer
+    #     Illiquiditaet.
+    if r.get("min_avg_dollar_volume", 0) > 0:
+        vol20_raw = pd.to_numeric(df.get("vol20", pd.Series(index=df.index)), errors="coerce")
+        close_raw = pd.to_numeric(df.get("Close", pd.Series(index=df.index)), errors="coerce")
+        dollar_vol = vol20_raw * close_raw
+        mask &= dollar_vol.isna() | (dollar_vol >= r["min_avg_dollar_volume"])
 
     return mask
 

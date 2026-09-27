@@ -1679,7 +1679,8 @@ def build_breadth_sparklines(weekly_data: dict, breadth_snap: pd.DataFrame, week
 def compute_filter_fails(row, *, sector_excluded: set, min_rs: float,
                          max_rank: float, max_atr: float, min_price: float,
                          min_cap: float, min_rev_growth: float,
-                         min_eps_growth: float, html: bool = True) -> str:
+                         min_eps_growth: float, min_dollar_vol: float = 0.0,
+                         html: bool = True) -> str:
     """Welche Kaufkriterien hat dieser Titel NICHT erfuellt?
 
     Auf Modulebene, weil zwei Verwender dieselbe Antwort brauchen: der
@@ -1721,6 +1722,11 @@ def compute_filter_fails(row, *, sector_excluded: set, min_rs: float,
     cap = _n("MarketCap (Mio USD)")
     if not pd.isna(cap) and cap < min_cap:
         fails.append(f"MCap{sp}{lt}{sp}{min_cap:.0f}M")
+    if min_dollar_vol > 0:
+        vol20 = _n("vol20")
+        dollar_vol = vol20 * price if not (pd.isna(vol20) or pd.isna(price)) else float("nan")
+        if not pd.isna(dollar_vol) and dollar_vol < min_dollar_vol:
+            fails.append(f"$Vol{sp}{lt}{sp}${min_dollar_vol/1e6:.1f}M")
     # Umsatz- ODER EPS-Q-Wachstum (2026-09-06, siehe signal_generator._thesis_mask):
     # nur ein Fail-Text, wenn BEIDE aktiven Schwellen scheitern — sonst wuerde
     # die Diagnose "Rev < 20%" zeigen, obwohl der Titel ueber EPS-Q laengst
@@ -1755,6 +1761,7 @@ def filter_rules_for_fails() -> dict:
         "min_cap":        float(f.get("min_market_cap_mio",   300.0)),
         "min_rev_growth": float(f.get("min_rev_growth",         0.0)),
         "min_eps_growth": float(f.get("min_eps_growth_last_q",  0.0)),
+        "min_dollar_vol": float(f.get("min_avg_dollar_volume",  0.0)),
     }
 
 
@@ -1796,6 +1803,7 @@ def save_leaders_diagnostic(leaders: pd.DataFrame, *, sector_excluded: set,
                 "atr_pct":            _num(row.get("ATR / Price (%)")),
                 "close":              _num(row.get("Close")),
                 "market_cap_mio":     _num(row.get("MarketCap (Mio USD)")),
+                "vol20":              _num(row.get("vol20")),
                 "vol_breakout":       bool(row.get("Vol-Breakout", False)),
                 "macd_above_signal":  bool(row.get("MACD > Signal (W)", False)),
                 "fails":              fails,
@@ -2360,6 +2368,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     _min_cap        = float(_rules.get("filters", {}).get("min_market_cap_mio",    300.0))
     _min_rev_growth = float(_rules.get("filters", {}).get("min_rev_growth",          0.0))
     _min_eps_growth = float(_rules.get("filters", {}).get("min_eps_growth_last_q",   0.0))
+    _min_dollar_vol = float(_rules.get("filters", {}).get("min_avg_dollar_volume",   0.0))
 
     _sector_excluded: set = sector_excluded or set()
 
@@ -2368,7 +2377,7 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
             row, sector_excluded=_sector_excluded, min_rs=_min_rs,
             max_rank=_max_rank, max_atr=_max_atr, min_price=_min_price,
             min_cap=_min_cap, min_rev_growth=_min_rev_growth,
-            min_eps_growth=_min_eps_growth,
+            min_eps_growth=_min_eps_growth, min_dollar_vol=_min_dollar_vol,
         )
 
     all_leaders_html["_filter_fails"] = all_leaders_html.apply(_compute_fails, axis=1)
