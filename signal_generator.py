@@ -496,8 +496,8 @@ _PATTERN_SCORES = {
     "VCP":            50.0,   # valid but broader base
 }
 
-def _composite_score(sig: "TradeSignal") -> float:
-    """Compute a 0-100 composite score for ranking trade signals.
+def _score_parts(sig: "TradeSignal") -> dict[str, float]:
+    """Gewichtete Teilbeitraege des Composite-Scores (Summe = Gesamtscore).
 
     Components
     ----------
@@ -509,29 +509,25 @@ def _composite_score(sig: "TradeSignal") -> float:
                        stop_pct=5 % → 75 pts;  stop_pct=20 % → 0 pts.
     industry  (10 %) : Composite industry score (already 0–100).
     """
-    # 1. RS Score
-    rs_norm  = ((sig.rs_score or 0.0) / 99.0) * 100.0
-
-    # 2. ΔRS 4W  (clamp to ±15, map to 0–100)
-    delta     = sig.rs_delta_4w or 0.0
+    rs_norm    = ((sig.rs_score or 0.0) / 99.0) * 100.0
+    delta      = sig.rs_delta_4w or 0.0
     delta_norm = max(0.0, min(100.0, (delta + 15.0) / 30.0 * 100.0))
-
-    # 3. Pattern quality
-    pat_score = _PATTERN_SCORES.get(sig.pattern, 0.0)
-
-    # 4. Tightness  (smaller stop → higher score)
+    pat_score  = _PATTERN_SCORES.get(sig.pattern, 0.0)
     tightness  = max(0.0, (1.0 - sig.stop_loss_pct / 0.20)) * 100.0
-
-    # 5. Industry score (0–100 composite; default 50 when unknown)
     ind_score  = sig.industry_score if sig.industry_score is not None else 50.0
 
-    return (
-        rs_norm    * RANK_WEIGHTS["rs_score"]  +
-        delta_norm * RANK_WEIGHTS["rs_delta"]  +
-        pat_score  * RANK_WEIGHTS["pattern"]   +
-        tightness  * RANK_WEIGHTS["tightness"] +
-        ind_score  * RANK_WEIGHTS["industry"]
-    )
+    return {
+        "rs_score":  rs_norm    * RANK_WEIGHTS["rs_score"],
+        "rs_delta":  delta_norm * RANK_WEIGHTS["rs_delta"],
+        "pattern":   pat_score  * RANK_WEIGHTS["pattern"],
+        "tightness": tightness  * RANK_WEIGHTS["tightness"],
+        "industry":  ind_score  * RANK_WEIGHTS["industry"],
+    }
+
+
+def _composite_score(sig: "TradeSignal") -> float:
+    """Compute a 0-100 composite score for ranking trade signals."""
+    return sum(_score_parts(sig).values())
 
 
 _UNKNOWN_SECTORS = {"", "nan", "none", "n/a", "na", "unknown", "–", "-"}
@@ -905,6 +901,8 @@ def rank_signals(
     for i, sig in enumerate(ranked):
         sig.rank         = i + 1
         sig.is_top_pick  = (i < max_positions)
+        sig.score_parts  = _score_parts(sig)
+        sig.score        = sum(sig.score_parts.values())
     return ranked
 
 
@@ -965,6 +963,8 @@ class TradeSignal:
     # Ranking (filled by rank_signals())
     rank:               int             = 0
     is_top_pick:        bool            = False
+    score:              float           = 0.0   # Composite-Score (Rangkriterium)
+    score_parts:        dict            = field(default_factory=dict)  # gewichtete Teilbeitraege
 
     # Nach dem Ranking verworfen (z.B. Sektor-Limit) — bleibt fuer die Report-
     # Transparenz sichtbar statt spurlos aus der Liste zu verschwinden

@@ -836,6 +836,7 @@ HTML_TMPL = """
     <table>
       <tr>
         <th class="sortable" onclick="sortTable(this)">Rang</th>
+        <th class="sortable" onclick="sortTable(this)" title="Ranking-Score (0–100) und gewichtete Beiträge: RS 35% · ΔRS 20% · Muster 20% · Tightness 15% · Industry 10%">Score</th>
         <th class="left sortable" onclick="sortTable(this)">Ticker</th>
         <th class="left sortable" onclick="sortTable(this)">Unternehmen</th>
         <th class="left sortable" onclick="sortTable(this)">Sektor / Branche</th>
@@ -884,6 +885,16 @@ HTML_TMPL = """
               kein Auftrag
             </span>
           {% endif %}
+        </td>
+        <td style="text-align:center;white-space:nowrap" title="Ranking-Score {{ '%.1f' | format(s.score) }} = RS {{ '%.1f' | format(s.score_parts.get('rs_score', 0)) }} + ΔRS {{ '%.1f' | format(s.score_parts.get('rs_delta', 0)) }} + Muster {{ '%.1f' | format(s.score_parts.get('pattern', 0)) }} + Tightness {{ '%.1f' | format(s.score_parts.get('tightness', 0)) }} + Industry {{ '%.1f' | format(s.score_parts.get('industry', 0)) }}">
+          <strong>{{ '%.1f' | format(s.score) }}</strong>
+          <span style="display:block;font-size:0.68em;color:#777;font-weight:normal;line-height:1.3">
+            RS {{ '%.0f' | format(s.score_parts.get('rs_score', 0)) }} ·
+            Δ {{ '%.0f' | format(s.score_parts.get('rs_delta', 0)) }} ·
+            Mu {{ '%.0f' | format(s.score_parts.get('pattern', 0)) }}<br>
+            Ti {{ '%.0f' | format(s.score_parts.get('tightness', 0)) }} ·
+            In {{ '%.0f' | format(s.score_parts.get('industry', 0)) }}
+          </span>
         </td>
         <td class="left">
           <a href="{{ s.sa_link }}" target="_blank"
@@ -956,7 +967,7 @@ HTML_TMPL = """
       {% set crit = signal_criteria.get(s.ticker, {}) %}
       {% if crit %}
       <tr style="background-color:{{ row_bg }}">
-        <td colspan="22" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
+        <td colspan="23" style="border-top:none;padding:3px 8px 7px 8px;text-align:left">
           {% for name, val in crit.items() %}
           <span style="display:inline-block;margin:2px 3px 2px 0;padding:1px 7px;border-radius:3px;
                        font-size:0.76em;font-weight:bold;white-space:nowrap;
@@ -981,7 +992,7 @@ HTML_TMPL = """
       {# ── Begründung für gültige Signale ohne Auftrag ── #}
       {% if not s.is_top_pick and not s.dropped and s.no_order_reason %}
       <tr style="background-color:{{ row_bg }}">
-        <td colspan="22" style="border-top:none;padding:3px 8px 7px 8px;text-align:left;font-size:0.8em;color:#666">
+        <td colspan="23" style="border-top:none;padding:3px 8px 7px 8px;text-align:left;font-size:0.8em;color:#666">
           <strong>Kein Auftrag angelegt:</strong> {{ s.no_order_reason }}
         </td>
       </tr>
@@ -989,7 +1000,7 @@ HTML_TMPL = """
       {# ── Verworfen-Begründung (Sektor-Limit) ── #}
       {% if s.dropped %}
       <tr style="background-color:{{ row_bg }}">
-        <td colspan="22" style="border-top:none;padding:3px 8px 7px 8px;text-align:left;font-size:0.8em;color:#721c24">
+        <td colspan="23" style="border-top:none;padding:3px 8px 7px 8px;text-align:left;font-size:0.8em;color:#721c24">
           ⛔ <strong>Verworfen, kein Auftrag angelegt:</strong> {{ s.drop_reason }}
         </td>
       </tr>
@@ -1000,7 +1011,7 @@ HTML_TMPL = """
     <p style="font-size:0.82em;color:#777;margin:0.3em 0 0">ℹ️ {{ volume_event_note }}</p>
     {% endif %}
     <p style="font-size:0.82em;color:#777;margin-top:0.3em">
-      Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%).
+      Ranking-Score = RS(35%) + ΔRS 4W(20%) + Muster(20%) + Tightness(15%) + Industry(10%); die Spalte „Score“ zeigt Gesamtwert und gewichtete Beiträge (RS · Δ=ΔRS · Mu=Muster · Ti=Tightness · In=Industry).
       🏆 = Top-{{ signals | selectattr("is_top_pick") | list | length }} Kaufkandidaten.
       {% if max_new_per_week is not none %}
       {% set _portfolio_remaining = (portfolio_max_positions - (alpaca_positions|length)) if portfolio_max_positions is not none else none %}
