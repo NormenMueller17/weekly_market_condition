@@ -897,6 +897,13 @@ def rank_signals(
     signals       : unranked list from generate_signals()
     max_positions : top-N signals are flagged as is_top_pick=True
     """
+    try:
+        import quarterly_store
+        _q = quarterly_store.load()
+        for sig in signals:
+            sig.revenue_ttm_growth = quarterly_store.ttm_growth(sig.ticker, df=_q)
+    except Exception as exc:           # Anzeige-Zusatz darf das Ranking nie stoeren
+        print(f"[WARN] TTM-Umsatz nicht berechnet: {exc}")
     ranked = sorted(signals, key=_composite_score, reverse=True)
     for i, sig in enumerate(ranked):
         sig.rank         = i + 1
@@ -963,6 +970,9 @@ class TradeSignal:
     # Ranking (filled by rank_signals())
     rank:               int             = 0
     is_top_pick:        bool            = False
+    # Umsatz TTM gegen TTM des Vorjahres (aus quarterly_store, EDGAR). Nur Anzeige:
+    # entscheidet (noch) nicht ueber das Signal, siehe ttm_revenue_analysis.py
+    revenue_ttm_growth: Optional[float] = None
     score:              float           = 0.0   # Composite-Score (Rangkriterium)
     score_parts:        dict            = field(default_factory=dict)  # gewichtete Teilbeitraege
 

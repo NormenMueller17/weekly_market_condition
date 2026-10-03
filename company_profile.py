@@ -312,6 +312,11 @@ def kaufbegruendung(sig) -> list[str]:
         g.append(f"Gewinn je Aktie im letzten Quartal {sig.eps_growth_last_q:+.0f} % "
                  f"gegenüber dem Vorjahresquartal "
                  f"(Hürde 20 %: {'erfüllt' if eps_ok else 'nicht erreicht'}).")
+    ttm = getattr(sig, "revenue_ttm_growth", None)
+    if ttm is not None:
+        g.append(f"Zur Einordnung: Umsatz der letzten 12 Monate {ttm:+.0f} % gegenüber den 12 Monaten davor "
+                 f"(Hürde 20 %: {'erfüllt' if ttm >= 20 else 'nicht erreicht'}) — nur Anzeige, "
+                 f"entscheidet nicht über das Signal.")
     if rev_ok != eps_ok and sig.revenue_growth is not None and sig.eps_growth_last_q is not None:
         g.append("Regel: Umsatz ODER Gewinn muss die Hürde erreichen — "
                  f"hier trägt {'der Umsatz' if rev_ok else 'der Gewinn'} das Signal, "

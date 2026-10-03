@@ -863,7 +863,7 @@ HTML_TMPL = """
         <th class="sortable" onclick="sortTable(this)">ROE %</th>
         <th class="sortable" onclick="sortTable(this)">Op.Margin</th>
         <th class="sortable" onclick="sortTable(this)">EPS Growth Q</th>
-        <th class="sortable" onclick="sortTable(this)">Rev. Growth</th>
+        <th class="sortable" onclick="sortTable(this)" title="Oben: Umsatz letztes Quartal gegen Vorjahresquartal (entscheidet über das Signal). Unten: TTM-Umsatz (letzte 12 Monate) gegen die 12 Monate davor, nur zur Information.">Rev. Growth<br><span style="font-weight:normal;font-size:0.8em">Q · TTM</span></th>
         <th class="sortable" onclick="sortTable(this)" title="Wochenvolumen / Ø20T-Volumen">Vol Score</th>
         <th class="sortable" onclick="sortTable(this)">Position</th>
         <th class="sortable" onclick="sortTable(this)">Risiko / Equity</th>
@@ -961,7 +961,13 @@ HTML_TMPL = """
           {%- elif s.eps_growth_last_q is not none %}#f8d7da
           {%- else %}transparent{% endif %}">
           {{ '%.0f' % s.eps_growth_last_q if s.eps_growth_last_q is not none else '–' }}%</td>
-        <td>{{ '%.1f' % s.revenue_growth if s.revenue_growth is not none else '–' }}%</td>
+        <td>{{ '%.1f' % s.revenue_growth if s.revenue_growth is not none else '–' }}%
+          {%- if s.revenue_ttm_growth is not none %}
+          <span style="display:block;font-size:0.8em;font-weight:bold;color:{% if s.revenue_ttm_growth >= 20 %}#1e7e34{% else %}#c0392b{% endif %}"
+                title="TTM-Umsatz gegen die 12 Monate davor (nur Anzeige, Hürde 20 %)">TTM {{ '%.1f' % s.revenue_ttm_growth }}%</span>
+          {%- else %}
+          <span style="display:block;font-size:0.8em;color:#aaa" title="Keine 8 Quartale verfügbar (z. B. Auslandsemittent)">TTM –</span>
+          {%- endif %}</td>
         <td style="background-color:
           {%- if s.vol_score is not none and s.vol_score >= 1.3 %}#d4edda
           {%- elif s.vol_score is not none %}transparent
