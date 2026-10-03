@@ -872,6 +872,13 @@ def run():
         print(f"[INFO] Fundamentaldaten werden für {len(tickers_for_fundamentals)} "
               f"von {len(leaders)} Leaders geholt (Score >= {MIN_SCORE_FOR_FUNDAMENTALS}).")
         quote_map = batch_fetch_quote_data(tickers_for_fundamentals)
+        # Quartalshistorie aus EDGAR (US-GAAP-Emittenten; ~7 Jahre, mit Meldetag).
+        # Fehler dort duerfen den Report nie blockieren.
+        try:
+            import sec_edgar
+            print(f"[INFO] EDGAR-Quartalsdaten: {sec_edgar.refresh(tickers_for_fundamentals)}")
+        except Exception as exc:
+            print(f"[WARN] EDGAR-Quartalsdaten uebersprungen: {exc}")
         # Sektor: Yahoo zuerst, sonst der Screener. Bei Drosselung liefert
         # batch_fetch_quote_data gar nichts — dann stand hier bisher "n/a",
         # obwohl der Screener den Sektor ohnehin mitgeliefert hat.

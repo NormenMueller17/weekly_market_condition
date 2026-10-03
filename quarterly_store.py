@@ -14,6 +14,8 @@ Datei klein genug, um sie bei jedem Lauf komplett neu zu schreiben.
 Spalten:
   ticker, period_end      Schluessel
   revenue, net_income, eps  Werte in Berichtswaehrung (fuer Wachstum egal)
+  source                  "edgar" (SEC, amtlich) oder "yahoo" (Ersatz fuer Auslandsemittenten)
+  filed                   Meldetag bei der SEC (nur edgar) -- echter Zeitpunktstand
   first_seen              Erster Lauf, in dem Yahoo das Quartal lieferte
                           (Yahoo nennt nur das Quartalsende, nicht den Meldetag;
                           first_seen ist die ehrliche Naeherung fuer "bekannt ab")
@@ -29,7 +31,14 @@ import pandas as pd
 
 STORE_PATH = Path(__file__).parent / "docs" / "data" / "quarterly_fundamentals.csv"
 COLUMNS = ["ticker", "period_end", "revenue", "net_income", "eps",
-           "first_seen", "last_updated", "revisions"]
+           "source", "filed", "first_seen", "last_updated", "revisions"]
+
+# Quellen-Rangfolge: EDGAR (amtlich, mit Meldetag) schlaegt Yahoo. Yahoo bleibt
+# fuer Auslandsemittenten, die keine US-GAAP-Quartalsdaten bei der SEC haben.
+_SOURCE_RANK = {"edgar": 2, "yahoo": 1}
+# Dieselbe Quartalszahl heisst bei Yahoo und SEC oft um ein paar Tage verschieden
+# (52/53-Wochen-Jahre, z.B. 27.06. vs. 30.06.) -- als gleiches Quartal behandeln
+_SAME_QUARTER_DAYS = 10
 
 _REVENUE_ROWS = ["Total Revenue", "TotalRevenue", "Operating Revenue", "OperatingRevenue", "Revenue"]
 _INCOME_ROWS  = ["Net Income", "NetIncome", "Net Income Common Stockholders"]
@@ -57,14 +66,19 @@ def rows_from_stmt(ticker: str, stmt) -> list[dict]:
                 for k, s in (("revenue", rev), ("net_income", inc), ("eps", eps))}
         if vals["revenue"] is None and vals["eps"] is None:
             continue  # leere Randspalte
-        out.append({"ticker": ticker, "period_end": pd.Timestamp(col).date().isoformat(), **vals})
+        out.append({"ticker": ticker, "period_end": pd.Timestamp(col).date().isoformat(),
+                    "source": "yahoo", **vals})
     return out
 
 
 def load(path: Path = STORE_PATH) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame(columns=COLUMNS)
-    return pd.read_csv(path, dtype={"ticker": str, "period_end": str})
+    df = pd.read_csv(path, dtype={"ticker": str, "period_end": str, "source": str,
+                                  "filed": str, "first_seen": str, "last_updated": str})
+    if "source" not in df.columns:
+        df["source"] = "yahoo"          # Altbestand stammt aus der Yahoo-Zeit
+    return df.reindex(columns=COLUMNS)
 
 
 def upsert(rows: list[dict], today: date | None = None, path: Path = STORE_PATH) -> dict:
@@ -74,23 +88,43 @@ def upsert(rows: list[dict], today: date | None = None, path: Path = STORE_PATH)
         return stats
     today_s = (today or date.today()).isoformat()
     df = load(path)
-    index = {(r.ticker, r.period_end): i for i, r in enumerate(df.itertuples())}
     records = df.to_dict("records")
+    by_ticker: dict[str, list[int]] = {}
+    for i, rec in enumerate(records):
+        by_ticker.setdefault(rec["ticker"], []).append(i)
+
+    def _find(ticker: str, period_end: str) -> int | None:
+        target = pd.Timestamp(period_end)
+        for i in by_ticker.get(ticker, []):
+            if abs((pd.Timestamp(records[i]["period_end"]) - target).days) <= _SAME_QUARTER_DAYS:
+                return i
+        return None
 
     for r in rows:
-        key = (r["ticker"], r["period_end"])
-        if key not in index:
+        r = {"source": "yahoo", **r}
+        i = _find(r["ticker"], r["period_end"])
+        if i is None:
             records.append({**{c: None for c in COLUMNS}, **r,
                             "first_seen": today_s, "last_updated": today_s, "revisions": 0})
-            index[key] = len(records) - 1
+            by_ticker.setdefault(r["ticker"], []).append(len(records) - 1)
             stats["neu"] += 1
             continue
-        old = records[index[key]]
+        old = records[i]
+        old_rank = _SOURCE_RANK.get(str(old.get("source")), 0)
+        new_rank = _SOURCE_RANK.get(r["source"], 0)
+        if new_rank < old_rank:
+            continue                       # Yahoo ueberschreibt nie EDGAR
         changed = False
+        if new_rank > old_rank:            # EDGAR loest Yahoo-Zeile ab (Datum der SEC gilt)
+            old.update({"source": r["source"], "period_end": r["period_end"],
+                        "filed": r.get("filed")})
+            changed = True
+        elif r.get("filed") and old.get("filed") != r["filed"]:
+            old["filed"] = r["filed"]
         for col in ("revenue", "net_income", "eps"):
             new = r.get(col)
             if new is None:
-                continue  # Yahoo-Luecke ueberschreibt nie einen bekannten Wert
+                continue  # Luecke ueberschreibt nie einen bekannten Wert
             prev = old.get(col)
             if prev is None or pd.isna(prev) or float(prev) != new:
                 if col == "revenue" and prev is not None and not pd.isna(prev) and prev:
@@ -119,7 +153,8 @@ def ttm_growth(ticker: str, asof: str | None = None, df: pd.DataFrame | None = N
     df = load() if df is None else df
     q = df[df["ticker"] == ticker].dropna(subset=["revenue"])
     if asof:
-        q = q[q["first_seen"] <= asof]
+        known = q["filed"].fillna(q["first_seen"])   # Meldetag, sonst erster Abruf
+        q = q[known <= asof]
     q = q.sort_values("period_end", ascending=False).head(8)
     if len(q) < 8:
         return None
