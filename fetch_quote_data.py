@@ -168,7 +168,7 @@ def batch_fetch_quote_data(tickers) -> dict:
 # --- Aktuellen Schlusskurs & Marktkapitalisierung ergänzen ---
 def fetch_quote_data_single(ticker: str) -> dict:
     """
-    Holt Close, MarketCap (Mio), EPS (Forward/TTM) und Revenue Growth (TTM YoY)
+    Holt Close, MarketCap (Mio), EPS (Forward/TTM) und Revenue Growth (letztes Quartal YoY)
     für EINEN Ticker. Mit kleinem Retry-Mechanismus.
     """
     MAX_RETRIES = 3
@@ -224,7 +224,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
                 except Exception:
                     eps_growth_pct = None
 
-            # Revenue Growth (TTM YoY) — primär aus info, Fallback via Income Statement weiter unten
+            # Revenue Growth: info["revenueGrowth"] ist das LETZTE QUARTAL gegenueber dem Vorjahresquartal
+            # (nicht TTM; TTM kann deutlich abweichen, z.B. IMOS 28,7 % vs. 18,7 %).
+            # Fallback via Jahres-Income-Statement weiter unten.
             rev_growth_pct = None
             try:
                 rg = info.get("revenueGrowth")

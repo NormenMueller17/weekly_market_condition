@@ -306,7 +306,7 @@ def kaufbegruendung(sig) -> list[str]:
     rev_ok = sig.revenue_growth is not None and sig.revenue_growth >= 20
     eps_ok = sig.eps_growth_last_q is not None and sig.eps_growth_last_q >= 20
     if sig.revenue_growth is not None:
-        g.append(f"Umsatzwachstum {sig.revenue_growth:+.0f} % gegenüber dem Vorjahr "
+        g.append(f"Umsatz im letzten Quartal {sig.revenue_growth:+.0f} % gegenüber dem Vorjahresquartal "
                  f"(Hürde 20 %: {'erfüllt' if rev_ok else 'nicht erreicht'}).")
     if sig.eps_growth_last_q is not None:
         g.append(f"Gewinn je Aktie im letzten Quartal {sig.eps_growth_last_q:+.0f} % "
