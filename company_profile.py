@@ -300,11 +300,22 @@ def kaufbegruendung(sig) -> list[str]:
         g.append(satz + " — gehört damit zu den stärksten Titeln im Universum.")
     if sig.industry_ranking is not None:
         g.append(f"Industrie auf Rang {sig.industry_ranking} — nur die Top 50 sind zugelassen.")
+    # Umsatz ODER Gewinn muss die Huerde schaffen (siehe _thesis_mask) — ein
+    # Wert unter der Huerde ist daher kein Widerspruch, aber er darf nicht
+    # wie ein erfuellter Grund aussehen.
+    rev_ok = sig.revenue_growth is not None and sig.revenue_growth >= 20
+    eps_ok = sig.eps_growth_last_q is not None and sig.eps_growth_last_q >= 20
     if sig.revenue_growth is not None:
-        g.append(f"Umsatzwachstum {sig.revenue_growth:+.0f} % gegenüber dem Vorjahr (Hürde: 20 %).")
+        g.append(f"Umsatzwachstum {sig.revenue_growth:+.0f} % gegenüber dem Vorjahr "
+                 f"(Hürde 20 %: {'erfüllt' if rev_ok else 'nicht erreicht'}).")
     if sig.eps_growth_last_q is not None:
         g.append(f"Gewinn je Aktie im letzten Quartal {sig.eps_growth_last_q:+.0f} % "
-                 f"gegenüber dem Vorjahresquartal (Hürde: 20 %).")
+                 f"gegenüber dem Vorjahresquartal "
+                 f"(Hürde 20 %: {'erfüllt' if eps_ok else 'nicht erreicht'}).")
+    if rev_ok != eps_ok and sig.revenue_growth is not None and sig.eps_growth_last_q is not None:
+        g.append("Regel: Umsatz ODER Gewinn muss die Hürde erreichen — "
+                 f"hier trägt {'der Umsatz' if rev_ok else 'der Gewinn'} das Signal, "
+                 f"{'der Gewinn' if rev_ok else 'der Umsatz'} schwächelt.")
     if sig.pattern and sig.pattern not in ("–", "-", ""):
         g.append(f"Chartmuster: {sig.pattern}.")
     if sig.dist_52w_high_pct is not None:
