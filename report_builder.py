@@ -762,6 +762,15 @@ HTML_TMPL = """
         <strong>Signale gesamt:</strong> {{ signals | length }}
         {% if alpaca_cash is not none %}
         &nbsp;|&nbsp;<strong>Alpaca Cash:</strong> ${{ "{:,.0f}".format(alpaca_cash) }}
+        {% set _planned = signals | selectattr("is_top_pick") | rejectattr("dropped") | list %}
+        {% if _planned %}
+        {% set _planned_sum = _planned | sum(attribute="position_value") %}
+        {% set _rest = alpaca_cash - _planned_sum %}
+        &nbsp;|&nbsp;<strong>Geplante Käufe:</strong>
+        {{ _planned | length }} ({{ _planned | map(attribute="ticker") | join(", ") }})
+        = ${{ "{:,.0f}".format(_planned_sum) }}
+        &rarr; {% if _rest >= -50 %}<strong>Rest-Cash ${{ "{:,.0f}".format([_rest, 0] | max) }}</strong>{% else %}<strong style="color:#c0392b">⚠️ Cash reicht nicht: es fehlen ${{ "{:,.0f}".format(-_rest) }}</strong>{% endif %}
+        {% endif %}
         {% if alpaca_positions %}
         &nbsp;|&nbsp;<strong>Offen ({{ alpaca_positions | length }}):</strong> {{ alpaca_positions | join(", ") }}
         {% endif %}
