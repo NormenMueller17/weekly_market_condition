@@ -19,6 +19,17 @@ from rate_limit import RateLimiter, install_yfinance_limiter
 _QUOTE_CACHE_TTL_HOURS = 24
 
 
+def _yoy_pct(neu, alt) -> float:
+    """Veraenderung in % mit abs(Vorwert) im Nenner.
+
+    `neu/alt - 1` kippt das Vorzeichen, sobald der Vorwert negativ ist:
+    IMOS drehte von EPS -15 auf +25,4 (Gewinnwende) und kam auf -269 %.
+    Mit abs() im Nenner ergibt dasselbe +269 %; Verlustverringerung zaehlt
+    ebenfalls als Verbesserung.
+    """
+    return (neu - alt) / abs(alt) * 100.0
+
+
 def _quote_cache_file() -> Path:
     d = Path(SETTINGS.cache_dir)
     d.mkdir(parents=True, exist_ok=True)
@@ -397,13 +408,13 @@ def fetch_quote_data_single(ticker: str) -> dict:
                     g_latest = None
                     # YoY letztes Quartal: Q0 vs. Q4 (vor einem Jahr)
                     if v[4] not in (0, None) and not pd.isna(v[0]) and not pd.isna(v[4]):
-                        g_latest = (v[0] / v[4] - 1.0) * 100.0
+                        g_latest = _yoy_pct(v[0], v[4])
                     eps_growth_last_q = g_latest
                     # Acceleration braucht zusätzlich Q5
                     if g_latest is not None and len(v) >= 6:
                         g_prev = None
                         if v[5] not in (0, None) and not pd.isna(v[1]) and not pd.isna(v[5]):
-                            g_prev = (v[1] / v[5] - 1.0) * 100.0
+                            g_prev = _yoy_pct(v[1], v[5])
                         if g_prev is not None:
                             eps_acceleration = g_latest - g_prev
                 else:
@@ -423,9 +434,9 @@ def fetch_quote_data_single(ticker: str) -> dict:
                         g_latest = None
                         g_prev = None
                         if v[1] not in (0, None) and not pd.isna(v[1]):
-                            g_latest = (v[0] / v[1] - 1.0) * 100.0
+                            g_latest = _yoy_pct(v[0], v[1])
                         if v[2] not in (0, None) and not pd.isna(v[2]):
-                            g_prev = (v[1] / v[2] - 1.0) * 100.0
+                            g_prev = _yoy_pct(v[1], v[2])
                         if g_latest is not None and g_prev is not None:
                             eps_acceleration = g_latest - g_prev
             except Exception:
@@ -501,7 +512,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
                     if eps_q_fb is not None and len(eps_q_fb) >= 5:
                         v = eps_q_fb.values
                         if v[4] not in (0, None) and not pd.isna(v[0]) and not pd.isna(v[4]):
-                            eps_growth_last_q = (v[0] / v[4] - 1.0) * 100.0
+                            eps_growth_last_q = _yoy_pct(v[0], v[4])
                 except Exception:
                     pass
 
