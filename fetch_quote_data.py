@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 import yfinance as yf
 import pandas as pd
+import quarterly_store
 from config import SETTINGS
 from rate_limit import RateLimiter, install_yfinance_limiter
 
@@ -64,6 +65,7 @@ _EMPTY_QUOTE: dict = {
     "Close": None, "MarketCap_Mio": None, "Sector": None,
     "EPS_FWD_TTM": None, "EPS_GROWTH_FWD_TTM": None, "REV_GROWTH_TTM_YOY": None,
     "EPS_GROWTH_LAST_Q_YOY": None,
+    "QUARTERLY_ROWS": None,
     "ROE": None, "Operating_Margin": None, "FCF_Margin": None,
     "Debt_to_Equity": None, "EPS_Acceleration": None, "ROIC": None,
     "Cash_Conversion": None, "Op_Margin_Stability_5y": None,
@@ -149,6 +151,16 @@ def batch_fetch_quote_data(tickers) -> dict:
                 data = dict(_EMPTY_QUOTE)
             fresh[tkr] = data
     results.update(fresh)
+
+    # Quartalsdaten dauerhaft fortschreiben (siehe quarterly_store.py). Nur die
+    # frisch geholten Ticker: Cache-Treffer wurden beim Abruf schon gespeichert.
+    try:
+        rows = [r for d in fresh.values() for r in (d.get("QUARTERLY_ROWS") or [])]
+        st = quarterly_store.upsert(rows)
+        print(f"[INFO] Quartalsdaten: {st['neu']} neu, {st['geaendert']} geaendert, "
+              f"{st['revidiert']} Umsatz-Revisionen.")
+    except Exception as exc:
+        print(f"[WARN] Quartalsdaten konnten nicht gespeichert werden: {exc}")
 
     # Nur erfolgreiche Abrufe cachen -- ein Totalausfall (z.B. durch den
     # Circuit Breaker uebersprungen) soll beim naechsten Lauf erneut
@@ -332,6 +344,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
             # EPS: letztes-Quartal-YoY (braucht >= 5 Quartale) + Acceleration (>= 6). Fallback: jährlich (>= 3 Jahre).
             eps_acceleration  = None
             eps_growth_last_q = None
+            quarterly_rows    = None
             try:
                 def _extract_eps_series(stmt):
                     if stmt is None or getattr(stmt, "empty", True):
@@ -404,6 +417,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
                     if callable(get_stmt):
                         qs = get_stmt(freq="quarterly")
 
+                quarterly_rows = quarterly_store.rows_from_stmt(ticker, qs)
                 eps_q = _extract_eps_series(qs)
                 if eps_q is not None and len(eps_q) >= 5:
                     v = eps_q.values  # newest->oldest
@@ -564,6 +578,7 @@ def fetch_quote_data_single(ticker: str) -> dict:
                 "EPS_GROWTH_FWD_TTM": eps_growth_pct,
                 "REV_GROWTH_TTM_YOY": rev_growth_pct,
                 "EPS_GROWTH_LAST_Q_YOY": eps_growth_last_q,
+                "QUARTERLY_ROWS": quarterly_rows,
             "ROE": roe,
             "Operating_Margin": op_margin,
             "FCF_Margin": fcf_margin,
