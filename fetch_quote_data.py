@@ -18,6 +18,10 @@ from rate_limit import RateLimiter, install_yfinance_limiter
 # 2026-08-09, EPS-Q kippte ueber die 20%-Schwelle). Der Cache macht
 # Wiederholungslaeufe innerhalb der TTL deterministisch.
 _QUOTE_CACHE_TTL_HOURS = 24
+# Bei jeder Aenderung an der Berechnung hochzaehlen: sonst liefert der per
+# actions/cache weitergereichte Cache noch bis zu 24 h alte, falsche Werte
+# (IMOS -269 % trotz Vorzeichenfix, 2026-10-04).
+_QUOTE_CACHE_VERSION = 2
 
 
 def _yoy_pct(neu, alt) -> float:
@@ -94,7 +98,9 @@ def batch_fetch_quote_data(tickers) -> dict:
         try:
             payload = pickle.loads(cache_file.read_bytes())
             age_h = (datetime.utcnow() - payload["fetched"]).total_seconds() / 3600
-            if age_h < _QUOTE_CACHE_TTL_HOURS:
+            if payload.get("version") != _QUOTE_CACHE_VERSION:
+                print("[CACHE] Fundamentaldaten-Cache aus älterer Berechnung, wird verworfen.")
+            elif age_h < _QUOTE_CACHE_TTL_HOURS:
                 cached = payload["data"]
                 print(f"[CACHE] Fundamentaldaten: {len(cached)} Ticker im Cache "
                       f"(Alter: {age_h:.1f}h / TTL: {_QUOTE_CACHE_TTL_HOURS}h).")
@@ -170,6 +176,7 @@ def batch_fetch_quote_data(tickers) -> dict:
         try:
             cache_file.write_bytes(pickle.dumps({
                 "fetched": datetime.utcnow(),
+                "version": _QUOTE_CACHE_VERSION,
                 "data": {**cached, **ok_fresh},
             }))
         except Exception as exc:
