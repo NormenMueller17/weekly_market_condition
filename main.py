@@ -1446,7 +1446,8 @@ def run():
     save_ampel_snapshot(_ampel_result)
     index_path = Path("docs/index.html")
     index_path.write_text(
-        build_index_page(docs_reports_dir, PAGES_BASE_URL, ampel=_ampel_result),
+        build_index_page(docs_reports_dir, PAGES_BASE_URL, ampel=_ampel_result,
+                         live_portfolio=alpaca_portfolio),
         encoding="utf-8",
     )
     print(f"[PAGES] Index aktualisiert → {index_path}")

@@ -2563,7 +2563,7 @@ def write_latest_redirect(reports_dir) -> Optional[Path]:
     return pfad
 
 
-def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
+def build_index_page(reports_dir, base_url: str, ampel=None, live_portfolio=None) -> str:
     """Erzeugt das Dashboard (docs/index.html) mit Mini-KPIs, Nav-Karten und Report-Archiv."""
     from pathlib import Path
     import datetime
@@ -2584,6 +2584,9 @@ def build_index_page(reports_dir, base_url: str, ampel=None) -> str:
         _trim   = min(_dates) if _dates else None
         _tm = pp._trade_metrics(_trades.get("closed", []), _trades.get("open", []))
         _em = pp._equity_metrics(pp._load_equity_history(), trim_from=_trim)
+        # Gleiche Korrektur wie auf der Performance-Seite: Live-Equity aus Alpaca,
+        # eingefrorene (delistete) Positionen fehlen sonst in der History-Zahl.
+        _em = pp._apply_live_equity(_em, live_portfolio)
 
         def _fm(v, plus=False):
             if v is None: return "–"

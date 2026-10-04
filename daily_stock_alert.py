@@ -261,7 +261,8 @@ def _refresh_dashboard(journal_data: dict, portfolio: dict) -> None:
 
     docs_reports_dir = Path("docs/reports")
     Path("docs/index.html").write_text(
-        build_index_page(docs_reports_dir, "https://weekly-market-condition.pages.dev"),
+        build_index_page(docs_reports_dir, "https://weekly-market-condition.pages.dev",
+                         live_portfolio=portfolio),
         encoding="utf-8",
     )
     print("[DASHBOARD] Depot-Equity, Performance-Seite und Index aktualisiert.")
