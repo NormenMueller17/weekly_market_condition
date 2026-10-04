@@ -2,7 +2,7 @@
   "ABCL": {
     "atr_pct": 5.911311876513591,
     "close": 13.74,
-    "eps_growth_last_q": 19.999999999999996,
+    "eps_growth_last_q": -20.0,
     "fails": "Rev oder EPS-Q",
     "industry_ranking": 39.0,
     "macd_above_signal": true,
@@ -17,7 +17,7 @@
   "ABSI": {
     "atr_pct": 7.638405358042504,
     "close": 11.07,
-    "eps_growth_last_q": -12.5,
+    "eps_growth_last_q": 12.5,
     "fails": "Vol-BO fehlt · Rev oder EPS-Q",
     "industry_ranking": 1.0,
     "macd_above_signal": true,
@@ -32,7 +32,7 @@
   "AEHR": {
     "atr_pct": 6.922329851421741,
     "close": 107.21,
-    "eps_growth_last_q": -140.0,
+    "eps_growth_last_q": 140.0,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 11.0,
     "macd_above_signal": false,
@@ -47,7 +47,7 @@
   "AGEN": {
     "atr_pct": 7.7494890419117235,
     "close": 8.36,
-    "eps_growth_last_q": -99.02912621359224,
+    "eps_growth_last_q": 99.02912621359224,
     "fails": "✅",
     "industry_ranking": 24.0,
     "macd_above_signal": true,
@@ -62,7 +62,7 @@
   "ALNT": {
     "atr_pct": 4.661273409945683,
     "close": 118.3,
-    "eps_growth_last_q": 190.47619047619045,
+    "eps_growth_last_q": 190.47619047619048,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 11.0,
     "macd_above_signal": true,
@@ -77,7 +77,7 @@
   "AMAL": {
     "atr_pct": 2.3300622319368793,
     "close": 48.19,
-    "eps_growth_last_q": 41.975308641975296,
+    "eps_growth_last_q": 41.97530864197529,
     "fails": "MACD fällt",
     "industry_ranking": 47.0,
     "macd_above_signal": false,
@@ -92,7 +92,7 @@
   "AMD": {
     "atr_pct": 3.9818623227378738,
     "close": 633.91,
-    "eps_growth_last_q": 155.55555555555554,
+    "eps_growth_last_q": 155.55555555555551,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 2.0,
     "macd_above_signal": true,
@@ -107,7 +107,7 @@
   "ANDG": {
     "atr_pct": 3.962447920578913,
     "close": 57.14,
-    "eps_growth_last_q": -98.26004422097613,
+    "eps_growth_last_q": -98.26004422097611,
     "fails": "RS < 70 · Rank > 50",
     "industry_ranking": 72.0,
     "macd_above_signal": true,
@@ -122,8 +122,8 @@
   "ANGO": {
     "atr_pct": 3.3279763049480673,
     "close": 15.11,
-    "eps_growth_last_q": 145.45454545454547,
-    "fails": "✅",
+    "eps_growth_last_q": -145.45454545454547,
+    "fails": "Rev oder EPS-Q",
     "industry_ranking": 12.0,
     "macd_above_signal": true,
     "market_cap_mio": 635.442688,
@@ -152,7 +152,7 @@
   "APPS": {
     "atr_pct": 7.839876095277076,
     "close": 11.17,
-    "eps_growth_last_q": -76.92307692307693,
+    "eps_growth_last_q": 76.92307692307693,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 16.0,
     "macd_above_signal": false,
@@ -242,8 +242,8 @@
   "AZTA": {
     "atr_pct": 3.9041496312013964,
     "close": 38.75,
-    "eps_growth_last_q": -104.34782608695652,
-    "fails": "Rev oder EPS-Q",
+    "eps_growth_last_q": 104.34782608695652,
+    "fails": "Sektor-Limit",
     "industry_ranking": 17.0,
     "macd_above_signal": true,
     "market_cap_mio": 1697.575168,
@@ -257,7 +257,7 @@
   "BAND": {
     "atr_pct": 6.72038101350548,
     "close": 63.74,
-    "eps_growth_last_q": -143.75,
+    "eps_growth_last_q": 143.75,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 32.0,
     "macd_above_signal": false,
@@ -317,7 +317,7 @@
   "BE": {
     "atr_pct": 7.160842694980009,
     "close": 289.15,
-    "eps_growth_last_q": -444.44444444444446,
+    "eps_growth_last_q": 444.44444444444446,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 17.0,
     "macd_above_signal": true,
@@ -332,7 +332,7 @@
   "BFLY": {
     "atr_pct": 7.960894328849593,
     "close": 8.95,
-    "eps_growth_last_q": -16.666666666666664,
+    "eps_growth_last_q": 16.66666666666666,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 3.0,
     "macd_above_signal": false,
@@ -377,7 +377,7 @@
   "BLFS": {
     "atr_pct": 2.8648011798299318,
     "close": 37.3,
-    "eps_growth_last_q": -375.75757575757575,
+    "eps_growth_last_q": 375.75757575757575,
     "fails": "✅",
     "industry_ranking": 25.0,
     "macd_above_signal": true,
@@ -392,8 +392,8 @@
   "BLMN": {
     "atr_pct": 5.668802066105957,
     "close": 8.48,
-    "eps_growth_last_q": 19.999999999999996,
-    "fails": "MACD fällt · Rev oder EPS-Q",
+    "eps_growth_last_q": 20.0,
+    "fails": "MACD fällt",
     "industry_ranking": 45.0,
     "macd_above_signal": false,
     "market_cap_mio": 726.065344,
@@ -467,7 +467,7 @@
   "BWMN": {
     "atr_pct": 0.18862987863915034,
     "close": 42.6,
-    "eps_growth_last_q": -58.823529411764696,
+    "eps_growth_last_q": -58.82352941176471,
     "fails": "Rev oder EPS-Q",
     "industry_ranking": 46.0,
     "macd_above_signal": true,
@@ -482,7 +482,7 @@
   "CBNK": {
     "atr_pct": 2.355641194822709,
     "close": 40.45,
-    "eps_growth_last_q": 11.538461538461542,
+    "eps_growth_last_q": 11.538461538461533,
     "fails": "Rev oder EPS-Q",
     "industry_ranking": 47.0,
     "macd_above_signal": true,
@@ -512,7 +512,7 @@
   "CDNA": {
     "atr_pct": 4.638549631113386,
     "close": 67.15,
-    "eps_growth_last_q": -1393.7499999999998,
+    "eps_growth_last_q": 1393.75,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 13.0,
     "macd_above_signal": true,
@@ -527,7 +527,7 @@
   "CGON": {
     "atr_pct": 5.152863125088188,
     "close": 67.38,
-    "eps_growth_last_q": 100.0,
+    "eps_growth_last_q": -100.0,
     "fails": "MACD fällt",
     "industry_ranking": 24.0,
     "macd_above_signal": false,
@@ -557,7 +557,7 @@
   "CLMT": {
     "atr_pct": 4.5857446290015575,
     "close": 55.28,
-    "eps_growth_last_q": -35.882352941176464,
+    "eps_growth_last_q": 35.882352941176464,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 10.0,
     "macd_above_signal": true,
@@ -572,7 +572,7 @@
   "COFS": {
     "atr_pct": 2.118481479601501,
     "close": 33.11,
-    "eps_growth_last_q": -7.777777777777784,
+    "eps_growth_last_q": -7.777777777777785,
     "fails": "MACD fällt · RS < 70 · Rev oder EPS-Q",
     "industry_ranking": 47.0,
     "macd_above_signal": false,
@@ -587,7 +587,7 @@
   "COHU": {
     "atr_pct": 4.5697573312439665,
     "close": 73.48,
-    "eps_growth_last_q": -100.0,
+    "eps_growth_last_q": 100.0,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 11.0,
     "macd_above_signal": true,
@@ -602,7 +602,7 @@
   "CRBG": {
     "atr_pct": 2.6336032868435937,
     "close": 34.03,
-    "eps_growth_last_q": -96.63865546218487,
+    "eps_growth_last_q": 96.63865546218487,
     "fails": "RS < 70 · Rank > 50",
     "industry_ranking": 82.0,
     "macd_above_signal": true,
@@ -617,7 +617,7 @@
   "CRON": {
     "atr_pct": 3.2070874796076865,
     "close": 3.225,
-    "eps_growth_last_q": -190.0,
+    "eps_growth_last_q": 190.0,
     "fails": "Rank > 50 · Kurs < $5",
     "industry_ranking": 61.0,
     "macd_above_signal": true,
@@ -632,7 +632,7 @@
   "CRWD": {
     "atr_pct": 4.125474241918846,
     "close": 270.04,
-    "eps_growth_last_q": -112.9032258064516,
+    "eps_growth_last_q": 112.9032258064516,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 32.0,
     "macd_above_signal": true,
@@ -647,7 +647,7 @@
   "CTBI": {
     "atr_pct": 1.9869905714400413,
     "close": 76.21,
-    "eps_growth_last_q": 18.840579710144922,
+    "eps_growth_last_q": 18.84057971014493,
     "fails": "MACD fällt · Rev oder EPS-Q",
     "industry_ranking": 47.0,
     "macd_above_signal": false,
@@ -662,7 +662,7 @@
   "CVEO": {
     "atr_pct": 3.2354964771509493,
     "close": 33.17,
-    "eps_growth_last_q": -7.9999999999999964,
+    "eps_growth_last_q": 7.9999999999999964,
     "fails": "MACD fällt · Rank > 50 · Rev oder EPS-Q",
     "industry_ranking": 66.0,
     "macd_above_signal": false,
@@ -677,7 +677,7 @@
   "DDS": {
     "atr_pct": 3.349699459731075,
     "close": 654.11,
-    "eps_growth_last_q": 34.12017167381973,
+    "eps_growth_last_q": 34.12017167381974,
     "fails": "RS < 70",
     "industry_ranking": 35.0,
     "macd_above_signal": true,
@@ -707,7 +707,7 @@
   "DMAC": {
     "atr_pct": 5.382572656214047,
     "close": 8.23,
-    "eps_growth_last_q": 5.555555555555558,
+    "eps_growth_last_q": -5.555555555555561,
     "fails": "RS < 70 · Rev oder EPS-Q",
     "industry_ranking": 39.0,
     "macd_above_signal": true,
@@ -722,8 +722,8 @@
   "DNA": {
     "atr_pct": 8.824176361325643,
     "close": 12.35,
-    "eps_growth_last_q": -55.35714285714286,
-    "fails": "ATR > 8% · Rev oder EPS-Q",
+    "eps_growth_last_q": 55.35714285714286,
+    "fails": "ATR > 8%",
     "industry_ranking": 24.0,
     "macd_above_signal": true,
     "market_cap_mio": 831.65248,
@@ -827,7 +827,7 @@
   "EMR": {
     "atr_pct": 2.3513374778326592,
     "close": 161.61,
-    "eps_growth_last_q": 23.076923076923084,
+    "eps_growth_last_q": 23.076923076923077,
     "fails": "Sektor-Limit",
     "industry_ranking": 28.0,
     "macd_above_signal": true,
@@ -842,7 +842,7 @@
   "ETON": {
     "atr_pct": 6.537726776721417,
     "close": 55.36,
-    "eps_growth_last_q": -450.0,
+    "eps_growth_last_q": 449.9999999999999,
     "fails": "✅",
     "industry_ranking": 39.0,
     "macd_above_signal": true,
@@ -932,7 +932,7 @@
   "GH": {
     "atr_pct": 4.08123008739402,
     "close": 177.8,
-    "eps_growth_last_q": 12.5,
+    "eps_growth_last_q": -12.499999999999996,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 13.0,
     "macd_above_signal": true,
@@ -962,7 +962,7 @@
   "GOOD": {
     "atr_pct": 1.7774345172480555,
     "close": 12.94,
-    "eps_growth_last_q": 175.0,
+    "eps_growth_last_q": 175.00000000000003,
     "fails": "MACD fällt · RS < 70 · Rank > 50",
     "industry_ranking": 79.0,
     "macd_above_signal": false,
@@ -977,7 +977,7 @@
   "GRAL": {
     "atr_pct": 7.2952784254375205,
     "close": 143.26,
-    "eps_growth_last_q": -19.496855345911957,
+    "eps_growth_last_q": 19.49685534591195,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 13.0,
     "macd_above_signal": true,
@@ -1007,7 +1007,7 @@
   "HBNC": {
     "atr_pct": 1.998384152836314,
     "close": 19.48,
-    "eps_growth_last_q": 4.255319148936176,
+    "eps_growth_last_q": 4.255319148936175,
     "fails": "MACD fällt · RS < 70 · Rev oder EPS-Q",
     "industry_ranking": 47.0,
     "macd_above_signal": false,
@@ -1037,7 +1037,7 @@
   "IBRX": {
     "atr_pct": 6.572678249739829,
     "close": 10.285,
-    "eps_growth_last_q": 119.99999999999997,
+    "eps_growth_last_q": -120.0,
     "fails": "Sektor-Limit",
     "industry_ranking": 24.0,
     "macd_above_signal": true,
@@ -1052,7 +1052,7 @@
   "IDT": {
     "atr_pct": 3.9612213262750884,
     "close": 78.98,
-    "eps_growth_last_q": 8.749999999999991,
+    "eps_growth_last_q": 8.749999999999995,
     "fails": "Rev oder EPS-Q",
     "industry_ranking": 42.0,
     "macd_above_signal": true,
@@ -1082,7 +1082,7 @@
   "ILMN": {
     "atr_pct": 4.883376783773286,
     "close": 273.04,
-    "eps_growth_last_q": -9.395973154362414,
+    "eps_growth_last_q": -9.395973154362409,
     "fails": "Vol-BO fehlt · Rev oder EPS-Q",
     "industry_ranking": 13.0,
     "macd_above_signal": true,
@@ -1097,7 +1097,7 @@
   "IMOS": {
     "atr_pct": 4.554107896932026,
     "close": 83.3,
-    "eps_growth_last_q": -269.3333333333333,
+    "eps_growth_last_q": 269.3333333333333,
     "fails": "✅",
     "industry_ranking": 2.0,
     "macd_above_signal": true,
@@ -1127,8 +1127,8 @@
   "INN": {
     "atr_pct": 2.562886012212757,
     "close": 6.02,
-    "eps_growth_last_q": -300.0,
-    "fails": "MACD fällt · RS < 70 · Rank > 50 · Rev oder EPS-Q",
+    "eps_growth_last_q": 300.0,
+    "fails": "MACD fällt · RS < 70 · Rank > 50",
     "industry_ranking": 73.0,
     "macd_above_signal": false,
     "market_cap_mio": 649.277824,
@@ -1142,7 +1142,7 @@
   "INTC": {
     "atr_pct": 5.5410569671009435,
     "close": 119.33,
-    "eps_growth_last_q": 222.38805970149252,
+    "eps_growth_last_q": -222.38805970149252,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 2.0,
     "macd_above_signal": false,
@@ -1157,7 +1157,7 @@
   "IOVA": {
     "atr_pct": 6.63050199723101,
     "close": 14.215,
-    "eps_growth_last_q": -66.66666666666667,
+    "eps_growth_last_q": 66.66666666666667,
     "fails": "Sektor-Limit",
     "industry_ranking": 24.0,
     "macd_above_signal": true,
@@ -1172,7 +1172,7 @@
   "ITUB": {
     "atr_pct": 2.86046779112157,
     "close": 8.59,
-    "eps_growth_last_q": 13.829787234042556,
+    "eps_growth_last_q": 13.829787234042568,
     "fails": "RS < 70 · Rev oder EPS-Q",
     "industry_ranking": 47.0,
     "macd_above_signal": true,
@@ -1187,7 +1187,7 @@
   "KOD": {
     "atr_pct": 9.255842346227855,
     "close": 94.45,
-    "eps_growth_last_q": 1.9417475728155331,
+    "eps_growth_last_q": -1.9417475728155356,
     "fails": "ATR > 8% · Rev oder EPS-Q",
     "industry_ranking": 24.0,
     "macd_above_signal": true,
@@ -1232,8 +1232,8 @@
   "LIND": {
     "atr_pct": 4.232727267656317,
     "close": 34.78,
-    "eps_growth_last_q": -88.88888888888889,
-    "fails": "MACD fällt · Rev oder EPS-Q",
+    "eps_growth_last_q": 88.8888888888889,
+    "fails": "MACD fällt",
     "industry_ranking": 9.0,
     "macd_above_signal": false,
     "market_cap_mio": 2282.252544,
@@ -1247,7 +1247,7 @@
   "LITE": {
     "atr_pct": 5.726789424180751,
     "close": 1085.42,
-    "eps_growth_last_q": -2959.7972972972975,
+    "eps_growth_last_q": -2959.797297297297,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 42.0,
     "macd_above_signal": true,
@@ -1292,8 +1292,8 @@
   "MAN": {
     "atr_pct": 4.192603051236611,
     "close": 54.16,
-    "eps_growth_last_q": -178.47222222222223,
-    "fails": "Rev oder EPS-Q",
+    "eps_growth_last_q": 178.4722222222222,
+    "fails": "✅",
     "industry_ranking": 46.0,
     "macd_above_signal": true,
     "market_cap_mio": 2518.741504,
@@ -1307,7 +1307,7 @@
   "MRNA": {
     "atr_pct": 7.224695016655583,
     "close": 190.01,
-    "eps_growth_last_q": -7.511737089201875,
+    "eps_growth_last_q": 7.5117370892018736,
     "fails": "Vol-BO fehlt · Rev oder EPS-Q",
     "industry_ranking": 24.0,
     "macd_above_signal": true,
@@ -1322,8 +1322,8 @@
   "MRVI": {
     "atr_pct": 4.895117081499325,
     "close": 7.9,
-    "eps_growth_last_q": -70.37037037037037,
-    "fails": "Vol-BO fehlt · Rev oder EPS-Q",
+    "eps_growth_last_q": 70.37037037037037,
+    "fails": "Vol-BO fehlt",
     "industry_ranking": 39.0,
     "macd_above_signal": true,
     "market_cap_mio": 2925.825792,
@@ -1337,7 +1337,7 @@
   "MRVL": {
     "atr_pct": 4.321286557252468,
     "close": 272.29,
-    "eps_growth_last_q": 50.0,
+    "eps_growth_last_q": 50.000000000000014,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 2.0,
     "macd_above_signal": false,
@@ -1367,8 +1367,8 @@
   "MTLS": {
     "atr_pct": 3.0168060495072058,
     "close": 8.5,
-    "eps_growth_last_q": -400.0,
-    "fails": "Rev oder EPS-Q",
+    "eps_growth_last_q": 400.0,
+    "fails": "Sektor-Limit",
     "industry_ranking": 32.0,
     "macd_above_signal": true,
     "market_cap_mio": 490.2856,
@@ -1397,7 +1397,7 @@
   "MU": {
     "atr_pct": 3.930702037118267,
     "close": 1074.89,
-    "eps_growth_last_q": 1368.452380952381,
+    "eps_growth_last_q": 1368.4523809523812,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 2.0,
     "macd_above_signal": false,
@@ -1412,7 +1412,7 @@
   "MXL": {
     "atr_pct": 6.722768179863693,
     "close": 105.93,
-    "eps_growth_last_q": -106.4516129032258,
+    "eps_growth_last_q": 106.45161290322582,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 2.0,
     "macd_above_signal": true,
@@ -1427,8 +1427,8 @@
   "NEOG": {
     "atr_pct": 4.879482361935931,
     "close": 12.15,
-    "eps_growth_last_q": -98.22732814744091,
-    "fails": "Rev oder EPS-Q",
+    "eps_growth_last_q": 98.22732814744093,
+    "fails": "✅",
     "industry_ranking": 19.0,
     "macd_above_signal": true,
     "market_cap_mio": 2649.98784,
@@ -1472,7 +1472,7 @@
   "NVCT": {
     "atr_pct": 6.931373772944541,
     "close": 21.92,
-    "eps_growth_last_q": 11.111111111111093,
+    "eps_growth_last_q": -11.1111111111111,
     "fails": "MACD fällt · Vol-BO fehlt · Rev oder EPS-Q",
     "industry_ranking": 39.0,
     "macd_above_signal": false,
@@ -1487,8 +1487,8 @@
   "NVTS": {
     "atr_pct": 6.197579636037877,
     "close": 12.4,
-    "eps_growth_last_q": 280.0,
-    "fails": "MACD fällt",
+    "eps_growth_last_q": -280.0,
+    "fails": "MACD fällt · Rev oder EPS-Q",
     "industry_ranking": 2.0,
     "macd_above_signal": false,
     "market_cap_mio": 3255.68768,
@@ -1502,7 +1502,7 @@
   "OABI": {
     "atr_pct": 5.316807873785999,
     "close": 4.87,
-    "eps_growth_last_q": -66.66666666666666,
+    "eps_growth_last_q": 66.66666666666666,
     "fails": "Vol-BO fehlt · Kurs < $5",
     "industry_ranking": 1.0,
     "macd_above_signal": true,
@@ -1547,8 +1547,8 @@
   "OMER": {
     "atr_pct": 4.9512547767902895,
     "close": 18.61,
-    "eps_growth_last_q": -134.88372093023256,
-    "fails": "Vol-BO fehlt · Rev oder EPS-Q",
+    "eps_growth_last_q": 134.88372093023256,
+    "fails": "Vol-BO fehlt",
     "industry_ranking": 39.0,
     "macd_above_signal": true,
     "market_cap_mio": 1347.146624,
@@ -1607,7 +1607,7 @@
   "PBF": {
     "atr_pct": 6.058785142829941,
     "close": 80.78,
-    "eps_growth_last_q": -313.5977337110482,
+    "eps_growth_last_q": 313.5977337110482,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 10.0,
     "macd_above_signal": true,
@@ -1622,7 +1622,7 @@
   "PCB": {
     "atr_pct": 2.236447238434599,
     "close": 28.01,
-    "eps_growth_last_q": 17.741935483870975,
+    "eps_growth_last_q": 17.741935483870964,
     "fails": "MACD fällt · Rev oder EPS-Q",
     "industry_ranking": 47.0,
     "macd_above_signal": false,
@@ -1652,7 +1652,7 @@
   "PENG": {
     "atr_pct": 5.022002006961308,
     "close": 61.36,
-    "eps_growth_last_q": -6900.0,
+    "eps_growth_last_q": 6900.0,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 2.0,
     "macd_above_signal": false,
@@ -1667,7 +1667,7 @@
   "PGEN": {
     "atr_pct": 5.654065121343092,
     "close": 8.54,
-    "eps_growth_last_q": -127.77777777777777,
+    "eps_growth_last_q": 127.77777777777777,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 39.0,
     "macd_above_signal": true,
@@ -1682,7 +1682,7 @@
   "PKOH": {
     "atr_pct": 3.2464795499653394,
     "close": 47.37,
-    "eps_growth_last_q": 30.303030303030297,
+    "eps_growth_last_q": 30.303030303030294,
     "fails": "✅",
     "industry_ranking": 38.0,
     "macd_above_signal": true,
@@ -1697,8 +1697,8 @@
   "PLSE": {
     "atr_pct": 6.93826627714661,
     "close": 47.9,
-    "eps_growth_last_q": 28.57142857142856,
-    "fails": "Vol-BO fehlt",
+    "eps_growth_last_q": -28.57142857142855,
+    "fails": "Vol-BO fehlt · Rev oder EPS-Q",
     "industry_ranking": 12.0,
     "macd_above_signal": true,
     "market_cap_mio": 3416.353024,
@@ -1712,7 +1712,7 @@
   "QGEN": {
     "atr_pct": 3.1907400510259754,
     "close": 44.75,
-    "eps_growth_last_q": 7.954520919427055,
+    "eps_growth_last_q": 7.95452091942706,
     "fails": "RS < 70 · Rev oder EPS-Q",
     "industry_ranking": 24.0,
     "macd_above_signal": true,
@@ -1757,8 +1757,8 @@
   "QSI": {
     "atr_pct": 7.571428011089959,
     "close": 1.55,
-    "eps_growth_last_q": -31.25,
-    "fails": "Kurs < $5 · Rev oder EPS-Q",
+    "eps_growth_last_q": 31.25,
+    "fails": "Kurs < $5",
     "industry_ranking": 17.0,
     "macd_above_signal": true,
     "market_cap_mio": 339.270048,
@@ -1772,8 +1772,8 @@
   "RCEL": {
     "atr_pct": 5.08760120699778,
     "close": 12.72,
-    "eps_growth_last_q": -34.210526315789465,
-    "fails": "Vol-BO fehlt · Rev oder EPS-Q",
+    "eps_growth_last_q": 34.21052631578947,
+    "fails": "Vol-BO fehlt",
     "industry_ranking": 12.0,
     "macd_above_signal": true,
     "market_cap_mio": 393.389504,
@@ -1862,8 +1862,8 @@
   "ROG": {
     "atr_pct": 4.50625044958932,
     "close": 160.0,
-    "eps_growth_last_q": -119.0,
-    "fails": "MACD fällt · Rank > 50 · Rev oder EPS-Q",
+    "eps_growth_last_q": 119.0,
+    "fails": "MACD fällt · Rank > 50",
     "industry_ranking": 87.0,
     "macd_above_signal": false,
     "market_cap_mio": 2855.76576,
@@ -1877,8 +1877,8 @@
   "RVMD": {
     "atr_pct": 3.5826623707139946,
     "close": 206.64,
-    "eps_growth_last_q": 133.58778625954199,
-    "fails": "MACD fällt · Vol-BO fehlt",
+    "eps_growth_last_q": -133.58778625954199,
+    "fails": "MACD fällt · Vol-BO fehlt · Rev oder EPS-Q",
     "industry_ranking": 24.0,
     "macd_above_signal": false,
     "market_cap_mio": 44290.47808,
@@ -1892,7 +1892,7 @@
   "RXT": {
     "atr_pct": 7.0180312901081,
     "close": 4.12,
-    "eps_growth_last_q": 17.391304347826097,
+    "eps_growth_last_q": -17.39130434782609,
     "fails": "MACD fällt · Vol-BO fehlt · Kurs < $5 · Rev oder EPS-Q",
     "industry_ranking": 33.0,
     "macd_above_signal": false,
@@ -1937,7 +1937,7 @@
   "SGMT": {
     "atr_pct": 8.758986997579816,
     "close": 9.14,
-    "eps_growth_last_q": -18.75,
+    "eps_growth_last_q": 18.75,
     "fails": "ATR > 8% · Rev oder EPS-Q",
     "industry_ranking": 39.0,
     "macd_above_signal": true,
@@ -1952,7 +1952,7 @@
   "SHG": {
     "atr_pct": 3.0418706977888124,
     "close": 78.03,
-    "eps_growth_last_q": 22.468974526453287,
+    "eps_growth_last_q": 22.468974526453298,
     "fails": "✅",
     "industry_ranking": 47.0,
     "macd_above_signal": true,
@@ -1967,7 +1967,7 @@
   "SI": {
     "atr_pct": 5.345682389547895,
     "close": 19.01,
-    "eps_growth_last_q": -48.36441654952063,
+    "eps_growth_last_q": 48.364416549520634,
     "fails": "MACD fällt",
     "industry_ranking": 12.0,
     "macd_above_signal": false,
@@ -1982,7 +1982,7 @@
   "SILC": {
     "atr_pct": 5.518669930028388,
     "close": 60.03,
-    "eps_growth_last_q": -37.28813559322034,
+    "eps_growth_last_q": 37.28813559322033,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 14.0,
     "macd_above_signal": true,
@@ -1997,7 +1997,7 @@
   "SIMO": {
     "atr_pct": 4.626432981750939,
     "close": 280.5,
-    "eps_growth_last_q": 714.2857142857144,
+    "eps_growth_last_q": 714.2857142857143,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 2.0,
     "macd_above_signal": false,
@@ -2027,8 +2027,8 @@
   "SLP": {
     "atr_pct": 0.166023283851653,
     "close": 18.5,
-    "eps_growth_last_q": 19.999999999999996,
-    "fails": "Rev oder EPS-Q",
+    "eps_growth_last_q": 20.0,
+    "fails": "Sektor-Limit",
     "industry_ranking": 36.0,
     "macd_above_signal": true,
     "market_cap_mio": 374.159488,
@@ -2042,7 +2042,7 @@
   "SMBK": {
     "atr_pct": 2.207714956441776,
     "close": 50.99,
-    "eps_growth_last_q": 39.13043478260869,
+    "eps_growth_last_q": 39.1304347826087,
     "fails": "MACD fällt",
     "industry_ranking": 47.0,
     "macd_above_signal": false,
@@ -2057,7 +2057,7 @@
   "SMTC": {
     "atr_pct": 5.963744471127538,
     "close": 194.88,
-    "eps_growth_last_q": -612.9032258064516,
+    "eps_growth_last_q": 612.9032258064517,
     "fails": "Vol-BO fehlt",
     "industry_ranking": 2.0,
     "macd_above_signal": true,
@@ -2072,7 +2072,7 @@
   "SNPS": {
     "atr_pct": 3.8477257640720923,
     "close": 489.9,
-    "eps_growth_last_q": 89.33333333333333,
+    "eps_growth_last_q": 89.33333333333331,
     "fails": "RS < 70",
     "industry_ranking": 32.0,
     "macd_above_signal": true,
@@ -2087,8 +2087,8 @@
   "STTK": {
     "atr_pct": 6.639779265794467,
     "close": 6.73,
-    "eps_growth_last_q": -50.0,
-    "fails": "MACD fällt · Rev oder EPS-Q",
+    "eps_growth_last_q": 50.0,
+    "fails": "MACD fällt",
     "industry_ranking": 39.0,
     "macd_above_signal": false,
     "market_cap_mio": 675.444736,
@@ -2102,8 +2102,8 @@
   "SYNA": {
     "atr_pct": 4.454996305319175,
     "close": 121.1,
-    "eps_growth_last_q": 9508.333333333332,
-    "fails": "MACD fällt",
+    "eps_growth_last_q": -9508.333333333334,
+    "fails": "MACD fällt · Rev oder EPS-Q",
     "industry_ranking": 2.0,
     "macd_above_signal": false,
     "market_cap_mio": 4807.838208,
@@ -2117,7 +2117,7 @@
   "TER": {
     "atr_pct": 4.030183749063741,
     "close": 449.04,
-    "eps_growth_last_q": 385.71428571428567,
+    "eps_growth_last_q": 385.7142857142857,
     "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 11.0,
     "macd_above_signal": false,
@@ -2162,8 +2162,8 @@
   "TRLV": {
     "atr_pct": 7.761860895090172,
     "close": 10.72,
-    "eps_growth_last_q": 2900.0,
-    "fails": "Rank > 50",
+    "eps_growth_last_q": -2900.0,
+    "fails": "Rank > 50 · Rev oder EPS-Q",
     "industry_ranking": 61.0,
     "macd_above_signal": true,
     "market_cap_mio": 2064.299136,
@@ -2177,7 +2177,7 @@
   "TRNS": {
     "atr_pct": 3.8397101975558976,
     "close": 90.39,
-    "eps_growth_last_q": -59.999999999999986,
+    "eps_growth_last_q": -60.0,
     "fails": "MACD fällt · RS < 70",
     "industry_ranking": 11.0,
     "macd_above_signal": false,
@@ -2267,7 +2267,7 @@
   "URI": {
     "atr_pct": 2.9981714328301,
     "close": 1081.04,
-    "eps_growth_last_q": 25.509029395423077,
+    "eps_growth_last_q": 25.50902939542307,
     "fails": "MACD fällt · Rank > 50",
     "industry_ranking": 57.0,
     "macd_above_signal": false,
@@ -2297,7 +2297,7 @@
   "UTZ": {
     "atr_pct": 0.23275705527071883,
     "close": 14.27,
-    "eps_growth_last_q": -191.66666666666669,
+    "eps_growth_last_q": -191.66666666666666,
     "fails": "Rank > 50 · Rev oder EPS-Q",
     "industry_ranking": 76.0,
     "macd_above_signal": true,
@@ -2342,7 +2342,7 @@
   "VICR": {
     "atr_pct": 6.363131453874075,
     "close": 308.9,
-    "eps_growth_last_q": 14.28571428571428,
+    "eps_growth_last_q": 14.285714285714285,
     "fails": "Sektor-Limit · Vol-BO fehlt",
     "industry_ranking": 17.0,
     "macd_above_signal": true,
@@ -2357,7 +2357,7 @@
   "VIRT": {
     "atr_pct": 3.865089251567587,
     "close": 58.79,
-    "eps_growth_last_q": -1.2121212121212088,
+    "eps_growth_last_q": -1.2121212121212133,
     "fails": "MACD fällt · Rank > 50",
     "industry_ranking": 74.0,
     "macd_above_signal": false,
@@ -2372,8 +2372,8 @@
   "VSTS": {
     "atr_pct": 4.178801673289156,
     "close": 14.03,
-    "eps_growth_last_q": -900.0,
-    "fails": "MACD fällt · Vol-BO fehlt · Rev oder EPS-Q",
+    "eps_growth_last_q": 900.0,
+    "fails": "MACD fällt · Vol-BO fehlt",
     "industry_ranking": 8.0,
     "macd_above_signal": false,
     "market_cap_mio": 1854.206208,
@@ -2447,8 +2447,8 @@
   "WNC": {
     "atr_pct": 5.514855122286365,
     "close": 14.04,
-    "eps_growth_last_q": 143.47826086956525,
-    "fails": "Sektor-Limit",
+    "eps_growth_last_q": -143.47826086956525,
+    "fails": "Rev oder EPS-Q",
     "industry_ranking": 29.0,
     "macd_above_signal": true,
     "market_cap_mio": 571.949888,
@@ -2462,8 +2462,8 @@
   "WOLF": {
     "atr_pct": 6.12042447930987,
     "close": 35.28,
-    "eps_growth_last_q": 51.075268817204304,
-    "fails": "MACD fällt",
+    "eps_growth_last_q": -51.075268817204304,
+    "fails": "MACD fällt · Rev oder EPS-Q",
     "industry_ranking": 2.0,
     "macd_above_signal": false,
     "market_cap_mio": 1867.390336,
@@ -2477,7 +2477,7 @@
   "WTBA": {
     "atr_pct": 2.284383797714662,
     "close": 30.08,
-    "eps_growth_last_q": 36.170212765957466,
+    "eps_growth_last_q": 36.17021276595745,
     "fails": "✅",
     "industry_ranking": 47.0,
     "macd_above_signal": true,
@@ -2492,7 +2492,7 @@
   "XERS": {
     "atr_pct": 6.324731809104889,
     "close": 9.08,
-    "eps_growth_last_q": 1700.0,
+    "eps_growth_last_q": -1699.9999999999995,
     "fails": "✅",
     "industry_ranking": 39.0,
     "macd_above_signal": true,
@@ -2507,7 +2507,7 @@
   "ZIM": {
     "atr_pct": 3.2040400258699053,
     "close": 29.63,
-    "eps_growth_last_q": 178.94736842105266,
+    "eps_growth_last_q": 178.94736842105263,
     "fails": "Sektor-Limit",
     "industry_ranking": 40.0,
     "macd_above_signal": true,

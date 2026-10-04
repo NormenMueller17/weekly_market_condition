@@ -1,7 +1,7 @@
 {
   "generated": "2026-10-04",
   "market_bullish": true,
-  "count": 34,
+  "count": 37,
   "watchlist": [
     {
       "ticker": "MXL",
@@ -129,6 +129,31 @@
       }
     },
     {
+      "ticker": "OMER",
+      "company": "Omeros Corporation",
+      "industry": "Biotechnology: Pharmaceutical Preparations",
+      "sector": "Healthcare",
+      "pivot": 20.38,
+      "buy_stop": 20.4004,
+      "resistance_note": "",
+      "close_saturday": 18.61,
+      "atr_pct": 4.9512547767902895,
+      "rs_score": 98.10476734227805,
+      "score": 6,
+      "industry_ranking": 39,
+      "sa_link": "https://stockanalysis.com/stocks/OMER",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": false
+      }
+    },
+    {
       "ticker": "AMD",
       "company": "Advanced Micro Devices Inc.",
       "industry": "Semiconductors",
@@ -242,6 +267,31 @@
       "score": 7,
       "industry_ranking": 11,
       "sa_link": "https://stockanalysis.com/stocks/COHU",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      }
+    },
+    {
+      "ticker": "RCEL",
+      "company": "Avita Medical Inc.",
+      "industry": "Medical/Dental Instruments",
+      "sector": "Healthcare",
+      "pivot": 12.76,
+      "buy_stop": 12.7728,
+      "resistance_note": "",
+      "close_saturday": 12.72,
+      "atr_pct": 5.08760120699778,
+      "rs_score": 97.65715101341706,
+      "score": 7,
+      "industry_ranking": 12,
+      "sa_link": "https://stockanalysis.com/stocks/RCEL",
       "criteria": {
         "SMA10W steigend": true,
         "SMA30W steigend": true,
@@ -429,6 +479,31 @@
       }
     },
     {
+      "ticker": "MRVI",
+      "company": "Maravai LifeSciences Holdings Inc. Class A",
+      "industry": "Biotechnology: Pharmaceutical Preparations",
+      "sector": "Healthcare",
+      "pivot": 7.92,
+      "buy_stop": 7.9279,
+      "resistance_note": "",
+      "close_saturday": 7.9,
+      "atr_pct": 4.895117081499325,
+      "rs_score": 96.90179845846417,
+      "score": 7,
+      "industry_ranking": 39,
+      "sa_link": "https://stockanalysis.com/stocks/MRVI",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": false,
+        "Close > Vorwoche": true
+      }
+    },
+    {
       "ticker": "ETON",
       "company": "Eton Pharmaceuticals Inc.",
       "industry": "Biotechnology: Pharmaceutical Preparations",
@@ -500,31 +575,6 @@
         "52W Range OK": true,
         "RS-Trend \u2191": true,
         "Vol-Breakout": true,
-        "Close > Vorwoche": false
-      }
-    },
-    {
-      "ticker": "PLSE",
-      "company": "Pulse Biosciences Inc",
-      "industry": "Medical/Dental Instruments",
-      "sector": "Healthcare",
-      "pivot": 53.6,
-      "buy_stop": 53.6536,
-      "resistance_note": "",
-      "close_saturday": 47.9,
-      "atr_pct": 6.93826627714661,
-      "rs_score": 96.7059663145875,
-      "score": 6,
-      "industry_ranking": 12,
-      "sa_link": "https://stockanalysis.com/stocks/PLSE",
-      "criteria": {
-        "SMA10W steigend": true,
-        "SMA30W steigend": true,
-        "SMA40W steigend": true,
-        "MA-Ordnung 10>30>40": true,
-        "52W Range OK": true,
-        "RS-Trend \u2191": true,
-        "Vol-Breakout": false,
         "Close > Vorwoche": false
       }
     },
@@ -729,6 +779,31 @@
       }
     },
     {
+      "ticker": "NEOG",
+      "company": "Neogen Corporation",
+      "industry": "Biotechnology: In Vitro & In Vivo Diagnostic Substances",
+      "sector": "Healthcare",
+      "pivot": 13.87,
+      "buy_stop": 13.8839,
+      "resistance_note": "",
+      "close_saturday": 12.15,
+      "atr_pct": 4.879482361935931,
+      "rs_score": 92.03397088210106,
+      "score": 7,
+      "industry_ranking": 19,
+      "sa_link": "https://stockanalysis.com/stocks/NEOG",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": true,
+        "Vol-Breakout": true,
+        "Close > Vorwoche": false
+      }
+    },
+    {
       "ticker": "BLFS",
       "company": "BioLife Solutions Inc.",
       "industry": "Biotechnology: Electromedical & Electrotherapeutic Apparatus",
@@ -749,6 +824,31 @@
         "MA-Ordnung 10>30>40": true,
         "52W Range OK": true,
         "RS-Trend \u2191": true,
+        "Vol-Breakout": true,
+        "Close > Vorwoche": false
+      }
+    },
+    {
+      "ticker": "MAN",
+      "company": "ManpowerGroup",
+      "industry": "Professional Services",
+      "sector": "Industrials",
+      "pivot": 63.88,
+      "buy_stop": 63.9439,
+      "resistance_note": "Buy-Stop auf $63.88 angehoben \u2014 2x als Widerstand getestet, zuletzt 31.08.",
+      "close_saturday": 54.16,
+      "atr_pct": 4.192603051236611,
+      "rs_score": 89.1244647445047,
+      "score": 6,
+      "industry_ranking": 46,
+      "sa_link": "https://stockanalysis.com/stocks/MAN",
+      "criteria": {
+        "SMA10W steigend": true,
+        "SMA30W steigend": true,
+        "SMA40W steigend": true,
+        "MA-Ordnung 10>30>40": true,
+        "52W Range OK": true,
+        "RS-Trend \u2191": false,
         "Vol-Breakout": true,
         "Close > Vorwoche": false
       }
@@ -792,31 +892,6 @@
       "score": 7,
       "industry_ranking": 47,
       "sa_link": "https://stockanalysis.com/stocks/SHG",
-      "criteria": {
-        "SMA10W steigend": true,
-        "SMA30W steigend": true,
-        "SMA40W steigend": true,
-        "MA-Ordnung 10>30>40": true,
-        "52W Range OK": true,
-        "RS-Trend \u2191": true,
-        "Vol-Breakout": true,
-        "Close > Vorwoche": false
-      }
-    },
-    {
-      "ticker": "ANGO",
-      "company": "AngioDynamics Inc.",
-      "industry": "Medical/Dental Instruments",
-      "sector": "Healthcare",
-      "pivot": 16.29,
-      "buy_stop": 16.3063,
-      "resistance_note": "Buy-Stop auf $16.29 angehoben \u2014 3x als Widerstand getestet, zuletzt 31.08.",
-      "close_saturday": 15.11,
-      "atr_pct": 3.3279763049480673,
-      "rs_score": 82.38224379103626,
-      "score": 7,
-      "industry_ranking": 12,
-      "sa_link": "https://stockanalysis.com/stocks/ANGO",
       "criteria": {
         "SMA10W steigend": true,
         "SMA30W steigend": true,
