@@ -152,7 +152,7 @@ def _load_log() -> dict[str, str]:
         return {}
 
 
-def refresh(tickers, stale_days: int = 30, max_calls: int | None = None,
+def refresh(tickers, stale_days: int = 14, max_calls: int | None = None,
             today: date | None = None) -> dict:
     """Quartalsdaten fuer `tickers` aus EDGAR holen und in den Speicher schreiben.
 
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     ap.add_argument("tickers", nargs="*")
     ap.add_argument("--leaders-history", action="store_true",
                     help="alle Titel aus docs/data/leaders_diagnostic_*.json")
-    ap.add_argument("--stale-days", type=int, default=30)
+    ap.add_argument("--stale-days", type=int, default=14)
     ap.add_argument("--max-calls", type=int)
     a = ap.parse_args()
     tk = list(a.tickers)
