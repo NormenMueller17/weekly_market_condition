@@ -283,6 +283,10 @@
     </div>
 
     <div class="nav-group">
+      <a href="#depot-alert" class="nav-h1">Täglicher Depot-Alert</a>
+    </div>
+
+    <div class="nav-group">
       <a href="#schwaechen" class="nav-h1">Identifizierte Schwächen</a>
     </div>
   </nav>
@@ -657,6 +661,18 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
       <li><strong>Index-Seite:</strong> Eine Liste aller bisher generierten Wochenreports wird aktualisiert.</li>
       <li><strong>Optionaler Excel-Export:</strong> Bei entsprechender Konfiguration wird eine Excel-Datei mit Leaders- und Branchendaten inklusive Chartmuster-Ergebnissen erzeugt.</li>
     </ul>
+
+    <!-- ── Täglicher Depot-Alert ──────────────────── -->
+    <h1 id="depot-alert">Täglicher Depot-Alert (Montag bis Freitag)</h1>
+    <p>Unabhängig vom Samstagslauf läuft werktags um 15:00 UTC ein Schutzlauf (<code>daily_stock_alert.py</code>). Er prüft den Bestand und handelt nur dort, wo ein Eingriff nötig ist:</p>
+    <ul>
+      <li><strong>Stop-Orders:</strong> Jede Position braucht eine aktive Stop-Sell-Order. Fehlt sie, wird sie gemeldet. Ablaufende Orders werden verlängert.</li>
+      <li><strong>Gewinnmitnahme:</strong> Teilverkäufe nach den Regeln aus Schritt 11 laufen sofort, weil der Markt werktags offen ist.</li>
+      <li><strong>Journal:</strong> Filled Orders werden mit dem Trade Journal abgeglichen.</li>
+      <li><strong>Neu eingebuchte Käufe:</strong> Der Lauf vergleicht die Positionen mit dem letzten gespeicherten Stand (<code>docs/data/depot_snapshot.json</code>). Eine Position, die seit dem letzten Lauf neu dazugekommen ist, erscheint in der Mail unter „✅ Neu im Depot" mit Stückzahl und Einstand. Das betrifft vor allem die Samstags-OTO-Orders, die am Montag gefüllt werden.</li>
+    </ul>
+    <p>Der erste Lauf nach der Einführung legt nur den Stand an und meldet nichts. Ohne Eingriff und ohne neuen Kauf wird keine Mail verschickt. Im Testlauf wird der Stand nicht fortgeschrieben.</p>
+    <p><em>Änderung 2026-10-06: Neu-im-Depot-Meldung ergänzt. Vorher sah man einen Kauf erst im Freitagsreport.</em></p>
 
     <!-- ── Montagsablauf ───────────────────────────────────────────── -->
     <h1 id="montag">Montagsablauf — Verzögerter Kaufabschluss</h1>
