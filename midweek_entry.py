@@ -433,6 +433,16 @@ def run(dry_run: bool) -> int:
         print("[MIDWEEK] Kein Budget oder kein Platz — keine Neukaeufe.")
         return 0
 
+    # Uebernahme-Ausschluss wie am Samstag (takeover_check.py). Die Pruefung
+    # laeuft hier frisch, weil eine Uebernahme auch nach dem Samstag angekuendigt
+    # werden kann. Bei einem Fehler bleibt der Titel im Rennen, mit Log-Vermerk.
+    try:
+        import takeover_check
+        uebernahme = takeover_check.pruefe([it["ticker"] for it in items])
+    except Exception as e:
+        print(f"[MIDWEEK] ⚠️  Uebernahme-Pruefung fehlgeschlagen ({e}) — kein Ausschluss")
+        uebernahme = {}
+
     signals: list[TradeSignal] = []
     for item in items:
         if len(signals) >= allowed:
@@ -441,6 +451,9 @@ def run(dry_run: bool) -> int:
         ticker = item["ticker"]
         if ticker in held:
             print(f"[MIDWEEK]    {ticker}: bereits im Depot — uebersprungen")
+            continue
+        if ticker in uebernahme:
+            print(f"[MIDWEEK]    {ticker}: Uebernahme laut SEC ({uebernahme[ticker]}) — uebersprungen")
             continue
         breakout = check_breakout(ticker, float(item["buy_stop"]), r)
         if breakout:
