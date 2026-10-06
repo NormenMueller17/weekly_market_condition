@@ -46,6 +46,8 @@ aussieht.
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 import sys
 import traceback
 from datetime import date
@@ -84,9 +86,40 @@ _ACTION_LABEL = {
 }
 
 
+SNAPSHOT_PATH = Path("docs/data/depot_snapshot.json")
+
+
+def neu_eingebucht(positions: list[dict]) -> tuple[list[dict], bool]:
+    """Positionen, die seit dem letzten Lauf neu im Depot stehen.
+
+    Vergleich gegen einen gespeicherten Stand (Symbol -> Stueckzahl). Der erste
+    Lauf ohne Stand legt nur die Basis an und meldet nichts, sonst kaeme beim
+    Einrichten eine Mail mit dem ganzen Depot als "neu".
+    Gibt (neue_positionen, basis_neu_angelegt) zurueck.
+    """
+    aktuell = {p["symbol"]: p for p in positions}
+    try:
+        alt = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        alt = None
+    if alt is None:
+        return [], True
+    neu = [p for sym, p in aktuell.items() if sym not in alt]
+    return neu, False
+
+
+def speichere_snapshot(positions: list[dict]) -> None:
+    SNAPSHOT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SNAPSHOT_PATH.write_text(
+        json.dumps({p["symbol"]: p["qty"] for p in positions}, indent=0, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
 def build_mail(pt_results: list[dict], uncovered: list[dict],
                refreshed: list[dict], dry_run: bool,
-               dashboard_error: str | None = None) -> str:
+               dashboard_error: str | None = None,
+               neu: list[dict] | None = None) -> str:
     banner = ("<p style='background:#fff3cd;border:1px solid #ffeeba;padding:.6em;'>"
               "⚠️ TEST-MODUS — nichts wurde geändert</p>") if dry_run else ""
     if dashboard_error:
@@ -132,10 +165,26 @@ def build_mail(pt_results: list[dict], uncovered: list[dict],
         )
         refresh_html = f"<h3>Verlängerte Stop-Orders</h3><table>{rows}</table>"
 
+    neu_html = ""
+    if neu:
+        rows = "".join(
+            f"<tr><td class='left'><b>{p['symbol']}</b></td>"
+            f"<td>{p.get('qty', 0):,.0f}</td>"
+            f"<td>{_fmt_money(p.get('avg_entry_price'))}</td></tr>"
+            for p in neu
+        )
+        neu_html = (
+            "<h3 style='color:#1a8a1a;'>✅ Neu im Depot</h3>"
+            "<p>Diese Positionen wurden seit dem letzten Lauf eingebucht. "
+            "Der Stop wird über die OTO-Order gesetzt.</p>"
+            f"<table><tr><th>Symbol</th><th>Stück</th><th>Einstand</th></tr>{rows}</table>"
+        )
+
     return f"""
 <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:1em;">
   <h2 style="color:#003d99;">Depot-Alert — {date.today().isoformat()}</h2>
   {banner}
+  {neu_html}
   {cover_html}
   {act_html}
   {refresh_html}
@@ -180,6 +229,14 @@ def run(dry_run: bool) -> int:
     if not positions:
         print("[DAILY] Kein Bestand — nichts zu pruefen.")
         return 0
+
+    # Neu eingebuchte Kaeufe (z. B. Samstags-OTO am Montag gefuellt) melden.
+    neu, basis_angelegt = neu_eingebucht(positions)
+    if basis_angelegt:
+        print("[DAILY] Erster Lauf: Bestandsstand angelegt, keine Neu-Meldung.")
+    for p in neu:
+        print(f"[DAILY] Neu eingebucht: {p['symbol']} {p['qty']:,.0f} Stk "
+              f"@ {p.get('avg_entry_price')}")
 
     # 1. Positionen ohne Stop-Order
     coverage  = alpaca_client.check_sell_order_coverage(portfolio, dry_run=dry_run)
@@ -238,12 +295,17 @@ def run(dry_run: bool) -> int:
             dashboard_error = str(e)
             print(f"[DASHBOARD] Aktualisierung fehlgeschlagen: {e}")
 
+    # Stand fuer den naechsten Lauf fortschreiben (nicht im Testlauf)
+    if not dry_run:
+        speichere_snapshot(positions)
+
     actions_any = any(r.get("actions_taken") for r in pt_results)
-    if not (actions_any or uncovered or refreshed or dashboard_error):
+    if not (actions_any or uncovered or refreshed or dashboard_error or neu):
         print("[DAILY] Keine Aktion noetig — keine Mail.")
         return 0
 
-    send_email(build_mail(pt_results, uncovered, refreshed, dry_run, dashboard_error),
+    send_email(build_mail(pt_results, uncovered, refreshed, dry_run, dashboard_error,
+                          neu=neu),
                subject_suffix="Depot-Alert")
     print("[DAILY] Mail verschickt.")
     return 0
