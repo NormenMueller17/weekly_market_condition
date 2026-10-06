@@ -31,7 +31,7 @@ import math
 from dataclasses import asdict, dataclass, field
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import pandas as pd
 
@@ -1024,6 +1024,7 @@ def generate_signals(
     open_positions:          list[str] | None = None,
     reentry_watchlist:       dict[str, dict] | None = None,
     open_sectors:            dict[str, str] | None = None,
+    takeover_check:          Optional[Callable[[list[str]], dict[str, str]]] = None,
 ) -> tuple[list[TradeSignal], pd.DataFrame, set[str], list[TradeSignal]]:
     """Apply Blueprint buy rules to the leaders DataFrame.
 
@@ -1227,12 +1228,33 @@ def generate_signals(
     # ── Rank and flag top picks ───────────────────────────────────────────────
     signals = rank_signals(signals, max_positions=remaining_slots)
 
+    # ── Uebernahme-Ausschluss ─────────────────────────────────────────────────
+    # Titel mit laufendem oder juengstem Fusions-/Angebotsverfahren (SEC-Einreichung,
+    # siehe takeover_check.py) werden verworfen. Gruende: Im Echtgeldkonto endet
+    # so eine Position in Aktien eines anderen Unternehmens oder in Bargeld, und
+    # darauf ist das Regelwerk nicht ausgelegt.
+    dropped_signals: list["TradeSignal"] = []
+    if takeover_check is not None and signals:
+        treffer = takeover_check([sig.ticker for sig in signals]) or {}
+        if treffer:
+            kept = []
+            for sig in signals:
+                if sig.ticker in treffer:
+                    sig.dropped     = True
+                    sig.drop_reason = (f"Übernahme laut SEC-Einreichung ({treffer[sig.ticker]}) "
+                                       f"— kein Kauf")
+                    dropped_signals.append(sig)
+                else:
+                    kept.append(sig)
+            signals = kept
+            print(f"[UEBERNAHME] {len(dropped_signals)} Signal(e) verworfen: "
+                  f"{', '.join(sorted(sig.ticker for sig in dropped_signals))}")
+
     # ── Sector concentration limit ────────────────────────────────────────────
     # Die Sektoren der bereits gehaltenen Positionen gehen als Startzaehler ein,
     # sonst gilt der Cap nur je Wochenliste und das Depot klumpt ueber die Zeit.
     max_per_sector = _RULES_JSON.get("portfolio", {}).get("max_positions_per_sector", 3)
     sector_excluded: set[str] = set()
-    dropped_signals: list["TradeSignal"] = []
     if max_per_sector > 0:
         initial_counts: dict[str, int] = {}
         for tkr in (open_positions or []):
@@ -1249,10 +1271,11 @@ def generate_signals(
             print(f"[SEKTOR] WARNUNG: Bestand ohne Sektorzuordnung, zaehlt NICHT "
                   f"gegen den Cap: {', '.join(sorted(fehlend))}")
 
-        signals, dropped_signals, ohne_sektor = _filter_sector_limit(
+        signals, sektor_dropped, ohne_sektor = _filter_sector_limit(
             signals, max_per_sector=max_per_sector, initial_counts=initial_counts,
         )
-        sector_excluded = {s.ticker for s in dropped_signals}
+        dropped_signals = dropped_signals + sektor_dropped
+        sector_excluded = {s.ticker for s in sektor_dropped}
         if ohne_sektor:
             print(f"[SEKTOR] WARNUNG: Signale ohne Sektor, nicht gedeckelt: "
                   f"{', '.join(sorted(ohne_sektor))}")

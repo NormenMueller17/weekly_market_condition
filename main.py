@@ -1040,6 +1040,16 @@ def run():
     # Sektorgrenzen belegen -- sonst blockieren tote Titel neue Kaeufe.
     import delisted as _delisted
     aktive_positionen = [s for s in (alpaca_positions or []) if not _delisted.is_delisted(s)]
+
+    import takeover_check as _takeover
+    def _pruefe_uebernahme(tickers):
+        """Fehler bei der SEC-Abfrage duerfen den Lauf nicht stoppen; der Titel
+        bleibt dann im Rennen, wird aber im Log als ungeprueft vermerkt."""
+        try:
+            return _takeover.pruefe(tickers)
+        except Exception as exc:
+            print(f"[UEBERNAHME] Pruefung fehlgeschlagen, kein Ausschluss: {exc}")
+            return {}
     _eingefroren = [s for s in (alpaca_positions or []) if _delisted.is_delisted(s)]
     if _eingefroren:
         print(f"[DELISTED] Nicht als offene Positionen gezaehlt: {', '.join(_eingefroren)}")
@@ -1227,6 +1237,7 @@ def run():
               f"${sizing_equity:,.0f} aus den Einstellungen")
     signals, _signal_candidates, sector_excluded, dropped_signals = generate_signals(
         leaders,
+        takeover_check  = _pruefe_uebernahme,
         market_bullish  = market_bullish,
         account_equity  = sizing_equity,
         portfolio_max_positions = SETTINGS.portfolio_max_positions,
