@@ -357,6 +357,7 @@
 
     <h2 id="s8">Schritt 8 — Portfolio-Daten abrufen</h2>
     <p>Das System holt den aktuellen Stand des Portfolios vom Broker: das verfügbare Bargeld, den Gesamtdepotwert sowie alle Details zu aktuell gehaltenen Positionen (Einstiegspreis, Anzahl Aktien, aktueller Kurs, unrealisierter Gewinn/Verlust).</p>
+    <p><em>Änderung 2026-10-06: Positionen, die auf einem eingefrorenen Kurs stehen (delistet oder durch Übernahme nicht mehr handelbar, Register in <code>docs/data/delisted.json</code>), bleiben im Depotwert und in der Anzeige, zählen aber NICHT gegen die Positionsplätze und das Sektorlimit. Sonst blockieren tote Titel neue Käufe. Das Paper-Konto bildet Übernahmen nicht ab, deshalb trägt das Register die Wahrheit.</em></p>
 
     <h2 id="s8a">Schritt 8a — Sell-Order-Coverage-Prüfung</h2>
     <p>Grundregel des Systems: Zu jeder gehaltenen Position muss jederzeit eine aktive Stop-Sell-Order beim Broker hinterlegt sein. In Schritt 17 wird diese Order automatisch als Teil der OTO-Kauforder angelegt. Dennoch kann eine Schutzorder fehlen — z.&nbsp;B. weil die Kinderorder einer OTO-Order nicht übertragen wurde oder eine Order manuell gelöscht wurde.</p>
@@ -518,12 +519,13 @@
     <p>Kalibriert wurde die Schwelle an 353 VCP- und 274 Launchpad-Basen aus dem Gesamtuniversum. Unterhalb von 1,5 % fanden sich ausschließlich laufende Barübernahmen, Rentenfonds und illiquide Sonderpapiere; echte Basen liegen im Mittel bei rund 4 %. Betroffen sind 7 bis 9 % aller erkannten Muster.</p>
 
     <h2 id="s14">Schritt 14 — Fundamentaldaten laden</h2>
-    <p>Um den Rechenaufwand zu begrenzen, werden Fundamentaldaten nur für Aktien abgerufen, die im Minervini-Screener mindestens 5 von 8 Punkten erreicht haben. Abgerufen werden:</p>
+    <p>Um den Rechenaufwand zu begrenzen, werden Fundamentaldaten nur für Aktien abgerufen, die im Minervini-Screener mindestens 6 von 8 Punkten erreicht haben. Abgerufen werden:</p>
     <ul>
       <li>Kurs und Marktkapitalisierung</li>
       <li>EPS (Gewinn je Aktie): Vorausschauend und der letzten 12 Monate (TTM)</li>
       <li>EPS-Wachstum: Vorausschauend, TTM und letztes Quartal im Jahresvergleich</li>
-      <li>Umsatzwachstum: TTM im Jahresvergleich</li>
+      <li>Umsatzwachstum: Umsatz des letzten Quartals im Jahresvergleich (entscheidet über das Signal, Kriterium 16). Zusätzlich der TTM-Wert (letzte 12 Monate gegen die 12 Monate davor), nur zur Anzeige.</li>
+      <li>Quartalshistorie: US-Emittenten aus der SEC-Schnittstelle EDGAR (rund 7 Jahre, mit Meldetag je Quartal), Auslandsemittenten ersatzweise aus Yahoo. Fortgeschrieben in <code>docs/data/quarterly_fundamentals.csv</code>.</li>
       <li>Rentabilitätskennzahlen: ROE, operative Marge, Free-Cashflow-Marge (derzeit deaktiviert als Pflichtfilter)</li>
       <li>Verschuldungsgrad, EPS-Beschleunigung und Sektorzuordnung</li>
     </ul>
@@ -538,7 +540,7 @@
     <p>Diese drei Werte werden zu einem Composite Industry Score zusammengefasst und in eine Rangliste überführt. Nur Aktien aus den Top-50-%-Branchen kommen für ein Kaufsignal in Frage.</p>
 
     <h2 id="s16">Schritt 16 — Signal-Generator: Kaufkriterien</h2>
-    <p>Alle Aktien, die den Minervini-Screener und die Fundamentalprüfung überstanden haben, durchlaufen nun 17 Kauffilter. Alle Filter müssen erfüllt sein:</p>
+    <p>Alle Aktien, die den Minervini-Screener und die Fundamentalprüfung überstanden haben, durchlaufen nun 18 Kauffilter. Alle Filter müssen erfüllt sein:</p>
 
     <div class="tbl-wrap">
       <table>
@@ -563,12 +565,22 @@
           <tr><td>15</td><td>Marktbreite</td><td>≥ 40 % der S&amp;P-500-Aktien über ihrem 200-Tage-MA</td></tr>
           <tr><td>16</td><td>Umsatzwachstum (TTM, YoY) <strong>ODER</strong> EPS-Wachstum (letztes Quartal, YoY)</td><td>≥ 20 % bei mindestens einem der beiden (Stand 2026-09-06, vorher UND-verknüpft)</td></tr>
           <tr><td>17</td><td>Wochenkurs steigend</td><td>Schlusskurs &gt; Schlusskurs der Vorwoche</td></tr>
+          <tr><td>18</td><td>Übernahme-Ausschluss</td><td>Kein Fusions- oder Angebotsverfahren laut SEC-Einreichung (PREM14A, DEFM14A, SC 14D9, SC 13E3) in den letzten 365 Tagen. Gilt am Samstag und am Mittwoch.</td></tr>
         </tbody>
       </table>
     </div>
     <p><em>Hinweis: Rentabilitätskennzahlen wie ROE und operative Marge sind als Filter vorhanden, aber derzeit deaktiviert. Sie können bei Bedarf aktiviert werden.</em></p>
     <p><em>Änderung 2026-09-06: Umsatz- und EPS-Wachstum waren bis dahin UND-verknüpft — ein Titel musste beide Schwellen gleichzeitig erreichen. Das schloss einen Großteil echter Marktführer aus, deren Quartals-EPS wegen eines volatilen Vorjahresvergleichs trotz starkem Kurs negativ war. Ein strengerer Ausgleich (Minervini-Score 8/8 statt 6/8) wurde geprüft und an den eigenen Trades getestet — er verschlechterte die Ergebnisse (Trefferquote 33 % statt 55 % bei Score 7) und blieb deshalb unverändert bei 6/8.</em></p>
     <p><em>Änderung 2026-09-27: Neuer Liquiditätsfilter (Ø-Tagesdollarvolumen), Auslöser war SENEB (stop_hit, −15,9 %, nur 1.250 Aktien/Woche gehandelt). Bewusst als Dollar-Umsatz statt als reine Stückzahl umgesetzt: eine feste Stückzahl-Schwelle ist preisabhängig und hätte bei einer Gegenprobe an den eigenen Trades den Gewinner QCRH (482.550 Stück/Woche, aber $9,16 Mio Ø-Tagesdollarvolumen) fälschlich ausgeschlossen.</em></p>
+    <p><em>Änderungen 2026-10-03 bis 2026-10-06 (Zusammenfassung):</em></p>
+    <ul>
+      <li><strong>Umsatz-Hürde bleibt Quartals-YoY.</strong> TTM wird angezeigt, entscheidet aber nicht. Die Journal-Prüfung (19 Trades) reicht für eine Umstellung nicht. Entscheidung frühestens Ende 2026.</li>
+      <li><strong>EPS-Wachstum bei negativer Vorjahresbasis korrigiert.</strong> Berechnung jetzt (neu − alt) / |alt|. Vorher kippte das Vorzeichen bei einer Gewinnwende: IMOS zeigte −269 % statt +269 %. Der Fundamentaldaten-Cache trägt eine Versionsnummer, damit alte Werte nicht bis zu 24 h weiterleben.</li>
+      <li><strong>Quartalsdaten aus SEC EDGAR</strong> für US-Emittenten, mit Meldetag. Erstbefüllung: 756 Titel.</li>
+      <li><strong>Übernahme-Ausschluss</strong> (Kriterium 18): Kandidaten mit Fusions- oder Angebotsverfahren werden verworfen, am Samstag wie am Mittwoch.</li>
+      <li><strong>Eingefrorene Positionen</strong> zählen nicht gegen Positionsplätze und Sektorlimit (siehe Schritt 8).</li>
+      <li><strong>Samstagslauf</strong> läuft um 02:23 UTC statt 08:00 UTC, um Verzögerungen durch GitHub-Spitzenlast zu vermeiden.</li>
+    </ul>
 
     <span class="sub-bold">Positionsgröße: Risk-First-Methode</span>
     <p>Die Positionsgröße wird so berechnet, dass maximal 1,5 % des Gesamtportfolios pro Trade riskiert werden. Das Verlustrisiko ist damit von vornherein begrenzt:</p>
@@ -583,7 +595,7 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
     <p>Im defensiven Marktmodus (Marktampel gedämpft): max. Risiko = 0,75 % → kleinere Positionen. Zusätzlich: Position wird auf "verfügbares Cash / verbleibende Slots" gedeckelt.</p>
 
     <span class="sub-bold">Ranking der Kaufkandidaten</span>
-    <p>Alle Aktien, die alle Filter bestehen, werden nach einem gewichteten Score sortiert. Die bestplatzierten Kandidaten (Top-Picks) erhalten bevorzugt Orders:</p>
+    <p>Alle Aktien, die alle Filter bestehen, werden nach einem gewichteten Score sortiert. Die bestplatzierten Kandidaten (Top-Picks) erhalten bevorzugt Orders. Der Report zeigt den Gesamtscore (0–100) und die gewichteten Anteile je Kriterium in der Spalte „Score". Der Score ist die Summe der Anteile, die Rangfolge bleibt gleich:</p>
 
     <div class="tbl-wrap">
       <table>
@@ -640,7 +652,7 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
     <h2 id="s18">Schritt 18 — Report und E-Mail</h2>
     <p>Zum Abschluss des Samstagdurchlaufs erzeugt das System einen vollständigen Wochenbericht:</p>
     <ul>
-      <li><strong>Vollständiger HTML-Report:</strong> Marktampel, Marktbreite, Sektorperformance, Trend- und Momentum-Analyse, Risiko- und Sentiment-Daten, alle Kaufsignale mit Orderparametern.</li>
+      <li><strong>Vollständiger HTML-Report:</strong> Marktampel, Marktbreite, Sektorperformance, Trend- und Momentum-Analyse, Risiko- und Sentiment-Daten, alle Kaufsignale mit Orderparametern. Seit 2026-10-03 zusätzlich: Score-Spalte mit Teilbeiträgen, TTM-Umsatz zur Information, und in der Kopfzeile die geplanten Käufe mit Rest-Cash (Warnung, wenn das Cash nicht reicht).</li>
       <li><strong>Kompakte E-Mail:</strong> Zeigt nur die Top-Picks als übersichtliche Karten mit Link zum vollständigen Report.</li>
       <li><strong>Index-Seite:</strong> Eine Liste aller bisher generierten Wochenreports wird aktualisiert.</li>
       <li><strong>Optionaler Excel-Export:</strong> Bei entsprechender Konfiguration wird eine Excel-Datei mit Leaders- und Branchendaten inklusive Chartmuster-Ergebnissen erzeugt.</li>
