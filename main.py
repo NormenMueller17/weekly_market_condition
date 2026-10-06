@@ -1035,6 +1035,15 @@ def run():
         alpaca_positions = []
         print("[ALPACA] Nicht verbunden – Fallback auf account_equity aus Einstellungen")
 
+    # Eingefrorene (delistete) Positionen bleiben im Konto stehen, koennen aber
+    # nicht mehr gehandelt werden. Sie duerfen weder Positionsplaetze noch
+    # Sektorgrenzen belegen -- sonst blockieren tote Titel neue Kaeufe.
+    import delisted as _delisted
+    aktive_positionen = [s for s in (alpaca_positions or []) if not _delisted.is_delisted(s)]
+    _eingefroren = [s for s in (alpaca_positions or []) if _delisted.is_delisted(s)]
+    if _eingefroren:
+        print(f"[DELISTED] Nicht als offene Positionen gezaehlt: {', '.join(_eingefroren)}")
+
     # ── Sell-Order-Coverage: jede Position muss eine Stop-Sell-Order haben ──────
     if alpaca_portfolio is not None:
         coverage = alpaca_client.check_sell_order_coverage(alpaca_portfolio, dry_run=TEST_MODE)
@@ -1180,7 +1189,7 @@ def run():
     # teils Industrie- statt Sektornamen ("Semiconductors" statt "Technology"),
     # darum ist es die zweite Wahl und nicht die erste.
     _open_sectors: dict[str, str] = {}
-    for _sym in (alpaca_positions or []):
+    for _sym in aktive_positionen:
         _sec = None
         if "Sektor" in leaders.columns and _sym in leaders.index:
             _sec = leaders.at[_sym, "Sektor"]
@@ -1225,7 +1234,7 @@ def run():
         max_new_per_week_bear   = SETTINGS.max_new_per_week_bear,
         rules           = {"max_industry_rank": SETTINGS.max_industry_rank},
         available_cash  = projected_cash if projected_cash > 0 else alpaca_cash,
-        open_positions  = alpaca_positions,
+        open_positions  = aktive_positionen,
         reentry_watchlist = _watchlist,
         open_sectors      = _open_sectors,
     )
@@ -1282,7 +1291,7 @@ def run():
         _mw = build_midweek_watchlist(
             leaders,
             rules          = {"max_industry_rank": SETTINGS.max_industry_rank},
-            open_positions = alpaca_positions,
+            open_positions = aktive_positionen,
         )
         _mw_path = Path("docs/data") / "midweek_watchlist.json"
         _mw_path.write_text(json.dumps({
