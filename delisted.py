@@ -77,24 +77,39 @@ def add(symbol: str, delisted_date: str, grund: str,
     return data
 
 
+def eingefrorene_eintraege(positions: list) -> list[dict]:
+    """Marktwert UND Delisting-Datum JE delisteter Position, einzeln.
+
+    Noetig fuer die Equity-Kurven-Korrektur (`portfolio_performance.
+    _reconcile_frozen_gap`): jede Uebernahme reisst ihr EIGENES Loch in
+    Alpacas Roh-Historie, zu ihrem eigenen Zeitpunkt und mit ihrem eigenen
+    Betrag. Nur die Summe zu kennen reicht nicht, um mehrere Luecher zu
+    verschiedenen Zeitpunkten zu finden -- das Delisting-Datum verankert die
+    Suche, statt sie allein der Betragsgroesse zu ueberlassen (siehe dort,
+    warum reine Betragsheuristik bei zwei Uebernahmen falsche Tage trifft).
+    """
+    reg = load()
+    out = []
+    for p in positions or []:
+        sym = p.get("symbol")
+        if sym in reg:
+            try:
+                wert = float(p.get("market_value") or 0)
+            except (TypeError, ValueError):
+                continue
+            out.append({"symbol": sym, "wert": wert,
+                        "delisted_date": reg[sym].get("delisted_date")})
+    return out
+
+
 def eingefrorener_wert(positions: list) -> float:
-    """Marktwert der Positionen, die auf einem eingefrorenen Kurs stehen.
+    """Marktwert ALLER delisteten Positionen zusammen.
 
     Die Equity des Kontos enthaelt diese Stuecke weiter — der Broker bewertet
     sie mit dem letzten bekannten Kurs. Fuer den Vergleich gegen den S&P 500
     ist das ein toter Block, der weder steigt noch faellt.
     """
-    tot = symbols()
-    if not tot:
-        return 0.0
-    summe = 0.0
-    for p in positions or []:
-        if p.get("symbol") in tot:
-            try:
-                summe += float(p.get("market_value") or 0)
-            except (TypeError, ValueError):
-                pass
-    return summe
+    return sum(e["wert"] for e in eingefrorene_eintraege(positions))
 
 
 def main() -> int:

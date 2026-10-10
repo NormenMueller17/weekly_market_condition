@@ -209,9 +209,10 @@ def _drawdown_and_cagr(labels: list, values: list) -> tuple:
     return (round(max_dd, 2) if max_dd else None), cagr
 
 
-def _reconcile_frozen_gap(values: list, eingefroren: float) -> list:
-    """Rechnet den eingefrorenen Block wieder in die Historie ein, ab dem Tag,
-    an dem Alpacas eigene portfolio_history ihn stillschweigend fallen liess.
+def _reconcile_frozen_gap(values: list, labels: list, eintraege: list) -> list:
+    """Rechnet jeden eingefrorenen Block einzeln wieder in die Historie ein,
+    ab dem Tag, an dem Alpacas eigene portfolio_history ihn stillschweigend
+    fallen liess.
 
     Anlass (2026-09-05): Nach dem AVNS-Delisting (2026-07-27) enthielt
     get_portfolio_history() die eingefrorene Position zunaechst weiter (Kurve
@@ -222,23 +223,46 @@ def _reconcile_frozen_gap(values: list, eingefroren: float) -> list:
     ihr letzter Punkt weicht dauerhaft von der (jetzt live berechneten) KPI
     "Aktuelles Depot-Equity" ab.
 
-    Statt das Delisting-Datum hart zu verdrahten, wird der Bruch empirisch
-    gesucht: der groesste Ein-Tages-Ruecksetzer, dessen Betrag in der
-    Groessenordnung von `eingefroren` liegt (0.5x-2x, um etwas normales
-    Trading-Rauschen am selben Tag zuzulassen). Ab dort wird `eingefroren`
-    auf jeden Punkt bis heute aufaddiert. Kein Fund -> Werte unveraendert.
+    Der Bruch wird JE delisteter Position gesucht, nicht als ein einzelner
+    globaler Bruch fuer die Summe. Zwei Anker schraenken die Suche ein:
+    (1) das registrierte Delisting-Datum (delisted.py) -- gesucht wird nur ab
+    diesem Tag, nie davor; (2) innerhalb dieses Fensters der ERSTE Ein-Tages-
+    Ruecksetzer, dessen Betrag in der Groessenordnung des jeweiligen
+    eingefrorenen Werts liegt (0.5x-2x, fuer normales Trading-Rauschen am
+    selben Tag).
+
+    Anlass fuer beide Anker (2026-10-10): Mit nur der Betragsheuristik und
+    "juengster Treffer gewinnt" (fruehere Fassung) traf die Suche fuer AVNS
+    (15.194 $) faelschlich den viel spaeteren QRVO-Bruch vom 2026-10-07
+    (11.915 $, liegt zufaellig auch in AVNS' 0.5x-2x-Fenster) statt des
+    echten AVNS-Bruchs vom 2026-08-19 -- und uebersah dabei frueheres,
+    voellig regulaeres Kursrauschen (z. B. 2026-06-06, -15.137 $ an einem
+    normalen Handelstag), das zufaellig in dieselbe Groessenordnung fiel.
+    Das Delisting-Datum als Startpunkt schliesst diese Zufallstreffer vor
+    der eigentlichen Uebernahme aus; der ERSTE Treffer danach ist der
+    naheliegendste echte Bruch, kein spaeterer handelt von einer anderen
+    Position.
     """
-    if not values or not eingefroren:
-        return values
-    lo, hi = 0.5 * eingefroren, 2.0 * eingefroren
-    break_idx = None
-    for i in range(1, len(values)):
-        drop = values[i - 1] - values[i]
-        if lo <= drop <= hi:
-            break_idx = i  # letzten (juengsten) passenden Bruch nehmen
-    if break_idx is None:
-        return values
-    return values[:break_idx] + [round(v + eingefroren, 2) for v in values[break_idx:]]
+    out = list(values)
+    for e in eintraege or []:
+        betrag = e.get("wert")
+        if not out or not betrag:
+            continue
+        start_i = 0
+        d0 = e.get("delisted_date")
+        if d0:
+            start_i = next((i for i, l in enumerate(labels) if l >= d0), len(out))
+        lo, hi = 0.5 * betrag, 2.0 * betrag
+        break_idx = None
+        for i in range(max(1, start_i), len(out)):
+            drop = out[i - 1] - out[i]
+            if lo <= drop <= hi:
+                break_idx = i
+                break  # ERSTER Treffer ab dem Delisting-Datum, nicht der juengste
+        if break_idx is None:
+            continue
+        out = out[:break_idx] + [round(v + betrag, 2) for v in out[break_idx:]]
+    return out
 
 
 def _apply_live_equity(em: dict, live_portfolio: Optional[dict],
@@ -275,16 +299,18 @@ def _apply_live_equity(em: dict, live_portfolio: Optional[dict],
         return em
     try:
         import delisted
-        eingefroren = delisted.eingefrorener_wert(live_portfolio.get("positions", []))
+        eintraege   = delisted.eingefrorene_eintraege(live_portfolio.get("positions", []))
+        eingefroren = sum(e["wert"] for e in eintraege)
     except Exception:
-        eingefroren = 0.0
+        eintraege, eingefroren = [], 0.0
 
     live_equity = float(live_portfolio["equity"])
     em = dict(em)
     em["current_equity"] = live_equity
     em["eingefroren"]    = eingefroren
 
-    values = _reconcile_frozen_gap(em.get("chart_values") or [], eingefroren)
+    values = _reconcile_frozen_gap(em.get("chart_values") or [], em.get("chart_labels") or [],
+                                    eintraege)
     if values:
         live_val = round(live_equity, 2)
         labels   = list(em.get("chart_labels") or [])
