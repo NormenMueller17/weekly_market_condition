@@ -3,8 +3,28 @@
 "checked": "2026-10-06",
 "hit": null
 },
+"AII": {
+"checked": "2026-10-17",
+"hit": null
+},
 "AMPL": {
 "checked": "2026-10-10",
+"hit": null
+},
+"BMBL": {
+"checked": "2026-10-17",
+"hit": null
+},
+"CBLL": {
+"checked": "2026-10-17",
+"hit": null
+},
+"CON": {
+"checked": "2026-10-17",
+"hit": null
+},
+"CRGY": {
+"checked": "2026-10-17",
 "hit": null
 },
 "DAC": {
@@ -20,7 +40,7 @@
 "hit": null
 },
 "FIGS": {
-"checked": "2026-10-10",
+"checked": "2026-10-17",
 "hit": null
 },
 "FRSH": {
@@ -35,12 +55,20 @@
 "checked": "2026-10-10",
 "hit": null
 },
+"HPK": {
+"checked": "2026-10-17",
+"hit": null
+},
 "IMOS": {
 "checked": "2026-10-06",
 "hit": null
 },
 "MRVL": {
 "checked": "2026-10-10",
+"hit": null
+},
+"MUR": {
+"checked": "2026-10-17",
 "hit": null
 },
 "NTRA": {
@@ -64,7 +92,7 @@
 "hit": "DEFM14A, 2025-12-23"
 },
 "TALO": {
-"checked": "2026-10-10",
+"checked": "2026-10-17",
 "hit": null
 },
 "UGP": {
