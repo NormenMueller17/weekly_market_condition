@@ -19,7 +19,7 @@ jobs:
       - name: Prüfe ob Pending-Dateien existieren
         id: check
         run: |
-          if [ -f "docs/data/pending_orders.json" ] || [ -f "docs/data/pending_profit_taking.json" ]; then
+          if [ -f "docs/data/pending_orders.json" ] || [ -f "docs/data/pending_profit_taking.json" ] || [ -f "docs/data/pending_takeover_sells.json" ]; then
             echo "has_pending=true" >> $GITHUB_OUTPUT
             echo "Pending orders und/oder Profit-Taking gefunden."
           else

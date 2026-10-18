@@ -119,12 +119,30 @@ def speichere_snapshot(positions: list[dict]) -> None:
 def build_mail(pt_results: list[dict], uncovered: list[dict],
                refreshed: list[dict], dry_run: bool,
                dashboard_error: str | None = None,
-               neu: list[dict] | None = None) -> str:
+               neu: list[dict] | None = None,
+               takeover: list[dict] | None = None) -> str:
     banner = ("<p style='background:#fff3cd;border:1px solid #ffeeba;padding:.6em;'>"
               "⚠️ TEST-MODUS — nichts wurde geändert</p>") if dry_run else ""
     if dashboard_error:
         banner += ("<p style='background:#f8d7da;border:1px solid #f5c6cb;padding:.6em;'>"
                    f"⚠️ Dashboard-Aktualisierung fehlgeschlagen: {dashboard_error}</p>")
+
+    takeover_html = ""
+    if takeover:
+        rows = "".join(
+            f"<tr><td class='left'><b>{r['symbol']}</b></td>"
+            f"<td class='left'>{r.get('grund', '')}</td>"
+            f"<td>{r.get('qty', 0):,.0f}</td>"
+            f"<td class='left'>{r.get('status', '')}</td></tr>"
+            for r in takeover
+        )
+        takeover_html = (
+            "<h3 style='color:#721c24;'>🚨 Übernahme-Ausstieg</h3>"
+            "<p>Diese Positionen haben eine laufende Übernahme-Einreichung bei der SEC "
+            "bekommen und wurden komplett verkauft — unabhängig vom P&L "
+            "(siehe takeover_check.py).</p>"
+            f"<table><tr><th>Symbol</th><th>Grund</th><th>Stück</th><th>Status</th></tr>{rows}</table>"
+        )
 
     cover_html = ""
     if uncovered:
@@ -184,6 +202,7 @@ def build_mail(pt_results: list[dict], uncovered: list[dict],
 <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:1em;">
   <h2 style="color:#003d99;">Depot-Alert — {date.today().isoformat()}</h2>
   {banner}
+  {takeover_html}
   {neu_html}
   {cover_html}
   {act_html}
@@ -237,6 +256,14 @@ def run(dry_run: bool) -> int:
     for p in neu:
         print(f"[DAILY] Neu eingebucht: {p['symbol']} {p['qty']:,.0f} Stk "
               f"@ {p.get('avg_entry_price')}")
+
+    # 0. Uebernahme-Ausstieg — VOR der Stop-Order-Pruefung, damit fuer eine
+    #    Position, die ohnehin sofort verkauft wird, nicht erst unnoetig ein
+    #    Stop angelegt und gleich wieder storniert wird. Markt ist werktags
+    #    offen, der Verkauf laeuft also sofort, nicht nur vorgemerkt.
+    takeover = exit_manager.run_takeover_exit_checks(portfolio, dry_run=dry_run)
+    for r in takeover:
+        print(f"[TAKEOVER] {r['symbol']}: {r['status']} — {r['grund']}")
 
     # 1. Positionen ohne Stop-Order
     coverage  = alpaca_client.check_sell_order_coverage(portfolio, dry_run=dry_run)
@@ -300,12 +327,12 @@ def run(dry_run: bool) -> int:
         speichere_snapshot(positions)
 
     actions_any = any(r.get("actions_taken") for r in pt_results)
-    if not (actions_any or uncovered or refreshed or dashboard_error or neu):
+    if not (actions_any or uncovered or refreshed or dashboard_error or neu or takeover):
         print("[DAILY] Keine Aktion noetig — keine Mail.")
         return 0
 
     send_email(build_mail(pt_results, uncovered, refreshed, dry_run, dashboard_error,
-                          neu=neu),
+                          neu=neu, takeover=takeover),
                subject_suffix="Depot-Alert")
     print("[DAILY] Mail verschickt.")
     return 0

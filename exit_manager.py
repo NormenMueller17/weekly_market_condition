@@ -13,6 +13,17 @@ Profit-Taking rules (weekly, per open position):
       Bei +20 %  (normaler Move): 1/3 der Position verkaufen
       Bei +40 %: weiteres 1/3 verkaufen
       Rest: ATR-basierter Trailing Stop (2× ATR unter höchstem Wochenschluss)
+
+Uebernahme-Ausstieg (siehe takeover_check.py):
+  Bekommt eine GEHALTENE Position eine Ziel-Einreichung bei der SEC
+  (PREM14A/DEFM14A/SC 14D9/SC 13E3), wird sie SOFORT komplett verkauft —
+  unabhaengig vom P&L. Begruendung: Das System hat bei Uebernahme-Arbitrage
+  keinen Vorteil (Kurs folgt Dealspread/Abschlussrisiko, nicht Charttechnik),
+  und ein Aktientausch wuerde ungewollte Positionen im Depot hinterlassen
+  (siehe SWKS nach der QRVO-Abwicklung, 2026-10-14, [[project_takeover_exit_rule]]).
+  Das ist die Kehrseite des Kauf-Filters (signal_generator._thesis_mask): der
+  verhindert NEUE Signale auf Uebernahmekandidaten, aber eine Uebernahme kann
+  auch erst eingereicht werden, NACHDEM eine Position schon im Depot liegt.
 """
 
 import os
@@ -677,6 +688,88 @@ def execute_partial_sells(planned: list[dict], dry_run: bool = False) -> list[di
             continue
         ok = bool(client) and _place_partial_sell(client, sym, qty)
         print(f"[PROFIT-MONDAY] {'✅' if ok else '❌'} {sym} {leg}: {qty} Stück"
+              + ("" if ok else " — Order fehlgeschlagen"))
+        out.append({**p, "placed": ok})
+    return out
+
+
+# ── Uebernahme-Ausstieg ────────────────────────────────────────────────────────
+
+def run_takeover_exit_checks(portfolio: Optional[dict], dry_run: bool = False,
+                             defer_sells: bool = False) -> list[dict]:
+    """Verkauft gehaltene Positionen komplett, fuer die eine Uebernahme laeuft.
+
+    Siehe Modul-Kopf. Nutzt denselben Mechanismus wie ein Teilverkauf
+    (`_place_partial_sell`): die GTC-Stop-Order haelt die gesamte Position als
+    Collateral, deshalb muss sie vor dem Market-Sell storniert werden — bei
+    vollem Verkauf (qty == held_qty) bleibt nichts zum Neu-Absichern uebrig.
+
+    defer_sells : Markt ist am Samstag geschlossen -- nur vormerken (wie
+      run_profit_taking_checks), Ausfuehrung durch execute_takeover_sells()
+      am naechsten Handelstag via --monday-execute.
+
+    Returns list of dicts: symbol, qty, grund (SEC-Fund), status.
+    """
+    results: list[dict] = []
+    if portfolio is None or not portfolio.get("positions"):
+        return results
+
+    symbols = [p["symbol"] for p in portfolio["positions"]]
+    try:
+        import takeover_check
+        treffer = takeover_check.pruefe(symbols)
+    except Exception as e:
+        print(f"[TAKEOVER] Pruefung fehlgeschlagen, keine Aktion: {e}")
+        return results
+    if not treffer:
+        return results
+
+    client = None if dry_run else _trading_client()
+
+    for pos in portfolio["positions"]:
+        symbol = pos["symbol"]
+        if symbol not in treffer:
+            continue
+        qty = int(float(pos["qty"]))
+        record = {"symbol": symbol, "qty": qty, "grund": treffer[symbol]}
+        if qty < 1:
+            record["status"] = "no_qty"
+        elif dry_run:
+            record["status"] = "dry_run"
+        elif defer_sells:
+            record["status"] = "deferred"
+        elif client and _place_partial_sell(client, symbol, qty):
+            record["status"] = "placed"
+        else:
+            record["status"] = "failed"
+        print(f"[TAKEOVER] {symbol}: {record['status']} — {treffer[symbol]}")
+        results.append(record)
+
+    return results
+
+
+def execute_takeover_sells(planned: list[dict], dry_run: bool = False) -> list[dict]:
+    """Platziert die am Samstag vorgemerkten Uebernahme-Verkaeufe am naechsten Handelstag.
+
+    Args:
+      planned : list of dicts mit keys symbol, qty, grund.
+
+    Returns die gleiche Liste mit zusaetzlichem 'placed' bool je Eintrag.
+    """
+    client = None if dry_run else _trading_client()
+    out: list[dict] = []
+    for p in planned:
+        sym = p["symbol"]
+        qty = int(p["qty"])
+        if qty < 1:
+            out.append({**p, "placed": False})
+            continue
+        if dry_run:
+            print(f"[TAKEOVER-MONDAY] 🔍 DRY-RUN {sym}: {qty} Stück")
+            out.append({**p, "placed": True})
+            continue
+        ok = bool(client) and _place_partial_sell(client, sym, qty)
+        print(f"[TAKEOVER-MONDAY] {'✅' if ok else '❌'} {sym}: {qty} Stück"
               + ("" if ok else " — Order fehlgeschlagen"))
         out.append({**p, "placed": ok})
     return out

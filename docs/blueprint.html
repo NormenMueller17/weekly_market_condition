@@ -267,6 +267,7 @@
       <a href="#s8a" class="nav-h2">Schritt 8a — Sell-Order-Coverage</a>
       <a href="#s8b" class="nav-h2">Schritt 8b — Ablaufende Orders erneuern</a>
       <a href="#s9"  class="nav-h2">Schritt 9 — MACD Bearish Cross</a>
+      <a href="#s9a" class="nav-h2">Schritt 9a — Übernahme-Ausstieg</a>
       <a href="#s10" class="nav-h2">Schritt 10 — Trade Journal</a>
       <a href="#s11" class="nav-h2">Schritt 11 — Gewinnmitnahme</a>
       <a href="#s12" class="nav-h2">Schritt 12 — Performance</a>
@@ -423,6 +424,13 @@
       Das Wochentief der auslösenden Kerze liegt bei 54 $. Da 54 $ &gt; 48 $, wird der Stop auf 54 $ angehoben.<br>
       Fällt der Kurs unter 54 $, verkauft der Broker die Position automatisch.
     </div>
+
+    <h2 id="s9a">Schritt 9a — Übernahme-Ausstieg</h2>
+    <p>Für jede gehaltene Position prüft das System, ob eine Übernahme läuft — über dieselbe SEC-Einreichungs-Prüfung wie beim Kauf-Kriterium 18 (<code>takeover_check.py</code>: PREM14A, DEFM14A, SC 14D9, SC 13E3 in den letzten 365 Tagen). Trifft das zu, wird die Position <strong>komplett verkauft, sofort und unabhängig vom P&amp;L</strong>.</p>
+    <p><strong>Warum:</strong> Das System ist auf Charttechnik und Momentum ausgelegt, nicht auf Übernahme-Arbitrage. Sobald eine Übernahme läuft, folgt der Kurs dem Dealspread und dem Abschlussrisiko statt der Technik — darin hat das Regelwerk keinen Vorteil. Ein Aktientausch würde außerdem eine ungeplante Position hinterlassen, für die weder RS-Score noch Stop-Logik des Systems existieren.</p>
+    <p><strong>Anlass:</strong> QRVO wurde am 2026-10-05 übernahmebedingt eingefroren und am 2026-10-14 tatsächlich in SWKS-Aktien (plus Bargeld) umgewandelt — eine Position, die das System nie gezielt eingegangen wäre und für die kein Stop berechnet werden konnte (siehe die Fallback-Korrektur in Schritt 8a).</p>
+    <p>Technisch läuft der Verkauf über denselben Mechanismus wie ein Teilverkauf beim Gewinnmitnahme-System (Schritt 11): Die GTC-Stop-Order hält die gesamte Position als Sicherheit, wird vor dem Market-Sell storniert. Samstags ist der Markt geschlossen — der Verkauf wird dann nur vorgemerkt (<code>docs/data/pending_takeover_sells.json</code>) und am Montag ausgeführt, noch vor den vorgemerkten Teilverkäufen aus der Gewinnmitnahme. Werktags (täglicher Depot-Alert) läuft der Verkauf sofort.</p>
+    <p><em>Eingeführt 2026-10-18, Commit folgt. Kauf-Seite (Kriterium 18) bereits seit 2026-10-03/06 aktiv — verhindert neue Signale auf Übernahmekandidaten. Dieser Schritt schließt die Kehrseite: eine Übernahme kann auch erst eingereicht werden, nachdem eine Position schon gehalten wird.</em></p>
 
     <h2 id="s10">Schritt 10 — Trade Journal synchronisieren</h2>
     <p>Das System führt intern ein Trade Journal. In diesem Schritt wird es mit den tatsächlichen Broker-Transaktionen der letzten Woche abgeglichen:</p>
@@ -666,7 +674,8 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
     <h1 id="depot-alert">Täglicher Depot-Alert (Montag bis Freitag)</h1>
     <p>Unabhängig vom Samstagslauf läuft werktags um 15:00 UTC ein Schutzlauf (<code>daily_stock_alert.py</code>). Er prüft den Bestand und handelt nur dort, wo ein Eingriff nötig ist:</p>
     <ul>
-      <li><strong>Stop-Orders:</strong> Jede Position braucht eine aktive Stop-Sell-Order. Fehlt sie, wird sie gemeldet. Ablaufende Orders werden verlängert.</li>
+      <li><strong>Übernahme-Ausstieg (zuerst geprüft):</strong> Positionen mit laufender Übernahme (SEC-Einreichung, siehe Schritt 9a) werden sofort komplett verkauft, unabhängig vom P&amp;L.</li>
+      <li><strong>Stop-Orders:</strong> Jede Position braucht eine aktive Stop-Sell-Order. Fehlt sie, wird sie gemeldet. Ablaufende Orders werden verlängert. Liegt der errechnete Stop (Journal-Wert oder 8-%-Fallback) bereits über dem aktuellen Kurs — etwa weil die Position seit dem Einstand schon stärker gefallen ist als die Fallback-Marge —, weicht das System auf 0,5&nbsp;% unter den aktuellen Kurs aus, statt die Order mit einem Alpaca-Fehler scheitern zu lassen.</li>
       <li><strong>Gewinnmitnahme:</strong> Teilverkäufe nach den Regeln aus Schritt 11 laufen sofort, weil der Markt werktags offen ist.</li>
       <li><strong>Journal:</strong> Filled Orders werden mit dem Trade Journal abgeglichen.</li>
       <li><strong>Neu eingebuchte Käufe:</strong> Der Lauf vergleicht die Positionen mit dem letzten gespeicherten Stand (<code>docs/data/depot_snapshot.json</code>). Eine Position, die seit dem letzten Lauf neu dazugekommen ist, erscheint in der Mail unter „✅ Neu im Depot" mit Stückzahl und Einstand. Das betrifft vor allem die Samstags-OTO-Orders, die am Montag gefüllt werden.</li>

@@ -217,6 +217,7 @@ def style_boolean_columns(ws, headers=BOOLEAN_HEADERS, header_row: int = 1) -> N
 
 PENDING_ORDERS_PATH = Path("docs") / "data" / "pending_orders.json"
 PENDING_PROFIT_TAKING_PATH = Path("docs") / "data" / "pending_profit_taking.json"
+PENDING_TAKEOVER_PATH      = Path("docs") / "data" / "pending_takeover_sells.json"
 
 
 def _save_pending_profit_taking(planned: list[dict], generated_date: str) -> None:
@@ -230,6 +231,47 @@ def _save_pending_profit_taking(planned: list[dict], generated_date: str) -> Non
     PENDING_PROFIT_TAKING_PATH.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+
+
+def _save_pending_takeover_sells(planned: list[dict], generated_date: str) -> None:
+    """Persist deferred Uebernahme-Komplettverkaeufe for Monday execution.
+
+    Gleiches Muster wie _save_pending_profit_taking: der Samstagslauf kann
+    diese Market-Sells nur VORMERKEN (Markt geschlossen).
+    """
+    PENDING_TAKEOVER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"generated_at": generated_date, "sells": planned}
+    PENDING_TAKEOVER_PATH.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+def _execute_pending_takeover_sells(test_mode: bool) -> None:
+    """Execute Uebernahme-Komplettverkaeufe deferred from the Saturday report."""
+    if not PENDING_TAKEOVER_PATH.exists():
+        return
+
+    payload = json.loads(PENDING_TAKEOVER_PATH.read_text(encoding="utf-8"))
+    planned = payload.get("sells", [])
+    if not planned:
+        PENDING_TAKEOVER_PATH.unlink(missing_ok=True)
+        return
+
+    names = ", ".join(f"{p['symbol']}({p['qty']}, {p.get('grund', '?')})" for p in planned)
+    print(f"[MONDAY] 🚨 {len(planned)} vorgemerkte(r) Uebernahme-Verkauf(e) "
+          f"vom {payload.get('generated_at', '?')}: {names}")
+
+    placed = exit_manager.execute_takeover_sells(planned, dry_run=test_mode)
+
+    failed = [p for p in placed if not p.get("placed")]
+    if failed and not test_mode:
+        import datetime as _dt
+        _save_pending_takeover_sells(failed, payload.get("generated_at", _dt.date.today().isoformat()))
+        print(f"[MONDAY] ⚠  {len(failed)} Uebernahme-Verkauf(e) fehlgeschlagen — bleiben vorgemerkt")
+    else:
+        PENDING_TAKEOVER_PATH.unlink(missing_ok=True)
+    # trade_journal.sync() (am Ende von monday_execute()) schliesst die Position
+    # automatisch, sobald die Market-Sell-Order bei Alpaca gefuellt ist.
 
 
 def _save_pending_orders(
@@ -380,6 +422,11 @@ def monday_execute() -> None:
 
 
 def _monday_execute_inner() -> None:
+    # ── Vorgemerkte Uebernahme-Komplettverkaeufe ausfuehren (zuerst — Grund: ──
+    #    die Position soll gar nicht erst am Markt bleiben, wenn Profit-Taking
+    #    oder Kaeufe aus demselben Cash-Topf noch dazwischenfunken koennten)
+    _execute_pending_takeover_sells(test_mode=TEST_MODE)
+
     # ── Vorgemerkte Profit-Taking-Verkäufe ausführen (unabhängig von Käufen) ───
     _execute_pending_profit_taking(test_mode=TEST_MODE)
 
@@ -1103,6 +1150,24 @@ def run():
                 )
     else:
         print("[EXIT] Kein Alpaca-Portfolio — Exit-Check übersprungen")
+
+    # ── Uebernahme-Ausstieg: gehaltene Positionen mit laufender Uebernahme ──────
+    # (SEC-Einreichung) werden komplett verkauft — siehe exit_manager.py Kopf
+    # und project_takeover_exit_rule. Markt ist samstags geschlossen, also nur
+    # vormerken; Ausfuehrung durch --monday-execute.
+    if alpaca_portfolio is not None:
+        takeover_results = exit_manager.run_takeover_exit_checks(
+            alpaca_portfolio, dry_run=TEST_MODE, defer_sells=True,
+        )
+        deferred = [r for r in takeover_results if r["status"] == "deferred"]
+        if deferred and not TEST_MODE:
+            _save_pending_takeover_sells(
+                [{"symbol": r["symbol"], "qty": r["qty"], "grund": r["grund"]} for r in deferred],
+                report_date,
+            )
+            names = ", ".join(f"{r['symbol']}({r['grund']})" for r in deferred)
+            print(f"[TAKEOVER] ⏳ {len(deferred)} Uebernahme-Verkauf(e) für Montag vorgemerkt: {names}")
+            print("[TAKEOVER]    Montag ausführen: python main.py --monday-execute")
 
     # ── Trade Journal: Positionen synchronisieren (vor Signal-Generator) ────────
     journal_data: dict       = {}
