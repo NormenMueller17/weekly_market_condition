@@ -505,6 +505,25 @@ def check_sell_order_coverage(portfolio: Optional[dict], dry_run: bool = False) 
             stop_price = round(entry_price * 0.92, 2)  # 8%-Fallback
             print(f"[COVERAGE] ⚠️  {symbol}: kein Journal-Stop → Fallback 8% unter Entry ({stop_price:.2f})")
 
+        # Der Fallback (wie auch ein veralteter Journal-Stop) rechnet vom
+        # EINSTANDSpreis, nicht vom aktuellen Kurs. Ist die Position seitdem
+        # schon unter den errechneten Stop gefallen, lehnt Alpaca die Order
+        # ab ("stop price must be less than current price") -- und die
+        # Position bleibt still ganz ohne Schutz. Anlass: SWKS, eine durch
+        # die QRVO-Uebernahme entstandene Position ohne Journal-Stop, deren
+        # 8%-Fallback (81.03) ueber dem bereits gefallenen Kurs (80.10) lag.
+        # Statt zu scheitern: knapp (0,5 %) unter dem aktuellen Kurs ansetzen,
+        # das ist immer noch ein Schutz, nur enger als beabsichtigt.
+        current_price = pos.get("current_price")
+        if current_price:
+            current_price = float(current_price)
+            if stop_price >= current_price:
+                neuer_stop = round(current_price * 0.995, 2)
+                print(f"[COVERAGE] ⚠️  {symbol}: errechneter Stop {stop_price:.2f} liegt über "
+                      f"dem aktuellen Kurs {current_price:.2f} — Order würde sofort auslösen. "
+                      f"Stop auf {neuer_stop:.2f} (0,5 % unter aktuellem Kurs) angepasst.")
+                stop_price = neuer_stop
+
         result: dict = {"symbol": symbol, "qty": qty, "stop_price": stop_price}
 
         if dry_run:
