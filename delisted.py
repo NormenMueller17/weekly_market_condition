@@ -77,6 +77,29 @@ def add(symbol: str, delisted_date: str, grund: str,
     return data
 
 
+def alle_eintraege() -> list[dict]:
+    """Alle registrierten Eintraege mit ihrem eingefrorenen Betrag (menge *
+    letzter_kurs) -- UNABHAENGIG davon, ob die Position noch im Konto steht.
+
+    Fuer die Equity-Kurven-Korrektur: Wird eine Uebernahme von Alpaca
+    tatsaechlich abgewickelt (Aktientausch/Bar, siehe QRVO -> SWKS,
+    2026-10-14), verschwindet das Symbol aus den Live-Positionen -- die
+    Vergangenheit (die Tage, an denen Alpacas Rohhistorie die Position noch
+    eingefroren zeigte) braucht aber WEITERHIN die Korrektur. Die reine
+    Live-Positions-Sicht (eingefrorene_eintraege) wuerde den Eintrag dann
+    einfach verlieren und das Loch wieder aufreissen. Siehe
+    portfolio_performance._apply_live_equity fuer die Datumsgrenze (ende).
+    """
+    out = []
+    for sym, info in load().items():
+        menge, kurs = info.get("menge"), info.get("letzter_kurs")
+        if menge is None or kurs is None:
+            continue
+        out.append({"symbol": sym, "wert": float(menge) * float(kurs),
+                    "delisted_date": info.get("delisted_date")})
+    return out
+
+
 def eingefrorene_eintraege(positions: list) -> list[dict]:
     """Marktwert UND Delisting-Datum JE delisteter Position, einzeln.
 

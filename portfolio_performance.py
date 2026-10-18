@@ -229,7 +229,12 @@ def _reconcile_frozen_gap(values: list, labels: list, eintraege: list) -> list:
     diesem Tag, nie davor; (2) innerhalb dieses Fensters der ERSTE Ein-Tages-
     Ruecksetzer, dessen Betrag in der Groessenordnung des jeweiligen
     eingefrorenen Werts liegt (0.5x-2x, fuer normales Trading-Rauschen am
-    selben Tag).
+    selben Tag). Ein optionales drittes Element, `ende` (ISO-Datum), begrenzt
+    die Korrektur nach hinten: Wird eine Uebernahme tatsaechlich abgewickelt
+    (Aktientausch/Bar statt Dauerzustand), reflektiert Alpacas Rohhistorie ab
+    dem Abwicklungstag wieder den echten Wert -- die Korrektur muss dort
+    aufhoeren, sonst wird der echte Wert doppelt gezaehlt. `ende=None` heisst
+    "noch gehalten", Korrektur laeuft bis zum aktuellen Rand durch.
 
     Anlass fuer beide Anker (2026-10-10): Mit nur der Betragsheuristik und
     "juengster Treffer gewinnt" (fruehere Fassung) traf die Suche fuer AVNS
@@ -261,7 +266,13 @@ def _reconcile_frozen_gap(values: list, labels: list, eintraege: list) -> list:
                 break  # ERSTER Treffer ab dem Delisting-Datum, nicht der juengste
         if break_idx is None:
             continue
-        out = out[:break_idx] + [round(v + betrag, 2) for v in out[break_idx:]]
+        stop_i = len(out)
+        ende = e.get("ende")
+        if ende:
+            stop_i = next((i for i, l in enumerate(labels) if l >= ende), len(out))
+        out = (out[:break_idx]
+               + [round(v + betrag, 2) for v in out[break_idx:stop_i]]
+               + out[stop_i:])
     return out
 
 
@@ -299,8 +310,26 @@ def _apply_live_equity(em: dict, live_portfolio: Optional[dict],
         return em
     try:
         import delisted
-        eintraege   = delisted.eingefrorene_eintraege(live_portfolio.get("positions", []))
-        eingefroren = sum(e["wert"] for e in eintraege)
+        # Fuer die KPI-Anzeige ("Darin enthalten: X $ ..."): nur, was HEUTE
+        # noch als eingefrorene Position im Konto steht.
+        eingefroren = sum(e["wert"] for e in
+                          delisted.eingefrorene_eintraege(live_portfolio.get("positions", [])))
+
+        # Fuer die Kurven-Korrektur: ALLE registrierten Eintraege, auch laengst
+        # abgewickelte (siehe _reconcile_frozen_gap). Wird eine Position nicht
+        # mehr gehalten, endet ihre Korrektur am Tag ihres Journal-Austritts --
+        # ab dann zeigt Alpacas Rohhistorie wieder den echten (getauschten)
+        # Wert, siehe QRVO -> SWKS, 2026-10-14.
+        gehalten = {p.get("symbol") for p in (live_portfolio.get("positions") or [])}
+        letzter_exit: dict[str, str] = {}
+        for t in _load_trades().get("closed", []):
+            sym, ex = t.get("symbol"), t.get("exit_date")
+            if sym and ex and ex > letzter_exit.get(sym, ""):
+                letzter_exit[sym] = ex
+        eintraege = [
+            {**e, "ende": None if e["symbol"] in gehalten else letzter_exit.get(e["symbol"])}
+            for e in delisted.alle_eintraege()
+        ]
     except Exception:
         eintraege, eingefroren = [], 0.0
 
