@@ -1,6 +1,6 @@
 {
 "AAPL": {
-"checked": "2026-10-24",
+"checked": "2026-10-31",
 "hit": null
 },
 "AII": {
@@ -12,11 +12,11 @@
 "hit": null
 },
 "AVNS": {
-"checked": "2026-10-24",
+"checked": "2026-10-31",
 "hit": null
 },
 "BMBL": {
-"checked": "2026-10-24",
+"checked": "2026-10-31",
 "hit": null
 },
 "CBLL": {
@@ -39,12 +39,24 @@
 "checked": "2026-10-10",
 "hit": null
 },
+"ECO": {
+"checked": "2026-10-31",
+"hit": null
+},
 "ELPC": {
 "checked": "2026-10-10",
 "hit": null
 },
+"FET": {
+"checked": "2026-10-31",
+"hit": null
+},
 "FIGS": {
-"checked": "2026-10-24",
+"checked": "2026-10-31",
+"hit": null
+},
+"FRAF": {
+"checked": "2026-10-31",
 "hit": null
 },
 "FRSH": {
@@ -76,7 +88,7 @@
 "hit": null
 },
 "NTRA": {
-"checked": "2026-10-24",
+"checked": "2026-10-31",
 "hit": null
 },
 "PBR": {
@@ -84,8 +96,8 @@
 "hit": null
 },
 "PCRX": {
-"checked": "2026-10-24",
-"hit": null
+"checked": "2026-10-31",
+"hit": "SC 14D9, 2026-10-30"
 },
 "PRE": {
 "checked": "2026-10-10",
@@ -96,7 +108,7 @@
 "hit": "DEFM14A, 2025-12-23"
 },
 "SU": {
-"checked": "2026-10-24",
+"checked": "2026-10-31",
 "hit": null
 },
 "SUN": {
@@ -104,7 +116,7 @@
 "hit": null
 },
 "SWKS": {
-"checked": "2026-10-24",
+"checked": "2026-10-31",
 "hit": null
 },
 "TALO": {
@@ -120,7 +132,7 @@
 "hit": null
 },
 "WEYS": {
-"checked": "2026-10-24",
+"checked": "2026-10-31",
 "hit": null
 }
 }
