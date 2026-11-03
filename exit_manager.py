@@ -111,20 +111,48 @@ def check_macd_bearish_cross(ticker: str) -> dict:
 # ── Alpaca helpers ────────────────────────────────────────────────────────────
 
 def _place_market_sell(client, symbol: str, qty: int) -> bool:
-    """Place a DAY market-sell order for *qty* shares of *symbol*."""
+    """Place a DAY market-sell order for *qty* shares of *symbol* and confirm the fill.
+
+    submit_order() only confirms Alpaca ACCEPTED the order, not that it filled —
+    treating acceptance as success left callers (Uebernahme-Komplettverkauf,
+    Gewinnmitnahme) deleting their pending-marker and skipping stop-restoration
+    as if the sell had gone through, even when it was later rejected/cancelled
+    without an exception (PCRX blieb ungeschuetzt im Depot, 2026-11-02 —
+    [[project_workflow_concurrency_race]]). Poll briefly for a terminal status
+    instead of trusting submission alone.
+    """
+    import time
+    from alpaca_client import _enum_name
     try:
         from alpaca.trading.requests import MarketOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
-        client.submit_order(MarketOrderRequest(
+        order = client.submit_order(MarketOrderRequest(
             symbol=symbol,
             qty=qty,
             side=OrderSide.SELL,
             time_in_force=TimeInForce.DAY,
         ))
-        return True
     except Exception as e:
         print(f"[PROFIT] _place_market_sell({symbol}, {qty}): {e}")
         return False
+
+    for _ in range(10):
+        try:
+            order = client.get_order_by_id(order.id)
+        except Exception as e:
+            print(f"[PROFIT] _place_market_sell({symbol}, {qty}): Status-Abfrage fehlgeschlagen: {e}")
+            break
+        status = _enum_name(getattr(order, "status", ""))
+        if status == "filled":
+            return True
+        if status in ("rejected", "canceled", "expired"):
+            print(f"[PROFIT] _place_market_sell({symbol}, {qty}): Order {status} statt gefuellt")
+            return False
+        time.sleep(1)
+
+    print(f"[PROFIT] _place_market_sell({symbol}, {qty}): kein Fill nach 10s "
+          f"({_enum_name(getattr(order, 'status', ''))}) — als fehlgeschlagen behandelt")
+    return False
 
 
 def _resubmit_stop(client, symbol: str, qty: int, stop_price: float) -> "object | None":
