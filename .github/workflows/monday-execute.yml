@@ -6,6 +6,10 @@ on:
     - cron: '0 15 * * 2'   # Dienstag 15:00 UTC = Fallback bei Feiertag-Montag
   workflow_dispatch:
 
+concurrency:
+  group: repo-git-write
+  cancel-in-progress: false
+
 permissions:
   contents: write
 

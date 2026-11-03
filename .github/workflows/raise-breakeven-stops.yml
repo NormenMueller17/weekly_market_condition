@@ -8,6 +8,10 @@ on:
         required: false
         default: 'true'
 
+concurrency:
+  group: repo-git-write
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
