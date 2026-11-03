@@ -595,6 +595,17 @@ def sync(
     # Sort closed: newest exit first
     data["closed"].sort(key=lambda t: t.get("exit_date", ""), reverse=True)
 
+    # Schritt 3 oben uebernimmt die Alpaca-Qty 1:1 (Source of Truth) -- wird eine
+    # Position dabei zum ERSTEN MAL negativ (z.B. weil ein veralteter, erneut
+    # ausgefuehrter Verkauf ueber den tatsaechlichen Bestand hinaus verkauft hat,
+    # PCRX 2026-11-03), faengt der Quarantaene-Lauf ganz oben das nicht ab -- der
+    # laeuft VOR Schritt 3 auf den beim Laden noch positiven Altdaten. Deshalb
+    # hier ein zweites Mal, auf den tatsaechlich aktualisierten Stand.
+    data, quarantaeniert = quarantaene_shorts(data)
+    if quarantaeniert:
+        print(f"[JOURNAL] ⚠️  {len(quarantaeniert)} Short-Eintrag/-Einträge nach "
+              f"'anomalien' verschoben: {', '.join(quarantaeniert)}")
+
     save(data)
     return data
 

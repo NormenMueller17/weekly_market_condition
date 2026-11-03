@@ -714,10 +714,29 @@ def execute_partial_sells(planned: list[dict], dry_run: bool = False) -> list[di
             print(f"[PROFIT-MONDAY] 🔍 DRY-RUN {sym} {leg}: {qty} Stück")
             out.append({**p, "placed": True})
             continue
-        ok = bool(client) and _place_partial_sell(client, sym, qty)
+
+        if not client:
+            out.append({**p, "placed": False})
+            continue
+
+        # Gleiches Risiko wie bei execute_takeover_sells(): die vorgemerkte
+        # Menge kann veraltet sein. Gegen den TATSAECHLICH gehaltenen Bestand
+        # kappen statt blind der Vormerkung zu vertrauen.
+        held = _current_position_qty(client, sym)
+        if held <= 0:
+            print(f"[PROFIT-MONDAY] ⏭️  {sym} {leg}: keine Position mehr gehalten — "
+                  f"vorgemerkter Teilverkauf ({qty} Stück) übersprungen")
+            out.append({**p, "placed": True})
+            continue
+        if held < qty:
+            print(f"[PROFIT-MONDAY] ⚠️  {sym} {leg}: nur noch {held:.0f} von vorgemerkten "
+                  f"{qty} Stück gehalten — verkaufe die reduzierte Menge")
+            qty = int(held)
+
+        ok = _place_partial_sell(client, sym, qty)
         print(f"[PROFIT-MONDAY] {'✅' if ok else '❌'} {sym} {leg}: {qty} Stück"
               + ("" if ok else " — Order fehlgeschlagen"))
-        out.append({**p, "placed": ok})
+        out.append({**p, "qty": qty, "placed": ok})
     return out
 
 
@@ -776,6 +795,15 @@ def run_takeover_exit_checks(portfolio: Optional[dict], dry_run: bool = False,
     return results
 
 
+def _current_position_qty(client, symbol: str) -> float:
+    """Aktuell bei Alpaca gehaltene Stueckzahl, 0 wenn keine Position existiert."""
+    try:
+        pos = client.get_open_position(symbol)
+        return float(getattr(pos, "qty", 0) or 0)
+    except Exception:
+        return 0.0
+
+
 def execute_takeover_sells(planned: list[dict], dry_run: bool = False) -> list[dict]:
     """Platziert die am Samstag vorgemerkten Uebernahme-Verkaeufe am naechsten Handelstag.
 
@@ -796,8 +824,30 @@ def execute_takeover_sells(planned: list[dict], dry_run: bool = False) -> list[d
             print(f"[TAKEOVER-MONDAY] 🔍 DRY-RUN {sym}: {qty} Stück")
             out.append({**p, "placed": True})
             continue
-        ok = bool(client) and _place_partial_sell(client, sym, qty)
+
+        if not client:
+            out.append({**p, "placed": False})
+            continue
+
+        # Die vorgemerkte Menge stammt vom Samstagslauf und kann veraltet sein,
+        # wenn ein frueherer Versuch die Position schon (teil-)verkauft hat, ohne
+        # dass das ins Journal/die Pending-Datei uebernommen wurde (verlorener
+        # Commit o.ae.). Ungeprueft erneut verkaufen wuerde dann einen Short
+        # erzeugen -- PCRX, 2026-11-03. Gegen den TATSAECHLICH gehaltenen Bestand
+        # kappen statt blind der Vormerkung zu vertrauen.
+        held = _current_position_qty(client, sym)
+        if held <= 0:
+            print(f"[TAKEOVER-MONDAY] ⏭️  {sym}: keine Position mehr gehalten — "
+                  f"vorgemerkter Verkauf ({qty} Stück) übersprungen")
+            out.append({**p, "placed": True})
+            continue
+        if held < qty:
+            print(f"[TAKEOVER-MONDAY] ⚠️  {sym}: nur noch {held:.0f} von vorgemerkten "
+                  f"{qty} Stück gehalten — verkaufe die reduzierte Menge")
+            qty = int(held)
+
+        ok = _place_partial_sell(client, sym, qty)
         print(f"[TAKEOVER-MONDAY] {'✅' if ok else '❌'} {sym}: {qty} Stück"
               + ("" if ok else " — Order fehlgeschlagen"))
-        out.append({**p, "placed": ok})
+        out.append({**p, "qty": qty, "placed": ok})
     return out
