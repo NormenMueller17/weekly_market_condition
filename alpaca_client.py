@@ -499,6 +499,20 @@ def check_sell_order_coverage(portfolio: Optional[dict], dry_run: bool = False) 
             results.append({"symbol": symbol, "status": "covered", "stop_price": existing_stop})
             continue
 
+        # Alpaca erlaubt Stop-Orders nur in ganzen Stuecken -- eine Position,
+        # die (z.B. als Bruchteils-Restbestand nach einem Aktientausch wie
+        # SWKS/QRVO) unter 1 liegt, kann grundsaetzlich KEINE Stop-Order
+        # bekommen. int(qty) wuerde das stillschweigend auf 0 abrunden und
+        # Alpaca lehnt submit_order() dann mit "qty must be > 0" ab -- ein
+        # taeglicher Fehlalarm ohne Handlungsmoeglichkeit. Wie "delisted"
+        # oben: einmalig als bekannter Dauerzustand melden statt kaputt gehen.
+        if int(qty) < 1:
+            results.append({"symbol": symbol, "status": "fractional_unprotectable",
+                             "qty": qty, "stop_price": None})
+            print(f"[COVERAGE] {symbol}: nur {qty} Stück (Bruchteil) — Stop-Order "
+                  f"bei Alpaca für Bruchteilsaktien nicht möglich, übersprungen")
+            continue
+
         # Keine Sell-Order — Stop-Preis bestimmen
         stop_price = journal_stops.get(symbol)
         if stop_price is None:
