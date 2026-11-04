@@ -354,6 +354,76 @@ def quarantaene_shorts(data: dict) -> tuple[dict, list[str]]:
     return data, raus
 
 
+def _loese_anomalien(data: dict, portfolio: dict) -> list[str]:
+    """Holt Short-Anomalien zurueck, wenn die reale Alpaca-Position inzwischen
+    nicht mehr negativ ist (z.B. nach einem manuellen Rueckkauf wie PCRX,
+    2026-11-03).
+
+    quarantaene_shorts() ist eine Einbahnstrasse -- ohne diese Gegenprobe
+    bliebe ein Eintrag fuer immer in 'anomalien' liegen, selbst nachdem die
+    reale Position laengst korrigiert wurde.
+    """
+    live = {p["symbol"]: p for p in (portfolio or {}).get("positions", [])}
+    anomalien = data.get("anomalien", [])
+    bleiben:  list[dict] = []
+    geklaert: list[str] = []
+
+    for t in anomalien:
+        if t.get("_anomalie") != "short_position":
+            bleiben.append(t)
+            continue
+
+        sym      = t["symbol"]
+        pos      = live.get(sym)
+        live_qty = float(pos["qty"]) if pos else 0.0
+
+        if live_qty < 0:
+            bleiben.append(t)  # weiterhin short -- unveraendert liegen lassen
+            continue
+
+        geklaert.append(f"{sym} (jetzt {live_qty:+.0f})")
+        aus = t.pop("_aus", "open")
+        t.pop("_anomalie", None)
+
+        if live_qty > 0:
+            # Wieder eine reale Long-Position -- zurueck nach 'open'.
+            t["qty"] = live_qty
+            data.setdefault("open", []).append(t)
+            continue
+
+        # Flach (0, nicht mehr gehalten). Der Weg dahin (hier: zwei Verkaeufe
+        # + ein Rueckkauf) laesst sich nicht sauber als EIN realized_pl
+        # rekonstruieren -- bestmoeglich mit dem zuletzt bekannten Kurs
+        # schliessen, statt den Eintrag auf ewig in der Quarantaene zu lassen.
+        exit_price = t.get("current_price") or t.get("entry_price") or 0
+        entry      = t.get("entry_price") or 0
+        orig_qty   = abs(t.get("pt_original_qty") or t.get("qty") or 0)
+        # qty UND pt_original_qty auf den positiven Bestand zuruecksetzen --
+        # ist_short() prueft beide Felder, sonst wuerde der spaetere zweite
+        # quarantaene_shorts()-Aufruf am Ende von sync() diesen Eintrag im
+        # selben Lauf sofort wieder quarantaenieren (reproduziert mit STX,
+        # dessen pt_original_qty seit Juli auf -7 steht).
+        t["qty"] = orig_qty
+        if t.get("pt_original_qty") is not None:
+            t["pt_original_qty"] = orig_qty
+        if aus == "open":
+            pl     = (exit_price - entry) * orig_qty
+            pl_pct = (pl / (entry * orig_qty)) * 100 if entry and orig_qty else 0
+            t["realized_pl"]   = round(pl, 2)
+            t["realized_plpc"] = round(pl_pct, 2)
+            t["exit_date"]     = datetime.date.today().isoformat()
+            t["exit_price"]    = exit_price
+            t["exit_reason"]   = "anomalie_geklaert"
+            t["exit_order_id"] = None
+        for k in ("current_price", "unrealized_pl", "unrealized_plpc",
+                  "stop_raised_date", "current_stop"):
+            t.pop(k, None)
+        data.setdefault("closed", []).append(t)
+
+    data["anomalien"] = bleiben
+    return geklaert
+
+
 # ── Core sync ─────────────────────────────────────────────────────────────────
 
 def sync(
@@ -380,6 +450,12 @@ def sync(
 
     if portfolio is None:
         return data
+
+    # Zuvor quarantaenierte Shorts gegenpruefen -- inzwischen (manuell)
+    # korrigiert, z.B. zurueckgekauft?
+    geklaert = _loese_anomalien(data, portfolio)
+    if geklaert:
+        print(f"[JOURNAL] ✅ {len(geklaert)} Anomalie(n) aufgelöst: {', '.join(geklaert)}")
 
     try:
         import delisted
