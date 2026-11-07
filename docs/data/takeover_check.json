@@ -1,6 +1,6 @@
 {
 "AAPL": {
-"checked": "2026-10-31",
+"checked": "2026-11-07",
 "hit": null
 },
 "AII": {
@@ -12,11 +12,11 @@
 "hit": null
 },
 "AVNS": {
-"checked": "2026-10-31",
+"checked": "2026-11-07",
 "hit": null
 },
 "BMBL": {
-"checked": "2026-10-31",
+"checked": "2026-11-07",
 "hit": null
 },
 "CBLL": {
@@ -31,6 +31,10 @@
 "checked": "2026-10-17",
 "hit": null
 },
+"CRVL": {
+"checked": "2026-11-07",
+"hit": null
+},
 "DAC": {
 "checked": "2026-10-10",
 "hit": null
@@ -41,6 +45,14 @@
 },
 "ECO": {
 "checked": "2026-10-31",
+"hit": null
+},
+"EL": {
+"checked": "2026-11-07",
+"hit": null
+},
+"ELF": {
+"checked": "2026-11-07",
 "hit": null
 },
 "ELPC": {
@@ -56,7 +68,7 @@
 "hit": null
 },
 "FRAF": {
-"checked": "2026-10-31",
+"checked": "2026-11-07",
 "hit": null
 },
 "FRSH": {
@@ -69,6 +81,14 @@
 },
 "GMAB": {
 "checked": "2026-10-10",
+"hit": null
+},
+"GWW": {
+"checked": "2026-11-07",
+"hit": null
+},
+"HAE": {
+"checked": "2026-11-07",
 "hit": null
 },
 "HPK": {
@@ -116,7 +136,7 @@
 "hit": null
 },
 "SWKS": {
-"checked": "2026-10-31",
+"checked": "2026-11-07",
 "hit": null
 },
 "TALO": {
@@ -132,7 +152,7 @@
 "hit": null
 },
 "WEYS": {
-"checked": "2026-10-31",
+"checked": "2026-11-07",
 "hit": null
 }
 }

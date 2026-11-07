@@ -1,10 +1,30 @@
 {
   "tickers": {
+    "IAUX-WS": {
+      "fails": 1,
+      "zuerst": "2026-11-07",
+      "zuletzt": "2026-11-07"
+    },
+    "INFQ-WS": {
+      "fails": 1,
+      "zuerst": "2026-11-07",
+      "zuletzt": "2026-11-07"
+    },
+    "OXY-WS": {
+      "fails": 1,
+      "zuerst": "2026-11-07",
+      "zuletzt": "2026-11-07"
+    },
     "QRVO": {
       "fails": 1,
       "zuerst": "2026-10-10",
       "zuletzt": "2026-10-10"
+    },
+    "VAL-WS": {
+      "fails": 1,
+      "zuerst": "2026-11-07",
+      "zuletzt": "2026-11-07"
     }
   },
-  "updated": "2026-10-31"
+  "updated": "2026-11-07"
 }
