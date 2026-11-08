@@ -387,6 +387,7 @@
     <div class="warning">
       Im Test-Modus (alle Wochentage außer Samstag) wird keine echte Order platziert. Das System meldet die fehlende Order als <em>DRY-RUN</em> im Protokoll.
     </div>
+    <p><em>Änderung 2026-11-04 — Bruchteilsaktien:</em> Alpaca erlaubt Stop-Orders grundsätzlich nur in ganzen Stücken. Eine reine Bruchteilsposition (z.&nbsp;B. ein Restbestand aus einem Aktientausch wie bei SWKS/QRVO) lässt sich deshalb nie durch eine Stop-Order absichern — das ist kein behebbarer Fehler, sondern ein Dauerzustand wie „delisted". Solche Positionen bekommen den Status <code>fractional_unprotectable</code>, werden im täglichen Depot-Alert aus der Warnliste ausgeblendet (sonst täglicher Fehlalarm ohne Handlungsmöglichkeit), erscheinen aber weiterhin im wöchentlichen Report als vollständiger Audit.</p>
 
     <h2 id="s8b">Schritt 8b — Ablaufende Sell-Orders erneuern</h2>
     <p>Alpaca löscht GTC-Orders (Good Till Cancelled) nach 90 Tagen stillschweigend. Eine abgelaufene Stop-Sell-Order wird nicht ausgelöst — die Position wäre schutzlos offen.</p>
@@ -445,6 +446,11 @@
       <li>Der unrealisierte Gewinn und Verlust aller offenen Positionen wird aktualisiert.</li>
     </ul>
 
+    <span class="sub-bold">Short-Quarantäne</span>
+    <p>Entsteht durch einen Fehlerzustand (siehe Kasten unten) trotzdem eine negative (Short-)Position, verschiebt der Abgleich sie in einen separaten „Anomalien"-Bucket statt sie als normale offene Position weiterzuführen. Das verhindert, dass Stop-Orders, Gewinnmitnahme oder der MACD-Exit auf einem Fehlerzustand weiterarbeiten, den sie nicht vorsehen.</p>
+    <p>Die Quarantäne ist keine Einbahnstraße: Bei jedem Abgleich prüft das System die quarantänierten Einträge erneut gegen die tatsächliche Alpaca-Position. Ist sie nicht mehr negativ — etwa nach einem manuellen Rückkauf —, wandert der Eintrag automatisch zurück nach <code>closed</code> bzw. <code>open</code>, inklusive korrigierter Stückzahl.</p>
+    <p><em>Änderung 2026-11-04, Anlass PCRX:</em> Ein Short von −133 Stück (siehe Schritt 11, Verkaufs-Sicherheitsnetz) blieb nach dem manuellen Rückkauf zunächst dauerhaft in der Anomalien-Liste hängen, weil nichts den Bucket je wieder gegen die Live-Daten prüfte — derselbe Grund, aus dem ein Short bei STX seit Juli 2026 dort lag. Beide Fälle löst der neue Rückholmechanismus auf.</p>
+
     <h2 id="s11">Schritt 11 — Gewinnmitnahme-System</h2>
     <p>Das System wendet vier ineinandergreifende Regeln an, um Gewinne systematisch zu sichern. Alle Parameter sind zentral konfigurierbar.</p>
 
@@ -476,9 +482,19 @@
 
     <p><em>Hinweis zur Ausführung:</em> Regel 1 und 4 sind reine Stop-Order-Anpassungen (GTC) und werden direkt im Samstagdurchlauf an den Broker übermittelt — das funktioniert auch bei geschlossenem Markt. Die Teilverkäufe aus Regel 3 sind dagegen Markt-Orders, die der Broker bei geschlossenem Markt ablehnt. Sie werden daher samstags nur als geplante Verkäufe vorgemerkt und am folgenden Montag tatsächlich platziert (siehe Schritt 17, Fall A, und Montagsablauf).</p>
 
+    <span class="sub-bold">Verkaufs-Sicherheitsnetz</span>
+    <p>Jeder Markt-Sell — Teilverkauf aus Regel 3 wie Übernahme-Ausstieg aus Schritt 9a — läuft über zwei Absicherungen, die vorher fehlten:</p>
+    <ul>
+      <li><strong>Fill-Bestätigung statt Annahme-Bestätigung:</strong> Der Broker bestätigt beim Platzieren zunächst nur, dass er die Order angenommen hat, nicht dass sie ausgeführt wurde. Das System fragt jetzt bis zu 10×1 Sekunde den tatsächlichen Order-Status ab und wertet den Verkauf erst bei Status <code>filled</code> als erfolgreich. Bei Ablehnung, Stornierung oder Zeitüberschreitung greift die Rollback-Logik (der zuvor stornierte Schutzstop wird wiederhergestellt), statt die Position unbemerkt ungeschützt zurückzulassen.</li>
+      <li><strong>Mengenabgleich gegen den tatsächlichen Bestand:</strong> Eine vorgemerkte Verkaufsorder speichert die Stückzahl zum Zeitpunkt der Vormerkung. Wird sie später ausgeführt, ohne dass der Bestand zwischenzeitlich aktualisiert wurde, fragt das System jetzt vorher die real gehaltene Menge beim Broker ab und kappt den Verkauf darauf — statt blind die alte, womöglich zu hohe Menge zu verkaufen.</li>
+    </ul>
+    <p><em>Änderung 2026-11-03, Anlass PCRX:</em> Eine verzögerte Fill-Bestätigung ließ eine Position am 02.11. unverkauft und ohne Stop zurück; am 03.11. verkaufte eine erneute Ausführung derselben Vormerkung gegen eine bereits reduzierte Position ins Minus (−133 Stück Short) statt sie nur zu schließen. Beide Lücken sind seitdem geschlossen; die Auffangebene für einen trotzdem entstehenden Short ist die Short-Quarantäne (Schritt 10).</p>
+
     <h2 id="s12">Schritt 12 — Performance-Dashboard erstellen</h2>
     <p>Das System generiert automatisch einen visuellen Leistungsbericht. Dieser enthält die Eigenkapitalkurve des Portfolios, eine Vergleichslinie mit dem S&amp;P 500, Gewinn-/Verlust-Statistiken sowie eine Übersicht aller abgeschlossenen Trades.</p>
     <p>Der ausgewiesene realisierte Gewinn umfasst dabei nicht nur vollständig geschlossene Trades, sondern auch bereits gesicherte Teilverkäufe (Regel 3) noch offener Positionen. So spiegelt die Kennzahl den tatsächlich bereits realisierten Ertrag wider, auch wenn der Runner einer Position noch läuft.</p>
+    <p><em>Korrektur für delistete/übernommene Positionen:</em> Eine eingefrorene Position (Schritt 8a-Register, siehe auch Kriterium 14) reißt sonst einen Bruch in die Eigenkapitalkurve, weil Alpaca sie ab dem Einfrierdatum nicht mehr bewertet. Das System sucht den Bruch je Position einzeln, ab ihrem eigenen Einfrierdatum, und korrigiert die Kurve rückwirkend um den eingefrorenen Betrag — bis zu dem Tag, an dem die Position laut Trade Journal tatsächlich verlässt (bei einer abgewickelten Übernahme wie QRVO&nbsp;→&nbsp;SWKS also bis zum Journal-Exit, nicht nur bis zum Verschwinden aus den Live-Positionen).</p>
+    <p><em>Änderung 2026-10-10/10-18:</em> Eine ältere, globale Betragsheuristik (größter Treffer in einem Zeitfenster) verwechselte bei mehreren gleichzeitig eingefrorenen Positionen (AVNS + QRVO) die Brüche und zeigte dadurch Wochenrenditen von bis zu −11&nbsp;% bzw. +12&nbsp;%, die nie stattgefunden hatten. Seit der Umstellung auf eine Pro-Position-Suche mit Enddatum trifft die korrigierte Kurve die Live-Equity auf wenige Cent genau.</p>
 
     <h2 id="s13">Schritt 13 — Minervini-Screener</h2>
     <p>Das Herzstück des Systems: Jede Aktie im Universum wird anhand von acht technischen Kriterien nach Mark Minervini bewertet. Für jedes erfüllte Kriterium erhält die Aktie einen Punkt — der maximale Score beträgt 8/8.</p>
