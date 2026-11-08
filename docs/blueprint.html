@@ -227,6 +227,40 @@
       .sidebar { display: none; }
       .main { padding: 1.5em 1em 2em; }
     }
+
+    /* ── PDF-Export-Button ───────────────────────────────────────────── */
+    .pdf-export {
+      float: right;
+      display: inline-flex;
+      align-items: center;
+      gap: .4em;
+      background: #003d99;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: .5em 1em;
+      font-size: .85em;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: .1em;
+    }
+    .pdf-export:hover { background: #002d73; }
+    @media (max-width: 800px) {
+      .pdf-export { float: none; display: inline-flex; margin: .4em 0 1em; }
+    }
+
+    /* ── Druckansicht / PDF-Export ───────────────────────────────────── */
+    @media print {
+      .g-nav, .sidebar, .back, .pdf-export { display: none !important; }
+      .layout { display: block; }
+      .main   { max-width: none; padding: 0; margin: 0; }
+      body    { background: #fff; }
+      a       { color: inherit; text-decoration: none; }
+      h1, h2  { break-after: avoid; page-break-after: avoid; }
+      .example, .warning, .formula, .tbl-wrap, table tr {
+        break-inside: avoid; page-break-inside: avoid;
+      }
+    }
   </style>
 </head>
 <body>
@@ -299,6 +333,7 @@
   <!-- ══ MAIN CONTENT ═════════════════════════════════════════════════ -->
   <main class="main">
     <a href="index.html" class="back">← Zur Übersicht</a>
+    <button type="button" class="pdf-export" onclick="window.print()" title="Öffnet den Druckdialog — dort als Ziel &quot;Als PDF speichern&quot; wählen">⬇ Als PDF exportieren</button>
 
     <div class="doc-title">Weekly Screener</div>
     <p class="doc-subtitle">Vollautomatisierter Aktien-Scan, Portfoliomanagement und Risikosteuerung</p>
