@@ -1,7 +1,7 @@
 {
-  "generated": "2026-11-07",
+  "generated": "2026-11-08",
   "market_bullish": true,
-  "count": 40,
+  "count": 39,
   "watchlist": [
     {
       "ticker": "CDNA",
@@ -301,31 +301,6 @@
         "RS-Trend \u2191": true,
         "Vol-Breakout": false,
         "Close > Vorwoche": true
-      }
-    },
-    {
-      "ticker": "GMAB",
-      "company": "Genmab A/S ADS",
-      "industry": "Biotechnology: Pharmaceutical Preparations",
-      "sector": "Healthcare",
-      "pivot": 56.84,
-      "buy_stop": 56.8968,
-      "resistance_note": "",
-      "close_saturday": 53.63,
-      "atr_pct": 5.63504018398016,
-      "rs_score": 96.97379149679674,
-      "score": 6,
-      "industry_ranking": 45,
-      "sa_link": "https://stockanalysis.com/stocks/GMAB",
-      "criteria": {
-        "SMA10W steigend": true,
-        "SMA30W steigend": true,
-        "SMA40W steigend": true,
-        "MA-Ordnung 10>30>40": true,
-        "52W Range OK": true,
-        "RS-Trend \u2191": true,
-        "Vol-Breakout": false,
-        "Close > Vorwoche": false
       }
     },
     {
