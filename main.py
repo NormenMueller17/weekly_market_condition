@@ -598,7 +598,8 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
     Abruf, den auch der Web-Report verwendet.
     """
     import mail_report
-    from report_builder import compute_filter_fails, filter_rules_for_fails
+    from report_builder import (_collect_new_buys, collect_recent_closes,
+                                compute_filter_fails, filter_rules_for_fails)
 
     positions = (alpaca_portfolio or {}).get("positions", [])
     equity    = (alpaca_portfolio or {}).get("equity")
@@ -610,6 +611,18 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
         print(f"[MAIL] ⚠️  Journal nicht lesbar, Stop-Abstaende fehlen: {e}")
         journal_open = []
     positionen = mail_report.position_details(positions, journal_open, rs_now_map)
+
+    # Trades der letzten 7 Tage (Verkaeufe + Kaeufe) — analog Abschnitt 5 des
+    # Web-Reports, bisher fehlte das im Boersenbrief komplett. Dieselbe Quelle
+    # (docs/data/trades.json) und dieselben Funktionen wie dort, damit beide
+    # Darstellungen nicht auseinanderlaufen.
+    recent_trades, new_buys = [], []
+    try:
+        _trades_data = trade_journal.load()
+        recent_trades = collect_recent_closes(_trades_data, datetime.now().date())
+        new_buys = _collect_new_buys(_trades_data, datetime.now().date(), profile=profile)
+    except Exception as e:
+        print(f"[MAIL] ⚠️  Trades der letzten 7 Tage nicht baubar: {e}")
 
     # Depot gegen SPY
     perf, svg = {}, ""
@@ -669,6 +682,7 @@ def _build_email_report(*, report_date, ampel, breadth_snap, sector_rows,
         eingefroren=_eingefrorener_wert(positions),
         signale=signals or [], kandidaten=kandidaten, muster=muster,
         profile=profile,
+        recent_trades=recent_trades, new_buys=new_buys,
         breadth_rows=mail_report.breadth_rows_from_snapshot(breadth_snap),
         sector_rows=sector_rows or [],
         bericht=bericht, report_url=report_url, test_mode=test_mode,

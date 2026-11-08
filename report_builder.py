@@ -2,7 +2,6 @@ import datetime as dt
 import json
 import re
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
 from jinja2 import Template
@@ -2102,6 +2101,41 @@ def _price_history_svg(perioden: list, close: list, volumen: Optional[list] = No
     return "".join(teile)
 
 
+_EXIT_LABELS = {
+    "stop_hit":      "Stop Loss",
+    "manual":        "Manuell",
+    "manual_market": "Manuell",
+}
+
+
+def collect_recent_closes(trades: dict, today: dt.date, days: int = 7) -> list[dict]:
+    """Geschlossene Trades der letzten `days` Tage, mit lesbarem Exit-Grund.
+
+    Eigene Funktion statt Inline-Code in build_html_report(): so kann
+    _build_email_report() (main.py) fuer den Boersenbrief dieselbe Logik
+    nutzen, statt sie ein zweites Mal nachzubauen und spaeter auseinanderlaufen
+    zu lassen (siehe _build_signal_extras in main.py fuer denselben Grund).
+    """
+    cutoff = (today - dt.timedelta(days=days)).isoformat()
+    out = []
+    for t in trades.get("closed", []):
+        if t.get("exit_date", "") < cutoff:
+            continue
+        reason = t.get("exit_reason", "")
+        label  = _EXIT_LABELS.get(reason, reason or "–")
+        # Initialer vs. nachgezogener Stop unterscheiden
+        if reason == "stop_hit":
+            init_stop = t.get("initial_stop")
+            exit_px   = t.get("exit_price", 0)
+            if init_stop and abs(exit_px - init_stop) / init_stop > 0.03:
+                label = "Stop nachgezogen"
+            else:
+                label = "Initialer Stop Loss"
+        out.append({**t, "exit_reason_label": label})
+    out.sort(key=lambda x: x["exit_date"], reverse=True)
+    return out
+
+
 def _collect_new_buys(trades: dict, today, days: int = 7, profile: Optional[dict] = None,
                       fetch_profiles=None, find_signal=None) -> list:
     """Kaeufe der letzten `days` Tage fuer Abschnitt 5 — offene UND schon wieder
@@ -2255,31 +2289,12 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
     }
 
     # ── Recent closed trades (last 7 days) ───────────────────────────────────
-    _EXIT_LABELS = {
-        "stop_hit":      "Stop Loss",
-        "manual":        "Manuell",
-        "manual_market": "Manuell",
-    }
     recent_trades = []
     _tf = Path(__file__).parent / "docs" / "data" / "trades.json"
     try:
         if _tf.exists():
-            _all = json.loads(_tf.read_text(encoding="utf-8")).get("closed", [])
-            _cutoff = (dt.date.today() - dt.timedelta(days=7)).isoformat()
-            for t in _all:
-                if t.get("exit_date", "") >= _cutoff:
-                    reason = t.get("exit_reason", "")
-                    label  = _EXIT_LABELS.get(reason, reason or "–")
-                    # Differentiate initial vs. raised stop
-                    if reason == "stop_hit":
-                        init_stop = t.get("initial_stop")
-                        exit_px   = t.get("exit_price", 0)
-                        if init_stop and abs(exit_px - init_stop) / init_stop > 0.03:
-                            label = "Stop nachgezogen"
-                        else:
-                            label = "Initialer Stop Loss"
-                    recent_trades.append(SimpleNamespace(**{**t, "exit_reason_label": label}))
-            recent_trades.sort(key=lambda x: x.exit_date, reverse=True)
+            recent_trades = collect_recent_closes(
+                json.loads(_tf.read_text(encoding="utf-8")), dt.date.today())
     except Exception:
         pass
 

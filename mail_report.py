@@ -25,8 +25,9 @@ Aufbau des Briefs
   2. Lagebericht — der eine Absatz, der sagt was los ist
   3. Depot gegen Vorwoche und gegen den S&P 500, mit Kurve
   4. Positionen im Detail — inklusive Abstand zum Stop in Prozent UND in R
-  5. Kaufsignale bzw. die besten Kandidaten als Steckbrief
-  6. Marktlage kompakt
+  5. Trades der letzten Woche — Verkäufe und Käufe, als kompakte Tabellen
+  6. Kaufsignale bzw. die besten Kandidaten als Steckbrief
+  7. Marktlage kompakt
 """
 from __future__ import annotations
 
@@ -609,6 +610,79 @@ def _positionen_block(positionen: list, cash, equity,
             + f'<table style="{_TABLE}">{kopf}{zeilen}</table>' + fuss + hinweis)
 
 
+def _trades_block(recent_trades: list, new_buys: list) -> str:
+    """Verkäufe und Käufe der letzten 7 Tage — analog Abschnitt 5 des
+    Web-Reports (`report_builder.build_html_report`), hier als zwei kompakte
+    Tabellen statt Steckbrief-Karten mit Unternehmensportraet (siehe
+    Modul-Kopf: verdichtet statt vollstaendig). Ohne Treffer kein Abschnitt,
+    statt einer leeren Ueberschrift.
+    """
+    if not recent_trades and not new_buys:
+        return ""
+
+    teile = [_h2("3) Trades der letzten Woche")]
+
+    if recent_trades:
+        zeilen = ""
+        for t in recent_trades:
+            farbe = _farbe(t.get("realized_pl"))
+            zeilen += (
+                f'<tr>'
+                f'<td style="{_TDL}"><b>{t.get("symbol", "")}</b><br>'
+                f'<span style="color:{GRAU};font-size:.85em;">{(t.get("company") or "–")[:28]}</span></td>'
+                f'<td style="{_TD}">{t.get("entry_date", "–")}</td>'
+                f'<td style="{_TD}">{t.get("exit_date", "–")}</td>'
+                f'<td style="{_TD}">${_n(t.get("entry_price"))}</td>'
+                f'<td style="{_TD}">${_n(t.get("exit_price"))}</td>'
+                f'<td style="{_TD}color:{farbe};font-weight:bold;">{_geld(t.get("realized_pl"), True)}</td>'
+                f'<td style="{_TD}color:{farbe};font-weight:bold;">{_pct(t.get("realized_plpc"), 1)}</td>'
+                f'<td style="{_TDL}font-size:.85em;">{t.get("exit_reason_label", "–")}</td>'
+                f'</tr>'
+            )
+        kopf = (f'<tr><th style="{_THL}">Symbol</th><th style="{_TH}">Entry</th>'
+                f'<th style="{_TH}">Exit</th><th style="{_TH}">Entry $</th>'
+                f'<th style="{_TH}">Exit $</th><th style="{_TH}">P&amp;L $</th>'
+                f'<th style="{_TH}">P&amp;L %</th><th style="{_THL}">Grund</th></tr>')
+        teile.append(
+            f'<p style="color:{BLAU};font-weight:600;margin:.2em 0 .5em;">Verkäufe</p>'
+            f'<table style="{_TABLE}">{kopf}{zeilen}</table>'
+        )
+
+    if new_buys:
+        zeilen = ""
+        for b in new_buys:
+            lauf = "Mittwochslauf" if b.get("midweek") else "Wochenlauf"
+            geschlossen = (
+                f'<br><span style="color:{GRAU};font-size:.8em;">bereits wieder verkauft</span>'
+                if b.get("status") == "geschlossen" else ""
+            )
+            stop_txt = "–" if b.get("stop") is None else f'${_n(b.get("stop"))}'
+            stop_pct = b.get("stop_pct")
+            if stop_pct is not None:
+                stop_txt += f'<br><span style="color:{GRAU};font-size:.85em;">{_n(stop_pct, 1)} %</span>'
+            zeilen += (
+                f'<tr>'
+                f'<td style="{_TDL}"><b>{b.get("symbol", "")}</b><br>'
+                f'<span style="color:{GRAU};font-size:.85em;">{(b.get("company") or "–")[:28]}</span>{geschlossen}</td>'
+                f'<td style="{_TDL}font-size:.88em;">{b.get("entry_date", "–")}<br>'
+                f'<span style="color:{GRAU};font-size:.85em;">{lauf}</span></td>'
+                f'<td style="{_TD}">${_n(b.get("entry_price"))}</td>'
+                f'<td style="{_TD}">{_n(b.get("menge"), 0)}</td>'
+                f'<td style="{_TD}">{_geld(b.get("wert"))}</td>'
+                f'<td style="{_TD}">{stop_txt}</td>'
+                f'</tr>'
+            )
+        kopf = (f'<tr><th style="{_THL}">Symbol</th><th style="{_THL}">Kauf</th>'
+                f'<th style="{_TH}">Einstieg</th><th style="{_TH}">Stück</th>'
+                f'<th style="{_TH}">Wert</th><th style="{_TH}">Stop</th></tr>')
+        teile.append(
+            f'<p style="color:{BLAU};font-weight:600;margin:1em 0 .5em;">Käufe</p>'
+            f'<table style="{_TABLE}">{kopf}{zeilen}</table>'
+        )
+
+    return "".join(teile)
+
+
 def _mio(v, waehrung: str = "USD") -> str:
     """Grosse Betraege lesbar: Mrd. ab einer Milliarde, sonst Mio."""
     try:
@@ -787,10 +861,10 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
             f'border:1px solid {RAHMEN};border-radius:4px;padding:.5em .7em;">{tv_watchlist}</div>'
             f'</div>'
         ) if tv_watchlist else ""
-        return _h2("3) Kaufsignale") + karten + watchlist_block
+        return _h2("4) Kaufsignale") + karten + watchlist_block
 
     if not kandidaten:
-        return (_h2("3) Kaufsignale")
+        return (_h2("4) Kaufsignale")
                 + "<p>Keine Signale und keine Kandidaten diese Woche.</p>")
 
     zeilen = ""
@@ -803,7 +877,7 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
             f'<td style="{_TDL}color:{ROT};font-size:.88em;">{k.get("fails", "")}</td></tr>'
         )
     return (
-        _h2("3) Kaufsignale")
+        _h2("4) Kaufsignale")
         + "<p>Keine Signale diese Woche. Die naechstbesten Kandidaten und "
           "woran sie scheitern:</p>"
         + f'<table style="{_TABLE}">'
@@ -823,7 +897,7 @@ def _muster_block(muster: list) -> str:
     kann eine Mail nicht sinnvoll transportieren.
     """
     if not muster:
-        return (_h2("4) Muster zum Ansehen")
+        return (_h2("5) Muster zum Ansehen")
                 + f'<p style="color:{GRAU};">Diese Woche kein VCP und kein '
                   f'Launchpad im Universum erkannt.</p>')
 
@@ -850,7 +924,7 @@ def _muster_block(muster: list) -> str:
         )
 
     return (
-        _h2("4) Muster zum Ansehen")
+        _h2("5) Muster zum Ansehen")
         + f'<p style="color:{GRAU};margin:.2em 0 .8em;">'
           f'{len(muster)} Titel mit erkanntem Muster — unabhängig davon, ob '
           f'daraus ein Kaufsignal wurde. Ticker anklicken für den Chart.</p>'
@@ -863,7 +937,7 @@ def _muster_block(muster: list) -> str:
 
 
 def _markt_block(breadth_rows: list, sector_rows: list, idx_rows: list) -> str:
-    teile = [_h2("5) Marktlage")]
+    teile = [_h2("6) Marktlage")]
 
     if breadth_rows:
         z = "".join(
@@ -939,6 +1013,8 @@ def build_boersenbrief(
     kandidaten:    list,
     muster:        list,
     profile:       Optional[dict] = None,
+    recent_trades: Optional[list] = None,
+    new_buys:      Optional[list] = None,
     breadth_rows:  list,
     sector_rows:   list,
     markt_extra:   str = "",
@@ -968,6 +1044,7 @@ margin:0 auto;padding:1.5em 1.2em;color:#1a1a1a;line-height:1.45;">
        margin:1.2em 0 .5em;">{bericht}</div>
   {_perf_block(perf, svg)}
   {_positionen_block(positionen, cash, equity, eingefroren)}
+  {_trades_block(recent_trades or [], new_buys or [])}
   {_kandidaten_block(signale, kandidaten, report_url, profile)}
   {_muster_block(muster)}
   {_markt_block(breadth_rows, sector_rows, markt_extra)}
