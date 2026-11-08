@@ -22,12 +22,13 @@ Dieses Modul baut deshalb bewusst anders:
 Aufbau des Briefs
 -----------------
   1. Marktampel mit allen sechs Kriterien im Klartext
-  2. Lagebericht — der eine Absatz, der sagt was los ist
-  3. Depot gegen Vorwoche und gegen den S&P 500, mit Kurve
-  4. Positionen im Detail — inklusive Abstand zum Stop in Prozent UND in R
-  5. Trades der letzten Woche — Verkäufe und Käufe, als kompakte Tabellen
-  6. Kaufsignale bzw. die besten Kandidaten als Steckbrief
-  7. Marktlage kompakt
+  2. Marktlage kompakt — gehört direkt zur Ampel, nicht ans Ende
+  3. Lagebericht — der eine Absatz, der sagt was los ist
+  4. Depot gegen Vorwoche und gegen den S&P 500, mit Kurve
+  5. Positionen im Detail — inklusive Abstand zum Stop in Prozent UND in R
+  6. Trades der letzten Woche — Verkäufe und Käufe, als kompakte Tabellen
+  7. Kaufsignale bzw. die besten Kandidaten als Steckbrief
+  8. Muster zum Ansehen
 """
 from __future__ import annotations
 
@@ -521,7 +522,7 @@ def _perf_block(perf: dict, svg: str) -> str:
     diff_s = (ds - ss) if (ds is not None and ss is not None) else None
 
     return (
-        _h2("1) Depot gegen den Markt") +
+        _h2("2) Depot gegen den Markt") +
         f'<table style="{_TABLE}">'
         f'<tr><th style="{_THL}"></th><th style="{_TH}">Woche</th>'
         f'<th style="{_TH}">seit Start</th></tr>'
@@ -540,7 +541,7 @@ def _perf_block(perf: dict, svg: str) -> str:
 def _positionen_block(positionen: list, cash, equity,
                       eingefroren: float = 0.0) -> str:
     if not positionen:
-        return _h2("2) Positionen") + "<p>Keine offenen Positionen.</p>"
+        return _h2("3) Positionen") + "<p>Keine offenen Positionen.</p>"
 
     zeilen = ""
     for p in positionen:
@@ -606,7 +607,7 @@ def _positionen_block(positionen: list, cash, equity,
         except (TypeError, ValueError, ZeroDivisionError):
             pass
 
-    return (_h2("2) Positionen") + kopfzeile
+    return (_h2("3) Positionen") + kopfzeile
             + f'<table style="{_TABLE}">{kopf}{zeilen}</table>' + fuss + hinweis)
 
 
@@ -620,7 +621,7 @@ def _trades_block(recent_trades: list, new_buys: list) -> str:
     if not recent_trades and not new_buys:
         return ""
 
-    teile = [_h2("3) Trades der letzten Woche")]
+    teile = [_h2("4) Trades der letzten Woche")]
 
     if recent_trades:
         zeilen = ""
@@ -861,10 +862,10 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
             f'border:1px solid {RAHMEN};border-radius:4px;padding:.5em .7em;">{tv_watchlist}</div>'
             f'</div>'
         ) if tv_watchlist else ""
-        return _h2("4) Kaufsignale") + karten + watchlist_block
+        return _h2("5) Kaufsignale") + karten + watchlist_block
 
     if not kandidaten:
-        return (_h2("4) Kaufsignale")
+        return (_h2("5) Kaufsignale")
                 + "<p>Keine Signale und keine Kandidaten diese Woche.</p>")
 
     zeilen = ""
@@ -877,7 +878,7 @@ def _kandidaten_block(signale: list, kandidaten: list, report_url: str,
             f'<td style="{_TDL}color:{ROT};font-size:.88em;">{k.get("fails", "")}</td></tr>'
         )
     return (
-        _h2("4) Kaufsignale")
+        _h2("5) Kaufsignale")
         + "<p>Keine Signale diese Woche. Die naechstbesten Kandidaten und "
           "woran sie scheitern:</p>"
         + f'<table style="{_TABLE}">'
@@ -897,7 +898,7 @@ def _muster_block(muster: list) -> str:
     kann eine Mail nicht sinnvoll transportieren.
     """
     if not muster:
-        return (_h2("5) Muster zum Ansehen")
+        return (_h2("6) Muster zum Ansehen")
                 + f'<p style="color:{GRAU};">Diese Woche kein VCP und kein '
                   f'Launchpad im Universum erkannt.</p>')
 
@@ -924,7 +925,7 @@ def _muster_block(muster: list) -> str:
         )
 
     return (
-        _h2("5) Muster zum Ansehen")
+        _h2("6) Muster zum Ansehen")
         + f'<p style="color:{GRAU};margin:.2em 0 .8em;">'
           f'{len(muster)} Titel mit erkanntem Muster — unabhängig davon, ob '
           f'daraus ein Kaufsignal wurde. Ticker anklicken für den Chart.</p>'
@@ -937,7 +938,7 @@ def _muster_block(muster: list) -> str:
 
 
 def _markt_block(breadth_rows: list, sector_rows: list, idx_rows: list) -> str:
-    teile = [_h2("6) Marktlage")]
+    teile = [_h2("1) Marktlage")]
 
     if breadth_rows:
         z = "".join(
@@ -1040,6 +1041,7 @@ margin:0 auto;padding:1.5em 1.2em;color:#1a1a1a;line-height:1.45;">
   </div>
   {banner}
   {_ampel_block(ampel)}
+  {_markt_block(breadth_rows, sector_rows, markt_extra)}
   <div style="background:{KOPFBG};border-left:4px solid {BLAU};padding:.9em 1.1em;
        margin:1.2em 0 .5em;">{bericht}</div>
   {_perf_block(perf, svg)}
@@ -1047,6 +1049,5 @@ margin:0 auto;padding:1.5em 1.2em;color:#1a1a1a;line-height:1.45;">
   {_trades_block(recent_trades or [], new_buys or [])}
   {_kandidaten_block(signale, kandidaten, report_url, profile)}
   {_muster_block(muster)}
-  {_markt_block(breadth_rows, sector_rows, markt_extra)}
   {link}
 </div>"""
