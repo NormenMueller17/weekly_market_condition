@@ -18,8 +18,9 @@ Genau diese Menge schreibt der Wochenlauf nach `docs/data/midweek_watchlist.json
   1. Watchlist laden — zu alt oder fehlend ist ein FEHLER, kein Leerlauf
   2. Marktfilter: SPY ueber seiner 50-Tage-Linie (Tagesbasis, nicht Teilwoche)
   3. Wochenbudget: bereits gekaufte Titel dieser Kalenderwoche abziehen
-  4. Je Titel: Pivot genommen UND Tagesvolumen ueber dem 20-Tage-Schnitt
-  5. Order platzieren (Markt ist mittwochs offen — kein Umweg ueber Montag)
+  4. Je Titel: nicht schon gehalten, kein Uebernahme-Verfahren, Sektor-Limit frei
+  5. Pivot genommen UND Tagesvolumen ueber dem 20-Tage-Schnitt
+  6. Order platzieren (Markt ist mittwochs offen — kein Umweg ueber Montag)
 
 Kein zweiter Universumslauf, keine Neuberechnung der Marktampel, keine
 Teilwochen-Aggregate. Der Wochenlauf hat die These geprueft; hier geht es
@@ -55,13 +56,16 @@ import pandas as pd
 import yfinance as yf
 
 import alpaca_client
+import trade_journal
 import volume_events
 from config import SETTINGS
 from emailer import send_email
 from signal_generator import (
     _DEFAULT_PORTFOLIO_MAX_POSITIONS,
+    _RULES_JSON,
     DEFAULT_RULES,
     TradeSignal,
+    _norm_sector,
     _stop_default,
     apply_stop_bounds,
     save_signals_json,
@@ -443,6 +447,28 @@ def run(dry_run: bool) -> int:
         print(f"[MIDWEEK] ⚠️  Uebernahme-Pruefung fehlgeschlagen ({e}) — kein Ausschluss")
         uebernahme = {}
 
+    # Sektor-Konzentrationslimit wie am Samstag (signal_generator._filter_sector_limit),
+    # hier nur sequenziell statt als Batch-Filter: der Mittwochslauf bewertet Titel
+    # einzeln, mit Netzwerk-Abruf pro Kandidat, nicht als fertige Rankingliste.
+    # Sektor offener Positionen kommt nur aus dem Tradetagebuch, nicht aus einem
+    # `leaders`-DataFrame wie am Samstag — das gibt es hier nicht. Ohne diese
+    # Pruefung konnten zwei korrelierte, aber unterschiedlich getaggte Titel
+    # (ECO "Industrials", FET "Energy", beide 29.10. gekauft) am selben Tag
+    # durchrutschen; ein echtes Sektor-DUPLIKAT waere aber unbemerkt geblieben.
+    max_per_sector = _RULES_JSON.get("portfolio", {}).get("max_positions_per_sector", 3)
+    sector_count: dict[str, int] = {}
+    if max_per_sector > 0:
+        try:
+            for pos in trade_journal.load().get("open", []):
+                sec = _norm_sector(pos.get("sector"))
+                if sec:
+                    sector_count[sec] = sector_count.get(sec, 0) + 1
+        except Exception as e:
+            print(f"[MIDWEEK] ⚠️  Tradetagebuch nicht lesbar ({e}) — Sektor-Limit ungeprueft")
+        if sector_count:
+            print("[MIDWEEK] Sektor-Bestand: " + ", ".join(
+                f"{s} {n}/{max_per_sector}" for s, n in sorted(sector_count.items())))
+
     signals: list[TradeSignal] = []
     for item in items:
         if len(signals) >= allowed:
@@ -455,10 +481,17 @@ def run(dry_run: bool) -> int:
         if ticker in uebernahme:
             print(f"[MIDWEEK]    {ticker}: Uebernahme laut SEC ({uebernahme[ticker]}) — uebersprungen")
             continue
+        sec = _norm_sector(item.get("sector")) if max_per_sector > 0 else None
+        if sec and sector_count.get(sec, 0) >= max_per_sector:
+            print(f"[MIDWEEK]    {ticker}: Sektor-Limit erreicht ({sec} bereits "
+                  f"{max_per_sector}x vertreten) — uebersprungen")
+            continue
         breakout = check_breakout(ticker, float(item["buy_stop"]), r)
         if breakout:
             signals.append(build_signal(item, breakout,
                                         equity, bool(data.get("market_bullish", True)), r))
+            if sec:
+                sector_count[sec] = sector_count.get(sec, 0) + 1
 
     if not signals:
         print("[MIDWEEK] Kein Ausbruch — keine Mail, keine Order.")

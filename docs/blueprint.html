@@ -284,6 +284,10 @@
     </div>
 
     <div class="nav-group">
+      <a href="#mittwoch" class="nav-h1">Mittwochslauf</a>
+    </div>
+
+    <div class="nav-group">
       <a href="#depot-alert" class="nav-h1">Täglicher Depot-Alert</a>
     </div>
 
@@ -573,7 +577,7 @@
           <tr><td>11</td><td>Wöchentlicher MACD</td><td>&gt; Signallinie (positives Momentum)</td></tr>
           <tr><td>12</td><td>Marktfilter (Trendfilter)</td><td>S&amp;P 500: 10W-EMA &gt; 20W-EMA (sonst halbe Positionsgröße)</td></tr>
           <tr><td>13</td><td>Nicht im Portfolio</td><td>Position darf nicht bereits gehalten werden</td></tr>
-          <tr><td>14</td><td>Sektor-Konzentrationslimit</td><td>Maximal 3 Positionen pro Sektor</td></tr>
+          <tr><td>14</td><td>Sektor-Konzentrationslimit</td><td>Maximal 3 Positionen pro Sektor. Gilt am Samstag und am Mittwoch (seit 2026-11-08).</td></tr>
           <tr><td>15</td><td>Marktbreite</td><td>≥ 40 % der S&amp;P-500-Aktien über ihrem 200-Tage-MA</td></tr>
           <tr><td>16</td><td>Umsatzwachstum (TTM, YoY) <strong>ODER</strong> EPS-Wachstum (letztes Quartal, YoY)</td><td>≥ 20 % bei mindestens einem der beiden (Stand 2026-09-06, vorher UND-verknüpft)</td></tr>
           <tr><td>17</td><td>Wochenkurs steigend</td><td>Schlusskurs &gt; Schlusskurs der Vorwoche</td></tr>
@@ -693,6 +697,21 @@ Position ($)         = Portfolio × Positionsgröße (%)</div>
       <li>Die Positionsgrößen werden auf Basis des real verfügbaren Cashs angepasst und die Kauforders werden als OTO-Orders an den Broker übermittelt.</li>
       <li>Die jeweilige Datei mit den vorgemerkten Verkäufen bzw. Kauforders wird nach erfolgreicher Ausführung gelöscht; fehlgeschlagene Einträge bleiben für den nächsten Lauf vorgemerkt.</li>
     </ul>
+
+    <!-- ── Mittwochslauf ───────────────────────────────────────────── -->
+    <h1 id="mittwoch">Mittwochslauf — Mid-Week-Entry</h1>
+    <p>Der Wochentakt kostet Ausbrüche, die mitten in der Woche starten: echte Kaufsignale liegen seit Samstag als GTC-Buy-Stop-Order im Markt, aber Titel, die am Samstag die These erfüllten (Trendstruktur, relative Stärke, Fundamentaldaten, Industrie), nur noch keinen bestätigten Ausbruch hatten, bekämen sonst erst wieder am nächsten Samstag eine Chance. Dafür gibt es den Mittwochslauf (<code>midweek_entry.py</code>), mittwochs um 19:30 UTC (15:30 ET) — bewusst spät, weil der Volumentest das Tagesvolumen mit dem 20-Tage-Schnitt vergleicht und früh am Tag naturgemäß zu klein ausfällt.</p>
+    <ul>
+      <li><strong>Watchlist-Quelle:</strong> Der Samstagslauf schreibt die Kandidaten, die die These erfüllen, aber noch keinen Ausbruch zeigten, nach <code>docs/data/midweek_watchlist.json</code> (<code>signal_generator.build_midweek_watchlist</code>) — gedeckelt auf <code>midweek_watchlist_max</code> (Standard 60), sortiert nach relativer Stärke. Der Deckel ist eine Kostengrenze (ein Fundamentaldaten-Abruf pro Titel), kein Qualitätsfilter.</li>
+      <li><strong>Watchlist laden:</strong> Fehlt die Datei oder ist sie älter als 7 Tage (z. B. weil der Samstagslauf ausgefallen ist), bricht der Lauf mit Fehlermail ab statt stillschweigend nichts zu tun.</li>
+      <li><strong>Marktfilter (Tagesbasis):</strong> SPY muss über seiner 50-Tage-Linie liegen — dieselbe Schwelle wie das Ampelkriterium „SPY über 10W-MA", nur ohne Wochenaggregat, weil mitten in der Woche keine abgeschlossene Wochenkerze vorliegt.</li>
+      <li><strong>Wochenbudget:</strong> Bereits in dieser Kalenderwoche gefüllte Kauforders (Samstag/Montag eingeschlossen) gehen vom wöchentlichen Neukauf-Limit ab, damit ein Mittwochskauf das Budget nicht verdoppelt.</li>
+      <li><strong>Je Kandidat, in dieser Reihenfolge:</strong> nicht bereits im Depot → kein laufendes Übernahmeverfahren laut SEC-Einreichung (frisch geprüft, da eine Übernahme auch nach Samstag angekündigt werden kann) → Sektor-Konzentrationslimit (Kriterium 14) frei → tatsächlicher Ausbruch: Tageshoch über dem Buy-Stop UND Tagesvolumen über dem 1,3-fachen 20-Tage-Schnitt (ohne Quartalsverfall-/Russell-Tage).</li>
+      <li><strong>Sektor-Zählung:</strong> Anders als am Samstag liegt hier kein <code>leaders</code>-DataFrame vor — der Sektor offener Positionen kommt ausschließlich aus dem Tradetagebuch. Titel ohne auswertbaren Sektor werden wie am Samstag nicht gedeckelt (fail-open), damit sie nicht gegeneinander laufen, nur weil beiden die Zuordnung fehlt.</li>
+      <li><strong>Order platzieren:</strong> Der Markt ist mittwochs offen, deshalb direkt als OTO-Order (Parent-Kauf + Schutzstop) — kein Umweg über den Montags-Aufschub wie beim Samstagslauf.</li>
+      <li><strong>Metadaten &amp; Mail:</strong> Signal-Metadaten werden für das Trade Journal gespeichert, danach eine E-Mail mit den Treffern verschickt. Ohne Treffer: keine Mail, keine Order — Stille ist hier ein Ergebnis, kein Ausfall. Ein abgestürzter Lauf endet dagegen immer mit Fehlermail und Exit-Code ≠ 0, damit er nicht wie ein Lauf ohne Treffer aussieht.</li>
+    </ul>
+    <p><em>Änderung 2026-11-08 — Sektor-Konzentrationslimit ergänzt:</em> Bis dahin lief der Mittwochslauf ohne diese Prüfung, obwohl Kriterium 14 im Blueprint nie als Samstag-exklusiv gekennzeichnet war. Auslöser war die Woche vom 02.–06.11.2026 (ECO −11,5&nbsp;%, FET −13,3&nbsp;%, beide am 29.10. gekauft): eine rückblickende Prüfung zeigte, dass das Sektor-Limit diese beiden konkreten Trades nicht erfasst hätte — ECO ist als „Industrials" getaggt, FET als „Energy", trotz vergleichbarem Ölpreis-Exposure. Die fehlende Prüfung selbst blieb aber eine echte Lücke gegenüber dem Samstagslauf und wurde unabhängig vom Einzelfall geschlossen.</p>
 
     <!-- ── Schwächen ──────────────────────────────────────────────── -->
     <h1 id="schwaechen">Zusammenfassung: Identifizierte Schwächen</h1>
