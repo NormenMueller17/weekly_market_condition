@@ -1,0 +1,6 @@
+name = "github-actions-scheduler"
+main = "worker.js"
+compatibility_date = "2026-11-11"
+
+[triggers]
+crons = ["* * * * *"]
