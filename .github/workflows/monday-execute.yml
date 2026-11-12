@@ -1,9 +1,13 @@
 name: Monday Execute (Pending Orders)
 
+# Kein schedule:-Trigger mehr: GitHub Actions' eigener Cron lief bei diesem
+# Repo durchgehend 4-9h zu spaet (siehe Memory project_github_actions_
+# scheduling_delay). Ausloesung jetzt per Cloudflare Worker
+# (cloudflare-worker/github-scheduler/) ueber workflow_dispatch zur exakten
+# Zielzeit (ehemals Montag + Dienstag 15:00 UTC, Dienstag als Fallback bei
+# Feiertag-Montag — beide Zeitpunkte stehen weiterhin in der Worker-Zeit-
+# Tabelle).
 on:
-  schedule:
-    - cron: '0 15 * * 1'   # Montag   15:00 UTC = 11:00 EDT (Normallauf)
-    - cron: '0 15 * * 2'   # Dienstag 15:00 UTC = Fallback bei Feiertag-Montag
   workflow_dispatch:
 
 concurrency:

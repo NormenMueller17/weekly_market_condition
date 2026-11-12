@@ -1,8 +1,11 @@
 name: Zertifikate-Scanner (Samstag)
 
+# Kein schedule:-Trigger mehr: GitHub Actions' eigener Cron lief bei diesem
+# Repo durchgehend 4-9h zu spaet (siehe Memory project_github_actions_
+# scheduling_delay). Ausloesung jetzt per Cloudflare Worker
+# (cloudflare-worker/github-scheduler/) ueber workflow_dispatch zur exakten
+# Zielzeit (ehemals Samstag 9:00 UTC, 1h nach Haupt-Report).
 on:
-  schedule:
-    - cron: '0 9 * * 6'   # Samstag 9:00 UTC (1h nach Haupt-Report)
   workflow_dispatch:
     inputs:
       dry_run:
