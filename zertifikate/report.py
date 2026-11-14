@@ -886,14 +886,13 @@ def build_regelwerk_page(rules: dict) -> str:
           <td style="padding:10px 14px;border-bottom:1px solid #ecf0f1;color:#555;font-size:0.88em">{detail}</td>
         </tr>"""
 
-    def _section(title, color, badge, rows_html, intro, tid=""):
-        tid_attr = f' id="{tid}"' if tid else ""
+    def _section(title, color, badge, rows_html, intro):
         return f"""
 <div style="background:#fff;border-radius:8px;padding:24px;margin-bottom:20px;
             box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid {color}">
   <h2 style="margin-bottom:6px;color:#2c3e50">{badge} {title}</h2>
   <p style="color:#555;font-size:0.9em;margin-bottom:16px">{intro}</p>
-  <table{tid_attr} style="width:100%;border-collapse:collapse">
+  <table style="width:100%;border-collapse:collapse">
     <thead>
       <tr style="background:#f8f9fa">
         <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
@@ -1055,7 +1054,7 @@ def build_regelwerk_page(rules: dict) -> str:
     unabhängig davon, wie gut ein Einzeltitel in E1–E3 abschneidet.
     Die Universum-Übersicht (alle Scores) bleibt in jedem Marktregime sichtbar.
   </p>
-  <table id="tbl-ampel" style="width:100%;border-collapse:collapse">
+  <table style="width:100%;border-collapse:collapse">
     <thead>
       <tr style="background:#f8f9fa">
         <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Status</th>
@@ -1171,20 +1170,20 @@ def build_regelwerk_page(rules: dict) -> str:
         _section("Ebene 1 — Trendqualität", "#27ae60", "🟢",
                  e1_rows,
                  "Alle 4 Kriterien müssen erfüllt sein. Ist auch nur eines nicht erfüllt, "
-                 "wird der Titel als Kaufkandidat ausgeschlossen.", tid="tbl-e1") +
+                 "wird der Titel als Kaufkandidat ausgeschlossen.") +
         _section("Ebene 2 — Pullback-Profil", "#f39c12", "🟡",
                  e2_rows + e2_scoring,
                  "Bewertet die Qualität des Pullbacks auf einer Skala von 0–100. "
-                 "Ein Pullback außerhalb des Bereichs 5–15 % führt direkt zum Ausschluss.", tid="tbl-e2") +
+                 "Ein Pullback außerhalb des Bereichs 5–15 % führt direkt zum Ausschluss.") +
         _section("Ebene 3 — Wiederanlauf-Bestätigung", "#2980b9", "🔵",
                  e3_rows + e3_note,
-                 f"Mind. {min_conf} von 3 Signalen müssen vorliegen, um einen Wiedereinstieg zu bestätigen.", tid="tbl-e3") +
+                 f"Mind. {min_conf} von 3 Signalen müssen vorliegen, um einen Wiedereinstieg zu bestätigen.") +
         _section("Ausstiegs-Regelwerk", "#e74c3c", "🔴",
                  exit_rows + exit_note,
-                 "Stop-Loss und Gewinnmitnahme-Regeln für offene Optionsschein-Positionen.", tid="tbl-exit") +
+                 "Stop-Loss und Gewinnmitnahme-Regeln für offene Optionsschein-Positionen.") +
         _section("Roll-Regelwerk", "#8e44ad", "🟣",
                  roll_rows,
-                 "Wann und wie ein Optionsschein gerollt wird (Zeitwert-Roll oder Strike-Roll).", tid="tbl-roll")
+                 "Wann und wie ein Optionsschein gerollt wird (Zeitwert-Roll oder Strike-Roll).")
     )
 
     return f"""<!DOCTYPE html>
@@ -1196,24 +1195,18 @@ def build_regelwerk_page(rules: dict) -> str:
   {_css()}
   <style>
     header {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }}
-    .dl-btn {{ display: inline-flex; align-items: center; gap: .4em; padding: .45em 1em;
+    .pdf-export {{ display: inline-flex; align-items: center; gap: .4em; padding: .45em 1em;
                background: #fff; color: #2c3e50; border: none; border-radius: 5px; cursor: pointer;
                font-size: .82em; font-weight: 600; white-space: nowrap; }}
-    .dl-btn:hover {{ background: #ecf0f1; }}
-  </style>
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-  <script>
-    function exportAllTables(tableIds, sheetNames, filename) {{
-      var wb = XLSX.utils.book_new();
-      tableIds.forEach(function(id, i) {{
-        var tbl = document.getElementById(id);
-        if (!tbl) return;
-        var ws = XLSX.utils.table_to_sheet(tbl, {{raw: false}});
-        XLSX.utils.book_append_sheet(wb, ws, sheetNames[i]);
-      }});
-      XLSX.writeFile(wb, filename);
+    .pdf-export:hover {{ background: #ecf0f1; }}
+    @media print {{
+      .g-nav, .pdf-export {{ display: none !important; }}
+      body {{ background: #fff; }}
+      div[style*="box-shadow"], header {{ box-shadow: none !important; }}
+      table tr {{ break-inside: avoid; page-break-inside: avoid; }}
+      h2 {{ break-after: avoid; page-break-after: avoid; }}
     }}
-  </script>
+  </style>
 </head>
 <body>
   <nav class="g-nav">
@@ -1234,7 +1227,7 @@ def build_regelwerk_page(rules: dict) -> str:
         <h1>📋 Regelwerk — Zertifikate-Scanner</h1>
         <p class="subtitle">Drei-Ebenen-Screening-System &mdash; Low-Vol Momentum Screener</p>
       </div>
-      <button class="dl-btn" onclick="exportAllTables(['tbl-ampel','tbl-e1','tbl-e2','tbl-e3','tbl-exit','tbl-roll'],['Marktampel','Ebene1_Trend','Ebene2_Pullback','Ebene3_Bestaetigung','Ausstieg','Roll'],'regelwerk_{generated}.xlsx')">&#8595; Excel</button>
+      <button type="button" class="pdf-export" onclick="window.print()" title="Öffnet den Druckdialog — dort als Ziel &quot;Als PDF speichern&quot; wählen">⬇ Als PDF exportieren</button>
     </header>
 
     {body}

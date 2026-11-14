@@ -131,24 +131,18 @@
   </style>
   <style>
     header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-    .dl-btn { display: inline-flex; align-items: center; gap: .4em; padding: .45em 1em;
+    .pdf-export { display: inline-flex; align-items: center; gap: .4em; padding: .45em 1em;
                background: #fff; color: #2c3e50; border: none; border-radius: 5px; cursor: pointer;
                font-size: .82em; font-weight: 600; white-space: nowrap; }
-    .dl-btn:hover { background: #ecf0f1; }
-  </style>
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-  <script>
-    function exportAllTables(tableIds, sheetNames, filename) {
-      var wb = XLSX.utils.book_new();
-      tableIds.forEach(function(id, i) {
-        var tbl = document.getElementById(id);
-        if (!tbl) return;
-        var ws = XLSX.utils.table_to_sheet(tbl, {raw: false});
-        XLSX.utils.book_append_sheet(wb, ws, sheetNames[i]);
-      });
-      XLSX.writeFile(wb, filename);
+    .pdf-export:hover { background: #ecf0f1; }
+    @media print {
+      .g-nav, .pdf-export { display: none !important; }
+      body { background: #fff; }
+      div[style*="box-shadow"], header { box-shadow: none !important; }
+      table tr { break-inside: avoid; page-break-inside: avoid; }
+      h2 { break-after: avoid; page-break-after: avoid; }
     }
-  </script>
+  </style>
 </head>
 <body>
   <nav class="g-nav">
@@ -169,7 +163,7 @@
         <h1>📋 Regelwerk — Zertifikate-Scanner</h1>
         <p class="subtitle">Drei-Ebenen-Screening-System &mdash; Low-Vol Momentum Screener</p>
       </div>
-      <button class="dl-btn" onclick="exportAllTables(['tbl-ampel','tbl-e1','tbl-e2','tbl-e3','tbl-exit','tbl-roll'],['Marktampel','Ebene1_Trend','Ebene2_Pullback','Ebene3_Bestaetigung','Ausstieg','Roll'],'regelwerk_2026-11-14.xlsx')">&#8595; Excel</button>
+      <button type="button" class="pdf-export" onclick="window.print()" title="Öffnet den Druckdialog — dort als Ziel &quot;Als PDF speichern&quot; wählen">⬇ Als PDF exportieren</button>
     </header>
 
     
@@ -183,7 +177,7 @@
     unabhängig davon, wie gut ein Einzeltitel in E1–E3 abschneidet.
     Die Universum-Übersicht (alle Scores) bleibt in jedem Marktregime sichtbar.
   </p>
-  <table id="tbl-ampel" style="width:100%;border-collapse:collapse">
+  <table style="width:100%;border-collapse:collapse">
     <thead>
       <tr style="background:#f8f9fa">
         <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Status</th>
@@ -256,7 +250,7 @@
             box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #27ae60">
   <h2 style="margin-bottom:6px;color:#2c3e50">🟢 Ebene 1 — Trendqualität</h2>
   <p style="color:#555;font-size:0.9em;margin-bottom:16px">Alle 4 Kriterien müssen erfüllt sein. Ist auch nur eines nicht erfüllt, wird der Titel als Kaufkandidat ausgeschlossen.</p>
-  <table id="tbl-e1" style="width:100%;border-collapse:collapse">
+  <table style="width:100%;border-collapse:collapse">
     <thead>
       <tr style="background:#f8f9fa">
         <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
@@ -290,7 +284,7 @@
             box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #f39c12">
   <h2 style="margin-bottom:6px;color:#2c3e50">🟡 Ebene 2 — Pullback-Profil</h2>
   <p style="color:#555;font-size:0.9em;margin-bottom:16px">Bewertet die Qualität des Pullbacks auf einer Skala von 0–100. Ein Pullback außerhalb des Bereichs 5–15 % führt direkt zum Ausschluss.</p>
-  <table id="tbl-e2" style="width:100%;border-collapse:collapse">
+  <table style="width:100%;border-collapse:collapse">
     <thead>
       <tr style="background:#f8f9fa">
         <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
@@ -343,7 +337,7 @@
             box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #2980b9">
   <h2 style="margin-bottom:6px;color:#2c3e50">🔵 Ebene 3 — Wiederanlauf-Bestätigung</h2>
   <p style="color:#555;font-size:0.9em;margin-bottom:16px">Mind. 2 von 3 Signalen müssen vorliegen, um einen Wiedereinstieg zu bestätigen.</p>
-  <table id="tbl-e3" style="width:100%;border-collapse:collapse">
+  <table style="width:100%;border-collapse:collapse">
     <thead>
       <tr style="background:#f8f9fa">
         <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
@@ -379,7 +373,7 @@
             box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #e74c3c">
   <h2 style="margin-bottom:6px;color:#2c3e50">🔴 Ausstiegs-Regelwerk</h2>
   <p style="color:#555;font-size:0.9em;margin-bottom:16px">Stop-Loss und Gewinnmitnahme-Regeln für offene Optionsschein-Positionen.</p>
-  <table id="tbl-exit" style="width:100%;border-collapse:collapse">
+  <table style="width:100%;border-collapse:collapse">
     <thead>
       <tr style="background:#f8f9fa">
         <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
@@ -420,7 +414,7 @@
             box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:5px solid #8e44ad">
   <h2 style="margin-bottom:6px;color:#2c3e50">🟣 Roll-Regelwerk</h2>
   <p style="color:#555;font-size:0.9em;margin-bottom:16px">Wann und wie ein Optionsschein gerollt wird (Zeitwert-Roll oder Strike-Roll).</p>
-  <table id="tbl-roll" style="width:100%;border-collapse:collapse">
+  <table style="width:100%;border-collapse:collapse">
     <thead>
       <tr style="background:#f8f9fa">
         <th style="padding:8px 14px;text-align:left;font-size:0.82em;color:#7f8c8d;
