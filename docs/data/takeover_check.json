@@ -1,6 +1,6 @@
 {
 "AAPL": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "AII": {
@@ -12,12 +12,12 @@
 "hit": null
 },
 "AVNS": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "BMBL": {
-"checked": "2026-11-07",
-"hit": null
+"checked": "2026-11-14",
+"hit": "8-K (Item 1.01, Fusionsstichwort), 2026-10-13"
 },
 "CBLL": {
 "checked": "2026-10-17",
@@ -48,11 +48,11 @@
 "hit": null
 },
 "EL": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "ELF": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "ELPC": {
@@ -68,7 +68,7 @@
 "hit": null
 },
 "FRAF": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "FRSH": {
@@ -84,7 +84,7 @@
 "hit": null
 },
 "GWW": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "HAE": {
@@ -136,7 +136,7 @@
 "hit": null
 },
 "SWKS": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "TALO": {
@@ -152,7 +152,7 @@
 "hit": null
 },
 "WEYS": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 }
 }
