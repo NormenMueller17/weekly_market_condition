@@ -1,6 +1,6 @@
 {
 "AAPL": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "AII": {
@@ -11,12 +11,16 @@
 "checked": "2026-10-24",
 "hit": null
 },
+"ASND": {
+"checked": "2026-11-14",
+"hit": null
+},
 "AVNS": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "BMBL": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "CBLL": {
@@ -39,6 +43,10 @@
 "checked": "2026-10-10",
 "hit": null
 },
+"DDI": {
+"checked": "2026-11-14",
+"hit": "SC 13E3, 2026-11-10"
+},
 "DELL": {
 "checked": "2026-10-10",
 "hit": null
@@ -48,11 +56,11 @@
 "hit": null
 },
 "EL": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "ELF": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "ELPC": {
@@ -68,7 +76,7 @@
 "hit": null
 },
 "FRAF": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "FRSH": {
@@ -84,7 +92,7 @@
 "hit": null
 },
 "GWW": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "HAE": {
@@ -93,6 +101,10 @@
 },
 "HPK": {
 "checked": "2026-10-24",
+"hit": null
+},
+"IBEX": {
+"checked": "2026-11-14",
 "hit": null
 },
 "IMOS": {
@@ -127,6 +139,10 @@
 "checked": "2026-10-06",
 "hit": "DEFM14A, 2025-12-23"
 },
+"SBH": {
+"checked": "2026-11-14",
+"hit": null
+},
 "SU": {
 "checked": "2026-10-31",
 "hit": null
@@ -136,7 +152,7 @@
 "hit": null
 },
 "SWKS": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 },
 "TALO": {
@@ -152,7 +168,7 @@
 "hit": null
 },
 "WEYS": {
-"checked": "2026-11-07",
+"checked": "2026-11-14",
 "hit": null
 }
 }
