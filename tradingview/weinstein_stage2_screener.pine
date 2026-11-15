@@ -1,0 +1,136 @@
+//@version=6
+// Weinstein Stage 1 -> 2 Screener
+// Gedacht fuer den Wochenchart (1W). Alle Laengen sind in Bars angegeben.
+// Pine-Screener-Spalten: "Stage" (2 = frischer Ausbruch, 1 = spaete Phase 1 / Watchlist, 0 = nichts),
+// "Score" (0-6) und die Einzelwerte darunter.
+indicator("Weinstein Stage 1→2 Screener", shorttitle = "Stage2", overlay = true)
+
+// ───────────────────────── Inputs ─────────────────────────
+grpMa = "30-Wochen-Linie"
+maLen       = input.int(30, "MA-Länge (Bars)", minval = 5, group = grpMa)
+slopeLb     = input.int(4, "Steigung über N Bars", minval = 1, group = grpMa)
+minSlopePct = input.float(0.0, "Min. MA-Steigung %", step = 0.1, group = grpMa)
+maxDistPct  = input.float(25.0, "Max. Abstand Kurs über MA % (nicht überdehnt)", group = grpMa)
+
+grpBase = "Basis (Phase 1)"
+baseLen     = input.int(12, "Min. Basislänge (Bars)", minval = 4, group = grpBase)
+maxDepthPct = input.float(35.0, "Max. Basistiefe %", group = grpBase)
+maFlatPct   = input.float(8.0, "MA-Veränderung während der Basis max. ±%", group = grpBase)
+minRangePct = input.float(1.5, "Min. Ø-Bar-Spanne % (Stillstandsfilter)", step = 0.1, group = grpBase)
+excludeSt3  = input.bool(true, "Phase 3 ausschließen (MA vor der Basis nicht steigend)", group = grpBase)
+priorLb     = input.int(26, "Vortrend-Vergleich: Bars vor Basisbeginn", minval = 4, group = grpBase)
+
+grpVol = "Volumen"
+volLen  = input.int(10, "Ø-Volumen Länge", minval = 2, group = grpVol)
+volMult = input.float(2.0, "Min. Volumen-Faktor Ausbruch", step = 0.1, group = grpVol)
+
+grpRs = "Relative Stärke (Mansfield)"
+benchSym = input.symbol("SP:SPX", "Benchmark", group = grpRs)
+rsLen    = input.int(52, "Mansfield-Länge", minval = 10, group = grpRs)
+rsFresh  = input.int(0, "RS-Nulldurchgang max. N Bars zurück (0 = aus)", minval = 0, group = grpRs)
+
+grpCtx = "Kontext"
+useMkt  = input.bool(false, "Benchmark selbst in Phase 2 verlangen", group = grpCtx)
+recentN = input.int(1, "Ausbruch innerhalb der letzten N Bars", minval = 1, group = grpCtx)
+nearPct = input.float(5.0, "Watchlist: max. Abstand zum Widerstand %", group = grpCtx)
+
+// ───────────────────────── Kurs & MA ─────────────────────────
+ma     = ta.sma(close, maLen)
+slope  = (ma / ma[slopeLb] - 1) * 100
+distMa = (close / ma - 1) * 100
+
+// ───────────────────────── Basis (die baseLen Bars VOR dem aktuellen) ─────────────────────────
+res      = ta.highest(high, baseLen)[1]
+baseLow  = ta.lowest(low, baseLen)[1]
+depth    = (res - baseLow) / res * 100
+maChgB   = (ma[1] / ma[baseLen] - 1) * 100
+avgRange = ta.sma((high - low) / close * 100, baseLen)[1]
+priorOk  = not excludeSt3 or ma[baseLen] <= ma[baseLen + priorLb] * 1.02
+baseOk   = depth <= maxDepthPct and math.abs(maChgB) <= maFlatPct and avgRange >= minRangePct and priorOk
+
+// ───────────────────────── Volumen ─────────────────────────
+volAvg   = ta.sma(volume, volLen)[1]
+volRatio = volAvg > 0 ? volume / volAvg : 0.0
+
+// ───────────────────────── Benchmark & Mansfield-RS ─────────────────────────
+benchStage2(int len) =>
+    m = ta.sma(close, len)
+    close > m and m >= m[4]
+
+[bClose, bMktOk] = request.security(benchSym, timeframe.period, [close, benchStage2(maLen)])
+
+rsRaw      = close / bClose
+mrs        = (rsRaw / ta.sma(rsRaw, rsLen) - 1) * 100
+rsCrossAgo = nz(ta.barssince(ta.crossover(mrs, 0)), 9999)
+rsOk       = mrs > 0 and (rsFresh == 0 or rsCrossAgo <= rsFresh)
+
+// ───────────────────────── Ausbruch (Übergang Phase 2) ─────────────────────────
+cAboveRes = close > res
+cAboveMa  = close > ma and distMa <= maxDistPct
+cMaUp     = slope >= minSlopePct
+cVol      = volRatio >= volMult
+mktOk     = not useMkt or bMktOk
+
+breakoutBar = cAboveRes and cAboveMa and cMaUp and cVol and rsOk and baseOk and mktOk
+barsSinceBo = nz(ta.barssince(breakoutBar), 9999)
+signal      = barsSinceBo < recentN and close > ma
+
+score = (cAboveRes ? 1 : 0) + (cAboveMa ? 1 : 0) + (cMaUp ? 1 : 0) + (cVol ? 1 : 0) + (rsOk ? 1 : 0) + (baseOk ? 1 : 0)
+
+// ───────────────────────── Ausbruchsniveau & Wochen seit Ausbruch ─────────────────────────
+// Ausbruchsniveau = Basisdach beim ersten Wochenschluss darüber. Es wandert nicht mit,
+// wenn der Kurs nach dem Ausbruch neue Hochs macht (anders als "Widerstand Basis").
+var float crossLevel = na
+var int   crossBar   = na
+crossUp = close > res and close[1] <= res[1]
+if crossUp and (na(crossLevel) or bar_index - crossBar > baseLen or close[1] <= crossLevel)
+    crossLevel := res
+    crossBar   := bar_index
+
+var float boLevel = na
+var int   boBar   = na
+if breakoutBar
+    boLevel := not na(crossBar) and bar_index - crossBar <= baseLen ? crossLevel : res
+    boBar   := bar_index
+
+weeksSinceBo = na(boBar) ? na : bar_index - boBar
+distBo       = na(boLevel) ? na : (close / boLevel - 1) * 100
+
+// ───────────────────────── Watchlist (späte Phase 1, inkl. aktuellem Bar) ─────────────────────────
+res0      = ta.highest(high, baseLen)
+low0      = ta.lowest(low, baseLen)
+depth0    = (res0 - low0) / res0 * 100
+maChg0    = (ma / ma[baseLen - 1] - 1) * 100
+avgRange0 = ta.sma((high - low) / close * 100, baseLen)
+priorOk0  = not excludeSt3 or ma[baseLen - 1] <= ma[baseLen - 1 + priorLb] * 1.02
+distRes   = (res0 - close) / res0 * 100
+
+watch = not signal and distRes <= nearPct and close >= ma * 0.97 and depth0 <= maxDepthPct and math.abs(maChg0) <= maFlatPct and avgRange0 >= minRangePct and priorOk0 and mrs > mrs[slopeLb]
+
+stage = signal ? 2 : watch ? 1 : 0
+
+// ───────────────────────── Chart ─────────────────────────
+maCol = slope >= minSlopePct ? color.new(color.green, 0) : slope < 0 ? color.new(color.red, 0) : color.new(color.gray, 0)
+plot(ma, "30W-MA", color = maCol, linewidth = 2)
+plot(res, "Widerstand Basis", color = color.new(color.gray, 40), style = plot.style_stepline)
+plotshape(breakoutBar, "Stage-2-Ausbruch", shape.triangleup, location.belowbar, color.new(color.green, 0), size = size.small)
+bgcolor(watch ? color.new(color.yellow, 88) : na, title = "Watchlist Phase 1")
+
+if barstate.islast and not timeframe.isweekly
+    label.new(bar_index, high, "Stage2: für 1W ausgelegt", style = label.style_label_down, color = color.new(color.orange, 0), textcolor = color.white)
+
+// ───────────────────────── Screener-Spalten ─────────────────────────
+plot(stage,            "Stage (2=Ausbruch, 1=Watch)", display = display.data_window)
+plot(score,            "Score (0-6)",                 display = display.data_window)
+plot(mrs,              "Mansfield RS",                display = display.data_window)
+plot(slope,            "MA-Steigung %",               display = display.data_window)
+plot(volRatio,         "Volumen-Faktor",              display = display.data_window)
+plot((close / res - 1) * 100, "Abstand Widerstand %", display = display.data_window)
+plot(depth,            "Basistiefe %",                display = display.data_window)
+plot(distMa,           "Abstand MA %",                display = display.data_window)
+plot(boLevel,          "Ausbruchsniveau",             color = weeksSinceBo <= 26 ? color.new(color.green, 0) : na, style = plot.style_linebr, linewidth = 2)
+plot(weeksSinceBo,     "Wochen seit Ausbruch",        display = display.data_window)
+plot(distBo,           "Abstand Ausbruchsniveau %",   display = display.data_window)
+
+alertcondition(breakoutBar, "Alarm: Stage-2-Ausbruch","{{ticker}}: Weinstein Stage-2-Ausbruch")
+alertcondition(watch,       "Späte Phase 1",    "{{ticker}}: späte Phase 1, nahe Widerstand")
