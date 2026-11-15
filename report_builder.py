@@ -1721,7 +1721,12 @@ def compute_filter_fails(row, *, sector_excluded: set, min_rs: float,
 
     fails = []
     if row.name in sector_excluded:
-        fails.append("Sektor-Limit")
+        # `sector_excluded` fasst seit dem Korrelations-Cluster-Cap (2026-11-15,
+        # signal_generator._filter_correlation_cluster) zwei Ursachen zusammen —
+        # Sektor-Tag-Limit UND Kurskorrelations-Limit. Welche davon zutrifft,
+        # steht nur im `drop_reason` des TradeSignal-Objekts, das hier (rein
+        # DataFrame-basiert) nicht vorliegt, daher das generische Label.
+        fails.append("Sektor/Cluster-Limit")
 
     def _n(col):
         return pd.to_numeric(row.get(col, None), errors="coerce")

@@ -1306,6 +1306,16 @@ def run():
         except Exception as e:
             print(f"[REENTRY] Watchlist konnte nicht gebaut werden: {e}")
 
+    # ── Kurshistorie fuer den Korrelations-Cluster-Cap ────────────────────────
+    # `weekly` deckt das Screening-Universum ab; bereits gehaltene Positionen,
+    # die (z. B. nach Delisting-Check oder Universumswechsel) nicht mehr darin
+    # stehen, werden gezielt nachgeladen -- ohne sie waere der Bestand fuer
+    # den Cluster-Cap unsichtbar und der Cap wirkungslos fuer genau die
+    # Positionen, gegen die neue Signale geprueft werden sollen.
+    _missing_hist = [s for s in aktive_positionen if s not in weekly]
+    if _missing_hist:
+        weekly.update(load_weekly_history(_missing_hist, weeks=SETTINGS.lookback_weeks))
+
     # ── Trade-Signal-Generator (Blueprint-Regelwerk) ──────────────────────────
     sizing_equity, _sizing_quelle = _sizing_equity(alpaca_portfolio, SETTINGS.account_equity)
     if _sizing_quelle == "live":
@@ -1327,6 +1337,7 @@ def run():
         open_positions  = aktive_positionen,
         reentry_watchlist = _watchlist,
         open_sectors      = _open_sectors,
+        price_history     = weekly,
     )
     _n_re = sum(1 for s in signals if s.is_reentry)
     print(f"[SIGNALS] {len(signals)} Kaufsignal(e) gefunden"

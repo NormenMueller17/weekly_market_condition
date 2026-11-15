@@ -598,6 +598,88 @@ def _filter_sector_limit(
     return kept, dropped, unknown
 
 
+def _filter_correlation_cluster(
+    signals:         list["TradeSignal"],
+    max_per_cluster: int,
+    corr_threshold:  float,
+    price_history:   dict[str, "pd.Series | pd.DataFrame"] | None,
+    open_positions:  list[str] | None = None,
+    lookback_weeks:  int = 26,
+) -> tuple[list["TradeSignal"], list["TradeSignal"]]:
+    """Dropt rang-niedrigere Signale, die mit zu vielen bereits gehaltenen oder
+    ranghoeheren Signalen dieser Woche hoch korrelieren (Kursbewegung, nicht
+    Sektor-Tag).
+
+    Ergaenzt den Sektor-Cap (`_filter_sector_limit`), ersetzt ihn nicht: die
+    Gegenprobe gegen das eigene Journal (2026-11-15, Feedback-PDF zum
+    Screener-Blueprint, siehe sector_cluster_correlation_analysis.py) zeigte
+    9 von 24 stark korrelierten Positions-Paaren mit UNTERSCHIEDLICHEM
+    Sektor-Tag -- genau die Faelle, die der Sektor-Cap nicht sieht (z. B.
+    ON/AAON Korrelation 0,92 bei "Technology" vs. "Industrials").
+
+    Korrelation = Pearson auf woechentlichen Returns der letzten
+    `lookback_weeks` abgeschlossenen Wochen -- dieselbe Datenbasis
+    (`price_history`), die der Rest der Pipeline ohnehin schon laedt
+    (`main.load_weekly_history`), kein zusaetzlicher Netzwerk-Call. Titel
+    ohne genug ueberlappende Historie werden NICHT gezaehlt (fail-open, wie
+    beim Sektor-Cap: lieber eine uebersehene Korrelation als ein erfundener
+    Ausschluss).
+
+    Returns (kept, dropped).
+    """
+    if not price_history or max_per_cluster <= 0:
+        return signals, []
+
+    def _returns(ticker: str) -> Optional[pd.Series]:
+        obj = price_history.get(ticker)
+        if obj is None:
+            return None
+        close = obj["Close"] if isinstance(obj, pd.DataFrame) else obj
+        close = pd.to_numeric(close, errors="coerce").dropna()
+        if len(close) < 10:
+            return None
+        return close.pct_change().dropna().tail(lookback_weeks)
+
+    def _corr(a: pd.Series, b: pd.Series) -> Optional[float]:
+        common = a.index.intersection(b.index)
+        if len(common) < 10:
+            return None
+        c = a.reindex(common).corr(b.reindex(common))
+        return None if pd.isna(c) else float(c)
+
+    pool: list[tuple[str, pd.Series]] = []
+    for t in (open_positions or []):
+        r = _returns(t)
+        if r is not None:
+            pool.append((t, r))
+
+    kept:    list["TradeSignal"] = []
+    dropped: list["TradeSignal"] = []
+    for sig in signals:
+        r = _returns(sig.ticker)
+        if r is None:
+            kept.append(sig)
+            continue
+
+        matches = [t for t, pr in pool
+                  if (c := _corr(r, pr)) is not None and abs(c) >= corr_threshold]
+
+        if len(matches) >= max_per_cluster:
+            sig.dropped     = True
+            sig.is_top_pick = False
+            sig.drop_reason = (
+                f"Korrelations-Cluster erreicht: {len(matches)} bereits bestehende/"
+                f"ranghöhere Position(en) mit |Korrelation| ≥ {corr_threshold} "
+                f"({', '.join(matches[:max_per_cluster])})"
+            )
+            dropped.append(sig)
+        else:
+            kept.append(sig)
+            pool.append((sig.ticker, r))
+
+    return kept, dropped
+
+
 # ── Filter-Bausteine ──────────────────────────────────────────────────────────
 #
 # THESE und TIMING sind bewusst getrennt:
@@ -1025,6 +1107,7 @@ def generate_signals(
     reentry_watchlist:       dict[str, dict] | None = None,
     open_sectors:            dict[str, str] | None = None,
     takeover_check:          Optional[Callable[[list[str]], dict[str, str]]] = None,
+    price_history:           dict[str, pd.DataFrame] | None = None,
 ) -> tuple[list[TradeSignal], pd.DataFrame, set[str], list[TradeSignal]]:
     """Apply Blueprint buy rules to the leaders DataFrame.
 
@@ -1282,6 +1365,26 @@ def generate_signals(
         if sector_excluded:
             print(f"[SEKTOR] {len(sector_excluded)} Signal(e) wegen Sektorgrenze "
                   f"verworfen: {', '.join(sorted(sector_excluded))}")
+
+    # ── Correlation cluster limit ─────────────────────────────────────────────
+    # Ergaenzt den Sektor-Cap: deckelt Positionen, die kursmaessig zusammen-
+    # laufen, auch wenn ihr Sektor-Tag unterschiedlich ist (siehe
+    # _filter_correlation_cluster-Docstring).
+    _portfolio_rules   = _RULES_JSON.get("portfolio", {})
+    max_per_cluster    = _portfolio_rules.get("max_positions_per_cluster", 3)
+    cluster_corr_thr   = _portfolio_rules.get("cluster_corr_threshold", 0.6)
+    cluster_lookback   = _portfolio_rules.get("cluster_lookback_weeks", 26)
+    if max_per_cluster > 0 and price_history:
+        signals, cluster_dropped = _filter_correlation_cluster(
+            signals, max_per_cluster=max_per_cluster, corr_threshold=cluster_corr_thr,
+            price_history=price_history, open_positions=open_positions,
+            lookback_weeks=cluster_lookback,
+        )
+        if cluster_dropped:
+            dropped_signals = dropped_signals + cluster_dropped
+            sector_excluded = sector_excluded | {s.ticker for s in cluster_dropped}
+            print(f"[CLUSTER] {len(cluster_dropped)} Signal(e) wegen Korrelations-Cluster "
+                  f"verworfen: {', '.join(sorted(s.ticker for s in cluster_dropped))}")
 
     # Kaufplaetze erst jetzt vergeben, damit sektorgesperrte Signale keinen
     # Platz belegen (siehe _assign_top_picks).
