@@ -185,6 +185,37 @@ HTML_TMPL = """
         .ampel-dots { display: flex; gap: 5px; margin: 6px 2px 0; }
         .ampel-dot  { width: 9px; height: 9px; border-radius: 50%; background: var(--success); }
         .ampel-dot.unmet { background: transparent; border: 1.5px solid var(--border-strong); }
+        /* ── PDF-Export-Button ───────────────────────────────────────────── */
+        .pdf-export {
+            float: right;
+            display: inline-flex;
+            align-items: center;
+            gap: .4em;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: .5em 1em;
+            font-size: .85em;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 1em 0 .5em;
+        }
+        .pdf-export:hover { background: var(--accent-text); }
+        @media (max-width: 600px) {
+            .pdf-export { float: none; display: inline-flex; margin: .6em 0 1em; }
+        }
+        /* ── Druckansicht / PDF-Export ──────────────────────────────────── */
+        @media print {
+            .g-nav, .pdf-export { display: none !important; }
+            .page { max-width: none; padding: 0; margin: 0; }
+            body  { background: #fff; }
+            a     { color: inherit; text-decoration: none; }
+            h1, h2 { break-after: avoid; page-break-after: avoid; }
+            table, tr, .leader-card, .portfolio-summary, .ampel-wrap {
+                break-inside: avoid; page-break-inside: avoid;
+            }
+        }
     </style>
     <script>
     function sortTable(th) {
@@ -305,6 +336,7 @@ HTML_TMPL = """
     </div>
   </nav>
   <div class="page">
+    <button type="button" class="pdf-export" onclick="window.print()" title="Öffnet den Druckdialog — dort als Ziel &quot;Als PDF speichern&quot; wählen">⬇ Als PDF exportieren</button>
     {% if test_mode %}
     <div style="background:#b30000;color:#fff;font-weight:bold;font-size:1.1em;padding:10px 16px;border-radius:6px;margin-bottom:1em;letter-spacing:.03em;">
       ⚠️ TEST-MODUS — Keine Orders wurden platziert oder storniert
