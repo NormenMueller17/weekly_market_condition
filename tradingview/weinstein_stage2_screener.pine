@@ -34,6 +34,9 @@ useMkt  = input.bool(false, "Benchmark selbst in Phase 2 verlangen", group = grp
 recentN = input.int(1, "Ausbruch innerhalb der letzten N Bars", minval = 1, group = grpCtx)
 nearPct = input.float(5.0, "Watchlist: max. Abstand zum Widerstand %", group = grpCtx)
 
+// Zeitrahmen-Sperre: Signale und Screener-Spalten nur auf dem Wochenchart
+tfOk = timeframe.isweekly
+
 // ───────────────────────── Kurs & MA ─────────────────────────
 ma     = ta.sma(close, maLen)
 slope  = (ma / ma[slopeLb] - 1) * 100
@@ -113,24 +116,24 @@ stage = signal ? 2 : watch ? 1 : 0
 maCol = slope >= minSlopePct ? color.new(color.green, 0) : slope < 0 ? color.new(color.red, 0) : color.new(color.gray, 0)
 plot(ma, "30W-MA", color = maCol, linewidth = 2)
 plot(res, "Widerstand Basis", color = color.new(color.gray, 40), style = plot.style_stepline)
-plotshape(breakoutBar, "Stage-2-Ausbruch", shape.triangleup, location.belowbar, color.new(color.green, 0), size = size.small)
-bgcolor(watch ? color.new(color.yellow, 88) : na, title = "Watchlist Phase 1")
+plotshape(breakoutBar and tfOk, "Stage-2-Ausbruch", shape.triangleup, location.belowbar, color.new(color.green, 0), size = size.small)
+bgcolor(watch and tfOk ? color.new(color.yellow, 88) : na, title = "Watchlist Phase 1")
 
 if barstate.islast and not timeframe.isweekly
     label.new(bar_index, high, "Stage2: für 1W ausgelegt", style = label.style_label_down, color = color.new(color.orange, 0), textcolor = color.white)
 
 // ───────────────────────── Screener-Spalten ─────────────────────────
-plot(stage,            "Stage (2=Ausbruch, 1=Watch)", display = display.data_window)
-plot(score,            "Score (0-6)",                 display = display.data_window)
-plot(mrs,              "Mansfield RS",                display = display.data_window)
-plot(slope,            "MA-Steigung %",               display = display.data_window)
-plot(volRatio,         "Volumen-Faktor",              display = display.data_window)
-plot((close / res - 1) * 100, "Abstand Widerstand %", display = display.data_window)
-plot(depth,            "Basistiefe %",                display = display.data_window)
-plot(distMa,           "Abstand MA %",                display = display.data_window)
-plot(boLevel,          "Ausbruchsniveau",             color = weeksSinceBo <= 26 ? color.new(color.green, 0) : na, style = plot.style_linebr, linewidth = 2)
-plot(weeksSinceBo,     "Wochen seit Ausbruch",        display = display.data_window)
-plot(distBo,           "Abstand Ausbruchsniveau %",   display = display.data_window)
+plot(tfOk ? stage : na,        "Stage (2=Ausbruch, 1=Watch)", display = display.data_window)
+plot(tfOk ? score : na,        "Score (0-6)",                 display = display.data_window)
+plot(tfOk ? mrs : na,          "Mansfield RS",                display = display.data_window)
+plot(tfOk ? slope : na,        "MA-Steigung %",               display = display.data_window)
+plot(tfOk ? volRatio : na,     "Volumen-Faktor",              display = display.data_window)
+plot(tfOk ? (close / res - 1) * 100 : na, "Abstand Widerstand %", display = display.data_window)
+plot(tfOk ? depth : na,        "Basistiefe %",                display = display.data_window)
+plot(tfOk ? distMa : na,       "Abstand MA %",                display = display.data_window)
+plot(tfOk ? boLevel : na,      "Ausbruchsniveau",             color = weeksSinceBo <= 26 ? color.new(color.green, 0) : na, style = plot.style_linebr, linewidth = 2)
+plot(tfOk ? weeksSinceBo : na, "Wochen seit Ausbruch",        display = display.data_window)
+plot(tfOk ? distBo : na,       "Abstand Ausbruchsniveau %",   display = display.data_window)
 
-alertcondition(breakoutBar, "Alarm: Stage-2-Ausbruch","{{ticker}}: Weinstein Stage-2-Ausbruch")
-alertcondition(watch,       "Späte Phase 1",    "{{ticker}}: späte Phase 1, nahe Widerstand")
+alertcondition(breakoutBar and tfOk, "Alarm: Stage-2-Ausbruch", "{{ticker}}: Weinstein Stage-2-Ausbruch")
+alertcondition(watch and tfOk,       "Späte Phase 1",    "{{ticker}}: späte Phase 1, nahe Widerstand")
