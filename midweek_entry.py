@@ -469,6 +469,54 @@ def run(dry_run: bool) -> int:
             print("[MIDWEEK] Sektor-Bestand: " + ", ".join(
                 f"{s} {n}/{max_per_sector}" for s, n in sorted(sector_count.items())))
 
+    # Korrelations-Cluster-Limit wie am Samstag (signal_generator.
+    # _filter_correlation_cluster, seit 2026-11-15). Ergaenzt das Sektor-
+    # limit oben: deckelt zusaetzlich nach Kurskorrelation statt nach
+    # Sektor-Tag -- genau der ECO/FET-Fall (Kommentar oben) waere damit
+    # auch bei unterschiedlichen Sektor-Tags erfasst worden, haette die
+    # Korrelation gereicht. Anders als main.py laedt der Mittwochslauf keine
+    # universumsweite Wochenhistorie vorab, daher ein eigener, kleiner
+    # Batch-Abruf nur fuer Bestand + Watchlist-Kandidaten.
+    max_per_cluster  = _RULES_JSON.get("portfolio", {}).get("max_positions_per_cluster", 3)
+    cluster_excluded: set[str] = set()
+    if max_per_cluster > 0:
+        try:
+            from types import SimpleNamespace
+            from data_sources import download_ohlcv_batched
+            from signal_generator import _filter_correlation_cluster
+            cluster_corr_thr = _RULES_JSON.get("portfolio", {}).get("cluster_corr_threshold", 0.6)
+            cluster_lookback = _RULES_JSON.get("portfolio", {}).get("cluster_lookback_weeks", 26)
+
+            _need = sorted(set(held) | {it["ticker"] for it in items})
+            _daily = download_ohlcv_batched(tickers=_need, period="1y", interval="1d",
+                                            chunk_size=40, auto_adjust=False, threads=False)
+            price_history: dict[str, pd.DataFrame] = {}
+            for t, sub in _daily.items():
+                if sub is None or sub.empty or "Close" not in sub.columns:
+                    continue
+                s = sub[["Close"]].copy()
+                idx = pd.to_datetime(s.index)
+                if idx.tz is not None:
+                    idx = idx.tz_localize(None)
+                s.index = idx
+                s["Close"] = pd.to_numeric(s["Close"], errors="coerce")
+                s = s.dropna().resample("W-FRI").agg({"Close": "last"}).dropna()
+                if not s.empty:
+                    price_history[t] = s
+
+            _cands = [SimpleNamespace(ticker=it["ticker"], dropped=False, is_top_pick=True, drop_reason="")
+                     for it in items]
+            _kept, _dropped = _filter_correlation_cluster(
+                _cands, max_per_cluster=max_per_cluster, corr_threshold=cluster_corr_thr,
+                price_history=price_history, open_positions=list(held), lookback_weeks=cluster_lookback,
+            )
+            cluster_excluded = {o.ticker for o in _dropped}
+            if cluster_excluded:
+                print(f"[MIDWEEK] {len(cluster_excluded)} Kandidat(en) wegen Korrelations-Cluster "
+                      f"uebersprungen: {', '.join(sorted(cluster_excluded))}")
+        except Exception as e:
+            print(f"[MIDWEEK] ⚠️  Korrelations-Cluster-Pruefung fehlgeschlagen ({e}) — kein Ausschluss")
+
     signals: list[TradeSignal] = []
     for item in items:
         if len(signals) >= allowed:
@@ -485,6 +533,9 @@ def run(dry_run: bool) -> int:
         if sec and sector_count.get(sec, 0) >= max_per_sector:
             print(f"[MIDWEEK]    {ticker}: Sektor-Limit erreicht ({sec} bereits "
                   f"{max_per_sector}x vertreten) — uebersprungen")
+            continue
+        if ticker in cluster_excluded:
+            print(f"[MIDWEEK]    {ticker}: Korrelations-Cluster-Limit erreicht — uebersprungen")
             continue
         breakout = check_breakout(ticker, float(item["buy_stop"]), r)
         if breakout:
