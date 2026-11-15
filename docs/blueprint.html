@@ -607,7 +607,7 @@
     <p>Diese drei Werte werden zu einem Composite Industry Score zusammengefasst und in eine Rangliste überführt. Nur Aktien aus den Top-50-%-Branchen kommen für ein Kaufsignal in Frage.</p>
 
     <h2 id="s16">Schritt 16 — Signal-Generator: Kaufkriterien</h2>
-    <p>Alle Aktien, die den Minervini-Screener und die Fundamentalprüfung überstanden haben, durchlaufen nun 18 Kauffilter. Alle Filter müssen erfüllt sein:</p>
+    <p>Alle Aktien, die den Minervini-Screener und die Fundamentalprüfung überstanden haben, durchlaufen nun 19 Kauffilter. Alle Filter müssen erfüllt sein:</p>
 
     <div class="tbl-wrap">
       <table>
@@ -628,11 +628,12 @@
           <tr><td>11</td><td>Wöchentlicher MACD</td><td>&gt; Signallinie (positives Momentum)</td></tr>
           <tr><td>12</td><td>Marktfilter (Trendfilter)</td><td>S&amp;P 500: 10W-EMA &gt; 20W-EMA (sonst halbe Positionsgröße)</td></tr>
           <tr><td>13</td><td>Nicht im Portfolio</td><td>Position darf nicht bereits gehalten werden</td></tr>
-          <tr><td>14</td><td>Sektor-Konzentrationslimit</td><td>Maximal 3 Positionen pro Sektor. Gilt am Samstag und am Mittwoch (seit 2026-11-08).</td></tr>
+          <tr><td>14</td><td>Sektor-Konzentrationslimit</td><td>Maximal 3 Positionen je Datenanbieter-Sektor-Tag. Gilt am Samstag und am Mittwoch (seit 2026-11-08).</td></tr>
           <tr><td>15</td><td>Marktbreite</td><td>≥ 40 % der S&amp;P-500-Aktien über ihrem 200-Tage-MA</td></tr>
           <tr><td>16</td><td>Umsatzwachstum (TTM, YoY) <strong>ODER</strong> EPS-Wachstum (letztes Quartal, YoY)</td><td>≥ 20 % bei mindestens einem der beiden (Stand 2026-09-06, vorher UND-verknüpft)</td></tr>
           <tr><td>17</td><td>Wochenkurs steigend</td><td>Schlusskurs &gt; Schlusskurs der Vorwoche</td></tr>
           <tr><td>18</td><td>Übernahme-Ausschluss</td><td>Kein Fusions- oder Angebotsverfahren laut SEC-Einreichung (PREM14A, DEFM14A, SC 14D9, SC 13E3) in den letzten 365 Tagen. Gilt am Samstag und am Mittwoch.</td></tr>
+          <tr><td>19</td><td>Korrelations-Cluster-Limit</td><td>Maximal 3 Positionen mit |Korrelation| ≥ 0,6 (wöchentliche Returns, 26 Wochen) zu bereits gehaltenen oder ranghöheren Signalen derselben Woche. Ergänzt Kriterium 14, ersetzt es nicht. Bisher nur im Samstagslauf (seit 2026-11-15); der Mittwochslauf hat noch keinen Cluster-Cap.</td></tr>
         </tbody>
       </table>
     </div>
@@ -648,6 +649,7 @@
       <li><strong>Eingefrorene Positionen</strong> zählen nicht gegen Positionsplätze und Sektorlimit (siehe Schritt 8).</li>
       <li><strong>Samstagslauf</strong> läuft um 02:23 UTC statt 08:00 UTC, um Verzögerungen durch GitHub-Spitzenlast zu vermeiden.</li>
     </ul>
+    <p><em>Änderung 2026-11-15: Neues Kriterium 19 (Korrelations-Cluster-Limit). Anlass war eine externe Gegenprobe zum Blueprint, die einen ~42-%-Beauty-Cluster (drei Titel, u. a. mit den Sektor-Tags „Consumer Cyclical" und „Consumer Defensive") bemängelte, den das Sektorlimit (Kriterium 14) nicht sah, weil die Sektor-Tags unterschiedlich sind. Eine Gegenprobe gegen das eigene Tradetagebuch bestätigte das strukturell: von 24 Positionspaaren mit |Korrelation| ≥ 0,6 hatten 9 einen unterschiedlichen Sektor-Tag. Kriterium 19 deckelt deshalb zusätzlich nach Kurskorrelation (Pearson auf 26 Wochen-Returns) statt nach Taxonomie — ersetzt das Sektorlimit nicht, da dieses weiterhin die Mehrheit der Fälle erfasst. Nutzt die ohnehin geladene Wochenhistorie, kein zusätzlicher Netzwerk-Call. Bisher nur im Samstagslauf umgesetzt; der Mittwochslauf (Abschnitt „Mittwochslauf — Mid-Week-Entry" unten) hat noch keinen Cluster-Cap.</em></p>
 
     <span class="sub-bold">Positionsgröße: Risk-First-Methode</span>
     <p>Die Positionsgröße wird so berechnet, dass maximal 1,5 % des Gesamtportfolios pro Trade riskiert werden. Das Verlustrisiko ist damit von vornherein begrenzt:</p>
