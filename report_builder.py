@@ -1011,7 +1011,7 @@ HTML_TMPL = """
         </td>
       </tr>
       {% endif %}
-      {# ── Verworfen-Begründung (Sektor-Limit) ── #}
+      {# ── Verworfen-Begründung (Sektor- oder Korrelations-Cluster-Limit) ── #}
       {% if s.dropped %}
       <tr style="background-color:{{ row_bg }}">
         <td colspan="23" style="border-top:none;padding:3px 8px 7px 8px;text-align:left;font-size:0.8em;color:#721c24">
@@ -1036,8 +1036,9 @@ HTML_TMPL = """
       sondern nur diese Woche außerhalb des Kaufbudgets — sie bleiben gültige Signale.
       {% endif %}
       {% if dropped_signals %}
-      ⛔ = wegen Sektor-Limit verworfen (Begründung in der Zeile) — deshalb fehlt der
-      Rang in der Zählung; zählen nicht zu den {{ signals | length }} aktiven Signalen.
+      ⛔ = wegen Sektor- oder Korrelations-Cluster-Limit verworfen (genaue Begründung
+      in der Zeile) — deshalb fehlt der Rang in der Zählung; zählen nicht zu den
+      {{ signals | length }} aktiven Signalen.
       {% endif %}
       🔵 Buy-Stop = Einstiegsorder (max(Entry, Pivot) +0.1%) &nbsp;|&nbsp;
       🔴 Max. Gap = Order verwerfen wenn Montag-Open über diesem Preis (Pivot +5%) &nbsp;|&nbsp;
@@ -2256,8 +2257,8 @@ def build_html_report(breadth, idx, risk, summary, report_date, weekly_data, lea
         Buy signals produced by signal_generator.generate_signals().
         Shown in Section 5 of the email; pass None or [] for "no signals".
     dropped_signals : list[TradeSignal] | None
-        Signals ranked but then dropped by the sector-concentration cap
-        (dropped=True, drop_reason set). Shown in the full GitHub-Pages table
+        Signals ranked but then dropped by the sector-concentration or
+        correlation-cluster cap (dropped=True, drop_reason set). Shown in the full GitHub-Pages table
         at their original rank so a missing rank number always comes with an
         explanation instead of an unexplained gap.
     alpaca_cash : float | None
