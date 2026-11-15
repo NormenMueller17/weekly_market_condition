@@ -22,6 +22,24 @@ TRADES_FILE  = Path("docs/data/trades.json")
 EQUITY_FILE  = Path("docs/data/equity_history.json")
 PERF_HTML    = Path("docs/performance.html")
 
+# Grobe Richtwerte zur Orientierung, keine Tagesnotierung und keine Kauf-/
+# Verkaufsregel — nur um die eigene Depotkonzentration einordnen zu koennen.
+# Angelehnt an die ungefaehre Sektorgewichtung des S&P 500 (GICS), in derselben
+# Taxonomie wie unser `sector`-Feld (Nasdaq-Screener/Yahoo-Tag, 11 Sektoren).
+SECTOR_BENCHMARK_PCT = {
+    "Technology":             33.0,
+    "Financial Services":     13.0,
+    "Healthcare":             10.0,
+    "Consumer Cyclical":      10.0,
+    "Communication Services":  9.0,
+    "Industrials":             8.0,
+    "Consumer Defensive":      6.0,
+    "Energy":                  3.0,
+    "Real Estate":             3.0,
+    "Utilities":               2.5,
+    "Basic Materials":         2.5,
+}
+
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 
@@ -489,6 +507,94 @@ def _color(v):
     return "color:#1a8a1a;font-weight:600" if v > 0 else "color:#cc2222;font-weight:600"
 
 
+def _sector_allocation(open_: list) -> dict:
+    """$-gewichtete Sektorverteilung der offenen Positionen vs. SECTOR_BENCHMARK_PCT.
+
+    Marktwert = qty * current_price (Fallback entry_price, falls current_price
+    fehlt), nicht nur Anzahl Positionen — damit zaehlt eine grosse Position
+    tatsaechlich mehr als eine kleine. Positionen mit qty<=0 (z.B. per Teilverkauf
+    leergeraeumt) haben keinen Marktwert mehr und fliessen nicht ein.
+
+    Sector Balance Score (0-100): 100 minus die halbe Summe der absoluten
+    Abweichungen je Sektor in Prozentpunkten (Total Variation Distance zur
+    Benchmark-Verteilung) — 100 = Depot-Mix entspricht der Benchmark exakt,
+    0 = komplett disjunkt. Sektoren ohne Zuordnung und Sektoren, die die
+    Benchmark nicht kennt, zaehlen als volle Abweichung (fail-safe statt
+    stiller Unterschlagung von Exposure).
+    """
+    by_sector: dict = {}
+    total = 0.0
+    for t in open_:
+        price = t.get("current_price") or t.get("entry_price") or 0
+        qty   = t.get("qty") or 0
+        value = price * qty
+        if value <= 0:
+            continue
+        total += value
+        sector = (t.get("sector") or "").strip() or "Ohne Zuordnung"
+        by_sector[sector] = by_sector.get(sector, 0.0) + value
+
+    if total <= 0:
+        return {"rows": [], "score": None, "top_sector": None, "top_pct": None,
+                "covered": 0, "benchmark_count": len(SECTOR_BENCHMARK_PCT)}
+
+    rows = []
+    abs_diff_sum = 0.0
+    seen = set()
+    for sector, bench_pct in SECTOR_BENCHMARK_PCT.items():
+        port_pct = by_sector.get(sector, 0.0) / total * 100
+        rows.append({"sector": sector, "portfolio_pct": port_pct, "benchmark_pct": bench_pct})
+        abs_diff_sum += abs(port_pct - bench_pct)
+        seen.add(sector)
+
+    for sector, value in by_sector.items():
+        if sector in seen:
+            continue
+        port_pct = value / total * 100
+        rows.append({"sector": sector, "portfolio_pct": port_pct, "benchmark_pct": 0.0})
+        abs_diff_sum += port_pct
+
+    rows.sort(key=lambda r: r["portfolio_pct"], reverse=True)
+    top = rows[0] if rows and rows[0]["portfolio_pct"] > 0 else None
+    covered = sum(1 for s in SECTOR_BENCHMARK_PCT if by_sector.get(s, 0.0) > 0)
+
+    return {
+        "rows":            rows,
+        "score":           round(max(0.0, 100.0 - abs_diff_sum / 2.0)),
+        "top_sector":      top["sector"] if top else None,
+        "top_pct":         top["portfolio_pct"] if top else None,
+        "covered":         covered,
+        "benchmark_count": len(SECTOR_BENCHMARK_PCT),
+    }
+
+
+def _sector_table_html(rows: list) -> str:
+    if not rows:
+        return '<p class="empty-note">Keine offenen Positionen.</p>'
+    body = []
+    for r in rows:
+        diff = r["portfolio_pct"] - r["benchmark_pct"]
+        diff_str = f"{'+' if diff > 0 else ''}{diff:.1f}pp"
+        diff_style = _color(diff) if abs(diff) >= 0.1 else "color:#888"
+        body.append(
+            '<tr>'
+            f'<td style="text-align:left;padding:.45em .8em;">{r["sector"]}</td>'
+            f'<td style="text-align:center;padding:.45em .8em;">{r["portfolio_pct"]:.1f}%</td>'
+            f'<td style="text-align:center;padding:.45em .8em;color:#888;">{r["benchmark_pct"]:.1f}%</td>'
+            f'<td style="text-align:center;padding:.45em .8em;{diff_style}">{diff_str}</td>'
+            '</tr>'
+        )
+    return (
+        '<table style="border-collapse:collapse;width:100%;font-size:.88em;">'
+        '<tr>'
+        '<th style="text-align:left;padding:.45em .8em;">Sektor</th>'
+        '<th style="text-align:center;padding:.45em .8em;">Depot</th>'
+        '<th style="text-align:center;padding:.45em .8em;color:#888;">Benchmark</th>'
+        '<th style="text-align:center;padding:.45em .8em;">Differenz</th>'
+        '</tr>' + "".join(body) + '</table>'
+    )
+
+
 # ── Chart data helpers ────────────────────────────────────────────────────────
 
 def _bar_chart_data(by_dict: dict) -> tuple[list, list, list]:
@@ -515,8 +621,11 @@ def _latest_report_link() -> str:
     return "reports/"
 
 
-def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
+def build_html(tm: dict, em: dict, spy_values: list = None, sector_alloc: dict = None) -> str:
     today = datetime.date.today().isoformat()
+    sector_alloc = sector_alloc or {"rows": [], "score": None, "top_sector": None,
+                                     "top_pct": None, "covered": 0,
+                                     "benchmark_count": len(SECTOR_BENCHMARK_PCT)}
 
     # ── KPI card helper ───────────────────────────────────────────────────────
     def kpi(val, label, style=""):
@@ -582,6 +691,18 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     pat_values_js = json.dumps(pat_values)
     pat_colors_js = json.dumps(pat_colors)
     pat_empty  = "true" if not pat_labels else "false"
+
+    # ── Sector allocation vs. Benchmark ──────────────────────────────────────
+    alloc_rows       = sector_alloc["rows"]
+    alloc_labels_js  = json.dumps([r["sector"] for r in alloc_rows])
+    alloc_port_js    = json.dumps([round(r["portfolio_pct"], 1) for r in alloc_rows])
+    alloc_bench_js   = json.dumps([round(r["benchmark_pct"], 1) for r in alloc_rows])
+    alloc_empty      = "true" if not alloc_rows else "false"
+    score_str        = f"{sector_alloc['score']}/100" if sector_alloc["score"] is not None else "–"
+    top_sector_str   = (f"{sector_alloc['top_sector']} ({sector_alloc['top_pct']:.0f}%)"
+                        if sector_alloc.get("top_sector") else "–")
+    covered_str      = f"{sector_alloc['covered']}/{sector_alloc['benchmark_count']}"
+    sector_table_html = _sector_table_html(alloc_rows)
 
     return f"""<!DOCTYPE html>
 <html lang="de">
@@ -704,6 +825,30 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
     </div>
   </div>
 
+  <!-- Sektor-Allokation vs. Benchmark -->
+  <h2>Sektor-Allokation (offene Positionen)</h2>
+  <div class="kpis">
+    {kpi(score_str, "Sektor-Balance-Score")}
+    {kpi(top_sector_str, "Größte Position")}
+    {kpi(covered_str, "Abgedeckte Sektoren")}
+  </div>
+  <p class="meta" style="margin-top:-.8em">
+    Marktwert-gewichtet (Kurs × Stück) gegen einen groben, typischen US-Markt-Mix.
+    Balance-Score = 100 minus halbe Summe der Abweichungen in Prozentpunkten — reine
+    Orientierung zur Depotkonzentration, keine Kauf-/Verkaufsregel.
+  </p>
+  <div class="charts2">
+    <div class="chart-box">
+      <h3>Depot vs. Benchmark (%)</h3>
+      <canvas id="chartSectorAlloc"></canvas>
+      <p class="empty-note" id="emptySectorAlloc" style="display:none">Keine offenen Positionen.</p>
+    </div>
+    <div class="chart-box" style="overflow-x:auto;">
+      <h3>Abweichung je Sektor</h3>
+      {sector_table_html}
+    </div>
+  </div>
+
   <script>
     // ── shared options ───────────────────────────────────────────────────────
     const fmtMoney = v => (v >= 0 ? '+' : '') + v.toLocaleString('de-DE', {{minimumFractionDigits:0, maximumFractionDigits:0}}) + ' $';
@@ -790,6 +935,37 @@ def build_html(tm: dict, em: dict, spy_values: list = None) -> str:
 
     makeBarChart('chartSector',  'emptySector',  {sec_labels_js}, {sec_values_js}, {sec_colors_js});
     makeBarChart('chartPattern', 'emptyPattern', {pat_labels_js}, {pat_values_js}, {pat_colors_js});
+
+    // ── Sektor-Allokation vs. Benchmark ─────────────────────────────────────
+    const allocLabels = {alloc_labels_js};
+    const allocPort   = {alloc_port_js};
+    const allocBench  = {alloc_bench_js};
+    if ({alloc_empty}) {{
+      document.getElementById('chartSectorAlloc').style.display = 'none';
+      document.getElementById('emptySectorAlloc').style.display = 'block';
+    }} else {{
+      new Chart(document.getElementById('chartSectorAlloc'), {{
+        type: 'bar',
+        data: {{
+          labels: allocLabels,
+          datasets: [
+            {{ label: 'Depot',     data: allocPort,  backgroundColor: 'rgba(0,61,153,.75)',  borderRadius: 4 }},
+            {{ label: 'Benchmark', data: allocBench, backgroundColor: 'rgba(160,160,160,.55)', borderRadius: 4 }},
+          ]
+        }},
+        options: {{
+          indexAxis: 'y',
+          responsive: true,
+          plugins: {{
+            legend: {{ display: true, labels: {{ boxWidth: 14, font: {{ size: 11 }} }} }},
+            tooltip: {{ callbacks: {{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.x.toFixed(1) + '%' }} }},
+          }},
+          scales: {{
+            x: {{ ticks: {{ callback: v => v + '%' }} }},
+          }},
+        }},
+      }});
+    }}
   </script>
   </div><!-- .page -->
 </body>
@@ -821,8 +997,9 @@ def build_and_save(portfolio_history: Optional[dict] = None,
     em = _equity_metrics(eq_history, trim_from=trim_from)
     em = _apply_live_equity(em, live_portfolio)
     spy = _fetch_spy_benchmark(em["chart_labels"], em["start_equity"] or 100_000)
+    sector_alloc = _sector_allocation(trades.get("open", []))
 
     PERF_HTML.parent.mkdir(parents=True, exist_ok=True)
-    PERF_HTML.write_text(build_html(tm, em, spy), encoding="utf-8")
+    PERF_HTML.write_text(build_html(tm, em, spy, sector_alloc), encoding="utf-8")
     print(f"[PERF] Performance-Dashboard gespeichert → {PERF_HTML}")
     return PERF_HTML

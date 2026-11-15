@@ -871,6 +871,39 @@ def _color(v):
         return ""
     return "color:#1a8a1a;font-weight:600" if v > 0 else "color:#cc2222;font-weight:600"
 
+MIN_DAYS_FOR_ANNUALIZATION = 10
+
+def _annualized_pct(pct, entry_date, exit_date=None):
+    """Rendite (%) auf ein Jahr hochgerechnet (Zinseszins), um Positionen mit
+    unterschiedlicher Haltedauer vergleichbar zu machen (z.B. GCT +13,5% in 35
+    Tagen vs. EHC +26,6% in 125 Tagen - annualisiert zeigt, welche Position die
+    bessere laufende Rendite liefert).
+
+    Unter `MIN_DAYS_FOR_ANNUALIZATION` Tagen -> None statt Zahl: bei wenigen
+    Tagen Haltedauer kippt der hochgerechnete Wert durch einen einzigen Tag
+    Unterschied um hunderte Prozentpunkte und waere irrefuehrend praezise.
+    Das Ergebnis wird auf [-100, 999] gekappt, damit ein kurzfristiger
+    Ausreisser nicht eine astronomische Zahl erzeugt.
+    """
+    if pct is None or not entry_date:
+        return None
+    try:
+        start = datetime.date.fromisoformat(entry_date[:10])
+        end   = datetime.date.fromisoformat(exit_date[:10]) if exit_date else datetime.date.today()
+        days  = (end - start).days
+    except Exception:
+        return None
+    if days < MIN_DAYS_FOR_ANNUALIZATION:
+        return None
+    try:
+        ann = ((1 + pct / 100) ** (365 / days) - 1) * 100
+    except (OverflowError, ZeroDivisionError, ValueError):
+        return None
+    if ann != ann:  # NaN (z.B. negative Basis bei pct <= -100)
+        return None
+    return max(-100.0, min(ann, 999.0))
+
+
 def _exit_reason_label(r):
     return {"stop_hit": "Stop Hit", "manual": "Manuell",
             "manual_market": "Manuell"}.get(r, r or "–")
@@ -978,6 +1011,8 @@ def build_html(data: dict) -> str:
         stop_style    = 'color:#1a8a1a;font-weight:600' if t.get('stop_raised_date') else ''
         rs_val = t.get('rs_score')
         rs_str = f'{rs_val:.0f}' if rs_val is not None else '–'
+        ann_pct = _annualized_pct(plpc, t.get('entry_date'))
+        ann_str = _fmt_pct(ann_pct, decimals=0)
         open_rows += f"""
         <tr>
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
@@ -992,16 +1027,17 @@ def build_html(data: dict) -> str:
           <td style="{stop_style}">{stop_raised}{cur_stop_str}</td>
           <td>{(t.get('current_price') or 0):.2f}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
+          <td style="{_color(ann_pct)}" title="Hochgerechnet aufs Jahr, ab {MIN_DAYS_FOR_ANNUALIZATION} Tagen Haltedauer">{ann_str}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
           <td class="left" style="font-size:.8em">{_pt_status(t)}</td>
         </tr>
-        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
+        <tr><td colspan="14" style="text-align:left;white-space:normal;background:#fafbff">
           {_trade_chart_block(t.get('symbol',''), t.get('chart_before_path'))}
           {_criteria_badges_html(t.get('criteria'))}
         </td></tr>"""
 
     if not open_rows:
-        open_rows = '<tr><td colspan="13" style="text-align:center;color:#999">Keine offenen Positionen</td></tr>'
+        open_rows = '<tr><td colspan="14" style="text-align:center;color:#999">Keine offenen Positionen</td></tr>'
 
     # ── Closed trades rows ────────────────────────────────────────────────────
     closed_rows = ""
@@ -1010,6 +1046,8 @@ def build_html(data: dict) -> str:
         pl   = t.get("realized_pl")
         rs_val = t.get('rs_score')
         rs_str = f'{rs_val:.0f}' if rs_val is not None else '–'
+        ann_pct = _annualized_pct(plpc, t.get('entry_date'), t.get('exit_date'))
+        ann_str = _fmt_pct(ann_pct, decimals=0)
         closed_rows += f"""
         <tr>
           <td class="left"><strong>{t.get('symbol','')}</strong><br>
@@ -1024,14 +1062,15 @@ def build_html(data: dict) -> str:
           <td>{(t.get('qty') or 0):.0f}</td>
           <td class="left">{_exit_reason_label(t.get('exit_reason'))}</td>
           <td style="{_color(plpc)}">{_fmt_pct(plpc)}</td>
+          <td style="{_color(ann_pct)}" title="Hochgerechnet aufs Jahr, ab {MIN_DAYS_FOR_ANNUALIZATION} Tagen Haltedauer">{ann_str}</td>
           <td style="{_color(pl)}">{_fmt_money(pl)}</td>
         </tr>
-        <tr><td colspan="12" style="text-align:left;white-space:normal;background:#fafbff">
+        <tr><td colspan="13" style="text-align:left;white-space:normal;background:#fafbff">
           {_trade_chart_block(t.get('symbol',''), t.get('chart_before_path'))}
         </td></tr>"""
 
     if not closed_rows:
-        closed_rows = '<tr><td colspan="12" style="text-align:center;color:#999">Noch keine abgeschlossenen Trades</td></tr>'
+        closed_rows = '<tr><td colspan="13" style="text-align:center;color:#999">Noch keine abgeschlossenen Trades</td></tr>'
 
     return f"""<!DOCTYPE html>
 <html lang="de">
@@ -1153,6 +1192,7 @@ def build_html(data: dict) -> str:
       <th>Aktueller Stop</th>
       <th>Kurs aktuell</th>
       <th>P&amp;L %</th>
+      <th title="Hochgerechnet aufs Jahr, ab {MIN_DAYS_FOR_ANNUALIZATION} Tagen Haltedauer">Annualisiert</th>
       <th>P&amp;L $</th>
       <th class="left">Gewinnmitnahme</th>
     </tr>
@@ -1178,6 +1218,7 @@ def build_html(data: dict) -> str:
       <th>Qty</th>
       <th class="left">Exit-Grund</th>
       <th>P&amp;L %</th>
+      <th title="Hochgerechnet aufs Jahr, {MIN_DAYS_FOR_ANNUALIZATION}+ Tage Haltedauer">Annualisiert</th>
       <th>P&amp;L $</th>
     </tr>
     {closed_rows}
