@@ -25,6 +25,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        # Neuesten main-Stand holen, nicht den SHA zum Ausloesezeitpunkt:
+        # wartet der Job in der Concurrency-Gruppe repo-git-write, hat ein
+        # anderer Job inzwischen gepusht -> sonst Rebase-Konflikt beim Push.
+        with:
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
