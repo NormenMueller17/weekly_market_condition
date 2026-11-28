@@ -1,6 +1,6 @@
 {
 "AAPL": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "AII": {
@@ -8,19 +8,27 @@
 "hit": null
 },
 "AMPL": {
-"checked": "2026-10-24",
+"checked": "2026-11-28",
+"hit": null
+},
+"ANF": {
+"checked": "2026-11-28",
 "hit": null
 },
 "ASND": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "AVNS": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
+"hit": null
+},
+"BBY": {
+"checked": "2026-11-28",
 "hit": null
 },
 "BILL": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": "8-K (Item 1.01, Fusionsstichwort), 2026-11-20"
 },
 "BMBL": {
@@ -55,12 +63,16 @@
 "checked": "2026-10-10",
 "hit": null
 },
+"DLTR": {
+"checked": "2026-11-28",
+"hit": null
+},
 "ECO": {
 "checked": "2026-10-31",
 "hit": null
 },
 "EL": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "ELF": {
@@ -84,7 +96,7 @@
 "hit": null
 },
 "FRAF": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "FRSH": {
@@ -100,11 +112,11 @@
 "hit": null
 },
 "GME": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "GWW": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "HAE": {
@@ -116,12 +128,16 @@
 "hit": null
 },
 "IBEX": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "IMOS": {
 "checked": "2026-10-06",
 "hit": null
+},
+"INSM": {
+"checked": "2026-11-28",
+"hit": "8-K (Item 1.01, Fusionsstichwort), 2026-11-24"
 },
 "MRVL": {
 "checked": "2026-10-10",
@@ -152,7 +168,7 @@
 "hit": "DEFM14A, 2025-12-23"
 },
 "SBH": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "SU": {
@@ -164,7 +180,7 @@
 "hit": null
 },
 "SWKS": {
-"checked": "2026-11-21",
+"checked": "2026-11-28",
 "hit": null
 },
 "TALO": {

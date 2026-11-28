@@ -6,35 +6,40 @@
       "zuletzt": "2026-11-15"
     },
     "IAUX-WS": {
-      "fails": 5,
+      "fails": 6,
       "zuerst": "2026-11-07",
-      "zuletzt": "2026-11-21"
+      "zuletzt": "2026-11-28"
     },
     "INFQ-WS": {
-      "fails": 5,
+      "fails": 6,
       "zuerst": "2026-11-07",
-      "zuletzt": "2026-11-21"
+      "zuletzt": "2026-11-28"
     },
     "NE-WS": {
-      "fails": 1,
+      "fails": 2,
       "zuerst": "2026-11-21",
-      "zuletzt": "2026-11-21"
+      "zuletzt": "2026-11-28"
     },
     "OXY-WS": {
-      "fails": 5,
+      "fails": 6,
       "zuerst": "2026-11-07",
-      "zuletzt": "2026-11-21"
+      "zuletzt": "2026-11-28"
     },
     "QRVO": {
       "fails": 1,
       "zuerst": "2026-10-10",
       "zuletzt": "2026-10-10"
     },
+    "SKYD-WS": {
+      "fails": 1,
+      "zuerst": "2026-11-28",
+      "zuletzt": "2026-11-28"
+    },
     "VAL-WS": {
-      "fails": 5,
+      "fails": 6,
       "zuerst": "2026-11-07",
-      "zuletzt": "2026-11-21"
+      "zuletzt": "2026-11-28"
     }
   },
-  "updated": "2026-11-21"
+  "updated": "2026-11-28"
 }
